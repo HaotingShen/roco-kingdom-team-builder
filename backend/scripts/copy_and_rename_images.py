@@ -49,6 +49,7 @@ def main():
         print(f"Copied: {p.name} -> {out.name}")
 
     print(f"\n[RESULT] Copied: {copied}, Skipped: {skipped}, Output: {DST}")
+    print(f"[IMPORTANT] Change file naming for 化蝶，棋棋黑白子，钻石蜗首领！")
 
 if __name__ == "__main__":
     main()

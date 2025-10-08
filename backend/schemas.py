@@ -1,4 +1,4 @@
-from pydantic import BaseModel, ConfigDict, model_validator, Field
+from pydantic import BaseModel, ConfigDict, model_validator, Field, field_serializer
 from typing import Optional, List, Dict, Any, ClassVar, Literal
 from backend.models import MoveCategory, AttackStyle
 from datetime import datetime
@@ -58,6 +58,10 @@ class MoveOut(MoveLiteOut):
     is_move_stone: bool
 
     model_config = ConfigDict(from_attributes=True)
+    
+    @field_serializer("move_category")
+    def _ser_move_category(self, v: MoveCategory, _info):
+        return v.name
 
 class LegacyMoveOut(BaseModel):
     monster_id: int

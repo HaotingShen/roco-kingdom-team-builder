@@ -1,8 +1,10 @@
 import { Link, useParams, useSearchParams } from "react-router-dom";
+import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { endpoints } from "@/lib/api";
 import { useI18n, pickName, pickDesc, pickFormName } from "@/i18n";
-import type { TypeOut, MoveOut } from "@/types";
+import type { TypeOut, MoveOut, MonsterOut, StatKey } from "@/types";
+import { STAT_KEYS } from "@/types";
 
 /* ---------- helpers ---------- */
 
@@ -27,30 +29,26 @@ const catIcon: Record<string, string> = {
   ATTACK: "⚔️",
 };
 
-const statKeys = ["hp","phy_atk","mag_atk","phy_def","mag_def","spd"] as const;
-type StatKey = typeof statKeys[number];
-
-function extractStats(m: any): Partial<Record<StatKey, number>> {
-  const candidates = [m.base_stats, m.effective_stats, m.stats, m.monster_stats];
-  for (const c of candidates) {
-    if (c && typeof c === "object") {
-      return {
-        hp: c.hp ?? 0,
-        phy_atk: c.phy_atk ?? 0,
-        mag_atk: c.mag_atk ?? 0,
-        phy_def: c.phy_def ?? 0,
-        mag_def: c.mag_def ?? 0,
-        spd: c.spd ?? 0,
-      };
-    }
-  }
-  return { hp:0, phy_atk:0, mag_atk:0, phy_def:0, mag_def:0, spd:0 };
+export function extractStats(m: MonsterOut): Record<StatKey, number> {
+  return {
+    hp:      m.base_hp ?? 0,
+    phy_atk: m.base_phy_atk ?? 0,
+    mag_atk: m.base_mag_atk ?? 0,
+    phy_def: m.base_phy_def ?? 0,
+    mag_def: m.base_mag_def ?? 0,
+    spd:     m.base_spd ?? 0,
+  };
 }
 
 /* If legacy moves come as ids, fetch details via /moves?ids=1,2,3  */
 function useMoveObjects(list: any[] | undefined) {
-  const ids = Array.isArray(list) ? list.map((x) => (typeof x === "number" ? x : x?.id)).filter(Boolean) : [];
-  const needFetch = Array.isArray(list) && list.length > 0 && typeof list[0] === "number";
+  const ids = Array.isArray(list)
+    ? list.map((x) => (typeof x === "number" ? x : (x?.id ?? x?.move_id))).filter(Boolean)
+    : [];
+  const needFetch =
+    Array.isArray(list) &&
+    list.length > 0 &&
+    (typeof list[0] === "number" || !!(list[0] as any)?.move_id);
   const q = useQuery({
     queryKey: ["moves-by-ids", ids.join(",")],
     queryFn: () => endpoints.moves({ ids: ids.join(",") }).then((r) => r.data?.items ?? r.data),
@@ -73,21 +71,24 @@ export default function MonsterDetailPage() {
     enabled: !!id,
   });
 
-  if (q.isLoading) return <div>{t("common.loading")}</div>;
-  if (!q.data) return <div>Not found.</div>;
+  useEffect(() => { window.scrollTo(0, 0); }, [id]);
 
-  const m = q.data;
+  const m = (q.data ?? {}) as any;
   const nm = pickName(m as any, lang) || m.name;
   const fm = pickFormName(m as any, lang);
   const title = [nm, fm ? `(${fm})` : ""].filter(Boolean).join(" ");
 
   const trait = m.trait || m.ability || null;
   const evo = m.evolution_chain || []; // array of ids or {id, name, form}
+  
   const baseStats = extractStats(m);
-  const total = statKeys.reduce((s, k) => s + (baseStats[k] ?? 0), 0);
+  const total = STAT_KEYS.reduce<number>((s, k) => s + (baseStats[k] ?? 0), 0);
 
   const movePool = useMoveObjects(m.move_pool);
   const legacyMoves = useMoveObjects(m.legacy_moves);
+
+  if (q.isLoading) return <div>{t("common.loading")}</div>;
+  if (!q.data) return <div>Not found.</div>;
 
   return (
     <div className="space-y-3">
@@ -131,7 +132,7 @@ export default function MonsterDetailPage() {
           <div className="p-4">
             <div className="font-medium mb-1">{t("dex.totalBase")}: {total}</div>
             <div className="space-y-1">
-              {statKeys.map((k) => {
+              {STAT_KEYS.map((k) => {
                 const labels: Record<StatKey, string> = {
                   hp: t("labels.hp"),
                   phy_atk: t("labels.phyAtk"),
@@ -141,7 +142,7 @@ export default function MonsterDetailPage() {
                   spd: t("labels.spd"),
                 };
                 const val = baseStats[k] ?? 0;
-                const pct = Math.min(100, Math.round((val / 300) * 100));
+                const pct = Math.min(100, Math.round((val / 200) * 100));
                 return (
                   <div key={k} className="flex items-center gap-2">
                     <div className="w-24 text-[12px] text-zinc-600">{labels[k]}</div>
@@ -195,10 +196,10 @@ export default function MonsterDetailPage() {
       {(movePool?.length || legacyMoves?.length) ? (
         <section className="rounded border bg-white p-3">
           <div className="flex items-center gap-2 mb-2">
-            <Link to={`?tab=${fromTab}&moves=pool`} className={`h-8 px-2 rounded border hover:bg-zinc-50 text-sm ${which === "pool" ? "bg-zinc-200" : ""}`}>
+            <Link to={`?tab=${fromTab}&moves=pool`} className={`inline-flex items-center justify-center h-8 px-2 rounded border hover:bg-zinc-50 text-sm ${which === "pool" ? "bg-zinc-200" : ""}`}>
               {t("dex.learnable")}
             </Link>
-            <Link to={`?tab=${fromTab}&moves=legacy`} className={`h-8 px-2 rounded border hover:bg-zinc-50 text-sm ${which === "legacy" ? "bg-zinc-200" : ""}`}>
+            <Link to={`?tab=${fromTab}&moves=legacy`} className={`inline-flex items-center justify-center h-8 px-2 rounded border hover:bg-zinc-50 text-sm ${which === "legacy" ? "bg-zinc-200" : ""}`}>
               {t("dex.legacy")}
             </Link>
           </div>
@@ -211,9 +212,8 @@ export default function MonsterDetailPage() {
 
 function MovesList({ list }: { list: any[] }) {
   const { lang, t } = useI18n();
-
   return (
-    <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+    <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
       {(list ?? []).map((m: MoveOut & any) => {
         const tp = (m.move_type || m.type) as TypeOut | null;
         const cname = pickName(m as any, lang) || m.name;
@@ -224,36 +224,82 @@ function MovesList({ list }: { list: any[] }) {
         const isDef = category === "DEFENSE";
         const isSta = category === "STATUS";
 
+        const moveNameZh = pickName(m as any, "zh") || cname;
+        const moveImg = encodeURI(`/move-icons/${moveNameZh}.png`);
+        const typeImg = tp?.name ? typeIconUrl(tp.name, 30) : null;
+        const energyImg = "/move-sub-icons/energy.png";
+        const catToFile: Record<string, string> = {
+          PHY_ATTACK: "physical-attack",
+          MAG_ATTACK: "magic-attack",
+          DEFENSE: "defense",
+          STATUS: "status",
+        };
+        const catImg = `/move-sub-icons/${catToFile[category] ?? "physical-attack"}.png`;
+
         return (
-          <div key={m.id} className="rounded border p-2">
-            {/* fixed columns */}
-            <div className="grid grid-cols-[18px,1fr,64px,28px,60px] items-center gap-2 text-sm">
-              {/* type */}
-              <div className="flex items-center justify-center">
-                {tp?.name && typeIconUrl(tp.name) ? <img src={typeIconUrl(tp.name)!} alt="" width={16} height={16} /> : null}
+          <div key={m.id} className="rounded border bg-white p-3">
+            <div className="
+              grid
+              sm:grid-cols-[80px_30px_minmax(0,1fr)_40px_8px_50px]
+              md:grid-cols-[80px_30px_minmax(0,1fr)_40px_16px_50px]
+              lg:grid-cols-[80px_30px_minmax(0,1fr)_40px_24px_50px]
+              grid-rows-[auto_auto_auto]
+              items-start gap-2 text-sm
+            ">
+              {/* Image (rows 1–2) */}
+              <div className="row-[1/3] h-[80px] w-[80px] rounded bg-zinc-100/60 overflow-hidden flex items-center justify-center">
+                <img
+                  src={moveImg}
+                  alt={cname}
+                  width={80}
+                  height={80}
+                  loading="lazy"
+                  className="h-full w-full object-contain"
+                  onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+                />
               </div>
 
-              {/* name + stone */}
-              <div className="min-w-0">
-                <div className="flex items-center gap-1 min-w-0">
-                  <div className="font-medium truncate" title={cname}>{cname}</div>
-                  {m.is_move_stone ? <span className="text-[10px] rounded bg-amber-100 px-1 py-0.5">{t("dex.move_stone")}</span> : null}
-                </div>
+              {/* Type icon */}
+              <div className="col-[2] self-center flex items-center justify-center">
+                {typeImg ? <img src={typeImg} alt="" aria-hidden width={24} height={24} /> : null}
               </div>
 
-              {/* energy */}
-              <div className="text-xs text-zinc-600 text-right tabular-nums">⭐ {energy ?? "—"}</div>
+              {/* Name */}
+              <div className="col-[3] self-center min-w-0">
+                <div className="font-medium truncate" title={cname}>{cname}</div>
+              </div>
 
-              {/* cat icon */}
-              <div className="text-center">{catIcon[category] || "✨"}</div>
+              {/* Energy */}
+              <div className="col-[4] self-center flex items-center justify-end gap-[6px]">
+                <img src={energyImg} alt="" aria-hidden width={15} height={15} />
+                <span className="w-8 text-xs text-left tabular-nums">{energy ?? "—"}</span>
+              </div>
 
-              {/* power or category word */}
-              <div className="text-xs text-right tabular-nums">
-                {isDef ? t("dex.defense") : isSta ? t("dex.status") : (power ?? "—")}
+              {/* (col 5 spacer) */}
+
+              {/* Category + power/label */}
+              <div className="col-[6] self-center flex items-center justify-end gap-[6px]">
+                <img src={catImg} alt="" aria-hidden width={15} height={15} />
+                <span className="w-10 text-xs text-left tabular-nums">
+                  {isDef ? t("dex.defense") : isSta ? t("dex.status") : (power ?? "—")}
+                </span>
+              </div>
+
+              {/* Description (rows 2–3, cols 2–5) */}
+              <div className="row-[2/4] col-[2/7] text-sm text-zinc-600 pl-1">
+                {desc}
+              </div>
+
+              {/* Move Stone badge (bottom-left) */}
+              <div className="row-[3] col-[1] flex items-center justify-center">
+                {m.is_move_stone ? (
+                  <span className="inline-flex items-center gap-0.5 rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[10px] font-medium text-amber-700 shadow-[0_0_0_1px_rgba(245,158,11,0.2)]">
+                    <img alt="" width="13" height="13" src="/decorative-icons/move-stone.png"></img>
+                    {t("dex.move_stone")}
+                  </span>
+                ) : null}
               </div>
             </div>
-
-            <div className="text-xs text-zinc-600 mt-1 line-clamp-2">{desc}</div>
           </div>
         );
       })}

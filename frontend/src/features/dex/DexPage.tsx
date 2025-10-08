@@ -1,11 +1,12 @@
-import { useMemo, useState, ReactNode } from "react";
-import { Link } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
-import PageTabs from "@/components/PageTabs";
+import { useMemo, useState, useEffect, ReactNode } from "react";
+import { Link, useSearchParams } from "react-router-dom";
 import { endpoints } from "@/lib/api";
 import { useI18n, pickName, pickDesc, pickFormName } from "@/i18n";
 import type { MonsterLiteOut, MoveOut, TypeOut, MagicItemOut } from "@/types";
+import PageTabs from "@/components/PageTabs";
 import useDebounce from "@/hooks/useDebounce";
+import { useQuery } from "@tanstack/react-query";
+import { useWindowVirtualizer } from "@tanstack/react-virtual";
 
 /* ---------------- helpers ---------------- */
 
@@ -30,13 +31,20 @@ function magicItemImgUrl(it: any, size = 256) {
   return encodeURI(`/magic-items/${cnName}.png`);
 }
 
-const catIcon: Record<string, string> = {
-  PHY_ATTACK: "⚔️",
-  MAG_ATTACK: "🪄",
-  DEFENSE: "🛡️",
-  STATUS: "✨",
-  ATTACK: "⚔️",
-};
+function useColumns(kind: "monsters" | "moves") {
+  const [w, setW] = useState<number>(() => (typeof window !== "undefined" ? window.innerWidth : 1024));
+  useEffect(() => {
+    const onR = () => setW(window.innerWidth);
+    window.addEventListener("resize", onR);
+    return () => window.removeEventListener("resize", onR);
+  }, []);
+  if (kind === "monsters") {
+    // matches: 1 / 2(sm) / 3(lg) / 5(xl)
+    return w >= 1280 ? 5 : w >= 1024 ? 3 : w >= 640 ? 2 : 1;
+  }
+  // moves: 1 / 2(sm) / 3(lg)
+  return w >= 1024 ? 3 : w >= 640 ? 2 : 1;
+}
 
 /* ---------------- tiny UI atoms ---------------- */
 
@@ -55,7 +63,7 @@ function FilterButton({
     <button
       type="button"
       onClick={onClick}
-      className={`h-8 px-2 rounded border text-sm
+      className={`h-8 px-2 rounded border text-sm cursor-pointer
                   ${active ? "bg-zinc-200" : "hover:bg-zinc-50"}
                   ${className}`}
     >
@@ -85,16 +93,38 @@ function Pill({
   );
 }
 
+/* ---------------- scroll restore (per-tab) ---------------- */
+function useScrollRestoration(key: string) {
+  useEffect(() => {
+    const y = Number(sessionStorage.getItem(key) || 0);
+    if (!Number.isNaN(y) && y > 0) {
+      // wait a tick so content can paint
+      requestAnimationFrame(() => window.scrollTo(0, y));
+    }
+    return () => {
+      sessionStorage.setItem(key, String(window.scrollY));
+    };
+  }, [key]);
+}
+
 /* ===========================================================
    Monsters tab
    =========================================================== */
 
 function MonstersTab() {
   const { lang, t } = useI18n();
-  const [q, setQ] = useState("");
+  const [sp, setSp] = useSearchParams();
+  // keep state in URL so returning to the page restores filters
+  const [q, setQ] = useState(sp.get("q") ?? "");
   const dq = useDebounce(q, 200);
-  const [selectedTypes, setSelectedTypes] = useState<number[]>([]);
-  const [filterVariant, setFilterVariant] = useState<"all" | "regional" | "leader">("all");
+  const [selectedTypes, setSelectedTypes] = useState<number[]>(
+    () => (sp.get("types")?.split(",").map(Number).filter(Boolean) ?? [])
+  );
+  const [filterVariant, setFilterVariant] = useState<"all" | "regional" | "leader">(
+    (sp.get("form") as any) || "all"
+  );
+
+  useScrollRestoration("scroll:dex:monsters");
 
   const types = useQuery<TypeOut[]>({
     queryKey: ["types-all"],
@@ -121,42 +151,79 @@ function MonstersTab() {
       if (filterVariant === "regional" && (!m.form || m.form.toLowerCase() === "default")) return false;
       if (filterVariant === "leader" && !m.is_leader_form) return false;
 
-      // local search (name / type names / form / leader flag)
+      // local search – SUPPORT EN & 中文 regardless of current UI language
       if (!keywords) return true;
-
-      const name = (pickName(m as any, lang) || m.name || "").toLowerCase();
-      const form = (pickFormName(m as any, lang) || "").toLowerCase();
-      const mainType = (m.main_type?.localized?.[lang] || m.main_type?.name || "").toLowerCase();
-      const subType = (m.sub_type?.localized?.[lang] || m.sub_type?.name || "").toLowerCase();
-      const leader = m.is_leader_form ? (lang === "zh" ? "首领" : "leader") : "";
-
-      const hay = [name, form, mainType, subType, leader].join(" ");
+      const nameEN = (pickName(m as any, "en") || m.name || "").toLowerCase();
+      const nameZH = (pickName(m as any, "zh") || "").toLowerCase();
+      const formEN = (pickFormName(m as any, "en") || "").toLowerCase();
+      const formZH = (pickFormName(m as any, "zh") || "").toLowerCase();
+      const mainEN = (m.main_type?.localized?.en || m.main_type?.name || "").toLowerCase();
+      const mainZH = (m.main_type?.localized?.zh || "").toLowerCase();
+      const subEN  = (m.sub_type?.localized?.en || m.sub_type?.name || "").toLowerCase();
+      const subZH  = (m.sub_type?.localized?.zh || "").toLowerCase();
+      const leaderEN = m.is_leader_form ? "leader" : "";
+      const leaderZH = m.is_leader_form ? "首领" : "";
+      const hay = [nameEN, nameZH, formEN, formZH, mainEN, mainZH, subEN, subZH, leaderEN, leaderZH].join(" ");
       return hay.includes(keywords);
     });
-  }, [monsters.data, dq, selectedTypes, filterVariant, lang]);
+  }, [monsters.data, dq, selectedTypes, filterVariant]);
 
   const toggleType = (id: number) =>
     setSelectedTypes((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+
+  // --- virtualization (treat each grid *row* as one virtual item) ---
+  const cols = useColumns("monsters");
+  const rowCount = Math.ceil((filtered?.length ?? 0) / cols);
+  const rowEstimate = 220; // ~ card + gaps
+  const rowVirt = useWindowVirtualizer({
+    count: rowCount,
+    estimateSize: () => rowEstimate,
+    overscan: 6,
+  });
+  const vItems = rowVirt.getVirtualItems();
+  const fromRow = vItems[0]?.index ?? 0;
+  const toRow = vItems[vItems.length - 1]?.index ?? -1;
+  const startIdx = fromRow * cols;
+  const endIdx = Math.min(filtered.length, (toRow + 1) * cols);
+
+  // keep URL in sync
+  useEffect(() => {
+    const next = new URLSearchParams(sp);
+    next.set("tab", "monsters");
+    q ? next.set("q", q) : next.delete("q");
+    selectedTypes.length ? next.set("types", selectedTypes.join(",")) : next.delete("types");
+    filterVariant !== "all" ? next.set("form", filterVariant) : next.delete("form");
+    setSp(next, { replace: true });
+  }, [q, selectedTypes, filterVariant]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div className="space-y-3">
       {/* Filters */}
       <div className="rounded border bg-white p-3 space-y-3">
-        {/* Row 1: search */}
         <div className="flex flex-wrap items-center gap-2">
-          <input
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder={t("topbar.search")}
-            className="h-9 w-[280px] rounded border px-3"
-          />
+          <div className="relative">
+            <input
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder={t("dex.search")}
+              className="h-9 w-[180px] rounded border pl-3 pr-8"
+            />
+            <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-zinc-500">🔍</span>
+          </div>
         </div>
 
-        {/* Row 2: type filters */}
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="text-sm text-zinc-600">{t("dex.typesLabel")}</div>
+        <div className="grid gap-y-2 gap-x-3 [grid-template-columns:max-content_1fr]">
+          <div className="self-center text-sm text-zinc-600 text-center">{t("dex.typesLabel")}</div>
           <div className="flex flex-wrap gap-1">
-            {(types.data ?? []).map((tp) => (
+            <FilterButton
+              active={selectedTypes.length === 0}
+              onClick={() => setSelectedTypes([])}
+            >
+              {t("dex.form_all")}
+            </FilterButton>
+            {(types.data ?? [])
+              .filter((tp) => tp.name.toLowerCase() !== "leader" && (tp.localized?.zh ?? "") !== "首领")
+              .map((tp) => (
               <FilterButton
                 key={tp.id}
                 active={selectedTypes.includes(tp.id)}
@@ -171,72 +238,77 @@ function MonstersTab() {
               </FilterButton>
             ))}
           </div>
-        </div>
 
-        {/* Row 3: form filters */}
-        <div className="flex items-center gap-2">
-          <div className="text-sm text-zinc-600">{t("dex.formsLabel")}</div>
-          <FilterButton active={filterVariant === "all"} onClick={() => setFilterVariant("all")}>
-            {t("dex.form_all")}
-          </FilterButton>
-          <FilterButton active={filterVariant === "regional"} onClick={() => setFilterVariant("regional")}>
-            {t("dex.form_regional")}
-          </FilterButton>
-          <FilterButton active={filterVariant === "leader"} onClick={() => setFilterVariant("leader")}>
-            {t("dex.form_leader")}
-          </FilterButton>
+          <div className="self-center text-sm text-zinc-600 text-center">{t("dex.formsLabel")}</div>
+          <div className="flex flex-wrap items-center gap-2">
+            <FilterButton active={filterVariant === "all"} onClick={() => setFilterVariant("all")}>
+              {t("dex.form_all")}
+            </FilterButton>
+            <FilterButton active={filterVariant === "regional"} onClick={() => setFilterVariant("regional")}>
+              {t("dex.form_regional")}
+            </FilterButton>
+            <FilterButton active={filterVariant === "leader"} onClick={() => setFilterVariant("leader")}>
+              {t("dex.form_leader")}
+            </FilterButton>
+          </div>
         </div>
       </div>
 
-      {/* Grid */}
-      <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-        {filtered.map((m) => {
-          const titleName = pickName(m as any, lang) || m.name;
-          const formLabel = pickFormName(m as any, lang);
-          const title = [titleName, formLabel ? `(${formLabel})` : ""].filter(Boolean).join(" ");
-          const src = monsterImgUrlCN(m, 180);
+      {/* Virtualized grid (window-based) */}
+      {(!monsters.data || !filtered.length) ? (
+        <div className="text-zinc-500">{t("dex.noResults")}</div>
+      ) : (
+        <div style={{ height: rowVirt.getTotalSize(), position: "relative" }}>
+          <div style={{ transform: `translateY(${vItems[0]?.start ?? 0}px)` }}>
+            <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+              {filtered.slice(startIdx, endIdx).map((m) => {
+                const titleName = pickName(m as any, lang) || m.name;
+                const formLabel = pickFormName(m as any, lang);
+                const title = [titleName, formLabel ? `(${formLabel})` : ""].filter(Boolean).join(" ");
+                const src = monsterImgUrlCN(m, 180);
 
-          return (
-            <Link
-              key={m.id}
-              to={`/dex/monsters/${m.id}?tab=monsters`}
-              className="rounded border bg-white p-3 hover:bg-zinc-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400"
-            >
-              <div className="text-sm font-medium truncate" title={title}>{title}</div>
-              <div className="mt-2 flex items-center justify-center">
-                <img
-                  src={src}
-                  alt=""
-                  width={180}
-                  height={180}
-                  className="h-[120px] w-[120px] object-contain"
-                  onError={(e) => { (e.currentTarget as HTMLImageElement).src = "/monsters/placeholder.png"; }}
-                />
-              </div>
-              <div className="mt-2 flex items-center gap-1">
-                {[m.main_type, m.sub_type].filter(Boolean).map((tp) => (
-                  <Pill key={(tp as TypeOut).id}>
-                    {typeIconUrl((tp as TypeOut).name) ? (
-                      <img src={typeIconUrl((tp as TypeOut).name)!} alt="" width={14} height={14} />
-                    ) : null}
-                    {pickName(tp as any, lang)}
-                  </Pill>
-                ))}
-                {m.is_leader_form ? <Pill tone="amber">{t("labels.leader")}</Pill> : null}
-              </div>
-            </Link>
-          );
-        })}
-        {!filtered.length && (
-          <div className="text-zinc-500">{t("dex.noResults")}</div>
-        )}
-      </div>
+                return (
+                  <Link
+                    key={m.id}
+                    to={`/dex/monsters/${m.id}?tab=monsters`}
+                    className="rounded border bg-white p-3 hover:bg-zinc-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400"
+                  >
+                    <div className="text-sm font-medium truncate" title={title}>{title}</div>
+                    <div className="mt-2 flex items-center justify-center">
+                      <img
+                        src={src}
+                        alt=""
+                        width={180}
+                        height={180}
+                        className="h-[120px] w-[120px] object-contain"
+                        loading="lazy"
+                        onError={(e) => { (e.currentTarget as HTMLImageElement).src = "/monsters/placeholder.png"; }}
+                      />
+                    </div>
+                    <div className="mt-2 flex items-center gap-1">
+                      {[m.main_type, m.sub_type].filter(Boolean).map((tp) => (
+                        <Pill key={(tp as TypeOut).id}>
+                          {typeIconUrl((tp as TypeOut).name) ? (
+                            <img src={typeIconUrl((tp as TypeOut).name)!} alt="" width={14} height={14} />
+                          ) : null}
+                          {pickName(tp as any, lang)}
+                        </Pill>
+                      ))}
+                      {m.is_leader_form ? <Pill tone="amber">{t("labels.leader")}</Pill> : null}
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
 /* ===========================================================
-   Moves tab
+   Moves tab  (UPDATED: Plan B + padding spacers) + hide first DB move
    =========================================================== */
 
 type LocalMove = MoveOut & {
@@ -254,10 +326,16 @@ type LocalMove = MoveOut & {
 
 function MovesTab() {
   const { lang, t } = useI18n();
-  const [q, setQ] = useState("");
+  const [sp, setSp] = useSearchParams();
+  const [q, setQ] = useState(sp.get("mq") ?? "");
   const dq = useDebounce(q, 200);
-  const [typeIds, setTypeIds] = useState<number[]>([]);
-  const [cats, setCats] = useState<string[]>([]);
+  const [typeId, setTypeId] = useState<number | null>(() => {
+    const v = sp.get("mtype");
+    return v ? Number(v) : null;
+  });
+  const [cat, setCat] = useState<string | null>(sp.get("mcat") ?? null);
+
+  useScrollRestoration("scroll:dex:moves");
 
   const types = useQuery<TypeOut[]>({
     queryKey: ["types-all"],
@@ -269,34 +347,44 @@ function MovesTab() {
     queryFn: () => endpoints.moves().then((r) => (r.data?.items ?? r.data) as LocalMove[]),
   });
 
-  const toggle = <T,>(list: T[], v: T): T[] =>
-    list.includes(v) ? list.filter((x) => x !== v) : [...list, v];
+  // Identify the very first move ever recorded (lowest id) and hide it
+  const firstMoveId = useMemo<number | null>(() => {
+    const list = moves.data ?? [];
+    if (!list.length) return null;
+    let min = Infinity;
+    for (const m of list) {
+      const idNum = Number((m as any).id);
+      if (!Number.isNaN(idNum) && idNum < min) min = idNum;
+    }
+    return min === Infinity ? null : min;
+  }, [moves.data]);
 
   const filtered = useMemo(() => {
     const list = moves.data ?? [];
     const kw = dq.trim().toLowerCase();
 
     return list.filter((m) => {
+      // hide the very first DB move regardless of filters
+      if (firstMoveId != null && m.id === firstMoveId) return false;
+
       // type
       const tp = (m.move_type || m.type) as TypeOut | null;
-      if (typeIds.length && (!tp || !typeIds.includes(tp.id))) return false;
+      if (typeId && (!tp || tp.id !== typeId)) return false;
 
-      // category (normalize)
-      const cat = (m.move_category || m.category || "").toUpperCase();
-      if (cats.length && !cats.includes(cat)) return false;
+      // category (normalize) — compare to selected cat (single-select)
+      const catUpper = (m.move_category || m.category || "").toUpperCase();
+      if (cat && catUpper !== cat) return false;
 
       if (!kw) return true;
 
-      const nm = (pickName(m as any, lang) || m.name || "").toLowerCase();
-      const desc =
-        (m.localized?.[lang]?.description ??
-          (lang === "en" ? m.description /* en usually in base */ : m.description) ??
-          "")
-          .toLowerCase();
-
-      return nm.includes(kw) || desc.includes(kw);
+      // names/descriptions — SUPPORT EN & 中文
+      const nmEN = (pickName(m as any, "en") || m.name || "").toLowerCase();
+      const nmZH = (pickName(m as any, "zh") || "").toLowerCase();
+      const descEN = (m.localized?.en?.description ?? m.description ?? "").toLowerCase();
+      const descZH = (m.localized?.zh?.description ?? "").toLowerCase();
+      return [nmEN, nmZH, descEN, descZH].some((s) => s.includes(kw));
     });
-  }, [moves.data, dq, typeIds, cats, lang]);
+  }, [moves.data, dq, typeId, cat, firstMoveId]);
 
   const catOptions = [
     { key: "PHY_ATTACK", label: t("dex.cat_phy") },
@@ -305,110 +393,220 @@ function MovesTab() {
     { key: "STATUS", label: t("dex.cat_sta") },
   ];
 
+  // --- virtualization for moves grid (measureElement + padding spacers) ---
+  const cols = useColumns("moves");
+  const rowCount = Math.ceil((filtered?.length ?? 0) / cols);
+  const rowEstimate = 180;
+
+  const rowVirt = useWindowVirtualizer({
+    count: rowCount,
+    estimateSize: () => rowEstimate,
+    overscan: 6,
+    // dynamic measure real row height
+    measureElement: (el: HTMLElement) => el.getBoundingClientRect().height,
+  });
+
+  // convenience
+  const vis = rowVirt.getVirtualItems();
+
+  const first = vis[0];
+  const last  = vis.length ? vis[vis.length - 1] : undefined;
+
+  const topPad = first?.start ?? 0;
+  const bottomPad = last ? Math.max(0, rowVirt.getTotalSize() - last.end) : 0;
+
+  // sync URL
+  useEffect(() => {
+    const next = new URLSearchParams(sp);
+    next.set("tab", "moves");
+    q ? next.set("mq", q) : next.delete("mq");
+    typeId ? next.set("mtype", String(typeId)) : next.delete("mtype");
+    cat ? next.set("mcat", cat) : next.delete("mcat");
+    setSp(next, { replace: true });
+  }, [q, typeId, cat]); // eslint-disable-line react-hooks/exhaustive-deps
+
   return (
     <div className="space-y-3">
       {/* Filters */}
       <div className="rounded border bg-white p-3 space-y-3">
-        {/* Row 1: search */}
         <div className="flex flex-wrap items-center gap-2">
-          <input
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder={t("topbar.search")}
-            className="h-9 w-[280px] rounded border px-3"
-          />
+          <div className="relative">
+            <input
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder={t("dex.search")}
+              className="h-9 w-[180px] rounded border pl-3 pr-8"
+            />
+            <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-zinc-500">🔍</span>
+          </div>
         </div>
 
-        {/* Row 2: type filters */}
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="text-sm text-zinc-600">{t("dex.skill_type")}</div>
+        <div className="grid gap-y-2 gap-x-3 [grid-template-columns:max-content_1fr]">
+          <div className="self-center text-sm text-zinc-600 text-center">{t("dex.skill_type")}</div>
           <div className="flex flex-wrap gap-1">
-            {(types.data ?? []).map((tp) => (
+            <FilterButton active={typeId == null} onClick={() => setTypeId(null)}>
+              {t("dex.form_all")}
+            </FilterButton>
+            {(types.data ?? [])
+              .filter((tp) => tp.name.toLowerCase() !== "leader" && (tp.localized?.zh ?? "") !== "首领")
+              .map((tp) => (
+                <FilterButton
+                  key={tp.id}
+                  active={typeId === tp.id}
+                  onClick={() => setTypeId((prev) => (prev === tp.id ? null : tp.id))}
+                >
+                  <span className="inline-flex items-center gap-1">
+                    {typeIconUrl(tp.name) ? <img src={typeIconUrl(tp.name)!} alt="" width={16} height={16} /> : null}
+                    {pickName(tp as any, lang) || tp.name}
+                  </span>
+                </FilterButton>
+              ))}
+          </div>
+
+          <div className="self-center text-sm text-zinc-600 text-center">{t("dex.skill_category")}</div>
+          <div className="flex flex-wrap gap-1">
+            <FilterButton active={cat == null} onClick={() => setCat(null)}>
+              {t("dex.form_all")}
+            </FilterButton>
+            {catOptions.map((c) => (
               <FilterButton
-                key={tp.id}
-                active={typeIds.includes(tp.id)}
-                onClick={() => setTypeIds((s) => toggle(s, tp.id) as number[])}
+                key={c.key}
+                active={cat === c.key}
+                onClick={() => setCat((prev) => (prev === c.key ? null : c.key))}
               >
-                <span className="inline-flex items-center gap-1">
-                  {typeIconUrl(tp.name) ? (
-                    <img src={typeIconUrl(tp.name)!} alt="" width={16} height={16} />
-                  ) : null}
-                  {pickName(tp as any, lang) || tp.name}
-                </span>
+                {c.label}
               </FilterButton>
             ))}
           </div>
         </div>
-
-        {/* Row 3: category filters */}
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="text-sm text-zinc-600">{t("dex.skill_category")}</div>
-          {catOptions.map((c) => (
-            <FilterButton
-              key={c.key}
-              active={cats.includes(c.key)}
-              onClick={() => setCats((s) => toggle(s, c.key) as string[])}
-            >
-              {c.label}
-            </FilterButton>
-          ))}
-        </div>
       </div>
 
-      {/* Cards */}
-      <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {filtered.map((m) => {
-          const tp = (m.move_type || m.type) as TypeOut | null;
-          const cname = pickName(m as any, lang) || m.name;
-          const desc = pickDesc(m as any, lang) || m.localized?.[lang]?.description || m.description || "";
-          const category = (m.move_category || m.category || "").toUpperCase();
-          const energy = (m.energy_cost ?? m.energy ?? null);
-          const power = m.power ?? null;
-          const isDef = category === "DEFENSE";
-          const isSta = category === "STATUS";
+      {/* Virtualized grid (window-based) with dynamic-measured rows + controlled inter-row gap */}
+      {(!moves.data || !filtered.length) ? (
+        <div className="text-zinc-500">{t("dex.noResults")}</div>
+      ) : (
+        <div /* wrapper keeps the total scroll height */ style={{ height: rowVirt.getTotalSize(), position: "relative" }}>
+          {/* TOP spacer equals the offset to the first visible row */}
+          <div style={{ height: topPad }} />
 
-          return (
-            <div key={m.id} className="rounded border bg-white p-3">
-              {/* Line 1 (fixed columns via CSS grid) */}
-              <div className="grid grid-cols-[18px,1fr,64px,28px,60px] items-center gap-2 text-sm">
-                {/* type icon */}
-                <div className="flex items-center justify-center">
-                  {tp?.name && typeIconUrl(tp.name) ? (
-                    <img src={typeIconUrl(tp.name)!} alt="" width={16} height={16} />
-                  ) : null}
-                </div>
+          {/* Visible rows in normal flow; each row has mb-3 to match original grid gap */}
+          {vis.map((vi) => {
+            const rowIndex = vi.index;
+            const start = rowIndex * cols;
+            const end = Math.min(filtered.length, start + cols);
+            const rowMoves = filtered.slice(start, end);
 
-                {/* name + stone badge */}
-                <div className="min-w-0">
-                  <div className="flex items-center gap-1 min-w-0">
-                    <div className="font-medium truncate" title={cname}>{cname}</div>
-                    {m.is_move_stone ? (
-                      <span className="text-[10px] rounded bg-amber-100 px-1 py-0.5">{t("dex.move_stone")}</span>
-                    ) : null}
-                  </div>
-                </div>
+            return (
+              <div
+                key={(vi as any).key ?? rowIndex}
+                ref={rowVirt.measureElement}
+                data-index={vi.index}
+                className="mb-3"
+              >
+                <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+                  {rowMoves.map((m) => {
+                    const tp = (m.move_type || m.type) as TypeOut | null;
+                    const cname = pickName(m as any, lang) || m.name;
+                    const desc = pickDesc(m as any, lang) || m.localized?.[lang]?.description || m.description || "";
+                    const category = (m.move_category || m.category || "").toUpperCase();
+                    const energy = (m.energy_cost ?? m.energy ?? null);
+                    const power = m.power ?? null;
+                    const isDef = category === "DEFENSE";
+                    const isSta = category === "STATUS";
 
-                {/* energy */}
-                <div className="text-xs text-zinc-600 text-right tabular-nums">⭐ {energy ?? "—"}</div>
+                    // assets
+                    const moveNameZh = pickName(m as any, "zh") || cname;
+                    const moveImg = encodeURI(`/move-icons/${moveNameZh}.png`); // 128x128 source
+                    const typeImg = tp?.name ? typeIconUrl(tp.name, 30) : null;
+                    const energyImg = "/move-sub-icons/energy.png";
+                    const catToFile: Record<string, string> = {
+                      PHY_ATTACK: "physical-attack",
+                      MAG_ATTACK: "magic-attack",
+                      DEFENSE: "defense",
+                      STATUS: "status",
+                    };
+                    const catImg = `/move-sub-icons/${catToFile[category] ?? "physical-attack"}.png`;
 
-                {/* cat icon */}
-                <div className="text-center">{catIcon[category] || "✨"}</div>
+                    return (
+                      <div key={m.id} className="rounded border bg-white p-3">
+                        <div
+                          className="
+                            grid
+                            sm:grid-cols-[80px_30px_minmax(0,1fr)_40px_8px_50px]
+                            md:grid-cols-[80px_30px_minmax(0,1fr)_40px_16px_50px]
+                            lg:grid-cols-[80px_30px_minmax(0,1fr)_40px_24px_50px]
+                            grid-rows-[auto_auto_auto]
+                            items-start
+                            gap-2
+                            text-sm
+                          "
+                        >
+                          {/* Image (spans rows 1–2) */}
+                          <div className="row-[1/3] h-[80px] w-[80px] rounded bg-zinc-100/60 overflow-hidden flex items-center justify-center">
+                            <img
+                              src={moveImg}
+                              alt={cname}
+                              width={80}
+                              height={80}
+                              className="h-full w-full object-contain"
+                              loading="lazy"
+                              onError={(e) => {
+                                (e.currentTarget as HTMLImageElement).style.display = "none";
+                              }}
+                            />
+                          </div>
 
-                {/* power or category word */}
-                <div className="text-xs text-right tabular-nums">
-                  {isDef ? t("dex.defense") : isSta ? t("dex.status") : (power ?? "—")}
+                          {/* Type icon (col 2) */}
+                          <div className="col-[2] self-center flex items-center justify-center">
+                            {typeImg ? <img src={typeImg} alt="" aria-hidden="true" width={30} height={30} /> : null}
+                          </div>
+
+                          {/* Move name (col 3) */}
+                          <div className="col-[3] self-center min-w-0">
+                            <div className="font-medium whitespace-normal break-words sm:break-keep">{cname}</div>
+                          </div>
+
+                          {/* Energy icon + value (col 4) */}
+                          <div className="col-[4] self-center flex items-center justify-end gap-[6px]">
+                            <img src={energyImg} alt="" aria-hidden="true" width={15} height={15} />
+                            <span className="w-8 text-xs text-left tabular-nums">{energy ?? "—"}</span>
+                          </div>
+
+                          {/* (col 5 is the spacer) */}
+
+                          {/* Category icon + power/label (col 6) */}
+                          <div className="col-[6] self-center flex items-center justify-end gap-x-[6px]">
+                            <img src={catImg} alt="" aria-hidden="true" width={15} height={15} />
+                            <span className="w-10 text-xs text-left tabular-nums">
+                              {isDef ? t("dex.defense") : isSta ? t("dex.status") : power ?? "—"}
+                            </span>
+                          </div>
+
+                          {/* Description (spans rows 2–3 and cols 2–5) */}
+                          <div className="row-[2/4] col-[2/7] text-sm text-zinc-600 pl-1">{desc}</div>
+
+                          {/* Move Stone badge (bottom-left, under image) */}
+                          <div className="row-[3] col-[1] flex items-center justify-center">
+                            {m.is_move_stone ? (
+                              <span className="inline-flex items-center gap-0.5 rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[10px] font-medium text-amber-700 shadow-[0_0_0_1px_rgba(245,158,11,0.2)]">
+                                <img alt="" width="13" height="13" src="/decorative-icons/move-stone.png" />
+                                {t("dex.move_stone")}
+                              </span>
+                            ) : null}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
+            );
+          })}
 
-              {/* Line 2: description */}
-              <div className="text-xs text-zinc-600 mt-1 line-clamp-2">{desc}</div>
-            </div>
-          );
-        })}
-        {!filtered.length && (
-          <div className="text-zinc-500">{t("dex.noResults")}</div>
-        )}
-      </div>
+          {/* BOTTOM spacer to fill the remaining height */}
+          <div style={{ height: bottomPad }} />
+        </div>
+      )}
     </div>
   );
 }
@@ -474,10 +672,7 @@ function GameTermsTab() {
           const desc = pickDesc(g as any, lang) || g.description || "";
           return (
             <div key={g.id} className="border rounded p-2">
-              <div className="text-sm font-medium">
-                {label}
-                <span className="ml-2 text-xs text-zinc-500">{g.key}</span>
-              </div>
+              <div className="text-sm font-medium">{label}</div>
               <div className="text-sm text-zinc-700">{desc}</div>
             </div>
           );

@@ -2,9 +2,17 @@ import { create } from "zustand";
 import type { ID, UserMonsterCreate, TeamCreate, TalentUpsert, TeamAnalysisOut, TeamOut, UserMonsterUpsert, TeamUpdate } from "@/types";
 
 const emptyTalent: TalentUpsert = { hp_boost:0, phy_atk_boost:0, mag_atk_boost:0, phy_def_boost:0, mag_def_boost:0, spd_boost:0 };
-function emptySlot(): UserMonsterCreate {
-  return { monster_id: 0, personality_id: 0, legacy_type_id: 0, move1_id: 0, move2_id: 0, move3_id: 0, move4_id: 0, talent: { ...emptyTalent } };
+function emptySlot(): UserMonsterCreate & { id?: ID } {
+  return {
+    id: undefined,
+    monster_id: 0,
+    personality_id: 0,
+    legacy_type_id: 0,
+    move1_id: 0, move2_id: 0, move3_id: 0, move4_id: 0,
+    talent: { ...emptyTalent },
+  };
 }
+
 type PartialNoUndef<T> = { [K in keyof T]?: Exclude<T[K], undefined> };
 function mergeWithoutUndef<T extends object>(base: T, patch: PartialNoUndef<T>): T {
   const next: any = { ...base }; for (const k in patch) { const v = (patch as any)[k]; if (v !== undefined) next[k] = v; } return next as T;
@@ -14,11 +22,11 @@ type BuilderState = {
   teamId: ID | null;
   name: string;
   magic_item_id: ID | null;
-  slots: UserMonsterCreate[]; // length 6
+  slots: (UserMonsterCreate & { id?: ID })[]; // length 6
 
   setName: (v: string) => void;
   setMagicItem: (id: ID | null) => void;
-  setSlot: (idx: number, patch: PartialNoUndef<UserMonsterCreate>) => void;
+  setSlot: (idx: number, patch: PartialNoUndef<UserMonsterCreate & { id?: ID }>) => void;
 
   toPayload: () => TeamCreate;                    // throws if magic_item_id null
   toUpdatePayload: () => TeamUpdate | null;       // when teamId is known
@@ -43,14 +51,18 @@ export const useBuilderStore = create<BuilderState>((set, get) => ({
   setSlot: (idx, patch) => set((s) => {
     const slots = s.slots.slice();
     const current = slots[idx] ?? emptySlot();
-    slots[idx] = mergeWithoutUndef<UserMonsterCreate>(current, patch);
+    slots[idx] = mergeWithoutUndef<typeof current>(current, patch);
     return { slots };
   }),
 
   toPayload: () => {
     const s = get();
     if (!s.magic_item_id) throw new Error("Pick a magic item before saving.");
-    return { name: s.name, magic_item_id: s.magic_item_id, user_monsters: s.slots };
+    return {
+      name: s.name,
+      magic_item_id: s.magic_item_id,
+      user_monsters: s.slots.map(({ id: _omit, ...um }) => um),
+    };
   },
 
   toUpdatePayload: () => {
@@ -59,8 +71,8 @@ export const useBuilderStore = create<BuilderState>((set, get) => ({
     return {
       name: s.name,
       magic_item_id: s.magic_item_id,
-      user_monsters: s.slots.map((um, i) => ({
-        id: s.teamId ? (get().analysis?.team?.user_monsters?.[i]?.id ?? undefined) : undefined,
+      user_monsters: s.slots.map((um) => ({
+        id: um.id,
         monster_id: um.monster_id,
         personality_id: um.personality_id,
         legacy_type_id: um.legacy_type_id,
@@ -71,7 +83,8 @@ export const useBuilderStore = create<BuilderState>((set, get) => ({
   },
 
   loadFromTeam: (team) => set(() => {
-    const slots = (team.user_monsters ?? []).slice(0, 6).map((um) => ({
+    const slots: (UserMonsterCreate & { id?: ID })[] = (team.user_monsters ?? []).slice(0, 6).map((um): (UserMonsterCreate & { id?: ID }) => ({
+      id: um.id,
       monster_id: um.monster.id,
       personality_id: um.personality.id,
       legacy_type_id: um.legacy_type.id,

@@ -8,14 +8,16 @@ export interface Named {
   localized?: LocalizedName;
 }
 
-/** Frontend-wide MoveCategory.
- * Backend may use PHY_ATTACK / MAG_ATTACK; we widen to cover both. */
+/* Frontend-wide MoveCategory. */
 export type MoveCategory = "ATTACK" | "DEFENSE" | "STATUS";
 export type MoveCategoryWide = MoveCategory | "PHY_ATTACK" | "MAG_ATTACK";
 
-/** Preferred attack style (backend enum).
- * Keep wide to avoid drift between FE/BE. */
+/* Preferred attack style (backend enum). */
 export type AttackStyle = "Physical" | "Magical" | "Both" | string;
+
+/* Stats keys UI uses everywhere */
+export const STAT_KEYS = ["hp","phy_atk","mag_atk","phy_def","mag_def","spd"] as const;
+export type StatKey = typeof STAT_KEYS[number];
 
 /* ---------- core domain objects (localized via Named) ---------- */
 
@@ -23,7 +25,6 @@ export interface TypeOut extends Named { id: ID; }
 
 export interface TraitOut extends Named {
   id: ID;
-  /** present in backend; keep optional for compatibility with older data */
   description?: string;
 }
 
@@ -67,6 +68,23 @@ export interface MonsterLiteOut extends Named {
   leader_potential?: boolean;
   is_leader_form?: boolean;
   preferred_attack_style?: AttackStyle;
+}
+
+export interface MonsterOut {
+  id: number;
+  name: string;
+  localized?: Record<string, unknown>;
+
+  base_hp: number;
+  base_phy_atk: number;
+  base_mag_atk: number;
+  base_phy_def: number;
+  base_mag_def: number;
+  base_spd: number;
+
+  // Optional fields the detail page may touch
+  move_pool?: Array<number | { id: number } | { move_id: number }>;
+  legacy_moves?: Array<number | { id: number } | { move_id: number }>;
 }
 
 export interface MagicItemOut extends Named {

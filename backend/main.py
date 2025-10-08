@@ -422,7 +422,7 @@ def generate_recommendations(per_monster_analysis, type_coverage, magic_item_eva
 def read_root():
     return {"message": "Welcome to Roco Team Builder!"}
 
-@app.get("/monsters/", response_model=List[schemas.MonsterLiteOut])
+@app.get("/monsters", response_model=List[schemas.MonsterLiteOut])
 def get_monsters(
     db: Session = Depends(get_db),
     name: Optional[str] = Query(None),
@@ -488,16 +488,18 @@ def get_monster_detail(monster_id: int, db: Session = Depends(get_db)):
         joinedload(models.Monster.sub_type),
         joinedload(models.Monster.trait),
         joinedload(models.Monster.species),
-        joinedload(models.Monster.move_pool).joinedload(models.Move.move_type)
+        joinedload(models.Monster.move_pool).joinedload(models.Move.move_type),
+        joinedload(models.Monster.legacy_moves)
     ).filter(models.Monster.id == monster_id).first()
     if not monster:
         raise HTTPException(status_code=404, detail="Monster not found")
     return monster
 
 
-@app.get("/moves/", response_model=List[schemas.MoveLiteOut])
+@app.get("/moves", response_model=List[schemas.MoveOut])
 def get_moves(
     db: Session = Depends(get_db),
+    ids: Optional[str] = Query(None),
     name: Optional[str] = Query(None),
     move_type_id: Optional[int] = Query(None),
     move_category: Optional[schemas.MoveCategory] = Query(None),
@@ -509,6 +511,12 @@ def get_moves(
     query = db.query(models.Move).options(
         joinedload(models.Move.move_type)
     )
+    # allow fetching by a specific set of ids (comma-separated)
+    if ids:
+        id_list = [int(x) for x in ids.split(",") if x.strip().isdigit()]
+        if id_list:
+            query = query.filter(models.Move.id.in_(id_list))
+            return query.all()
     if name:
         query = query.filter(models.Move.name.ilike(f"%{name}%"))
     if move_type_id:
@@ -531,37 +539,37 @@ def get_move_detail(move_id: int, db: Session = Depends(get_db)):
     return move
 
 
-@app.get("/traits/", response_model=List[schemas.TraitOut])
+@app.get("/traits", response_model=List[schemas.TraitOut])
 def get_traits(db: Session = Depends(get_db)):
     return db.query(models.Trait).all()
 
 
-@app.get("/types/", response_model=List[schemas.TypeOut])
+@app.get("/types", response_model=List[schemas.TypeOut])
 def get_types(db: Session = Depends(get_db)):
     return db.query(models.Type).all()
 
 
-@app.get("/personalities/", response_model=List[schemas.PersonalityOut])
+@app.get("/personalities", response_model=List[schemas.PersonalityOut])
 def get_personalities(db: Session = Depends(get_db)):
     return db.query(models.Personality).all()
 
 
-@app.get("/magic_items/", response_model=List[schemas.MagicItemOut])
+@app.get("/magic_items", response_model=List[schemas.MagicItemOut])
 def get_magic_items(db: Session = Depends(get_db)):
     return db.query(models.MagicItem).all()
 
 
-@app.get("/game_terms/", response_model=List[schemas.GameTermOut])
+@app.get("/game_terms", response_model=List[schemas.GameTermOut])
 def get_game_terms(db: Session = Depends(get_db)):
     return db.query(models.GameTerm).all()
 
 
-@app.get("/species/", response_model=List[schemas.MonsterSpeciesOut])
+@app.get("/species", response_model=List[schemas.MonsterSpeciesOut])
 def get_species(db: Session = Depends(get_db)):
     return db.query(models.MonsterSpecies).all()
 
 
-@app.get("/teams/", response_model=List[schemas.TeamOut])
+@app.get("/teams", response_model=List[schemas.TeamOut])
 def list_teams(db: Session = Depends(get_db)):
     return (
         db.query(models.Team)
@@ -605,7 +613,7 @@ def get_team(team_id: int, db: Session = Depends(get_db)):
 
 # -------- POST Endpoints --------
 
-@app.post("/teams/", response_model=schemas.TeamOut)
+@app.post("/teams", response_model=schemas.TeamOut)
 def create_team(team: schemas.TeamCreate, db: Session = Depends(get_db)):
     # Persist the team and its monsters to DB
     db_team = models.Team(name=team.name, magic_item_id=team.magic_item_id)
@@ -646,7 +654,7 @@ def create_team(team: schemas.TeamCreate, db: Session = Depends(get_db)):
 
 # -------- Analyze Team (Inline) --------
 
-@app.post("/team/analyze/", response_model=schemas.TeamAnalysisOut)
+@app.post("/team/analyze", response_model=schemas.TeamAnalysisOut)
 async def analyze_team(req: schemas.TeamAnalyzeInlineRequest, db: Session = Depends(get_db)):
     start_time = time.time()
     
@@ -842,7 +850,7 @@ async def analyze_team(req: schemas.TeamAnalyzeInlineRequest, db: Session = Depe
 
 # -------- Analyze Team by ID --------
 
-@app.post("/team/analyze_by_id/", response_model=schemas.TeamAnalysisOut)
+@app.post("/team/analyze_by_id", response_model=schemas.TeamAnalysisOut)
 async def analyze_team_by_id(req: schemas.TeamAnalyzeByIdRequest, db: Session = Depends(get_db)):
     # Load the Team, its UserMonsters, Talents, etc. from the DB
     db_team = db.query(models.Team).filter(models.Team.id == req.team_id).first()

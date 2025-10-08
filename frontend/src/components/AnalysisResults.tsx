@@ -36,17 +36,9 @@ function StatRow({ label, value, max=700 }: { label: string; value: number; max?
   );
 }
 
-/* ---------------- helpers ---------------- */
-
-function typeIconUrl(name: string | undefined, size: 30 | 45 | 60 = 30) {
-  if (!name) return null;
-  const slug = name.toLowerCase().replace(/\s+/g, "-");
-  return `/type-icons/${size}/${slug}.png`;
-}
-
-function useTypeIndex() {
+function useTypesById() {
   const q = useQuery({
-    queryKey: ["types-all"],
+    queryKey: ["types-index"],
     queryFn: () => endpoints.types().then(r => r.data as TypeOut[]),
   });
   const byId = useMemo(() => {
@@ -55,6 +47,14 @@ function useTypeIndex() {
     return m;
   }, [q.data]);
   return { byId, isLoading: q.isLoading };
+}
+
+/* ---------------- helpers ---------------- */
+
+function typeIconUrl(name: string | undefined, size: 30 | 45 | 60 = 30) {
+  if (!name) return null;
+  const slug = name.toLowerCase().replace(/\s+/g, "-");
+  return `/type-icons/${size}/${slug}.png`;
 }
 
 function synergyMoveNames(ma: MonsterAnalysisOut, lang: "en"|"zh") {
@@ -215,7 +215,7 @@ function byCategory(items: RecItem[]) {
 
 export default function AnalysisResults({ analysis }: { analysis: TeamAnalysisOut }) {
   const { lang, t } = useI18n();
-  const { byId } = useTypeIndex();
+  const { byId } = useTypesById();
 
   // map valid target ids (these are user_monster ids in your response)
   const vtNames = (analysis.magic_item_eval?.valid_targets ?? [])
