@@ -63,7 +63,7 @@ function FilterButton({
     <button
       type="button"
       onClick={onClick}
-      className={`h-8 px-2 rounded border text-sm cursor-pointer
+      className={`inline-flex h-8 items-center px-2 rounded border text-sm cursor-pointer
                   ${active ? "bg-zinc-200" : "hover:bg-zinc-50"}
                   ${className}`}
     >
@@ -229,9 +229,9 @@ function MonstersTab() {
                 active={selectedTypes.includes(tp.id)}
                 onClick={() => toggleType(tp.id)}
               >
-                <span className="inline-flex items-center gap-1">
+                <span className="inline-flex items-center gap-0.5">
                   {typeIconUrl(tp.name) ? (
-                    <img src={typeIconUrl(tp.name)!} alt="" width={16} height={16} />
+                    <img src={typeIconUrl(tp.name)!} alt="" width={20} height={20} />
                   ) : null}
                   {pickName(tp as any, lang) || tp.name}
                 </span>
@@ -289,7 +289,7 @@ function MonstersTab() {
                       {[m.main_type, m.sub_type].filter(Boolean).map((tp) => (
                         <Pill key={(tp as TypeOut).id}>
                           {typeIconUrl((tp as TypeOut).name) ? (
-                            <img src={typeIconUrl((tp as TypeOut).name)!} alt="" width={14} height={14} />
+                            <img src={typeIconUrl((tp as TypeOut).name)!} alt="" width={16} height={16} />
                           ) : null}
                           {pickName(tp as any, lang)}
                         </Pill>
@@ -455,8 +455,8 @@ function MovesTab() {
                   active={typeId === tp.id}
                   onClick={() => setTypeId((prev) => (prev === tp.id ? null : tp.id))}
                 >
-                  <span className="inline-flex items-center gap-1">
-                    {typeIconUrl(tp.name) ? <img src={typeIconUrl(tp.name)!} alt="" width={16} height={16} /> : null}
+                  <span className="inline-flex items-center gap-0.5">
+                    {typeIconUrl(tp.name) ? <img src={typeIconUrl(tp.name)!} alt="" width={20} height={20} /> : null}
                     {pickName(tp as any, lang) || tp.name}
                   </span>
                 </FilterButton>
@@ -532,9 +532,9 @@ function MovesTab() {
                         <div
                           className="
                             grid
-                            sm:grid-cols-[80px_30px_minmax(0,1fr)_40px_8px_50px]
-                            md:grid-cols-[80px_30px_minmax(0,1fr)_40px_16px_50px]
-                            lg:grid-cols-[80px_30px_minmax(0,1fr)_40px_24px_50px]
+                            sm:grid-cols-[80px_minmax(0,1fr)_40px_8px_50px]
+                            md:grid-cols-[80px_minmax(0,1fr)_40px_16px_50px]
+                            lg:grid-cols-[80px_minmax(0,1fr)_40px_24px_50px]
                             grid-rows-[auto_auto_auto]
                             items-start
                             gap-2
@@ -550,42 +550,51 @@ function MovesTab() {
                               height={80}
                               className="h-full w-full object-contain"
                               loading="lazy"
-                              onError={(e) => {
-                                (e.currentTarget as HTMLImageElement).style.display = "none";
-                              }}
+                              onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
                             />
                           </div>
 
-                          {/* Type icon (col 2) */}
-                          <div className="col-[2] self-center flex items-center justify-center">
-                            {typeImg ? <img src={typeImg} alt="" aria-hidden="true" width={30} height={30} /> : null}
+                          {/* Type icon + Move name (col 2) */}
+                          <div className="col-[2] self-center min-w-0">
+                            <div className="flex items-center gap-1 min-w-0">
+                              {typeImg ? (
+                                <img
+                                  src={typeImg}
+                                  alt=""
+                                  aria-hidden="true"
+                                  width={30}
+                                  height={30}
+                                  className="block shrink-0"
+                                />
+                              ) : null}
+                              <div className="font-medium whitespace-normal break-words sm:break-keep">
+                                {cname}
+                              </div>
+                            </div>
                           </div>
 
-                          {/* Move name (col 3) */}
-                          <div className="col-[3] self-center min-w-0">
-                            <div className="font-medium whitespace-normal break-words sm:break-keep">{cname}</div>
-                          </div>
-
-                          {/* Energy icon + value (col 4) */}
-                          <div className="col-[4] self-center flex items-center justify-end gap-[6px]">
+                          {/* Energy icon + value (col 3) */}
+                          <div className="col-[3] self-center flex items-center justify-end gap-[6px]">
                             <img src={energyImg} alt="" aria-hidden="true" width={15} height={15} />
                             <span className="w-8 text-xs text-left tabular-nums">{energy ?? "—"}</span>
                           </div>
 
-                          {/* (col 5 is the spacer) */}
+                          {/* (col 4 is the spacer) */}
 
-                          {/* Category icon + power/label (col 6) */}
-                          <div className="col-[6] self-center flex items-center justify-end gap-x-[6px]">
+                          {/* Category icon + power/label (col 5) */}
+                          <div className="col-[5] self-center flex items-center justify-end gap-x-[6px]">
                             <img src={catImg} alt="" aria-hidden="true" width={15} height={15} />
                             <span className="w-10 text-xs text-left tabular-nums">
-                              {isDef ? t("dex.defense") : isSta ? t("dex.status") : power ?? "—"}
+                              {isDef ? t("dex.defense") : isSta ? t("dex.status") : (power ?? "—")}
                             </span>
                           </div>
 
-                          {/* Description (spans rows 2–3 and cols 2–5) */}
-                          <div className="row-[2/4] col-[2/7] text-sm text-zinc-600 pl-1">{desc}</div>
+                          {/* Description (rows 2–3, cols 2–5) */}
+                          <div className="row-[2/4] col-[2/6] text-sm text-zinc-600 pl-1">
+                            {desc}
+                          </div>
 
-                          {/* Move Stone badge (bottom-left, under image) */}
+                          {/* Move Stone badge */}
                           <div className="row-[3] col-[1] flex items-center justify-center">
                             {m.is_move_stone ? (
                               <span className="inline-flex items-center gap-0.5 rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[10px] font-medium text-amber-700 shadow-[0_0_0_1px_rgba(245,158,11,0.2)]">

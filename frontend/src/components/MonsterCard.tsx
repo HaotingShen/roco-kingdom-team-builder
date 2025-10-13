@@ -14,29 +14,27 @@ function slugifyTypeName(name?: string | null): string | null {
   if (!name) return null;
   return name.toLowerCase().replace(/\s+/g, "-");
 }
-function typeIconUrl(type: any, size: 30 | 45 | 60 = 30): string | null {
+function typeIconUrl(type: any, size: 30 | 45 | 60 = 60): string | null {
   const slug = slugifyTypeName(typeNameRaw(type));
   return slug ? `/type-icons/${size}/${slug}.png` : null;
 }
 
 function TypeBadge({
   type,
-  size = 30,
   label,
 }: {
   type: any;
-  size?: 30 | 45 | 60;
   label: string;
 }) {
-  const src = typeIconUrl(type, size);
+  const src = typeIconUrl(type);
   return (
     <span className="inline-flex items-center gap-1 rounded bg-zinc-100 px-2 py-0.5 text-xs">
       {src ? (
         <img
           src={src}
           alt=""
-          width={size / 2}
-          height={size / 2}
+          width={18}
+          height={18}
           className="inline-block"
           onError={(e) =>
             ((e.currentTarget as HTMLImageElement).style.display = "none")
@@ -79,7 +77,6 @@ type Props = {
   moveIds?: Array<number | 0 | undefined>;
   onClick?: () => void;
   imgSize?: 180 | 270 | 360;
-  typeIconSize?: 30 | 45 | 60;
 };
 
 export default function MonsterCard({
@@ -88,8 +85,7 @@ export default function MonsterCard({
   legacyTypeId,
   moveIds = [],
   onClick,
-  imgSize = 180,
-  typeIconSize = 30,
+  imgSize = 360,
 }: Props) {
   const { lang, t } = useI18n();
 
@@ -192,14 +188,12 @@ export default function MonsterCard({
               {monster?.main_type && (
                 <TypeBadge
                   type={monster.main_type}
-                  size={typeIconSize}
                   label={mainTypeLabel}
                 />
               )}
               {monster?.sub_type && (
                 <TypeBadge
                   type={monster.sub_type}
-                  size={typeIconSize}
                   label={subTypeLabel}
                 />
               )}
@@ -218,12 +212,12 @@ export default function MonsterCard({
 
               <span className="inline-flex items-center gap-1 rounded bg-zinc-50 px-2 py-0.5 text-[11px] text-zinc-600">
                 <span className="whitespace-nowrap">{t("labels.legacy")}:</span>
-                {legacyObj && typeIconUrl(legacyObj, typeIconSize) ? (
+                {legacyObj && typeIconUrl(legacyObj) ? (
                   <img
-                    src={typeIconUrl(legacyObj, typeIconSize)!}
+                    src={typeIconUrl(legacyObj)!}
                     alt=""
-                    width={typeIconSize / 2}
-                    height={typeIconSize / 2}
+                    width={16}
+                    height={16}
                     onError={(e) =>
                       ((e.currentTarget as HTMLImageElement).style.display =
                         "none")
