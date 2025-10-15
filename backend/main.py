@@ -435,6 +435,7 @@ def get_monsters(
     query = db.query(models.Monster).options(
         joinedload(models.Monster.main_type),
         joinedload(models.Monster.sub_type),
+        joinedload(models.Monster.default_legacy_type),
     )
 
     if name:
@@ -468,6 +469,7 @@ def get_monsters(
         query = query.filter(or_(
             models.Monster.main_type_id == type_id,
             models.Monster.sub_type_id == type_id,
+            models.Monster.default_legacy_type_id == type_id,
         ))
 
     if trait_id:
@@ -486,6 +488,7 @@ def get_monster_detail(monster_id: int, db: Session = Depends(get_db)):
     monster = db.query(models.Monster).options(
         joinedload(models.Monster.main_type),
         joinedload(models.Monster.sub_type),
+        joinedload(models.Monster.default_legacy_type),
         joinedload(models.Monster.trait),
         joinedload(models.Monster.species),
         joinedload(models.Monster.move_pool).joinedload(models.Move.move_type),

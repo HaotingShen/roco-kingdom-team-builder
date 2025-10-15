@@ -238,63 +238,76 @@ function MovesList({ list }: { list: any[] }) {
 
         return (
           <div key={m.id} className="rounded border bg-white p-3">
-            <div className="
-              grid
-              sm:grid-cols-[80px_30px_minmax(0,1fr)_40px_8px_50px]
-              md:grid-cols-[80px_30px_minmax(0,1fr)_40px_16px_50px]
-              lg:grid-cols-[80px_30px_minmax(0,1fr)_40px_24px_50px]
-              grid-rows-[auto_auto_auto]
-              items-start gap-2 text-sm
-            ">
-              {/* Image (rows 1–2) */}
+            <div
+              className="
+                grid
+                sm:grid-cols-[80px_minmax(0,1fr)_40px_8px_50px]
+                md:grid-cols-[80px_minmax(0,1fr)_40px_16px_50px]
+                lg:grid-cols-[80px_minmax(0,1fr)_40px_24px_50px]
+                grid-rows-[auto_auto_auto]
+                items-start
+                gap-2
+                text-sm
+              "
+            >
+              {/* Image (spans rows 1–2) */}
               <div className="row-[1/3] h-[80px] w-[80px] rounded bg-zinc-100/60 overflow-hidden flex items-center justify-center">
                 <img
                   src={moveImg}
                   alt={cname}
                   width={80}
                   height={80}
-                  loading="lazy"
                   className="h-full w-full object-contain"
-                  onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+                  loading="lazy"
+                  onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
                 />
               </div>
 
-              {/* Type icon */}
-              <div className="col-[2] self-center flex items-center justify-center">
-                {typeImg ? <img src={typeImg} alt="" aria-hidden width={24} height={24} /> : null}
+              {/* Type icon + Move name (col 2) */}
+              <div className="col-[2] self-center min-w-0">
+                <div className="flex items-center gap-1 min-w-0">
+                  {typeImg ? (
+                    <img
+                      src={typeImg}
+                      alt=""
+                      aria-hidden="true"
+                      width={30}
+                      height={30}
+                      className="block shrink-0"
+                    />
+                  ) : null}
+                  <div className="font-medium whitespace-normal break-words sm:break-keep">
+                    {cname}
+                  </div>
+                </div>
               </div>
 
-              {/* Name */}
-              <div className="col-[3] self-center min-w-0">
-                <div className="font-medium truncate" title={cname}>{cname}</div>
-              </div>
-
-              {/* Energy */}
-              <div className="col-[4] self-center flex items-center justify-end gap-[6px]">
-                <img src={energyImg} alt="" aria-hidden width={15} height={15} />
+              {/* Energy icon + value (col 3) */}
+              <div className="col-[3] self-center flex items-center justify-end gap-[6px]">
+                <img src={energyImg} alt="" aria-hidden="true" width={15} height={15} />
                 <span className="w-8 text-xs text-left tabular-nums">{energy ?? "—"}</span>
               </div>
 
-              {/* (col 5 spacer) */}
+              {/* (col 4 is the spacer) */}
 
-              {/* Category + power/label */}
-              <div className="col-[6] self-center flex items-center justify-end gap-[6px]">
-                <img src={catImg} alt="" aria-hidden width={15} height={15} />
+              {/* Category icon + power/label (col 5) */}
+              <div className="col-[5] self-center flex items-center justify-end gap-x-[6px]">
+                <img src={catImg} alt="" aria-hidden="true" width={15} height={15} />
                 <span className="w-10 text-xs text-left tabular-nums">
                   {isDef ? t("dex.defense") : isSta ? t("dex.status") : (power ?? "—")}
                 </span>
               </div>
 
               {/* Description (rows 2–3, cols 2–5) */}
-              <div className="row-[2/4] col-[2/7] text-sm text-zinc-600 pl-1">
+              <div className="row-[2/4] col-[2/6] text-sm text-zinc-600 pl-1">
                 {desc}
               </div>
 
-              {/* Move Stone badge (bottom-left) */}
+              {/* Move Stone badge */}
               <div className="row-[3] col-[1] flex items-center justify-center">
                 {m.is_move_stone ? (
                   <span className="inline-flex items-center gap-0.5 rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[10px] font-medium text-amber-700 shadow-[0_0_0_1px_rgba(245,158,11,0.2)]">
-                    <img alt="" width="13" height="13" src="/decorative-icons/move-stone.png"></img>
+                    <img alt="" width="13" height="13" src="/decorative-icons/move-stone.png" />
                     {t("dex.move_stone")}
                   </span>
                 ) : null}

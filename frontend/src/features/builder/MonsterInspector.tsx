@@ -4,7 +4,7 @@ import { useI18n, pickName } from "@/i18n";
 import MonsterPicker from "./MonsterPicker";
 import { useBuilderStore } from "./builderStore";
 import type { ID, MoveOut, PersonalityOut, TypeOut, UserMonsterCreate } from "@/types";
-import { useMemo, useEffect, useRef, useState } from "react";
+import { useMemo, useEffect } from "react";
 import CustomSelect from "@/components/CustomSelect";
 
 // ---------- helpers ----------
@@ -43,7 +43,6 @@ function getEffects(p: PersonalityOut, t: (k: string) => string) {
   );
 }
 
-// Row text on the right, e.g. [Mag Atk ↑, Phy Def ↓]
 function formatRowEffects(p: PersonalityOut, t: (k: string) => string) {
   const ups = getEffects(p, t).filter(([, v]) => v > 0).map(([n]) => `${n} ↑`);
   const downs = getEffects(p, t).filter(([, v]) => v < 0).map(([n]) => `${n} ↓`);
@@ -51,18 +50,15 @@ function formatRowEffects(p: PersonalityOut, t: (k: string) => string) {
   return items.length ? `[${items.join(", ")}]` : "";
 }
 
-// +20% when value is 0.2, -10% when value is -0.1 (also works if server sends 20 / -10)
 function pct(v: number) {
   const raw = Math.abs(v) <= 1 ? v * 100 : v;
   const rounded = Math.round(Math.abs(raw) * 10) / 10;
   return `${v > 0 ? "+" : "-"}${rounded}%`;
 }
 
-// Sentence under the control, e.g. "Mag Atk +20%, Phy Def -10%"
 function formatSentenceEffects(p: PersonalityOut, t: (k: string) => string) {
   const items = getEffects(p, t).filter(([, v]) => v !== 0);
   if (!items.length) return "";
-  // positives first, then negatives (just a nicety)
   const ordered = [
     ...items.filter(([, v]) => v > 0),
     ...items.filter(([, v]) => v < 0),
@@ -112,10 +108,8 @@ function extractLegacyInfo(detail: any): {
 // Resolve legacy moves from IDs
 function useLegacyMap(detail: any) {
   // Build pairs of { type_id, move_id } from either shape
-  const pairs: Array<{ type_id: number; move_id: number }> = useMemo(() => {
-    const out: Array<{ type_id: number; move_id: number }> = [];
-    if (!detail) return out;
-
+  const outPairs: Array<{ type_id: number; move_id: number }> = [];
+  if (detail) {
     if (detail.legacy_moves_by_type) {
       for (const [k, v] of Object.entries(detail.legacy_moves_by_type)) {
         const typeId = Number(k);
@@ -127,30 +121,21 @@ function useLegacyMap(detail: any) {
             : typeof (v as any)?.move_id === "number"
             ? (v as any).move_id
             : 0;
-        if (typeId && moveId) out.push({ type_id: typeId, move_id: moveId });
+        if (typeId && moveId) outPairs.push({ type_id: typeId, move_id: moveId });
       }
     } else if (Array.isArray(detail?.legacy_moves)) {
       for (const row of detail.legacy_moves) {
         const typeId = Number(row?.type_id ?? row?.type?.id ?? 0);
         const moveId = Number(row?.move_id ?? row?.move?.id ?? 0);
-        if (typeId && moveId) out.push({ type_id: typeId, move_id: moveId });
+        if (typeId && moveId) outPairs.push({ type_id: typeId, move_id: moveId });
       }
     }
-    return out;
-  }, [detail]);
+  }
 
-  // Stable ids and map for re-association
-  const moveIds = useMemo(
-    () => Array.from(new Set(pairs.map((x) => x.move_id))),
-    [pairs]
-  );
-  const moveIdToTypeId = useMemo(() => {
-    const m = new Map<number, number>();
-    pairs.forEach(({ type_id, move_id }) => m.set(move_id, type_id));
-    return m;
-  }, [pairs]);
+  const moveIds = Array.from(new Set(outPairs.map((x) => x.move_id)));
+  const moveIdToTypeId = new Map<number, number>();
+  outPairs.forEach(({ type_id, move_id }) => moveIdToTypeId.set(move_id, type_id));
 
-  // Always invoked (even when moveIds is empty)
   const results = useQueries({
     queries: moveIds.map((id) => ({
       queryKey: ["move", id],
@@ -161,20 +146,27 @@ function useLegacyMap(detail: any) {
 
   const loading = results.some((r) => r.isLoading);
 
-  // Build the final map type_id -> MoveOut
-  const legacyMap = useMemo(() => {
-    const m = new Map<number, MoveOut>();
-    results.forEach((r, idx) => {
-      const move = r.data;
-      if (!move) return;
-      const moveId = moveIds[idx]!;
-      const typeId = moveIdToTypeId.get(moveId);
-      if (typeof typeId === "number") m.set(typeId, move);
-    });
-    return m;
-  }, [results, moveIds, moveIdToTypeId]);
+  const legacyMap = new Map<number, MoveOut>();
+  results.forEach((r, idx) => {
+    const move = r.data;
+    if (!move) return;
+    const moveId = moveIds[idx]!;
+    const typeId = moveIdToTypeId.get(moveId);
+    if (typeof typeId === "number") legacyMap.set(typeId, move);
+  });
 
   return { legacyMap, loading };
+}
+
+// Type icon url helpers (for types & moves)
+function slugifyTypeName(name?: string | null): string | null {
+  if (!name) return null;
+  return name.toLowerCase().replace(/\s+/g, "-");
+}
+function typeIconUrl(type: any, size: 30 | 45 | 60 = 30): string | null {
+  const name = typeof type === "string" ? type : type?.name;
+  const slug = slugifyTypeName(name);
+  return slug ? `/type-icons/${size}/${slug}.png` : null;
 }
 
 // Type-safe key map for moveN fields
@@ -305,6 +297,8 @@ function MovesSection({
           label: pickName(c.move as any, lang) || c.move.name,
           rightLabel: c.isLegacy ? `[${t("labels.legacy")}]` : undefined,
           disabled: !canPick(n as 1 | 2 | 3 | 4, c.move, c.isLegacy),
+          // shows move type icon (falls back if none)
+          leftIconUrl: c.move?.move_type ? typeIconUrl(c.move.move_type, 30) : null,
         }));
 
         return (
@@ -314,7 +308,7 @@ function MovesSection({
             <div className="flex-1 min-w-0">
               <CustomSelect
                 value={currentId || null}
-                options={opts}
+                options={opts as any}
                 placeholder="—"
                 onChange={(id) => onPick(n as 1|2|3|4, String(id || ""))}
                 containerClassName="flex-1 min-w-0"
@@ -359,6 +353,7 @@ function PersonalitySelect({
   );
 }
 
+/* PersonalitySection (used by the Inspector) */
 function PersonalitySection({
   slot,
   onChange,
@@ -366,7 +361,7 @@ function PersonalitySection({
   slot: UserMonsterCreate;
   onChange: (patch: Partial<UserMonsterCreate>) => void;
 }) {
-  const { lang, t } = useI18n();
+  const { t } = useI18n();
   const { data } = useQuery({
     queryKey: ["personalities"],
     queryFn: () =>
@@ -400,10 +395,13 @@ function LegacyTypeSection({
   slot,
   onChange,
   onLegacyChange,
+  disabled,
 }: {
   slot: UserMonsterCreate;
   onChange: (patch: Partial<UserMonsterCreate>) => void;
   onLegacyChange?: (newTypeId: ID) => void;
+  /** when true, lock the selector */
+  disabled?: boolean;
 }) {
   const { lang, t } = useI18n();
   const { data } = useQuery({
@@ -414,6 +412,7 @@ function LegacyTypeSection({
   const opts = (data ?? []).map(type => ({
     value: type.id,
     label: pickName(type as any, lang),
+    leftIconUrl: typeIconUrl(type, 30), // type icon
   }));
 
   return (
@@ -422,13 +421,14 @@ function LegacyTypeSection({
 
       <CustomSelect
         value={slot.legacy_type_id || null}
-        options={opts}
+        options={opts as any}
         placeholder={t("common.select")}
         onChange={(v) => {
           const id = (Number(v || 0) as ID);
           onChange({ legacy_type_id: id });
           onLegacyChange?.(id);
         }}
+        disabled={!!disabled}
       />
     </div>
   );
@@ -515,15 +515,36 @@ export default function MonsterInspector({ activeIdx }: { activeIdx: number }) {
 
   const { lang, t } = useI18n();
 
-  // Cast keeps TS happy with our store's stricter param type
   const onChange = (patch: Partial<UserMonsterCreate>) =>
     setSlot(activeIdx, patch as any);
 
-  // Build a set/map we can use for normalization
+  // Build a set/map for normalization
   const { byType: legacyByType, idSet: legacyIdSet } = useMemo(
     () => extractLegacyInfo(detail),
     [detail]
   );
+  
+  const isLeaderForm = detail?.is_leader_form === true;
+  const typesQ = useQuery({
+    queryKey: ["types"],
+    queryFn: () => endpoints.types().then((r) => r.data as TypeOut[]),
+  });
+
+  const leaderTypeId: ID | null = useMemo(() => {
+    if (!isLeaderForm) return null;
+    const arr = typesQ.data ?? [];
+    const found =
+      arr.find((t) => t.name === "Leader") ||
+      arr.find((t) => (t as any)?.localized?.zh?.name === "首领");
+    return (found?.id as ID) ?? null;
+  }, [isLeaderForm, typesQ.data]);
+
+  useEffect(() => {
+    if (isLeaderForm && leaderTypeId && slot?.legacy_type_id !== leaderTypeId) {
+      onChange({ legacy_type_id: leaderTypeId });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLeaderForm, leaderTypeId]); // ignore slot to avoid loops
 
   const handleLegacyChange = (newTypeId: ID) => {
     const allowedMoveId = legacyByType.get(Number(newTypeId));
@@ -580,7 +601,12 @@ export default function MonsterInspector({ activeIdx }: { activeIdx: number }) {
 
           <PersonalitySection slot={slot} onChange={onChange} />
 
-          <LegacyTypeSection slot={slot} onChange={onChange} onLegacyChange={handleLegacyChange}/>
+          <LegacyTypeSection
+            slot={slot}
+            onChange={onChange}
+            onLegacyChange={handleLegacyChange}
+            disabled={isLeaderForm}
+          />
 
           {/* Note line: "Legacy Type grants ..." */}
           {slot.legacy_type_id ? (

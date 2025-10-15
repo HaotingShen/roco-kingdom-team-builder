@@ -84,6 +84,7 @@ class MonsterLiteOut(BaseModel):
     form: str
     main_type: TypeOut
     sub_type: Optional[TypeOut] = None
+    default_legacy_type: Optional[TypeOut] = None
     leader_potential: bool
     is_leader_form: bool
     preferred_attack_style: AttackStyle

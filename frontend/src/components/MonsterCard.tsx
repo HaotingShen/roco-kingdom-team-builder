@@ -1,6 +1,6 @@
 import { useQuery, useQueries } from "@tanstack/react-query";
 import { endpoints } from "@/lib/api";
-import type { MonsterLiteOut, PersonalityOut, TypeOut, MoveOut } from "@/types";
+import type { MonsterLiteOut, PersonalityOut, TypeOut, MoveOut, TalentUpsert } from "@/types";
 import { pickName, pickFormName, useI18n } from "@/i18n";
 import { useMemo } from "react";
 import { monsterImageUrlByCN, monsterImageUrlByEN, monsterImageUrlById } from "@/lib/images";
@@ -28,13 +28,13 @@ function TypeBadge({
 }) {
   const src = typeIconUrl(type);
   return (
-    <span className="inline-flex items-center gap-1 rounded bg-zinc-100 px-2 py-0.5 text-xs">
+    <span className="inline-flex items-center gap-1 rounded bg-zinc-100 px-2 py-1 text-xs">
       {src ? (
         <img
           src={src}
           alt=""
-          width={18}
-          height={18}
+          width={20}
+          height={20}
           className="inline-block"
           onError={(e) =>
             ((e.currentTarget as HTMLImageElement).style.display = "none")
@@ -75,6 +75,7 @@ type Props = {
   personalityId?: number | null;
   legacyTypeId?: number | null;
   moveIds?: Array<number | 0 | undefined>;
+  talent?: TalentUpsert | null;
   onClick?: () => void;
   imgSize?: 180 | 270 | 360;
 };
@@ -84,6 +85,7 @@ export default function MonsterCard({
   personalityId,
   legacyTypeId,
   moveIds = [],
+  talent = null,
   onClick,
   imgSize = 360,
 }: Props) {
@@ -134,6 +136,24 @@ export default function MonsterCard({
   const subTypeLabel = monster?.sub_type
     ? pickName(monster.sub_type as any, lang)
     : "";
+
+  const talentChips = useMemo(() => {
+    if (!talent) return [];
+    const labels: Record<keyof TalentUpsert, string> = {
+      hp_boost: t("labels.hp"),
+      phy_atk_boost: t("labels.phyAtk"),
+      mag_atk_boost: t("labels.magAtk"),
+      phy_def_boost: t("labels.phyDef"),
+      mag_def_boost: t("labels.magDef"),
+      spd_boost: t("labels.spd"),
+    };
+    const order: (keyof TalentUpsert)[] = [
+      "hp_boost","phy_atk_boost","mag_atk_boost","phy_def_boost","mag_def_boost","spd_boost"
+    ];
+    return order
+      .filter(k => (talent[k] ?? 0) > 0)
+      .map(k => ({ key: k, label: labels[k], val: talent[k] as number }));
+  }, [talent, t]);
 
   return (
     <button
@@ -201,7 +221,7 @@ export default function MonsterCard({
 
             {/* personality + legacy */}
             <div className="mt-2 flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-1 rounded bg-zinc-50 px-2 py-0.5 text-[11px] text-zinc-600">
+              <span className="inline-flex items-center gap-1 rounded bg-zinc-50 px-2 py-1 text-[11px] text-zinc-600">
                 <span className="whitespace-nowrap">
                   {t("builder.personality")}:
                 </span>
@@ -210,25 +230,41 @@ export default function MonsterCard({
                 </span>
               </span>
 
-              <span className="inline-flex items-center gap-1 rounded bg-zinc-50 px-2 py-0.5 text-[11px] text-zinc-600">
+              <span className="inline-flex items-center gap-1 rounded bg-zinc-50 px-2 py-1 text-[11px] text-zinc-600">
                 <span className="whitespace-nowrap">{t("labels.legacy")}:</span>
-                {legacyObj && typeIconUrl(legacyObj) ? (
-                  <img
-                    src={typeIconUrl(legacyObj)!}
-                    alt=""
-                    width={16}
-                    height={16}
-                    onError={(e) =>
-                      ((e.currentTarget as HTMLImageElement).style.display =
-                        "none")
-                    }
-                  />
-                ) : null}
-                <span className={legacyName ? "text-zinc-700" : "text-zinc-500"}>
-                  {legacyName || "—"}
+                <span className="inline-flex items-center gap-0.5">
+                  {legacyObj && typeIconUrl(legacyObj) ? (
+                    <img
+                      src={typeIconUrl(legacyObj)!}
+                      alt=""
+                      width={18}
+                      height={18}
+                      onError={(e) =>
+                        ((e.currentTarget as HTMLImageElement).style.display =
+                          "none")
+                      }
+                    />
+                  ) : null}
+                  <span className={legacyName ? "text-zinc-700" : "text-zinc-500"}>
+                    {legacyName || "—"}
+                  </span>
                 </span>
               </span>
             </div>
+
+            {/* NEW: talents as chips (hide zeros) */}
+            {talentChips.length > 0 && (
+              <div className="mt-2 flex flex-wrap gap-1">
+                {talentChips.map(tc => (
+                  <span
+                    key={tc.key}
+                    className="rounded bg-zinc-50 px-2 py-1 text-[11px] text-zinc-700"
+                  >
+                    {tc.label} +{tc.val}
+                  </span>
+                ))}
+              </div>
+            )}
 
             {/* moves as chips */}
             {moveIds.length > 0 && (
@@ -238,7 +274,7 @@ export default function MonsterCard({
                     return (
                       <span
                         key={`empty-${idx}`}
-                        className="rounded bg-zinc-50 px-2 py-0.5 text-[11px] text-zinc-500"
+                        className="rounded bg-zinc-50 px-2 py-1 text-[11px] text-zinc-500"
                       >
                         {t("builder.moveN", { n: idx + 1 })}: —
                       </span>
@@ -249,7 +285,7 @@ export default function MonsterCard({
                   return (
                     <span
                       key={`${id}-${idx}`}
-                      className="rounded border bg-white px-2 py-0.5 text-[11px] text-zinc-700"
+                      className="rounded border bg-white px-2 py-1 text-[11px] text-zinc-700"
                       title={name}
                     >
                       {name}

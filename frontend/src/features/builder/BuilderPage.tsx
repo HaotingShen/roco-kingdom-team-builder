@@ -4,10 +4,24 @@ import { useBuilderStore } from "./builderStore";
 import MonsterCard from "@/components/MonsterCard";
 import CustomSelect from "@/components/CustomSelect";
 import AnalysisResults from "@/components/AnalysisResults";
-import type { TypeOut, MagicItemOut, UserMonsterCreate, TeamCreate, TeamAnalysisOut, TeamOut, TeamUpdate } from "@/types";
+import type { MagicItemOut, UserMonsterCreate, TeamCreate, TeamAnalysisOut, TeamOut, TeamUpdate } from "@/types";
 import { useMemo, useState } from "react";
 import MonsterInspector from "./MonsterInspector";
 import { useI18n, pickName } from "@/i18n";
+
+/* --- magic item icon --- */
+function encode(s?: string | null) {
+  return s ? encodeURIComponent(String(s).trim()) : "";
+}
+function magicItemIconUrl(mi?: MagicItemOut | null): string | null {
+  if (!mi) return null;
+  const zh = (mi as any)?.localized?.zh;
+  const cnName = zh && typeof zh.name === "string" ? zh.name : null;
+  if (cnName) return `/magic-items/${encode(cnName)}.png`;
+  // fallback to English name
+  if (mi.name) return `/magic-items/${encode(mi.name)}.png`;
+  return null;
+}
 
 type VKey =
   | "v_pickMonster"
@@ -17,7 +31,6 @@ type VKey =
   | "v_pickTalent"
   | "v_max3";
 
-// helper: count boosted talents
 function boostedCount(t: UserMonsterCreate["talent"]) {
   const vals = [
     t.hp_boost,
@@ -111,9 +124,7 @@ export default function BuilderPage() {
     onError: (err) => setServerErr(extractAxiosMessage(err)),
     onSuccess: (team) => {
       setServerErr(null);
-      // Remember team id so future saves become "Update"
       useBuilderStore.setState({ teamId: team.id });
-      // Invalidate caches so list & detail re-fetch with the new team
       qc.invalidateQueries({ queryKey: ["teams"] });
       qc.invalidateQueries({ queryKey: ["team", team.id] });
     },
@@ -154,14 +165,12 @@ export default function BuilderPage() {
   return (
     <div className="grid gap-4 grid-cols-1 lg:grid-cols-[1fr_380px] xl:grid-cols-[1fr_420px]">
       <section className="space-y-3">
-        {/* grid */}
         <div className="grid grid-cols-3 gap-3">
           {slots.map((slot, i) => {
             const errs = allErrors?.[i] ?? [];
             const hasMonster = !!slot.monster_id;
             const isComplete = hasMonster && errs.length === 0;
 
-            // use i18n keys
             const statusKey = !hasMonster
               ? "status_empty"
               : isComplete
@@ -184,9 +193,7 @@ export default function BuilderPage() {
             return (
               <div
                 key={i}
-                className={`rounded border ${
-                  i === activeIdx ? "border-zinc-900" : "border-zinc-200"
-                } bg-white p-3 space-y-2 cursor-pointer`}
+                className={`rounded border ${i === activeIdx ? "border-zinc-900" : "border-zinc-200"} bg-white p-3 space-y-2 cursor-pointer`}
                 onClick={() => setActiveIdx(i)}
                 role="button"
                 tabIndex={0}
@@ -194,8 +201,6 @@ export default function BuilderPage() {
               >
                 <div className="flex items-center justify-between">
                   <div className="text-sm text-zinc-600">{t("builder.slot", { n: i + 1 })}</div>
-
-                  {/* Status indicator */}
                   <span
                     className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] ${chipClass}`}
                     title={statusText}
@@ -211,6 +216,7 @@ export default function BuilderPage() {
                   personalityId={slot.personality_id || null}
                   legacyTypeId={slot.legacy_type_id || null}
                   moveIds={[slot.move1_id, slot.move2_id, slot.move3_id, slot.move4_id]}
+                  talent={slot.talent}
                   onClick={() => setActiveIdx(i)}
                 />
 
@@ -226,9 +232,7 @@ export default function BuilderPage() {
           })}
         </div>
 
-        {/* bottom bar */}
         <div className="flex flex-wrap items-center gap-3 bg-white border rounded p-3">
-          {/* team name */}
           <div className="flex items-center gap-2">
             <label className="text-sm">{t("builder.teamName") ?? "Team name"}</label>
             <input
@@ -239,16 +243,16 @@ export default function BuilderPage() {
             />
           </div>
 
-          {/* magic item */}
           <div className="flex items-center gap-2">
             <div className="text-sm">{t("builder.magicItem")}</div>
             <CustomSelect
               value={magic_item_id ?? null}
               options={[
-                { value: 0, label: t("common.select") },
+                { value: 0, label: t("common.select"), leftIconUrl: null },
                 ...(magicItems.data ?? []).map((mi) => ({
                   value: mi.id,
                   label: pickName(mi as any, lang) || mi.name,
+                  leftIconUrl: magicItemIconUrl(mi), // CN-based path, no size folder
                 })),
               ]}
               placeholder={t("common.select")}
@@ -259,17 +263,15 @@ export default function BuilderPage() {
 
           <div className="flex-1" />
 
-          {/* save / update */}
           <button
             onClick={onSaveOrUpdate}
             disabled={!canAnalyze || createTeam.isPending || updateTeam.isPending}
             className={`h-9 px-4 rounded ${canAnalyze ? "border cursor-pointer" : "bg-zinc-300 text-zinc-600 cursor-not-allowed"}`}
             title={!canAnalyze ? t("builder.incompleteTeamMsg") : ""}
           >
-            {teamId ? (t("builder.updateTeam") ?? "Update") : (t("builder.saveTeam") ?? "Save")}
+            {teamId ? t("builder.updateTeam") ?? "Update" : t("builder.saveTeam") ?? "Save"}
           </button>
 
-          {/* analyze */}
           <button
             onClick={onAnalyze}
             disabled={!canAnalyze || analyze.isPending}
@@ -281,9 +283,10 @@ export default function BuilderPage() {
           </button>
         </div>
 
-        {/* server errors or quick analysis */}
         {serverErr && (
-          <div className="rounded border border-red-300 bg-red-50 text-red-700 p-3 text-sm">{serverErr}</div>
+          <div className="rounded border border-red-300 bg-red-50 text-red-700 p-3 text-sm">
+            {serverErr}
+          </div>
         )}
 
         {analysis ? <AnalysisResults analysis={analysis} /> : null}

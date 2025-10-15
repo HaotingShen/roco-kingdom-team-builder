@@ -65,6 +65,7 @@ export interface MonsterLiteOut extends Named {
   form: string;
   main_type: TypeOut;
   sub_type?: TypeOut | null;
+  default_legacy_type?: TypeOut | null;
   leader_potential?: boolean;
   is_leader_form?: boolean;
   preferred_attack_style?: AttackStyle;
@@ -82,7 +83,6 @@ export interface MonsterOut {
   base_mag_def: number;
   base_spd: number;
 
-  // Optional fields the detail page may touch
   move_pool?: Array<number | { id: number } | { move_id: number }>;
   legacy_moves?: Array<number | { id: number } | { move_id: number }>;
 }
