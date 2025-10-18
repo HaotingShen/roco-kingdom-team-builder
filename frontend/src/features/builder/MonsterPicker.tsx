@@ -34,7 +34,7 @@ export default function MonsterPicker({
         className="w-full h-9 border rounded px-3"
       />
 
-      <div className="grid grid-cols-2 gap-2 max-h-80 overflow-auto">
+      <div className="grid grid-cols-2 gap-2 max-h-[60vh] overflow-auto">
         {items.map((m) => {
           // robust type extraction (string or object)
           const mainTypeRaw =

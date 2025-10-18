@@ -18,7 +18,6 @@ function magicItemIconUrl(mi?: MagicItemOut | null): string | null {
   const zh = (mi as any)?.localized?.zh;
   const cnName = zh && typeof zh.name === "string" ? zh.name : null;
   if (cnName) return `/magic-items/${encode(cnName)}.png`;
-  // fallback to English name
   if (mi.name) return `/magic-items/${encode(mi.name)}.png`;
   return null;
 }
@@ -62,6 +61,9 @@ function extractAxiosMessage(e: any): string {
   return e?.message ?? "Request failed";
 }
 
+// quick helper for clearing a single slot
+const zeroTalent = { hp_boost:0, phy_atk_boost:0, mag_atk_boost:0, phy_def_boost:0, mag_def_boost:0, spd_boost:0 } as const;
+
 export default function BuilderPage() {
   const {
     teamId,
@@ -79,6 +81,7 @@ export default function BuilderPage() {
 
   const [activeIdx, setActiveIdx] = useState<number>(0);
   const [serverErr, setServerErr] = useState<string | null>(null);
+  const [serverOk, setServerOk] = useState<string | null>(null);
   const { lang, t } = useI18n();
 
   const magicItems = useQuery<MagicItemOut[]>({
@@ -117,14 +120,18 @@ export default function BuilderPage() {
     }
   };
 
-  /* ---------- save / update ---------- */
+  /* ---------- save (create new) / update (modify existing) ---------- */
   const createTeam = useMutation({
     mutationFn: (payload: TeamCreate) =>
       endpoints.createTeam(payload).then((r) => r.data as TeamOut),
-    onError: (err) => setServerErr(extractAxiosMessage(err)),
+    onError: (err) => {
+      setServerOk(null);
+      setServerErr(extractAxiosMessage(err));
+    },
     onSuccess: (team) => {
       setServerErr(null);
-      useBuilderStore.setState({ teamId: team.id });
+      setServerOk(t("builder.savedMsg"));           // persistent until closed
+      useBuilderStore.setState({ teamId: team.id }); // keep id for future updates
       qc.invalidateQueries({ queryKey: ["teams"] });
       qc.invalidateQueries({ queryKey: ["team", team.id] });
     },
@@ -133,30 +140,43 @@ export default function BuilderPage() {
   const updateTeam = useMutation({
     mutationFn: ({ id, body }: { id: number; body: TeamUpdate }) =>
       endpoints.updateTeam(id, body).then((r) => r.data as TeamOut),
-    onError: (err) => setServerErr(extractAxiosMessage(err)),
+    onError: (err) => {
+      setServerOk(null);
+      setServerErr(extractAxiosMessage(err));
+    },
     onSuccess: (_updatedTeam, variables) => {
       setServerErr(null);
+      setServerOk(t("builder.updatedMsg"));         // persistent until closed
       qc.invalidateQueries({ queryKey: ["teams"] });
       qc.invalidateQueries({ queryKey: ["team", variables.id] });
     },
   });
 
-  const onSaveOrUpdate = () => {
+  const onSaveNew = () => {
     if (!magic_item_id || !canAnalyze) {
       setServerErr(t("builder.incompleteTeamMsg"));
       return;
     }
     try {
-      if (teamId) {
-        const body = toUpdatePayload();
-        if (!body) {
-          setServerErr(t("builder.incompleteTeamMsg"));
-          return;
-        }
-        updateTeam.mutate({ id: teamId, body });
-      } else {
-        createTeam.mutate(toPayload());
+      createTeam.mutate(toPayload());
+    } catch (e: any) {
+      setServerErr(e?.message || t("builder.incompleteTeamMsg"));
+    }
+  };
+
+  const onUpdateExisting = () => {
+    if (!teamId) return; // hidden if no teamId anyway
+    if (!magic_item_id || !canAnalyze) {
+      setServerErr(t("builder.incompleteTeamMsg"));
+      return;
+    }
+    try {
+      const body = toUpdatePayload();
+      if (!body) {
+        setServerErr(t("builder.incompleteTeamMsg"));
+        return;
       }
+      updateTeam.mutate({ id: teamId, body });
     } catch (e: any) {
       setServerErr(e?.message || t("builder.incompleteTeamMsg"));
     }
@@ -165,6 +185,7 @@ export default function BuilderPage() {
   return (
     <div className="grid gap-4 grid-cols-1 lg:grid-cols-[1fr_380px] xl:grid-cols-[1fr_420px]">
       <section className="space-y-3">
+        {/* grid */}
         <div className="grid grid-cols-3 gap-3">
           {slots.map((slot, i) => {
             const errs = allErrors?.[i] ?? [];
@@ -218,6 +239,23 @@ export default function BuilderPage() {
                   moveIds={[slot.move1_id, slot.move2_id, slot.move3_id, slot.move4_id]}
                   talent={slot.talent}
                   onClick={() => setActiveIdx(i)}
+                  // quick delete only when a monster is present
+                  onDelete={
+                    hasMonster
+                      ? () => {
+                          setSlot(i, {
+                            monster_id: 0,
+                            personality_id: 0,
+                            legacy_type_id: 0,
+                            move1_id: 0,
+                            move2_id: 0,
+                            move3_id: 0,
+                            move4_id: 0,
+                            talent: { ...zeroTalent },
+                          });
+                        }
+                      : undefined
+                  }
                 />
 
                 {errs.length > 0 && (
@@ -232,7 +270,9 @@ export default function BuilderPage() {
           })}
         </div>
 
+        {/* bottom bar */}
         <div className="flex flex-wrap items-center gap-3 bg-white border rounded p-3">
+          {/* team name */}
           <div className="flex items-center gap-2">
             <label className="text-sm">{t("builder.teamName") ?? "Team name"}</label>
             <input
@@ -243,6 +283,7 @@ export default function BuilderPage() {
             />
           </div>
 
+          {/* magic item */}
           <div className="flex items-center gap-2">
             <div className="text-sm">{t("builder.magicItem")}</div>
             <CustomSelect
@@ -252,7 +293,7 @@ export default function BuilderPage() {
                 ...(magicItems.data ?? []).map((mi) => ({
                   value: mi.id,
                   label: pickName(mi as any, lang) || mi.name,
-                  leftIconUrl: magicItemIconUrl(mi), // CN-based path, no size folder
+                  leftIconUrl: magicItemIconUrl(mi),
                 })),
               ]}
               placeholder={t("common.select")}
@@ -263,15 +304,28 @@ export default function BuilderPage() {
 
           <div className="flex-1" />
 
+          {/* split buttons */}
           <button
-            onClick={onSaveOrUpdate}
-            disabled={!canAnalyze || createTeam.isPending || updateTeam.isPending}
+            onClick={onSaveNew}
+            disabled={!canAnalyze || createTeam.isPending}
             className={`h-9 px-4 rounded ${canAnalyze ? "border cursor-pointer" : "bg-zinc-300 text-zinc-600 cursor-not-allowed"}`}
             title={!canAnalyze ? t("builder.incompleteTeamMsg") : ""}
           >
-            {teamId ? t("builder.updateTeam") ?? "Update" : t("builder.saveTeam") ?? "Save"}
+            {createTeam.isPending ? t("builder.saving") : (t("builder.saveTeam") ?? "Save")}
           </button>
 
+          {teamId ? (
+            <button
+              onClick={onUpdateExisting}
+              disabled={!canAnalyze || updateTeam.isPending}
+              className={`h-9 px-4 rounded ${canAnalyze ? "border cursor-pointer" : "bg-zinc-300 text-zinc-600 cursor-not-allowed"}`}
+              title={!canAnalyze ? t("builder.incompleteTeamMsg") : ""}
+            >
+              {updateTeam.isPending ? t("builder.updating") : (t("builder.updateTeam") ?? "Update")}
+            </button>
+          ) : null}
+
+          {/* analyze */}
           <button
             onClick={onAnalyze}
             disabled={!canAnalyze || analyze.isPending}
@@ -283,9 +337,31 @@ export default function BuilderPage() {
           </button>
         </div>
 
+        {/* closable messages */}
         {serverErr && (
-          <div className="rounded border border-red-300 bg-red-50 text-red-700 p-3 text-sm">
-            {serverErr}
+          <div className="rounded border border-red-300 bg-red-50 text-red-700 p-3 text-sm flex items-start justify-between">
+            <div className="pr-4">{serverErr}</div>
+            <button
+              onClick={() => setServerErr(null)}
+              className="text-red-700 hover:text-red-900 px-1 cursor-pointer"
+              aria-label="Close"
+              title="Close"
+            >
+              x
+            </button>
+          </div>
+        )}
+        {serverOk && (
+          <div className="rounded border border-emerald-300 bg-emerald-50 text-emerald-700 p-3 text-sm flex items-start justify-between">
+            <div className="pr-4">{serverOk}</div>
+            <button
+              onClick={() => setServerOk(null)}
+              className="text-emerald-700 hover:text-emerald-900 px-1 cursor-pointer"
+              aria-label="Close"
+              title="Close"
+            >
+              x
+            </button>
           </div>
         )}
 

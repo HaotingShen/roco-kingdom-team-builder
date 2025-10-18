@@ -6,6 +6,7 @@ import { useBuilderStore } from "./builderStore";
 import type { ID, MoveOut, PersonalityOut, TypeOut, UserMonsterCreate } from "@/types";
 import { useMemo, useEffect } from "react";
 import CustomSelect from "@/components/CustomSelect";
+import { useNavigate } from "react-router-dom";
 
 // ---------- helpers ----------
 function Warn({ children }: { children: React.ReactNode }) {
@@ -68,8 +69,8 @@ function formatSentenceEffects(p: PersonalityOut, t: (k: string) => string) {
 
 // Build maps using raw IDs (no network fetch needed)
 function extractLegacyInfo(detail: any): {
-  byType: Map<number, number>; // type_id -> move_id
-  idSet: Set<number>; // all legacy move ids
+  byType: Map<number, number>;
+  idSet: Set<number>;
 } {
   const byType = new Map<number, number>();
   const idSet = new Set<number>();
@@ -105,9 +106,7 @@ function extractLegacyInfo(detail: any): {
   return { byType, idSet };
 }
 
-// Resolve legacy moves from IDs
 function useLegacyMap(detail: any) {
-  // Build pairs of { type_id, move_id } from either shape
   const outPairs: Array<{ type_id: number; move_id: number }> = [];
   if (detail) {
     if (detail.legacy_moves_by_type) {
@@ -140,7 +139,7 @@ function useLegacyMap(detail: any) {
     queries: moveIds.map((id) => ({
       queryKey: ["move", id],
       queryFn: () => endpoints.moveById(id).then((r) => r.data as MoveOut),
-      enabled: !!id, // harmless for 0
+      enabled: !!id,
     })),
   });
 
@@ -169,7 +168,6 @@ function typeIconUrl(type: any, size: 30 | 45 | 60 = 30): string | null {
   return slug ? `/type-icons/${size}/${slug}.png` : null;
 }
 
-// Type-safe key map for moveN fields
 const moveKeys = {
   1: "move1_id",
   2: "move2_id",
@@ -178,7 +176,6 @@ const moveKeys = {
 } as const;
 type MoveKey = typeof moveKeys[keyof typeof moveKeys];
 
-// ---------- sections ----------
 function MovesSection({
   slot,
   detail,
@@ -193,23 +190,19 @@ function MovesSection({
   const { lang, t } = useI18n();
   const movePool: MoveOut[] = detail?.move_pool ?? [];
 
-  // Resolve legacy moves from IDs
   const { legacyMap, loading: legacyLoading } = useLegacyMap(detail);
 
-  // Candidates based on chosen type
   const allowedLegacy = legacyTypeId ? legacyMap.get(legacyTypeId) : undefined;
   const allLegacyMoves = useMemo(
     () => Array.from(legacyMap.values()),
     [legacyMap]
   );
 
-  // Build select options
   const candidates: { move: MoveOut; isLegacy: boolean }[] = useMemo(() => {
     const base = movePool.map((m) => ({ move: m, isLegacy: false }));
     if (legacyTypeId) {
       if (allowedLegacy) base.unshift({ move: allowedLegacy, isLegacy: true });
     } else {
-      // No legacy type yet: show all legacy moves (once loaded)
       if (!legacyLoading) {
         base.unshift(
           ...allLegacyMoves.map((m) => ({ move: m, isLegacy: true }))
@@ -219,7 +212,6 @@ function MovesSection({
     return base;
   }, [movePool, allowedLegacy, legacyTypeId, allLegacyMoves, legacyLoading]);
 
-  // Validation helpers
   const legacyIdSet = useMemo(
     () => new Set(allLegacyMoves.map((m) => m.id)),
     [allLegacyMoves]
@@ -238,20 +230,13 @@ function MovesSection({
 
   const canPick = (n: 1 | 2 | 3 | 4, move: MoveOut, isLegacy: boolean) => {
     const currentId = (slot as any)[moveKeys[n]] as ID;
-    // no duplicates (unless it's the current select keeping the same value)
     if (move.id !== currentId && selectedIds.includes(move.id)) return false;
-
     if (!isLegacy) return true;
-
-    // only one legacy among the four
     const selectedLegacyIds = selectedIds.filter((id) => legacyIdSet.has(id));
     const alreadyHasLegacy =
       selectedLegacyIds.length > 0 &&
       !(selectedLegacyIds.length === 1 && selectedLegacyIds[0] === currentId);
     if (alreadyHasLegacy) return false;
-
-    // If a Legacy Type is chosen, only the matching legacy is included in candidates
-    // If none chosen, any legacy is okay here (onPick will auto-set type).
     return true;
   };
 
@@ -269,7 +254,6 @@ function MovesSection({
 
     if (found.isLegacy) {
       if (!legacyTypeId) {
-        // auto-set type from chosen legacy
         let newTypeId: ID | undefined;
         for (const [tId, m] of legacyMap.entries()) {
           if (m.id === id) {
@@ -297,7 +281,6 @@ function MovesSection({
           label: pickName(c.move as any, lang) || c.move.name,
           rightLabel: c.isLegacy ? `[${t("labels.legacy")}]` : undefined,
           disabled: !canPick(n as 1 | 2 | 3 | 4, c.move, c.isLegacy),
-          // shows move type icon (falls back if none)
           leftIconUrl: c.move?.move_type ? typeIconUrl(c.move.move_type, 30) : null,
         }));
 
@@ -308,7 +291,7 @@ function MovesSection({
             <div className="flex-1 min-w-0">
               <CustomSelect
                 value={currentId || null}
-                options={opts as any}
+                options={opts}
                 placeholder="—"
                 onChange={(id) => onPick(n as 1|2|3|4, String(id || ""))}
                 containerClassName="flex-1 min-w-0"
@@ -340,7 +323,7 @@ function PersonalitySelect({
   const opts = (options ?? []).map((p) => ({
     value: p.id,
     label: pickName(p as any, lang),
-    rightLabel: formatRowEffects(p, t), // shows e.g. [Mag Atk ↑, Phy Def ↓]
+    rightLabel: formatRowEffects(p, t),
   }));
 
   return (
@@ -353,7 +336,6 @@ function PersonalitySelect({
   );
 }
 
-/* PersonalitySection (used by the Inspector) */
 function PersonalitySection({
   slot,
   onChange,
@@ -400,7 +382,6 @@ function LegacyTypeSection({
   slot: UserMonsterCreate;
   onChange: (patch: Partial<UserMonsterCreate>) => void;
   onLegacyChange?: (newTypeId: ID) => void;
-  /** when true, lock the selector */
   disabled?: boolean;
 }) {
   const { lang, t } = useI18n();
@@ -412,7 +393,7 @@ function LegacyTypeSection({
   const opts = (data ?? []).map(type => ({
     value: type.id,
     label: pickName(type as any, lang),
-    leftIconUrl: typeIconUrl(type, 30), // type icon
+    leftIconUrl: typeIconUrl(type, 30),
   }));
 
   return (
@@ -421,7 +402,7 @@ function LegacyTypeSection({
 
       <CustomSelect
         value={slot.legacy_type_id || null}
-        options={opts as any}
+        options={opts}
         placeholder={t("common.select")}
         onChange={(v) => {
           const id = (Number(v || 0) as ID);
@@ -444,7 +425,6 @@ function TalentsSection({
   const { t } = useI18n();
   const allowed = [0, 7, 8, 9, 10];
 
-  // Backend keys stored in state
   const KEYS: (keyof UserMonsterCreate["talent"])[] = [
     "hp_boost",
     "phy_atk_boost",
@@ -454,7 +434,6 @@ function TalentsSection({
     "spd_boost",
   ];
 
-  // Display labels (localized)
   const LABELS: Record<(typeof KEYS)[number], string> = {
     hp_boost: t("labels.hp"),
     phy_atk_boost: t("labels.phyAtk"),
@@ -507,8 +486,8 @@ function TalentsSection({
 export default function MonsterInspector({ activeIdx }: { activeIdx: number }) {
   const { slots, setSlot } = useBuilderStore();
   const slot = slots[activeIdx];
+  const nav = useNavigate();
 
-  // Call the data hook unconditionally with a safe id
   const monsterId = slot?.monster_id ?? 0;
   const detailQ = useMonsterDetail(monsterId);
   const detail = detailQ.data;
@@ -518,12 +497,11 @@ export default function MonsterInspector({ activeIdx }: { activeIdx: number }) {
   const onChange = (patch: Partial<UserMonsterCreate>) =>
     setSlot(activeIdx, patch as any);
 
-  // Build a set/map for normalization
   const { byType: legacyByType, idSet: legacyIdSet } = useMemo(
     () => extractLegacyInfo(detail),
     [detail]
   );
-  
+
   const isLeaderForm = detail?.is_leader_form === true;
   const typesQ = useQuery({
     queryKey: ["types"],
@@ -544,7 +522,7 @@ export default function MonsterInspector({ activeIdx }: { activeIdx: number }) {
       onChange({ legacy_type_id: leaderTypeId });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isLeaderForm, leaderTypeId]); // ignore slot to avoid loops
+  }, [isLeaderForm, leaderTypeId]);
 
   const handleLegacyChange = (newTypeId: ID) => {
     const allowedMoveId = legacyByType.get(Number(newTypeId));
@@ -553,24 +531,27 @@ export default function MonsterInspector({ activeIdx }: { activeIdx: number }) {
     ([1, 2, 3, 4] as const).forEach((n) => {
       const key: MoveKey = moveKeys[n];
       const current = (slot as any)[key] as ID;
-      // If this slot currently holds a legacy move and it's not the one allowed by the new type -> clear it
       if (
         current &&
         legacyIdSet.has(Number(current)) &&
         Number(current) !== Number(allowedMoveId ?? -1)
       ) {
-        (patch as any)[key] = 0; // numeric zero
+        (patch as any)[key] = 0;
       }
     });
 
     if (Object.keys(patch).length) onChange(patch);
   };
 
-  // For the green "grants…" line under Legacy Type
   const { legacyMap: legacyMapMain, loading: legacyLoadingMain } =
     useLegacyMap(detail);
   const allowedLegacyMain =
     slot?.legacy_type_id && legacyMapMain.get(slot.legacy_type_id);
+
+  const goDexForMonster = () => {
+    if (!monsterId) return;
+    nav(`/dex/monsters/${monsterId}`);
+  };
 
   return (
     <aside className="rounded border bg-white p-3 space-y-4">
@@ -587,13 +568,21 @@ export default function MonsterInspector({ activeIdx }: { activeIdx: number }) {
         </>
       ) : (
         <>
-          <div className="flex items-center justify-end">
+          {/* View in Dex (left) + Change Monster (right) */}
+          <div className="flex items-center justify-between">
+            <button
+              className="text-xs rounded cursor-pointer hover:text-zinc-900 hover:underline underline-offset-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400"
+              onClick={goDexForMonster}
+              title={t("builder.viewInDex")}
+            >
+              {t("builder.viewInDex")}
+            </button>
             <button
               className="text-xs rounded cursor-pointer hover:text-zinc-900 hover:underline underline-offset-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400"
               onClick={() =>
                 onChange({ monster_id: 0, move1_id: 0, move2_id: 0, move3_id: 0, move4_id: 0 })
               }
-              title={t('builder.changeMonster')}
+              title={t("builder.changeMonster")}
             >
               {t("builder.changeMonster")}
             </button>

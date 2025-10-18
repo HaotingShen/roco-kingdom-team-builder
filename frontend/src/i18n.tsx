@@ -31,7 +31,6 @@ export function pickDesc(x: any, lang: Lang): string {
   return x.description ?? "";
 }
 
-/** Useful for localizing types by name string */
 export function useTypeIndex() {
   const q = useQuery({
     queryKey: ["types-index"],
@@ -47,11 +46,7 @@ export function useTypeIndex() {
   return { index, isLoading: q.isLoading };
 }
 
-export function localizeTypeName(
-  name: string | undefined,
-  lang: Lang,
-  index: Record<string, string>
-): string {
+export function localizeTypeName(name: string | undefined, lang: Lang, index: Record<string, string>): string {
   if (!name) return "";
   return lang === "zh" ? index[name] ?? name : name;
 }
@@ -98,11 +93,17 @@ const ui: Record<Lang, Dict> = {
       search: "Search anything…",
       reset: "Reset",
       confirmReset: "Reset the builder? This clears the current team and analysis.",
+      quickBuild: "Quick Build",
+      quickBuilding: "Loading…",
+      quickBuildConfirm: "This will auto-generate a new team and replace your current team. Continue?",
+      quickBuildFailed: "Failed to load a sample team.",
     },
     builder: {
       slot: "Slot {{n}}",
       inspectorTitle: "Inspector — Slot {{n}}",
       changeMonster: "Change Monster",
+      viewInDex: "View in Dex",
+      deleteMonster: "Delete",
       pickAMonster: "Pick a monster",
       tipAfterPick:
         "Tip: After choosing a monster, you can set Personality, Legacy Type, Moves, and Talents.",
@@ -126,7 +127,11 @@ const ui: Record<Lang, Dict> = {
       teamName: "Team Name:",
       teamNamePlaceholder: "Enter name…",
       updateTeam: "Update",
+      updating: "Updating…",
       saveTeam: "Save",
+      saving: "Saving…",
+      savedMsg: "Team saved!",
+      updatedMsg: "Team updated!",
       // validation
       v_pickMonster: "Pick a monster",
       v_setPersonality: "Set a personality",
@@ -241,11 +246,17 @@ const ui: Record<Lang, Dict> = {
       search: "搜索任何…",
       reset: "重置",
       confirmReset: "重置队伍构筑？这将清空当前队伍与分析结果。",
+      quickBuild: "快速组队",
+      quickBuilding: "载入中…",
+      quickBuildConfirm: "确认快速组队？这将自动生成新的队伍并替换当前队伍。",
+      quickBuildFailed: "载入随机队伍失败。",
     },
     builder: {
       slot: "槽位 {{n}}",
       inspectorTitle: "面板 — 槽位 {{n}}",
       changeMonster: "更换精灵",
+      viewInDex: "在图鉴中查看",
+      deleteMonster: "移除",
       pickAMonster: "选择精灵",
       tipAfterPick: "提示：选择精灵后可设置性格、血脉、技能与个体值。",
       personality: "性格",
@@ -266,7 +277,11 @@ const ui: Record<Lang, Dict> = {
       teamName: "队伍名称：",
       teamNamePlaceholder: "输入名称…",
       updateTeam: "更新",
+      updating: "更新中…",
       saveTeam: "保存",
+      saving: "保存中…",
+      savedMsg: "队伍已保存！",
+      updatedMsg: "队伍已更新！",
       // validation
       v_pickMonster: "选择一只精灵",
       v_setPersonality: "设置性格",
@@ -276,7 +291,6 @@ const ui: Record<Lang, Dict> = {
       v_max3: "最多提升3项个体值",
       v_pickMagicItem: "请选择一个血脉魔法",
       incompleteTeamMsg: "队伍未完成：请补全 6 个槽位（精灵、性格、血脉、4 个技能、至少 1 项个体值提升）。",
-      // slot status labels
       status_complete: "已完成",
       status_incomplete: "待完善",
       status_empty: "未选择",
@@ -358,36 +372,21 @@ const ui: Record<Lang, Dict> = {
   },
 };
 
-// simple dot-path lookup with {{var}} interpolation
 function resolve(dict: Dict, path: string, vars?: Record<string, any>) {
   const val = path.split(".").reduce<any>((a, k) => (a ? a[k] : undefined), dict);
-  const str = typeof val === "string" ? val : path; // fallback: key itself
+  const str = typeof val === "string" ? val : path;
   return typeof vars === "object"
     ? str.replace(/\{\{(\w+)\}\}/g, (_, k) => `${vars[k] ?? ""}`)
     : str;
 }
-
-/* ---------------- context ---------------- */
-
-type Ctx = {
-  lang: Lang;
-  setLang: (l: Lang) => void;
-  t: (key: string, vars?: Record<string, any>) => string;
-};
-
+type Ctx = { lang: Lang; setLang: (l: Lang) => void; t: (key: string, vars?: Record<string, any>) => string; };
 const I18nCtx = createContext<Ctx | null>(null);
 
 export function I18nProvider({ children }: { children: React.ReactNode }) {
-  const [lang, setLang] = useState<Lang>(
-    (localStorage.getItem("lang") as Lang) || "en"
-  );
-  const value = useMemo<Ctx>(
-    () => ({
+  const [lang, setLang] = useState<Lang>((localStorage.getItem("lang") as Lang) || "en");
+  const value = useMemo<Ctx>(() => ({
       lang,
-      setLang: (l) => {
-        localStorage.setItem("lang", l);
-        setLang(l);
-      },
+      setLang: (l) => { localStorage.setItem("lang", l); setLang(l); },
       t: (key, vars) => resolve(ui[lang], key, vars) || resolve(ui.en, key, vars),
     }),
     [lang]

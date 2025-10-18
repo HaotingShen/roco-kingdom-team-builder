@@ -19,13 +19,7 @@ function typeIconUrl(type: any, size: 30 | 45 | 60 = 60): string | null {
   return slug ? `/type-icons/${size}/${slug}.png` : null;
 }
 
-function TypeBadge({
-  type,
-  label,
-}: {
-  type: any;
-  label: string;
-}) {
+function TypeBadge({ type, label }: { type: any; label: string }) {
   const src = typeIconUrl(type);
   return (
     <span className="inline-flex items-center gap-1 rounded bg-zinc-100 px-2 py-1 text-xs">
@@ -36,9 +30,7 @@ function TypeBadge({
           width={20}
           height={20}
           className="inline-block"
-          onError={(e) =>
-            ((e.currentTarget as HTMLImageElement).style.display = "none")
-          }
+          onError={(e) => ((e.currentTarget as HTMLImageElement).style.display = "none")}
         />
       ) : null}
       {label}
@@ -77,6 +69,7 @@ type Props = {
   moveIds?: Array<number | 0 | undefined>;
   talent?: TalentUpsert | null;
   onClick?: () => void;
+  onDelete?: () => void;
   imgSize?: 180 | 270 | 360;
 };
 
@@ -87,14 +80,14 @@ export default function MonsterCard({
   moveIds = [],
   talent = null,
   onClick,
+  onDelete,
   imgSize = 360,
 }: Props) {
   const { lang, t } = useI18n();
 
   const monsterQ = useQuery({
     queryKey: ["monster-lite", monsterId],
-    queryFn: () =>
-      endpoints.monsterById(monsterId!).then((r) => r.data as MonsterLiteOut),
+    queryFn: () => endpoints.monsterById(monsterId!).then((r) => r.data as MonsterLiteOut),
     enabled: !!monsterId,
   });
   const monster = monsterQ.data;
@@ -110,8 +103,7 @@ export default function MonsterCard({
 
   const persQ = useQuery({
     queryKey: ["personalities"],
-    queryFn: () =>
-      endpoints.personalities().then((r) => r.data as PersonalityOut[]),
+    queryFn: () => endpoints.personalities().then((r) => r.data as PersonalityOut[]),
     enabled: true,
   });
   const typeQ = useQuery({
@@ -121,21 +113,14 @@ export default function MonsterCard({
   });
 
   const persName =
-    personalityId && persQ.data
-      ? pickName(persQ.data.find((p) => p.id === personalityId), lang)
-      : "";
+    personalityId && persQ.data ? pickName(persQ.data.find((p) => p.id === personalityId), lang) : "";
 
-  const legacyObj =
-    legacyTypeId && typeQ.data ? typeQ.data.find((t) => t.id === legacyTypeId) : null;
+  const legacyObj = legacyTypeId && typeQ.data ? typeQ.data.find((t) => t.id === legacyTypeId) : null;
   const legacyName = legacyObj ? pickName(legacyObj, lang) : "";
 
   const moveMap = useMoveMap(moveIds);
-  const mainTypeLabel = monster?.main_type
-    ? pickName(monster.main_type as any, lang)
-    : "";
-  const subTypeLabel = monster?.sub_type
-    ? pickName(monster.sub_type as any, lang)
-    : "";
+  const mainTypeLabel = monster?.main_type ? pickName(monster.main_type as any, lang) : "";
+  const subTypeLabel = monster?.sub_type ? pickName(monster.sub_type as any, lang) : "";
 
   const talentChips = useMemo(() => {
     if (!talent) return [];
@@ -148,18 +133,52 @@ export default function MonsterCard({
       spd_boost: t("labels.spd"),
     };
     const order: (keyof TalentUpsert)[] = [
-      "hp_boost","phy_atk_boost","mag_atk_boost","phy_def_boost","mag_def_boost","spd_boost"
+      "hp_boost",
+      "phy_atk_boost",
+      "mag_atk_boost",
+      "phy_def_boost",
+      "mag_def_boost",
+      "spd_boost",
     ];
     return order
-      .filter(k => (talent[k] ?? 0) > 0)
-      .map(k => ({ key: k, label: labels[k], val: talent[k] as number }));
+      .filter((k) => (talent[k] ?? 0) > 0)
+      .map((k) => ({ key: k, label: labels[k], val: talent[k] as number }));
   }, [talent, t]);
 
+  // Keyboard support to activate on Enter/Space
+  const onKeyDown: React.KeyboardEventHandler<HTMLDivElement> = (e) => {
+    if (!onClick) return;
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      onClick();
+    }
+  };
+
   return (
-    <button
+    <div
+      role={onClick ? "button" : undefined}
+      tabIndex={onClick ? 0 : -1}
       onClick={onClick}
-      className="w-full rounded border border-zinc-200 bg-white hover:border-zinc-300 transition p-3 text-left"
+      onKeyDown={onKeyDown}
+      className="relative w-full rounded border border-zinc-200 bg-white hover:border-zinc-300 transition p-3 text-left"
     >
+      {/* single delete control */}
+      {onDelete && monster ? (
+        <button
+          className="absolute top-2 right-2 text-[11px] rounded border px-2 py-0.5 bg-red-50 text-red-700 hover:bg-red-100
+             border border-red-200 focus:outline-none focus:ring-2 focus:ring-red-300 focus:ring-offset-1
+             transition-colors cursor-pointer"
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete();
+          }}
+          title={t("builder.deleteMonster")}
+          aria-label={t("builder.deleteMonster")}
+        >
+          {t("builder.deleteMonster")}
+        </button>
+      ) : null}
+
       {monster ? (
         <div className="flex gap-3">
           {/* avatar */}
@@ -191,10 +210,7 @@ export default function MonsterCard({
 
           <div className="min-w-0 flex-1">
             {/* name + form on separate lines */}
-            <div
-              className="font-medium truncate"
-              title={pickName(monster as any, lang)}
-            >
+            <div className="font-medium truncate" title={pickName(monster as any, lang)}>
               {pickName(monster as any, lang)}
             </div>
             {formLabel ? (
@@ -205,29 +221,15 @@ export default function MonsterCard({
 
             {/* type chips */}
             <div className="mt-1 flex flex-wrap gap-1">
-              {monster?.main_type && (
-                <TypeBadge
-                  type={monster.main_type}
-                  label={mainTypeLabel}
-                />
-              )}
-              {monster?.sub_type && (
-                <TypeBadge
-                  type={monster.sub_type}
-                  label={subTypeLabel}
-                />
-              )}
+              {monster?.main_type && <TypeBadge type={monster.main_type} label={mainTypeLabel} />}
+              {monster?.sub_type && <TypeBadge type={monster.sub_type} label={subTypeLabel} />}
             </div>
 
             {/* personality + legacy */}
             <div className="mt-2 flex flex-wrap items-center gap-2">
               <span className="inline-flex items-center gap-1 rounded bg-zinc-50 px-2 py-1 text-[11px] text-zinc-600">
-                <span className="whitespace-nowrap">
-                  {t("builder.personality")}:
-                </span>
-                <span className={persName ? "text-zinc-700" : "text-zinc-500"}>
-                  {persName || "—"}
-                </span>
+                <span className="whitespace-nowrap">{t("builder.personality")}:</span>
+                <span className={persName ? "text-zinc-700" : "text-zinc-500"}>{persName || "—"}</span>
               </span>
 
               <span className="inline-flex items-center gap-1 rounded bg-zinc-50 px-2 py-1 text-[11px] text-zinc-600">
@@ -239,27 +241,19 @@ export default function MonsterCard({
                       alt=""
                       width={18}
                       height={18}
-                      onError={(e) =>
-                        ((e.currentTarget as HTMLImageElement).style.display =
-                          "none")
-                      }
+                      onError={(e) => ((e.currentTarget as HTMLImageElement).style.display = "none")}
                     />
                   ) : null}
-                  <span className={legacyName ? "text-zinc-700" : "text-zinc-500"}>
-                    {legacyName || "—"}
-                  </span>
+                  <span className={legacyName ? "text-zinc-700" : "text-zinc-500"}>{legacyName || "—"}</span>
                 </span>
               </span>
             </div>
 
-            {/* NEW: talents as chips (hide zeros) */}
+            {/* talents as chips (hide zeros) */}
             {talentChips.length > 0 && (
               <div className="mt-2 flex flex-wrap gap-1">
-                {talentChips.map(tc => (
-                  <span
-                    key={tc.key}
-                    className="rounded bg-zinc-50 px-2 py-1 text-[11px] text-zinc-700"
-                  >
+                {talentChips.map((tc) => (
+                  <span key={tc.key} className="rounded bg-zinc-50 px-2 py-1 text-[11px] text-zinc-700">
                     {tc.label} +{tc.val}
                   </span>
                 ))}
@@ -272,10 +266,7 @@ export default function MonsterCard({
                 {moveIds.map((id, idx) => {
                   if (!id) {
                     return (
-                      <span
-                        key={`empty-${idx}`}
-                        className="rounded bg-zinc-50 px-2 py-1 text-[11px] text-zinc-500"
-                      >
+                      <span key={`empty-${idx}`} className="rounded bg-zinc-50 px-2 py-1 text-[11px] text-zinc-500">
                         {t("builder.moveN", { n: idx + 1 })}: —
                       </span>
                     );
@@ -299,6 +290,6 @@ export default function MonsterCard({
       ) : (
         <div className="text-zinc-500">{t("builder.selectMonster")}</div>
       )}
-    </button>
+    </div>
   );
 }
