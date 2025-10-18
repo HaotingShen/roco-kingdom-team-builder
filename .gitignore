@@ -208,3 +208,6 @@ build/
 out/
 coverage/
 .DS_Store
+
+# Claude artifacts
+CLAUDE.md
