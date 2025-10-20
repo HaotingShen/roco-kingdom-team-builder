@@ -184,11 +184,12 @@ def get_localized_description(entity, language="en"):
             pass
     return getattr(entity, "description", "")
 
-def build_trait_synergy_prompt(monster, trait, selected_moves, preferred_attack_style, game_terms, legacy_type, main_type, sub_type, language="en"):
+def build_trait_synergy_prompt(monster, trait, selected_moves, preferred_attack_style, game_terms, legacy_type, main_type, sub_type, personality, language="en"):
     # Use localized names and descriptions
     monster_name = get_localized_name(monster, language)
     trait_name = get_localized_name(trait, language)
     trait_desc = get_localized_description(trait, language)
+    personality_name = get_localized_name(personality, language)
 
     # Build type information
     legacy_type_name = get_localized_name(legacy_type, language)
@@ -198,9 +199,15 @@ def build_trait_synergy_prompt(monster, trait, selected_moves, preferred_attack_
         sub_type_name = get_localized_name(sub_type, language)
         type_info = f"{main_type_name}/{sub_type_name}"
 
-    move_lines = "\n".join(
-        f"- {get_localized_name(m, language)}: {get_localized_description(m, language)}" for m in selected_moves
-    )
+    # Build move information with type and category
+    move_lines = []
+    for m in selected_moves:
+        move_name = get_localized_name(m, language)
+        move_desc = get_localized_description(m, language)
+        move_type_name = get_localized_name(m.move_type, language) if m.move_type else "None"
+        move_category = m.move_category.value if m.move_category else "Unknown"
+        move_lines.append(f"- {move_name} ({move_type_name}, {move_category}): {move_desc}")
+    move_lines_str = "\n".join(move_lines)
     glossary = "\n".join(
         f"- {gt.key}: {get_localized_description(gt, language)}" for gt in game_terms
     )
@@ -211,10 +218,11 @@ def build_trait_synergy_prompt(monster, trait, selected_moves, preferred_attack_
 宠物: {monster_name}
 属性: {type_info}
 血脉类型: {legacy_type_name}
+性格: {personality_name}
 特性: {trait_name} — {trait_desc}
 偏好攻击风格: {preferred_attack_style}
 已选技能:
-{move_lines}
+{move_lines_str}
 
 游戏术语表:
 {glossary}
@@ -235,10 +243,11 @@ def build_trait_synergy_prompt(monster, trait, selected_moves, preferred_attack_
 Monster: {monster_name}
 Type: {type_info}
 Legacy Type: {legacy_type_name}
+Personality: {personality_name}
 Trait: {trait_name} — {trait_desc}
 Preferred attack style: {preferred_attack_style}
 Selected moves:
-{move_lines}
+{move_lines_str}
 
 Game Terms Glossary:
 {glossary}
@@ -256,7 +265,7 @@ Instructions:
 """
     return prompt
 
-def build_team_synergy_prompt(user_monsters, monster_db_map, move_db_map, type_db_map, magic_item, language="en"):
+def build_team_synergy_prompt(user_monsters, monster_db_map, move_db_map, type_db_map, personality_db_map, trait_db_map, magic_item, language="en"):
     """Build a prompt for team-wide synergy analysis."""
     # Build a summary of each monster in the team
     team_summary_lines = []
@@ -273,11 +282,32 @@ def build_team_synergy_prompt(user_monsters, monster_db_map, move_db_map, type_d
             sub_type_name = get_localized_name(sub_type, language)
             type_str = f"{main_type_name}/{sub_type_name}"
 
-        # Get moves
-        moves = [move_db_map[um.move1_id], move_db_map[um.move2_id], move_db_map[um.move3_id], move_db_map[um.move4_id]]
-        move_names = [get_localized_name(m, language) for m in moves]
+        # Get legacy type, personality, and trait
+        legacy_type = type_db_map[um.legacy_type_id]
+        legacy_type_name = get_localized_name(legacy_type, language)
+        personality = personality_db_map[um.personality_id]
+        personality_name = get_localized_name(personality, language)
+        trait = trait_db_map[monster.trait_id]
+        trait_name = get_localized_name(trait, language)
 
-        team_summary_lines.append(f"{i}. {monster_name} ({type_str}) - Moves: {', '.join(move_names)}")
+        # Get moves with types
+        moves = [move_db_map[um.move1_id], move_db_map[um.move2_id], move_db_map[um.move3_id], move_db_map[um.move4_id]]
+        move_details = []
+        for m in moves:
+            move_name = get_localized_name(m, language)
+            move_type_name = get_localized_name(m.move_type, language) if m.move_type else "None"
+            move_details.append(f"{move_name}({move_type_name})")
+
+        if language == "zh":
+            team_summary_lines.append(
+                f"{i}. {monster_name} | 属性:{type_str} | 血脉:{legacy_type_name} | 性格:{personality_name} | 特性:{trait_name}\n"
+                f"   技能: {', '.join(move_details)}"
+            )
+        else:
+            team_summary_lines.append(
+                f"{i}. {monster_name} | Type:{type_str} | Legacy:{legacy_type_name} | Personality:{personality_name} | Trait:{trait_name}\n"
+                f"   Moves: {', '.join(move_details)}"
+            )
 
     team_summary = "\n".join(team_summary_lines)
     magic_item_name = get_localized_name(magic_item, language)
@@ -1008,16 +1038,17 @@ async def analyze_team(req: schemas.TeamAnalyzeInlineRequest, db: Session = Depe
         selected_moves = [move_db_map[um.move1_id], move_db_map[um.move2_id], move_db_map[um.move3_id], move_db_map[um.move4_id]]
         preferred_attack_style = getattr(base_monster, "preferred_attack_style", "Both")
 
-        # Get type information
+        # Get type and personality information
         legacy_type = type_db_map[um.legacy_type_id]
         main_type = type_db_map[base_monster.main_type_id]
         sub_type = type_db_map[base_monster.sub_type_id] if base_monster.sub_type_id else None
+        personality = personality_db_map[um.personality_id]
 
-        prompt = build_trait_synergy_prompt(base_monster, trait, selected_moves, preferred_attack_style, game_terms, legacy_type, main_type, sub_type, language)
+        prompt = build_trait_synergy_prompt(base_monster, trait, selected_moves, preferred_attack_style, game_terms, legacy_type, main_type, sub_type, personality, language)
         llm_tasks.append(call_llm(prompt))
 
     # Team-wide synergy analysis
-    team_synergy_prompt = build_team_synergy_prompt(team_data.user_monsters, monster_db_map, move_db_map, type_db_map, magic_item, language)
+    team_synergy_prompt = build_team_synergy_prompt(team_data.user_monsters, monster_db_map, move_db_map, type_db_map, personality_db_map, trait_db_map, magic_item, language)
     llm_tasks.append(call_llm(team_synergy_prompt))
 
     llm_results = await asyncio.gather(*llm_tasks)
@@ -1193,7 +1224,7 @@ async def analyze_team_by_id(req: schemas.TeamAnalyzeByIdRequest, db: Session = 
         magic_item_id=db_team.magic_item_id
     )
     # Wrap as a TeamAnalyzeInlineRequest and call analysis logic
-    inline_req = schemas.TeamAnalyzeInlineRequest(team=team_data)
+    inline_req = schemas.TeamAnalyzeInlineRequest(team=team_data, language=req.language)
     return await analyze_team(inline_req, db)
 
 # -------- PUT Team (Update) --------
