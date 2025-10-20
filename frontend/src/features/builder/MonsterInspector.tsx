@@ -7,6 +7,9 @@ import type { ID, MoveOut, PersonalityOut, TypeOut, UserMonsterCreate } from "@/
 import { useMemo, useEffect } from "react";
 import CustomSelect from "@/components/CustomSelect";
 import { useNavigate } from "react-router-dom";
+import { typeIconUrl } from "@/lib/images";
+import { formatRowEffects, formatSentenceEffects } from "@/lib/personality";
+import { QUERY_KEYS } from "@/lib/constants";
 
 // ---------- helpers ----------
 function Warn({ children }: { children: React.ReactNode }) {
@@ -22,49 +25,10 @@ function Warn({ children }: { children: React.ReactNode }) {
 
 function useMonsterDetail(monsterId: ID | 0) {
   return useQuery({
-    queryKey: ["monster", monsterId],
+    queryKey: QUERY_KEYS.MONSTER_DETAIL(monsterId),
     queryFn: () => endpoints.monsterById(monsterId!).then((r) => r.data),
     enabled: !!monsterId,
   });
-}
-
-// --- Personality effect formatters ---
-const EFFECT_FIELDS = [
-  ["labels.hp", "hp_mod_pct"],
-  ["labels.phyAtk", "phy_atk_mod_pct"],
-  ["labels.magAtk", "mag_atk_mod_pct"],
-  ["labels.phyDef", "phy_def_mod_pct"],
-  ["labels.magDef", "mag_def_mod_pct"],
-  ["labels.spd", "spd_mod_pct"],
-] as const;
-
-function getEffects(p: PersonalityOut, t: (k: string) => string) {
-  return EFFECT_FIELDS.map(
-    ([labelKey, key]) => [t(labelKey), (p as any)[key] as number] as const
-  );
-}
-
-function formatRowEffects(p: PersonalityOut, t: (k: string) => string) {
-  const ups = getEffects(p, t).filter(([, v]) => v > 0).map(([n]) => `${n} ↑`);
-  const downs = getEffects(p, t).filter(([, v]) => v < 0).map(([n]) => `${n} ↓`);
-  const items = [...ups, ...downs];
-  return items.length ? `[${items.join(", ")}]` : "";
-}
-
-function pct(v: number) {
-  const raw = Math.abs(v) <= 1 ? v * 100 : v;
-  const rounded = Math.round(Math.abs(raw) * 10) / 10;
-  return `${v > 0 ? "+" : "-"}${rounded}%`;
-}
-
-function formatSentenceEffects(p: PersonalityOut, t: (k: string) => string) {
-  const items = getEffects(p, t).filter(([, v]) => v !== 0);
-  if (!items.length) return "";
-  const ordered = [
-    ...items.filter(([, v]) => v > 0),
-    ...items.filter(([, v]) => v < 0),
-  ];
-  return ordered.map(([n, v]) => `${n} ${pct(v)}`).join(", ");
 }
 
 // Build maps using raw IDs (no network fetch needed)
@@ -137,7 +101,7 @@ function useLegacyMap(detail: any) {
 
   const results = useQueries({
     queries: moveIds.map((id) => ({
-      queryKey: ["move", id],
+      queryKey: QUERY_KEYS.MOVE_DETAIL(id),
       queryFn: () => endpoints.moveById(id).then((r) => r.data as MoveOut),
       enabled: !!id,
     })),
@@ -157,15 +121,9 @@ function useLegacyMap(detail: any) {
   return { legacyMap, loading };
 }
 
-// Type icon url helpers (for types & moves)
-function slugifyTypeName(name?: string | null): string | null {
-  if (!name) return null;
-  return name.toLowerCase().replace(/\s+/g, "-");
-}
-function typeIconUrl(type: any, size: 30 | 45 | 60 = 30): string | null {
-  const name = typeof type === "string" ? type : type?.name;
-  const slug = slugifyTypeName(name);
-  return slug ? `/type-icons/${size}/${slug}.png` : null;
+// Helper to extract type name from type object or string
+function getTypeName(type: any): string | undefined {
+  return typeof type === "string" ? type : type?.name;
 }
 
 const moveKeys = {
@@ -281,7 +239,7 @@ function MovesSection({
           label: pickName(c.move as any, lang) || c.move.name,
           rightLabel: c.isLegacy ? `[${t("labels.legacy")}]` : undefined,
           disabled: !canPick(n as 1 | 2 | 3 | 4, c.move, c.isLegacy),
-          leftIconUrl: c.move?.move_type ? typeIconUrl(c.move.move_type, 30) : null,
+          leftIconUrl: c.move?.move_type ? typeIconUrl(getTypeName(c.move.move_type), 30) : null,
         }));
 
         return (
@@ -345,7 +303,7 @@ function PersonalitySection({
 }) {
   const { t } = useI18n();
   const { data } = useQuery({
-    queryKey: ["personalities"],
+    queryKey: QUERY_KEYS.PERSONALITIES,
     queryFn: () =>
       endpoints.personalities().then((r) => r.data as PersonalityOut[]),
   });
@@ -386,14 +344,14 @@ function LegacyTypeSection({
 }) {
   const { lang, t } = useI18n();
   const { data } = useQuery({
-    queryKey: ["types"],
+    queryKey: QUERY_KEYS.TYPES,
     queryFn: () => endpoints.types().then((r) => r.data as TypeOut[]),
   });
 
   const opts = (data ?? []).map(type => ({
     value: type.id,
     label: pickName(type as any, lang),
-    leftIconUrl: typeIconUrl(type, 30),
+    leftIconUrl: typeIconUrl(getTypeName(type), 30),
   }));
 
   return (
@@ -504,7 +462,7 @@ export default function MonsterInspector({ activeIdx }: { activeIdx: number }) {
 
   const isLeaderForm = detail?.is_leader_form === true;
   const typesQ = useQuery({
-    queryKey: ["types"],
+    queryKey: QUERY_KEYS.TYPES,
     queryFn: () => endpoints.types().then((r) => r.data as TypeOut[]),
   });
 

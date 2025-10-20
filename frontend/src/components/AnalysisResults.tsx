@@ -1,9 +1,10 @@
 import { useMemo, useState } from "react";
 import type { TeamAnalysisOut, MonsterAnalysisOut, RecItem, TypeOut } from "@/types";
-import { useI18n, pickName } from "@/i18n";
+import { useI18n, pickName, pickFormName } from "@/i18n";
 import { useQuery } from "@tanstack/react-query";
 import { endpoints } from "@/lib/api";
-import { monsterImageUrlByCN, monsterImageUrlByEN, monsterImageUrlById } from "@/lib/images";
+import { typeIconUrl } from "@/lib/images";
+import { MonsterImage } from "./MonsterImage";
 
 /* ---------------- small UI bits ---------------- */
 
@@ -36,6 +37,55 @@ function StatRow({ label, value, max=700 }: { label: string; value: number; max?
   );
 }
 
+function CollapsibleSection({
+  title,
+  icon,
+  count,
+  defaultExpanded = false,
+  children
+}: {
+  title: string;
+  icon: string;
+  count?: number;
+  defaultExpanded?: boolean;
+  children: React.ReactNode;
+}) {
+  const [expanded, setExpanded] = useState(defaultExpanded);
+
+  return (
+    <div className="border-b last:border-b-0 pb-4 last:pb-0">
+      <button
+        onClick={() => setExpanded(!expanded)}
+        className="w-full flex items-center justify-between py-2 hover:opacity-70 transition-opacity"
+      >
+        <div className="flex items-center gap-2">
+          <span>{icon}</span>
+          <span className="font-medium text-sm">{title}</span>
+          {count !== undefined && (
+            <span className="text-xs text-zinc-500">({count})</span>
+          )}
+        </div>
+        <span className="text-zinc-400 text-xs transition-transform duration-200"
+              style={{ transform: expanded ? 'rotate(90deg)' : 'rotate(0deg)' }}>
+          ▶
+        </span>
+      </button>
+
+      <div
+        className="overflow-hidden transition-all duration-300 ease-in-out"
+        style={{
+          maxHeight: expanded ? '1000px' : '0px',
+          opacity: expanded ? 1 : 0
+        }}
+      >
+        <div className="pt-2 ml-4">
+          {children}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function useTypesById() {
   const q = useQuery({
     queryKey: ["types-index"],
@@ -50,12 +100,6 @@ function useTypesById() {
 }
 
 /* ---------------- helpers ---------------- */
-
-function typeIconUrl(name: string | undefined, size: 30 | 45 | 60 = 30) {
-  if (!name) return null;
-  const slug = name.toLowerCase().replace(/\s+/g, "-");
-  return `/type-icons/${size}/${slug}.png`;
-}
 
 function synergyMoveNames(ma: MonsterAnalysisOut, lang: "en"|"zh") {
   const idToName = new Map<number, string>([
@@ -77,14 +121,7 @@ function synergyMoveNames(ma: MonsterAnalysisOut, lang: "en"|"zh") {
 function MonsterAnalysisCard({ data }: { data: MonsterAnalysisOut }) {
   const { lang, t } = useI18n();
   const m = data.user_monster.monster;
-  const formLabel = m.form && m.form.toLowerCase() !== "default" ? m.form : "";
-  const chain = [
-    monsterImageUrlByCN(m, 180),
-    monsterImageUrlByEN(m, 180),
-    monsterImageUrlById(m, 180),
-    "/monsters/placeholder.png",
-  ].filter(Boolean) as string[];
-
+  const formLabel = pickFormName(m as any, lang);
   const tips = (data.trait_synergies?.flatMap(s => s.recommendation) ?? []);
   const [expanded, setExpanded] = useState(false);
   const shownTips = expanded ? tips : tips.slice(0, 2);
@@ -96,20 +133,13 @@ function MonsterAnalysisCard({ data }: { data: MonsterAnalysisOut }) {
       <div className="flex gap-3">
         {/* avatar */}
         <div className="shrink-0">
-          <img
-            src={chain[0]!}
+          <MonsterImage
+            monster={m}
+            size={180}
             alt=""
             width={64}
             height={64}
             className="h-20 w-20 rounded-md object-contain"
-            data-fallback-step={0}
-            onError={(e) => {
-              const img = e.currentTarget as HTMLImageElement;
-              const step = Number(img.dataset.fallbackStep || "0");
-              const next = step + 1;
-              if (next < chain.length) { img.dataset.fallbackStep = String(next); img.src = chain[next]!; }
-              else if (img.src !== "/monsters/placeholder.png") { img.src = "/monsters/placeholder.png"; }
-            }}
           />
         </div>
 
@@ -174,13 +204,17 @@ function MonsterAnalysisCard({ data }: { data: MonsterAnalysisOut }) {
           {tips.length ? (
             <div>
               <div className="text-xs font-medium mb-1">{t("analysis.playTips")}</div>
-              <ul className="text-sm text-zinc-800 space-y-1">
-                {shownTips.map((line, i) => <li key={i}>• {line}</li>)}
+              <ul className="text-sm space-y-1.5">
+                {shownTips.map((line, i) => (
+                  <li key={i} className="leading-relaxed text-zinc-800">
+                    • {line}
+                  </li>
+                ))}
               </ul>
               {tips.length > 2 ? (
                 <button
                   onClick={() => setExpanded(e => !e)}
-                  className="mt-1 text-xs text-zinc-600 underline underline-offset-2"
+                  className="mt-2 text-xs text-blue-600 hover:text-blue-700 underline underline-offset-2"
                 >
                   {expanded ? t("common.showLess") : t("common.showMore")}
                 </button>
@@ -283,11 +317,11 @@ export default function AnalysisResults({ analysis }: { analysis: TeamAnalysisOu
 
         {Array.from(recGroups.entries()).map(([cat, items]) => (
           <div key={cat} className="mb-3">
-            <div className="text-sm font-medium mb-1 capitalize">{cat.replaceAll("_", " ")}</div>
+            <div className="text-sm font-medium mb-1">{t(`recommendationCategories.${cat}`)}</div>
             <ul className="space-y-1">
               {items.map((r, i) => (
                 <li key={i} className="text-sm">
-                  <Chip tone={severityTone(r.severity) as any}><Dot color={severityTone(r.severity) as any} /> {r.severity}</Chip>
+                  <Chip tone={severityTone(r.severity) as any}><Dot color={severityTone(r.severity) as any} /> {t(`severity.${r.severity}`)}</Chip>
                   <span className="ml-2">{r.message}</span>
                 </li>
               ))}
@@ -295,6 +329,83 @@ export default function AnalysisResults({ analysis }: { analysis: TeamAnalysisOu
           </div>
         ))}
       </section>
+
+      {/* 4) Team Synergy */}
+      {analysis.team_synergy && (
+        <section className="rounded border bg-white p-4">
+          <h2 className="font-medium mb-3">{t("analysis.teamSynergy")}</h2>
+
+          <div className="space-y-0">
+            {analysis.team_synergy.key_combos.length > 0 && (
+              <CollapsibleSection
+                title={t("analysis.keyCombos")}
+                icon="⚡"
+                count={analysis.team_synergy.key_combos.length}
+                defaultExpanded={true}
+              >
+                <ul className="text-sm space-y-2">
+                  {analysis.team_synergy.key_combos.map((combo, i) => (
+                    <li key={i} className="leading-relaxed text-zinc-800">
+                      • {combo}
+                    </li>
+                  ))}
+                </ul>
+              </CollapsibleSection>
+            )}
+
+            {analysis.team_synergy.turn_order_strategy.length > 0 && (
+              <CollapsibleSection
+                title={t("analysis.turnOrderStrategy")}
+                icon="🔄"
+                count={analysis.team_synergy.turn_order_strategy.length}
+                defaultExpanded={false}
+              >
+                <ul className="text-sm space-y-2">
+                  {analysis.team_synergy.turn_order_strategy.map((strategy, i) => (
+                    <li key={i} className="leading-relaxed text-zinc-800">
+                      • {strategy}
+                    </li>
+                  ))}
+                </ul>
+              </CollapsibleSection>
+            )}
+
+            {analysis.team_synergy.magic_item_usage.length > 0 && (
+              <CollapsibleSection
+                title={t("analysis.magicItemUsage")}
+                icon="✨"
+                count={analysis.team_synergy.magic_item_usage.length}
+                defaultExpanded={false}
+              >
+                <ul className="text-sm space-y-2">
+                  {analysis.team_synergy.magic_item_usage.map((usage, i) => (
+                    <li key={i} className="leading-relaxed text-zinc-800">
+                      • {usage}
+                    </li>
+                  ))}
+                </ul>
+              </CollapsibleSection>
+            )}
+
+            {analysis.team_synergy.general_strategy.length > 0 && (
+              <CollapsibleSection
+                title={t("analysis.generalStrategy")}
+                icon="🎯"
+                count={analysis.team_synergy.general_strategy.length}
+                defaultExpanded={false}
+              >
+                <ul className="text-sm space-y-2">
+                  {analysis.team_synergy.general_strategy.map((general, i) => (
+                    <li key={i} className="leading-relaxed text-zinc-800">
+                      • {general}
+                    </li>
+                  ))}
+                </ul>
+              </CollapsibleSection>
+            )}
+          </div>
+        </section>
+      )}
     </div>
   );
 }

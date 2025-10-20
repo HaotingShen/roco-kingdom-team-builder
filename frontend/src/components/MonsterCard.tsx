@@ -3,24 +3,18 @@ import { endpoints } from "@/lib/api";
 import type { MonsterLiteOut, PersonalityOut, TypeOut, MoveOut, TalentUpsert } from "@/types";
 import { pickName, pickFormName, useI18n } from "@/i18n";
 import { useMemo } from "react";
-import { monsterImageUrlByCN, monsterImageUrlByEN, monsterImageUrlById } from "@/lib/images";
+import { typeIconUrl } from "@/lib/images";
+import { MonsterImage } from "./MonsterImage";
+import { QUERY_KEYS } from "@/lib/constants";
 
 /* ---------- helpers ---------- */
 
 function typeNameRaw(t: any): string | undefined {
   return t && typeof t === "object" ? t.name : t;
 }
-function slugifyTypeName(name?: string | null): string | null {
-  if (!name) return null;
-  return name.toLowerCase().replace(/\s+/g, "-");
-}
-function typeIconUrl(type: any, size: 30 | 45 | 60 = 60): string | null {
-  const slug = slugifyTypeName(typeNameRaw(type));
-  return slug ? `/type-icons/${size}/${slug}.png` : null;
-}
 
 function TypeBadge({ type, label }: { type: any; label: string }) {
-  const src = typeIconUrl(type);
+  const src = typeIconUrl(typeNameRaw(type), 60);
   return (
     <span className="inline-flex items-center gap-1 rounded bg-zinc-100 px-2 py-1 text-xs">
       {src ? (
@@ -45,7 +39,7 @@ function useMoveMap(ids: Array<number | 0 | undefined>) {
   );
   const results = useQueries({
     queries: uniq.map((id) => ({
-      queryKey: ["move", id],
+      queryKey: QUERY_KEYS.MOVE_DETAIL(id),
       queryFn: () => endpoints.moveById(id).then((r) => r.data as MoveOut),
       enabled: !!id,
     })),
@@ -86,7 +80,7 @@ export default function MonsterCard({
   const { lang, t } = useI18n();
 
   const monsterQ = useQuery({
-    queryKey: ["monster-lite", monsterId],
+    queryKey: QUERY_KEYS.MONSTER_DETAIL(monsterId ?? 0),
     queryFn: () => endpoints.monsterById(monsterId!).then((r) => r.data as MonsterLiteOut),
     enabled: !!monsterId,
   });
@@ -94,20 +88,13 @@ export default function MonsterCard({
   const formLabel = pickFormName(monster, lang);
 
   // Image fallbacks: CN -> EN -> ID -> placeholder
-  const chain = [
-    monsterImageUrlByCN(monster, imgSize),
-    monsterImageUrlByEN(monster, imgSize),
-    monsterImageUrlById(monster, imgSize),
-    "/monsters/placeholder.png",
-  ].filter(Boolean) as string[];
-
   const persQ = useQuery({
-    queryKey: ["personalities"],
+    queryKey: QUERY_KEYS.PERSONALITIES,
     queryFn: () => endpoints.personalities().then((r) => r.data as PersonalityOut[]),
     enabled: true,
   });
   const typeQ = useQuery({
-    queryKey: ["types"],
+    queryKey: QUERY_KEYS.TYPES,
     queryFn: () => endpoints.types().then((r) => r.data as TypeOut[]),
     enabled: true,
   });
@@ -183,29 +170,14 @@ export default function MonsterCard({
         <div className="flex gap-3">
           {/* avatar */}
           <div className="shrink-0">
-            {chain.length ? (
-              <img
-                src={chain[0]!}
-                alt=""
-                width={48}
-                height={48}
-                className="h-16 w-16 rounded-md object-contain"
-                data-fallback-step={0}
-                onError={(e) => {
-                  const img = e.currentTarget as HTMLImageElement;
-                  const step = Number(img.dataset.fallbackStep || "0");
-                  const next = step + 1;
-                  if (next < chain.length) {
-                    img.dataset.fallbackStep = String(next);
-                    img.src = chain[next]!;
-                  } else if (img.src !== "/monsters/placeholder.png") {
-                    img.src = "/monsters/placeholder.png";
-                  }
-                }}
-              />
-            ) : (
-              <div className="h-12 w-12 rounded-md bg-zinc-100" />
-            )}
+            <MonsterImage
+              monster={monster}
+              size={imgSize}
+              alt=""
+              width={48}
+              height={48}
+              className="h-16 w-16 rounded-md object-contain"
+            />
           </div>
 
           <div className="min-w-0 flex-1">
@@ -235,9 +207,9 @@ export default function MonsterCard({
               <span className="inline-flex items-center gap-1 rounded bg-zinc-50 px-2 py-1 text-[11px] text-zinc-600">
                 <span className="whitespace-nowrap">{t("labels.legacy")}:</span>
                 <span className="inline-flex items-center gap-0.5">
-                  {legacyObj && typeIconUrl(legacyObj) ? (
+                  {legacyObj && typeIconUrl(typeNameRaw(legacyObj)) ? (
                     <img
-                      src={typeIconUrl(legacyObj)!}
+                      src={typeIconUrl(typeNameRaw(legacyObj))!}
                       alt=""
                       width={18}
                       height={18}

@@ -13,6 +13,11 @@ from google.genai import types
 import asyncio
 import json
 import time
+import logging
+
+# Setup logger
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 client = genai.Client(api_key=GEMINI_API_KEY)
 
@@ -142,16 +147,95 @@ def compute_defense_status_move(moves):
     )
     
 # Trait Synergy LLM Analysis
-def build_trait_synergy_prompt(monster, trait, selected_moves, preferred_attack_style, game_terms):
+def get_localized_name(entity, language="en"):
+    """Extract localized name from entity's localized field, falling back to English name."""
+    if hasattr(entity, "localized") and entity.localized:
+        try:
+            if language == "zh" and "zh" in entity.localized:
+                zh_data = entity.localized["zh"]
+                if isinstance(zh_data, dict):
+                    return zh_data.get("name", entity.name)
+                # If zh_data is a string, it might be the name itself
+                elif isinstance(zh_data, str):
+                    return zh_data
+            if "en" in entity.localized:
+                en_data = entity.localized["en"]
+                if isinstance(en_data, dict):
+                    return en_data.get("name", entity.name)
+                elif isinstance(en_data, str):
+                    return en_data
+        except (KeyError, TypeError, AttributeError):
+            pass
+    return getattr(entity, "name", str(entity))
+
+def get_localized_description(entity, language="en"):
+    """Extract localized description from entity's localized field, falling back to English description."""
+    if hasattr(entity, "localized") and entity.localized:
+        try:
+            if language == "zh" and "zh" in entity.localized:
+                zh_data = entity.localized["zh"]
+                if isinstance(zh_data, dict):
+                    return zh_data.get("description", getattr(entity, "description", ""))
+            if "en" in entity.localized:
+                en_data = entity.localized["en"]
+                if isinstance(en_data, dict):
+                    return en_data.get("description", getattr(entity, "description", ""))
+        except (KeyError, TypeError, AttributeError):
+            pass
+    return getattr(entity, "description", "")
+
+def build_trait_synergy_prompt(monster, trait, selected_moves, preferred_attack_style, game_terms, legacy_type, main_type, sub_type, language="en"):
+    # Use localized names and descriptions
+    monster_name = get_localized_name(monster, language)
+    trait_name = get_localized_name(trait, language)
+    trait_desc = get_localized_description(trait, language)
+
+    # Build type information
+    legacy_type_name = get_localized_name(legacy_type, language)
+    main_type_name = get_localized_name(main_type, language)
+    type_info = main_type_name
+    if sub_type:
+        sub_type_name = get_localized_name(sub_type, language)
+        type_info = f"{main_type_name}/{sub_type_name}"
+
     move_lines = "\n".join(
-        f"- {m.name}: {m.description}" for m in selected_moves
+        f"- {get_localized_name(m, language)}: {get_localized_description(m, language)}" for m in selected_moves
     )
     glossary = "\n".join(
-        f"- {gt.key}: {gt.description}" for gt in game_terms
+        f"- {gt.key}: {get_localized_description(gt, language)}" for gt in game_terms
     )
-    prompt = f"""You are an expert game strategist.
-Monster: {monster.name}
-Trait: {trait.name} — {trait.description}
+
+    # Adjust language in the prompt based on user's language
+    if language == "zh":
+        prompt = f"""你是一位专业的游戏策略专家。
+宠物: {monster_name}
+属性: {type_info}
+血脉类型: {legacy_type_name}
+特性: {trait_name} — {trait_desc}
+偏好攻击风格: {preferred_attack_style}
+已选技能:
+{move_lines}
+
+游戏术语表:
+{glossary}
+
+指示:
+1. 识别哪些技能与特性特别有协同作用。
+2. 对于你的建议:
+    - 给出**恰好两条建议** (最多3-4句话)，**详细解释用户应该如何组合使用所选技能**，包括可能的连招、回合顺序、防守或进攻应用，以及如何利用当前技能集与特性的配合。
+    - 给出**一条额外的建议** (1-2句话) 说明如何改善整体技能选择 (例如偏好某些类型、效果或实用性，但请勿建议具体的技能替换)。
+3. 以以下JSON格式输出 (使用中文回复):
+{{
+"synergy_moves": [协同技能名称列表],
+"recommendation": [建议列表（字符串形式）]
+}}
+"""
+    else:
+        prompt = f"""You are an expert game strategist.
+Monster: {monster_name}
+Type: {type_info}
+Legacy Type: {legacy_type_name}
+Trait: {trait_name} — {trait_desc}
 Preferred attack style: {preferred_attack_style}
 Selected moves:
 {move_lines}
@@ -168,6 +252,79 @@ Instructions:
 {{
 "synergy_moves": [list of move names],
 "recommendation": [list of suggestions as strings]
+}}
+"""
+    return prompt
+
+def build_team_synergy_prompt(user_monsters, monster_db_map, move_db_map, type_db_map, magic_item, language="en"):
+    """Build a prompt for team-wide synergy analysis."""
+    # Build a summary of each monster in the team
+    team_summary_lines = []
+    for i, um in enumerate(user_monsters, 1):
+        monster = monster_db_map[um.monster_id]
+        monster_name = get_localized_name(monster, language)
+
+        # Get types
+        main_type = type_db_map[monster.main_type_id]
+        main_type_name = get_localized_name(main_type, language)
+        type_str = main_type_name
+        if monster.sub_type_id:
+            sub_type = type_db_map[monster.sub_type_id]
+            sub_type_name = get_localized_name(sub_type, language)
+            type_str = f"{main_type_name}/{sub_type_name}"
+
+        # Get moves
+        moves = [move_db_map[um.move1_id], move_db_map[um.move2_id], move_db_map[um.move3_id], move_db_map[um.move4_id]]
+        move_names = [get_localized_name(m, language) for m in moves]
+
+        team_summary_lines.append(f"{i}. {monster_name} ({type_str}) - Moves: {', '.join(move_names)}")
+
+    team_summary = "\n".join(team_summary_lines)
+    magic_item_name = get_localized_name(magic_item, language)
+    magic_item_desc = get_localized_description(magic_item, language)
+
+    if language == "zh":
+        prompt = f"""你是一位专业的游戏策略专家。请分析以下队伍的整体协同作用和战术建议。
+
+队伍组成:
+{team_summary}
+
+魔法道具: {magic_item_name} — {magic_item_desc}
+
+请从以下几个方面分析队伍的整体协同作用:
+1. **关键连招组合** (key_combos): 识别2-3个跨宠物的强力连招或协同组合，说明为什么它们有效。
+2. **回合顺序策略** (turn_order_strategy): 提供2-3个关于出手顺序和节奏控制的建议。
+3. **魔法道具使用** (magic_item_usage): 给出1-2个关于如何在关键时刻使用魔法道具的建议。
+4. **整体策略** (general_strategy): 提供2-3个整体战术建议，包括如何应对不同对手类型。
+
+以以下JSON格式输出 (每个建议应该是完整的、独立的字符串，用中文回复):
+{{
+"key_combos": ["建议1", "建议2", ...],
+"turn_order_strategy": ["建议1", "建议2", ...],
+"magic_item_usage": ["建议1", ...],
+"general_strategy": ["建议1", "建议2", ...]
+}}
+"""
+    else:
+        prompt = f"""You are an expert game strategist. Please analyze the overall team synergy and tactical recommendations for the following team.
+
+Team Composition:
+{team_summary}
+
+Magic Item: {magic_item_name} — {magic_item_desc}
+
+Please analyze the team's overall synergy from the following perspectives:
+1. **Key Combos** (key_combos): Identify 2-3 powerful cross-monster combos or synergy combinations and explain why they work.
+2. **Turn Order Strategy** (turn_order_strategy): Provide 2-3 recommendations about move order and tempo control.
+3. **Magic Item Usage** (magic_item_usage): Give 1-2 suggestions on how to use the magic item at critical moments.
+4. **General Strategy** (general_strategy): Provide 2-3 overall tactical recommendations, including how to handle different opponent types.
+
+Output as JSON in the following format (each recommendation should be a complete, standalone string):
+{{
+"key_combos": ["recommendation1", "recommendation2", ...],
+"turn_order_strategy": ["recommendation1", "recommendation2", ...],
+"magic_item_usage": ["recommendation1", ...],
+"general_strategy": ["recommendation1", "recommendation2", ...]
 }}
 """
     return prompt
@@ -284,7 +441,7 @@ def compute_magic_item_eval(magic_item, user_monster_outs, type_db_map):
         "reasoning": None,
     }
 
-def generate_recommendations(per_monster_analysis, type_coverage, magic_item_eval, move_db_map, type_db_map):
+def generate_recommendations(per_monster_analysis, type_coverage, magic_item_eval, move_db_map, type_db_map, language="en"):
     recs: List[schemas.RecItem] = []
 
     def add(category, severity, message, *, type_ids=None, monster_ids=None, move_ids=None):
@@ -299,26 +456,45 @@ def generate_recommendations(per_monster_analysis, type_coverage, magic_item_eva
 
     # 1) Type coverage – offense
     if type_coverage["weak_against_types"]:
-        names = [type_db_map[t].name for t in type_coverage["weak_against_types"]]
-        add("coverage", "warn",
-            f"Your team cannot hit these types super-effectively: {', '.join(names)}. Consider adding moves for coverage.",
-            type_ids=type_coverage["weak_against_types"])
+        names = [get_localized_name(type_db_map[t], language) for t in type_coverage["weak_against_types"]]
+        if language == "zh":
+            add("coverage", "warn",
+                f"你的队伍无法对这些属性造成克制伤害：{', '.join(names)}。建议增加相应属性的技能来覆盖。",
+                type_ids=type_coverage["weak_against_types"])
+        else:
+            add("coverage", "warn",
+                f"Your team cannot hit these types super-effectively: {', '.join(names)}. Consider adding moves for coverage.",
+                type_ids=type_coverage["weak_against_types"])
 
     # 2) Team defensive weaknesses
     if type_coverage["team_weak_to"]:
-        names = [type_db_map[t].name for t in type_coverage["team_weak_to"]]
-        add("weakness", "danger",
-            f"Your team is especially vulnerable to: {', '.join(names)}. Consider defensive options or resistances.",
-            type_ids=type_coverage["team_weak_to"])
+        names = [get_localized_name(type_db_map[t], language) for t in type_coverage["team_weak_to"]]
+        if language == "zh":
+            add("weakness", "danger",
+                f"你的队伍特别容易受到这些属性的攻击：{', '.join(names)}。建议考虑防守选项或抗性。",
+                type_ids=type_coverage["team_weak_to"])
+        else:
+            add("weakness", "danger",
+                f"Your team is especially vulnerable to: {', '.join(names)}. Consider defensive options or resistances.",
+                type_ids=type_coverage["team_weak_to"])
 
     # 3) Magic item usage
     vt = magic_item_eval.valid_targets
     if not vt:
-        add("magic_item", "warn", "Your selected magic item cannot be used by any monster in your current team!")
+        if language == "zh":
+            add("magic_item", "warn", "当前队伍中没有宠物可以使用所选择的血脉魔法！")
+        else:
+            add("magic_item", "warn", "Your selected magic item cannot be used by any monster in your current team!")
     elif len(vt) == 1:
-        add("magic_item", "info", "Only one monster can use the selected magic item.", monster_ids=vt)
+        if language == "zh":
+            add("magic_item", "info", "只有一个宠物可以使用所选择的血脉魔法。", monster_ids=vt)
+        else:
+            add("magic_item", "info", "Only one monster can use the selected magic item.", monster_ids=vt)
     else:
-        add("magic_item", "info", "Multiple monsters can use the selected magic item.", monster_ids=vt)
+        if language == "zh":
+            add("magic_item", "info", "多个宠物可以使用所选择的血脉魔法。", monster_ids=vt)
+        else:
+            add("magic_item", "info", "Multiple monsters can use the selected magic item.", monster_ids=vt)
 
     # 4) Redundant typing
     from collections import Counter
@@ -331,45 +507,73 @@ def generate_recommendations(per_monster_analysis, type_coverage, magic_item_eva
     counts = Counter(all_types)
     common_type_ids = [tid for tid, cnt in counts.items() if cnt >= 4]
     if common_type_ids:
-        names = [type_db_map[t].name for t in common_type_ids]
-        add("weakness", "warn",
-            f"Many monsters share these types: {', '.join(names)}. This increases vulnerability to specific counters.",
-            type_ids=common_type_ids)
+        names = [get_localized_name(type_db_map[t], language) for t in common_type_ids]
+        if language == "zh":
+            add("weakness", "warn",
+                f"许多宠物共享这些属性：{', '.join(names)}。这会增加对特定克制的脆弱性。",
+                type_ids=common_type_ids)
+        else:
+            add("weakness", "warn",
+                f"Many monsters share these types: {', '.join(names)}. This increases vulnerability to specific counters.",
+                type_ids=common_type_ids)
 
     # 5) Per-monster checks
     for analysis in per_monster_analysis:
         mid = analysis.user_monster.id
-        mname = analysis.user_monster.monster.name
+        mname = get_localized_name(analysis.user_monster.monster, language)
 
         if analysis.energy_profile.avg_energy_cost > 4:
-            add("energy", "warn",
-                f"{mname}'s moves have high average energy cost. Consider lower-cost or energy-restoring moves.",
-                monster_ids=[mid])
+            if language == "zh":
+                add("energy", "warn",
+                    f"{mname}的技能平均能量消耗很高。建议使用低能量消耗或恢复能量的技能。",
+                    monster_ids=[mid])
+            else:
+                add("energy", "warn",
+                    f"{mname}'s moves have high average energy cost. Consider lower-cost or energy-restoring moves.",
+                    monster_ids=[mid])
 
         if analysis.counter_coverage.total_counter_moves == 0:
-            add("counters", "warn",
-                f"{mname} has no counter-effect moves selected.",
-                monster_ids=[mid])
+            if language == "zh":
+                add("counters", "warn",
+                    f"{mname}没有选择反制技能。",
+                    monster_ids=[mid])
+            else:
+                add("counters", "warn",
+                    f"{mname} has no counter-effect moves selected.",
+                    monster_ids=[mid])
 
         if analysis.defense_status_move.defense_status_move_count < 2:
-            add("defense_status", "info",
-                f"{mname} has fewer than 2 Defense/Status moves. Consider adding more for survivability.",
-                monster_ids=[mid])
+            if language == "zh":
+                add("defense_status", "info",
+                    f"{mname}的防守/状态技能少于2个。建议增加更多技能以提高生存能力。",
+                    monster_ids=[mid])
+            else:
+                add("defense_status", "info",
+                    f"{mname} has fewer than 2 Defense/Status moves. Consider adding more for survivability.",
+                    monster_ids=[mid])
 
         for synergy in analysis.trait_synergies:
             if synergy.synergy_moves:
-                move_names = [move_db_map[x].name for x in synergy.synergy_moves]
-                add("trait_synergy", "info",
-                    f"{mname}'s trait works well with: {', '.join(move_names)}.",
-                    monster_ids=[mid], move_ids=synergy.synergy_moves)
+                move_names = [get_localized_name(move_db_map[x], language) for x in synergy.synergy_moves]
+                if language == "zh":
+                    add("trait_synergy", "info",
+                        f"{mname}的特性与以下技能配合良好：{', '.join(move_names)}。",
+                        monster_ids=[mid], move_ids=synergy.synergy_moves)
+                else:
+                    add("trait_synergy", "info",
+                        f"{mname}'s trait works well with: {', '.join(move_names)}.",
+                        monster_ids=[mid], move_ids=synergy.synergy_moves)
 
     # 6) Role diversity
     styles = [getattr(a.user_monster.monster, "preferred_attack_style", None) for a in per_monster_analysis]
     if len(set(styles)) == 1 and styles[0]:
-        add("general", "warn", f"All monsters are {styles[0]}-style attackers. This may make the team predictable.")
+        if language == "zh":
+            add("general", "warn", f"所有宠物都是{styles[0]}风格的攻击者。这可能使队伍变得可预测。")
+        else:
+            add("general", "warn", f"All monsters are {styles[0]}-style attackers. This may make the team predictable.")
 
     # 7) Stat and role highlights
-    stat_roles = {
+    stat_roles_en = {
         "hp": "frontline or defensive pivot",
         "phy_atk": "main physical attacker",
         "mag_atk": "main magic attacker",
@@ -377,41 +581,68 @@ def generate_recommendations(per_monster_analysis, type_coverage, magic_item_eva
         "spd": "lead, scout, or revenge killer",
     }
 
+    stat_roles_zh = {
+        "hp": "前排或防守核心",
+        "phy_atk": "主要物理攻击手",
+        "mag_atk": "主要魔法攻击手",
+        "overall_def": "物理或魔法坦克",
+        "spd": "先手、侦察或收割手",
+    }
+
+    stat_roles = stat_roles_zh if language == "zh" else stat_roles_en
+
     def best_of(stat, label, role_key=None):
-        vals = [(a.user_monster.monster.name, getattr(a.effective_stats, stat), a.user_monster.id)
+        vals = [(get_localized_name(a.user_monster.monster, language), getattr(a.effective_stats, stat), a.user_monster.id)
                 for a in per_monster_analysis]
         if not vals:
             return
         name, value, uid = max(vals, key=lambda x: x[1])
         role_txt = stat_roles.get(role_key or stat)
-        role_suffix = f" Consider using it as your {role_txt}." if role_txt else ""
-        add(
-            "stat_highlight",
-            "info",
-            f"{name} has the highest {label} ({value}).{role_suffix}",
-            monster_ids=[uid],
-        )
+        if language == "zh":
+            role_suffix = f"建议将其作为你的{role_txt}。" if role_txt else ""
+            add(
+                "stat_highlight",
+                "info",
+                f"{name}拥有最高的{label}（{value}）。{role_suffix}",
+                monster_ids=[uid],
+            )
+        else:
+            role_suffix = f" Consider using it as your {role_txt}." if role_txt else ""
+            add(
+                "stat_highlight",
+                "info",
+                f"{name} has the highest {label} ({value}).{role_suffix}",
+                monster_ids=[uid],
+            )
 
-    best_of("hp", "HP")
-    best_of("phy_atk", "Physical Attack")
-    best_of("mag_atk", "Magic Attack")
+    best_of("hp", "生命值" if language == "zh" else "HP")
+    best_of("phy_atk", "物理攻击" if language == "zh" else "Physical Attack")
+    best_of("mag_atk", "魔法攻击" if language == "zh" else "Magic Attack")
     # overall defense = phy_def + mag_def
     vals_def = [
-        (a.user_monster.monster.name,
+        (get_localized_name(a.user_monster.monster, language),
          a.effective_stats.phy_def + a.effective_stats.mag_def,
          a.user_monster.id)
         for a in per_monster_analysis
     ]
     if vals_def:
         name, value, uid = max(vals_def, key=lambda x: x[1])
-        role_suffix = f" Consider using it as your {stat_roles['overall_def']}."
-        add(
-            "stat_highlight",
-            "info",
-            f"{name} has the highest Total Defense ({value}).{role_suffix}",
-            monster_ids=[uid],
-        )
-    best_of("spd", "Speed")
+        role_txt = stat_roles['overall_def']
+        if language == "zh":
+            add(
+                "stat_highlight",
+                "info",
+                f"{name}拥有最高的总防御（{value}）。建议将其作为你的{role_txt}。",
+                monster_ids=[uid],
+            )
+        else:
+            add(
+                "stat_highlight",
+                "info",
+                f"{name} has the highest Total Defense ({value}). Consider using it as your {role_txt}.",
+                monster_ids=[uid],
+            )
+    best_of("spd", "速度" if language == "zh" else "Speed")
 
     return recs
 
@@ -584,6 +815,21 @@ def list_teams(db: Session = Depends(get_db)):
                 .joinedload(models.UserMonster.monster)
                 .joinedload(models.Monster.sub_type),
             joinedload(models.Team.user_monsters)
+                .joinedload(models.UserMonster.monster)
+                .joinedload(models.Monster.default_legacy_type),
+            joinedload(models.Team.user_monsters)
+                .joinedload(models.UserMonster.personality),
+            joinedload(models.Team.user_monsters)
+                .joinedload(models.UserMonster.legacy_type),
+            joinedload(models.Team.user_monsters)
+                .joinedload(models.UserMonster.move1),
+            joinedload(models.Team.user_monsters)
+                .joinedload(models.UserMonster.move2),
+            joinedload(models.Team.user_monsters)
+                .joinedload(models.UserMonster.move3),
+            joinedload(models.Team.user_monsters)
+                .joinedload(models.UserMonster.move4),
+            joinedload(models.Team.user_monsters)
                 .joinedload(models.UserMonster.talent),
             joinedload(models.Team.magic_item),
         )
@@ -597,13 +843,28 @@ def get_team(team_id: int, db: Session = Depends(get_db)):
         db.query(models.Team)
         .options(
             joinedload(models.Team.user_monsters)
-            .joinedload(models.UserMonster.talent),
+                .joinedload(models.UserMonster.monster)
+                .joinedload(models.Monster.main_type),
             joinedload(models.Team.user_monsters)
-            .joinedload(models.UserMonster.monster)
-            .joinedload(models.Monster.main_type),
+                .joinedload(models.UserMonster.monster)
+                .joinedload(models.Monster.sub_type),
             joinedload(models.Team.user_monsters)
-            .joinedload(models.UserMonster.monster)
-            .joinedload(models.Monster.sub_type),
+                .joinedload(models.UserMonster.monster)
+                .joinedload(models.Monster.default_legacy_type),
+            joinedload(models.Team.user_monsters)
+                .joinedload(models.UserMonster.personality),
+            joinedload(models.Team.user_monsters)
+                .joinedload(models.UserMonster.legacy_type),
+            joinedload(models.Team.user_monsters)
+                .joinedload(models.UserMonster.move1),
+            joinedload(models.Team.user_monsters)
+                .joinedload(models.UserMonster.move2),
+            joinedload(models.Team.user_monsters)
+                .joinedload(models.UserMonster.move3),
+            joinedload(models.Team.user_monsters)
+                .joinedload(models.UserMonster.move4),
+            joinedload(models.Team.user_monsters)
+                .joinedload(models.UserMonster.talent),
             joinedload(models.Team.magic_item),
         )
         .filter(models.Team.id == team_id)
@@ -675,28 +936,38 @@ async def analyze_team(req: schemas.TeamAnalyzeInlineRequest, db: Session = Depe
             )
             return json.loads(resp.text)
         except Exception as e:
-            print("LLM error:", e)
+            logger.error(f"LLM error: {e}", exc_info=True)
             return {"synergy_moves": [], "recommendation": ["Error generating analysis."]}
-    
+
     # === EFFICIENT DATA LOADING ===
-    print("Start loading data for analysis...")
+    logger.debug("Start loading data for analysis...")
     monster_ids_to_load = {um.monster_id for um in team_data.user_monsters}
     monster_db_map = {m.id: m for m in db.query(models.Monster).filter(models.Monster.id.in_(monster_ids_to_load)).all()}
-    print("Loaded monsters:", len(monster_db_map))
-    
-    print("Loading moves...")
+    logger.debug(f"Loaded monsters: {len(monster_db_map)}")
+
+    # Validate all monsters were found
+    missing_monsters = monster_ids_to_load - set(monster_db_map.keys())
+    if missing_monsters:
+        raise HTTPException(status_code=400, detail=f"Monster IDs not found: {sorted(missing_monsters)}")
+
+    logger.debug("Loading moves...")
     move_ids_to_load = set()
     for um in team_data.user_monsters:
         move_ids_to_load.update([um.move1_id, um.move2_id, um.move3_id, um.move4_id])
     move_db_map = {m.id: m for m in db.query(models.Move).filter(models.Move.id.in_(move_ids_to_load)).all()}
-    print("Loaded moves:", len(move_db_map))
-    
-    print("Loading traits...")
+    logger.debug(f"Loaded moves: {len(move_db_map)}")
+
+    # Validate all moves were found
+    missing_moves = move_ids_to_load - set(move_db_map.keys())
+    if missing_moves:
+        raise HTTPException(status_code=400, detail=f"Move IDs not found: {sorted(missing_moves)}")
+
+    logger.debug("Loading traits...")
     trait_ids_to_load = {m.trait_id for m in monster_db_map.values()}
     trait_db_map = {t.id: t for t in db.query(models.Trait).filter(models.Trait.id.in_(trait_ids_to_load)).all()}
-    print("Loaded traits:", len(trait_db_map))
+    logger.debug(f"Loaded traits: {len(trait_db_map)}")
 
-    print("Loading types...")
+    logger.debug("Loading types...")
     type_db_map = {
         t.id: t
         for t in db.query(models.Type)
@@ -706,38 +977,55 @@ async def analyze_team(req: schemas.TeamAnalyzeInlineRequest, db: Session = Depe
         )
         .all()
     }
-    print("Loaded types:", len(type_db_map))
-    
-    print("Loading personalities...")
+    logger.debug(f"Loaded types: {len(type_db_map)}")
+
+    logger.debug("Loading personalities...")
     personality_ids_to_load = {um.personality_id for um in team_data.user_monsters}
     personality_db_map = {p.id: p for p in db.query(models.Personality).filter(models.Personality.id.in_(personality_ids_to_load)).all()}
-    print("Loaded personalities:", len(personality_db_map))
+    logger.debug(f"Loaded personalities: {len(personality_db_map)}")
 
-    print("Loading magic item and game terms...")
+    logger.debug("Loading magic item and game terms...")
     if not team_data.magic_item_id:
         raise HTTPException(status_code=400, detail="Magic item is required to analyze a team.")
     magic_item = (db.query(models.MagicItem).filter(models.MagicItem.id == team_data.magic_item_id).first())
+    if not magic_item:
+        raise HTTPException(status_code=400, detail=f"Magic item with ID {team_data.magic_item_id} not found")
     game_terms = db.query(models.GameTerm).all()
-    print("Loaded game terms:", len(game_terms))
-    
-    print("Finish loading data for analysis!")
+    logger.debug(f"Loaded game terms: {len(game_terms)}")
+
+    logger.debug("Finish loading data for analysis!")
 
     # === CONCURRENT LLM ANALYSIS ===
-    print("Start creating prompt for LLM analysis...")
+    logger.debug("Start creating prompt for LLM analysis...")
+    language = req.language  # Get language from request
+    logger.info(f"Language received: {language}")
     llm_tasks = []
+
+    # Per-monster trait synergy analysis
     for um in team_data.user_monsters:
         base_monster = monster_db_map[um.monster_id]
         trait = trait_db_map[base_monster.trait_id]
         selected_moves = [move_db_map[um.move1_id], move_db_map[um.move2_id], move_db_map[um.move3_id], move_db_map[um.move4_id]]
         preferred_attack_style = getattr(base_monster, "preferred_attack_style", "Both")
-        prompt = build_trait_synergy_prompt(base_monster, trait, selected_moves, preferred_attack_style, game_terms)
+
+        # Get type information
+        legacy_type = type_db_map[um.legacy_type_id]
+        main_type = type_db_map[base_monster.main_type_id]
+        sub_type = type_db_map[base_monster.sub_type_id] if base_monster.sub_type_id else None
+
+        prompt = build_trait_synergy_prompt(base_monster, trait, selected_moves, preferred_attack_style, game_terms, legacy_type, main_type, sub_type, language)
         llm_tasks.append(call_llm(prompt))
+
+    # Team-wide synergy analysis
+    team_synergy_prompt = build_team_synergy_prompt(team_data.user_monsters, monster_db_map, move_db_map, type_db_map, magic_item, language)
+    llm_tasks.append(call_llm(team_synergy_prompt))
+
     llm_results = await asyncio.gather(*llm_tasks)
-        
-    print("Finish creating prompt for LLM analysis!")
+
+    logger.debug("Finish creating prompt for LLM analysis!")
 
     # Build UserMonsterOuts and compute per-monster analysis
-    print("Start per-monster analysis...")
+    logger.debug("Start per-monster analysis...")
     user_monster_outs = []
     per_monster_analysis = []
     for i, um in enumerate(team_data.user_monsters):
@@ -753,8 +1041,13 @@ async def analyze_team(req: schemas.TeamAnalyzeInlineRequest, db: Session = Depe
         talent = um.talent
         llm_result = llm_results[i]
         
-        # Map move names to ids for schema output
+        # Map move names to ids for schema output (handle both English and localized names)
         move_name_to_id = {m.name: m.id for m in selected_moves}
+        # Also add localized names to the mapping
+        for m in selected_moves:
+            localized_name = get_localized_name(m, language)
+            if localized_name != m.name:
+                move_name_to_id[localized_name] = m.id
         synergy_moves = [move_name_to_id[name] for name in llm_result.get("synergy_moves", []) if name in move_name_to_id]
 
         trait_synergy_finding = schemas.TraitSynergyFinding(
@@ -808,11 +1101,11 @@ async def analyze_team(req: schemas.TeamAnalyzeInlineRequest, db: Session = Depe
             trait_synergies=[trait_synergy_finding]
         )
         per_monster_analysis.append(monster_analysis)
-        
-    print("Finish per-monster analysis!")
+
+    logger.debug("Finish per-monster analysis!")
 
     # Call the top-level helper functions
-    print("Start team-level analysis...")
+    logger.debug("Start team-level analysis...")
     type_coverage = compute_type_coverage(team_data.user_monsters, move_db_map, monster_db_map, type_db_map)
     magic_item_eval_dict = compute_magic_item_eval(magic_item, user_monster_outs, type_db_map)
     magic_item_out = schemas.MagicItemOut(**magic_item.__dict__)
@@ -828,7 +1121,17 @@ async def analyze_team(req: schemas.TeamAnalyzeInlineRequest, db: Session = Depe
         type_coverage,
         magic_item_eval,
         move_db_map,
-        type_db_map
+        type_db_map,
+        language
+    )
+
+    # Extract team synergy from the last LLM result
+    team_synergy_result = llm_results[-1]  # Last result is team synergy
+    team_synergy = schemas.TeamSynergyRecommendation(
+        key_combos=team_synergy_result.get("key_combos", []),
+        turn_order_strategy=team_synergy_result.get("turn_order_strategy", []),
+        magic_item_usage=team_synergy_result.get("magic_item_usage", []),
+        general_strategy=team_synergy_result.get("general_strategy", [])
     )
 
     team_out = schemas.TeamOut(
@@ -844,11 +1147,12 @@ async def analyze_team(req: schemas.TeamAnalyzeInlineRequest, db: Session = Depe
         magic_item_eval=magic_item_eval,
         recommendations=[r.message for r in recs_struct],
         recommendations_structured=recs_struct,
+        team_synergy=team_synergy,
     )
-    
-    print("Finish team-level analysis!")
+
+    logger.debug("Finish team-level analysis!")
     elapsed = time.time() - start_time
-    print(f"POST /team/analyze took {elapsed:.3f} seconds")
+    logger.info(f"POST /team/analyze took {elapsed:.3f} seconds")
     return result
 
 # -------- Analyze Team by ID --------

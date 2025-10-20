@@ -4,7 +4,8 @@ import { endpoints } from "@/lib/api";
 import type { MonsterLiteOut } from "@/types";
 import useDebounce from "@/hooks/useDebounce";
 import { useI18n, pickName, useTypeIndex, localizeTypeName, pickFormName } from "@/i18n";
-import { monsterImageUrlByCN, monsterImageUrlByEN, monsterImageUrlById } from "@/lib/images";
+import { MonsterImage } from "@/components/MonsterImage";
+import { QUERY_KEYS } from "@/lib/constants";
 
 export default function MonsterPicker({
   onPick,
@@ -17,7 +18,7 @@ export default function MonsterPicker({
   const { index: typeIndex } = useTypeIndex();
 
   const list = useQuery({
-    queryKey: ["monsters", dq],
+    queryKey: QUERY_KEYS.MONSTER_LIST({ name: dq }),
     queryFn: () => endpoints.monsters({ name: dq }).then((r) => r.data),
   });
 
@@ -51,14 +52,6 @@ export default function MonsterPicker({
           const formLabel = pickFormName(m as any, lang);
           const displayName = pickName(m as any, lang) || (m as any).name;
 
-          // image fallback chain: CN -> EN -> ID -> placeholder
-          const imgChain = [
-            monsterImageUrlByCN(m, 180),
-            monsterImageUrlByEN(m, 180),
-            monsterImageUrlById(m, 180),
-            "/monsters/placeholder.png",
-          ].filter(Boolean) as string[];
-
           return (
             <button
               key={(m as any).id}
@@ -91,28 +84,15 @@ export default function MonsterPicker({
 
               {/* right: thumbnail */}
               <div className="shrink-0">
-                {imgChain.length ? (
-                  <img
-                    src={imgChain[0]!}
-                    loading="lazy"
-                    alt=""
-                    width={40}
-                    height={40}
-                    className="h-12 w-12 rounded object-contain"
-                    data-fallback-step={0}
-                    onError={(e) => {
-                      const img = e.currentTarget as HTMLImageElement;
-                      const step = Number(img.dataset.fallbackStep || "0");
-                      const next = step + 1;
-                      if (next < imgChain.length) {
-                        img.dataset.fallbackStep = String(next);
-                        img.src = imgChain[next]!;
-                      } else if (img.src !== "/monsters/placeholder.png") {
-                        img.src = "/monsters/placeholder.png";
-                      }
-                    }}
-                  />
-                ) : null}
+                <MonsterImage
+                  monster={m}
+                  size={180}
+                  alt=""
+                  width={40}
+                  height={40}
+                  className="h-12 w-12 rounded object-contain"
+                  loading="lazy"
+                />
               </div>
             </button>
           );

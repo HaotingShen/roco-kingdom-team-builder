@@ -201,9 +201,11 @@ class TeamOut(BaseModel):
 
 class TeamAnalyzeByIdRequest(BaseModel):
     team_id: int
+    language: Literal["en", "zh"] = "en"
 
 class TeamAnalyzeInlineRequest(BaseModel):
     team: TeamCreate
+    language: Literal["en", "zh"] = "en"
 
 class EffectiveStats(BaseModel):
     hp: int
@@ -266,6 +268,13 @@ class MonsterAnalysisOut(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
+class TeamSynergyRecommendation(BaseModel):
+    """Team-wide synergy analysis and playing recommendations."""
+    key_combos: List[str] = Field(default_factory=list)
+    turn_order_strategy: List[str] = Field(default_factory=list)
+    magic_item_usage: List[str] = Field(default_factory=list)
+    general_strategy: List[str] = Field(default_factory=list)
+
 class TeamAnalysisOut(BaseModel):
     team: TeamOut
     per_monster: List[MonsterAnalysisOut]
@@ -273,6 +282,7 @@ class TeamAnalysisOut(BaseModel):
     magic_item_eval: MagicItemEvaluation
     recommendations: List[str] = Field(default_factory=list)
     recommendations_structured: List[RecItem] = Field(default_factory=list)
+    team_synergy: Optional[TeamSynergyRecommendation] = None
 
     model_config = ConfigDict(from_attributes=True)
     

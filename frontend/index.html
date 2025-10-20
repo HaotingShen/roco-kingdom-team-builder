@@ -7,9 +7,103 @@
       content="width=device-width, initial-scale=1, viewport-fit=cover"
     />
     <title>Roco Team Builder</title>
+    <style>
+      /* Loading screen - shown while JavaScript loads */
+      #app-loading {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #f4f4f5;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Microsoft YaHei", sans-serif;
+        z-index: 9999;
+      }
+      .loading-content {
+        text-align: center;
+      }
+      .spinner {
+        width: 48px;
+        height: 48px;
+        border: 4px solid #e4e4e7;
+        border-top-color: #3b82f6;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin: 0 auto;
+      }
+      @keyframes spin {
+        to { transform: rotate(360deg); }
+      }
+      .loading-text {
+        margin-top: 20px;
+        font-size: 16px;
+        color: #52525b;
+        font-weight: 500;
+      }
+      .loading-subtext {
+        margin-top: 8px;
+        font-size: 14px;
+        color: #a1a1aa;
+      }
+      /* Hide loading screen when app is ready */
+      .app-ready #app-loading {
+        display: none;
+      }
+    </style>
   </head>
   <body class="bg-zinc-50">
     <div id="root"></div>
+    <!-- Loading screen with i18n support -->
+    <div id="app-loading">
+      <div class="loading-content">
+        <div class="spinner"></div>
+        <div class="loading-text" id="loading-text">Loading Roco Team Builder</div>
+        <div class="loading-subtext" id="loading-subtext">Initializing application...</div>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
+    <script>
+      // Detect language from localStorage (same as React app)
+      (function() {
+        const lang = localStorage.getItem('lang') || 'en';
+
+        const translations = {
+          en: {
+            title: 'Loading Roco Team Builder',
+            subtitle: 'Initializing application...'
+          },
+          zh: {
+            title: '正在加载洛手配队器',
+            subtitle: '初始化应用...'
+          }
+        };
+
+        // Update text based on language
+        const text = translations[lang] || translations.en;
+        document.getElementById('loading-text').textContent = text.title;
+        document.getElementById('loading-subtext').textContent = text.subtitle;
+
+        // Also update page title
+        document.title = lang === 'zh' ? '洛手配队器' : 'Roco Team Builder';
+      })();
+
+      // Remove loading screen when React renders
+      const observer = new MutationObserver(() => {
+        const root = document.getElementById('root');
+        if (root && root.children.length > 0) {
+          document.body.classList.add('app-ready');
+          observer.disconnect();
+        }
+      });
+      observer.observe(document.getElementById('root'), { childList: true });
+
+      // Fallback: Remove after 30 seconds
+      setTimeout(() => {
+        document.body.classList.add('app-ready');
+      }, 30000);
+    </script>
   </body>
 </html>

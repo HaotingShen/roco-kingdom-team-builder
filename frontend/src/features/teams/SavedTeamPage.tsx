@@ -1,9 +1,28 @@
 import { Link, useParams, useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
+import { useState, useEffect } from "react";
 import { endpoints } from "@/lib/api";
 import { useBuilderStore } from "../builder/builderStore";
 import type { TeamOut } from "@/types";
 import { pickName, useI18n } from "@/i18n";
+
+/* --- Animated dots component --- */
+function AnimatedDots() {
+  const [dots, setDots] = useState(".");
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setDots(prev => {
+        if (prev === "...") return ".";
+        return prev + ".";
+      });
+    }, 400);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  return <span className="inline-block w-3 text-left">{dots}</span>;
+}
 
 export default function SavedTeamPage() {
   const { id } = useParams();
@@ -11,6 +30,8 @@ export default function SavedTeamPage() {
   const { lang, t } = useI18n();
   const loadIntoBuilder = useBuilderStore(s => s.loadFromTeam);
   const setAnalysis = useBuilderStore(s => s.setAnalysis);
+  const isAnalyzing = useBuilderStore(s => s.isAnalyzing);
+  const setIsAnalyzing = useBuilderStore(s => s.setIsAnalyzing);
   const qc = useQueryClient();
 
   const teamId = Number(id);
@@ -52,10 +73,36 @@ export default function SavedTeamPage() {
     del.mutate();
   };
 
+  const [serverErr, setServerErr] = useState<string | null>(null);
+
   const analyze = useMutation({
-    mutationFn: () => endpoints.analyzeTeamById({ team_id: teamId }).then(r => r.data),
-    onSuccess: (res) => { setAnalysis(res); nav("/build"); },
+    mutationFn: () => endpoints.analyzeTeamById({ team_id: teamId, language: lang }).then(r => r.data),
+    onMutate: () => {
+      setIsAnalyzing(true);
+    },
+    onError: (err: any) => {
+      setServerErr(err?.response?.data?.detail || err?.message || t("builder.analysisFailed"));
+      setIsAnalyzing(false);
+    },
+    onSuccess: (res) => {
+      setServerErr(null);
+      setAnalysis(res);
+      setIsAnalyzing(false);
+      nav("/build");
+    },
+    onSettled: () => {
+      setIsAnalyzing(false);
+    },
   });
+
+  const onAnalyze = () => {
+    if (isAnalyzing) {
+      setServerErr(t("builder.analysisInProgress"));
+      return;
+    }
+    setServerErr(null);
+    analyze.mutate();
+  };
 
   if (q.isLoading) return <div>{t("common.loading")}</div>;
   if (!q.data) return <div>{t("teams.notFound")}</div>;
@@ -121,12 +168,19 @@ export default function SavedTeamPage() {
           </button>
 
           <button
-            className="w-full h-9 rounded bg-zinc-900 text-white hover:bg-zinc-800 cursor-pointer
-                       disabled:opacity-60 disabled:cursor-not-allowed"
-            onClick={() => analyze.mutate()}
-            disabled={analyze.isPending}
+            className={`w-full h-9 rounded cursor-pointer
+                       ${analyze.isPending || isAnalyzing ? "bg-zinc-300 text-zinc-600 cursor-not-allowed" : "bg-zinc-900 text-white hover:bg-zinc-800"}`}
+            onClick={onAnalyze}
+            disabled={analyze.isPending || isAnalyzing}
           >
-            {analyze.isPending ? t("teams.analyzing") : t("teams.analyze")}
+            {analyze.isPending || isAnalyzing ? (
+              <span className="inline-flex items-center justify-center">
+                {t("teams.analyzing").replace("…", "").replace("...", "")}
+                <AnimatedDots />
+              </span>
+            ) : (
+              t("teams.analyze")
+            )}
           </button>
 
           <button
@@ -137,6 +191,20 @@ export default function SavedTeamPage() {
           >
             {del.isPending ? t("teams.deleting") : t("teams.delete")}
           </button>
+
+          {serverErr && (
+            <div className="rounded border border-red-300 bg-red-50 text-red-700 p-2 text-xs flex items-start justify-between">
+              <div className="pr-2">{serverErr}</div>
+              <button
+                onClick={() => setServerErr(null)}
+                className="text-red-700 hover:text-red-900 px-1 cursor-pointer"
+                aria-label="Close"
+                title="Close"
+              >
+                x
+              </button>
+            </div>
+          )}
         </aside>
       </div>
     </div>

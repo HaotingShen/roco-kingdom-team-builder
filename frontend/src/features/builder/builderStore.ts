@@ -37,6 +37,9 @@ type BuilderState = {
   analysis: TeamAnalysisOut | null;
   setAnalysis: (a: TeamAnalysisOut | null) => void;
 
+  isAnalyzing: boolean;
+  setIsAnalyzing: (v: boolean) => void;
+
   reset: () => void;
 };
 
@@ -103,11 +106,15 @@ export const useBuilderStore = create<BuilderState>((set, get) => ({
   analysis: null,
   setAnalysis: (a) => set({ analysis: a }),
 
+  isAnalyzing: false,
+  setIsAnalyzing: (v) => set({ isAnalyzing: v }),
+
   reset: () => set({
     teamId: null,
     name: "",
     magic_item_id: null,
     slots: Array.from({ length: 6 }, emptySlot),
     analysis: null,
+    isAnalyzing: false,
   }),
 }));

@@ -5,21 +5,29 @@ import MonsterCard from "@/components/MonsterCard";
 import CustomSelect from "@/components/CustomSelect";
 import AnalysisResults from "@/components/AnalysisResults";
 import type { MagicItemOut, UserMonsterCreate, TeamCreate, TeamAnalysisOut, TeamOut, TeamUpdate } from "@/types";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import MonsterInspector from "./MonsterInspector";
 import { useI18n, pickName } from "@/i18n";
+import { extractErrorMessage } from "@/hooks/useTeamMutation";
+import { magicItemImageUrl } from "@/lib/images";
+import { QUERY_KEYS } from "@/lib/constants";
 
-/* --- magic item icon --- */
-function encode(s?: string | null) {
-  return s ? encodeURIComponent(String(s).trim()) : "";
-}
-function magicItemIconUrl(mi?: MagicItemOut | null): string | null {
-  if (!mi) return null;
-  const zh = (mi as any)?.localized?.zh;
-  const cnName = zh && typeof zh.name === "string" ? zh.name : null;
-  if (cnName) return `/magic-items/${encode(cnName)}.png`;
-  if (mi.name) return `/magic-items/${encode(mi.name)}.png`;
-  return null;
+/* --- Animated dots component --- */
+function AnimatedDots() {
+  const [dots, setDots] = useState(".");
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setDots(prev => {
+        if (prev === "...") return ".";
+        return prev + ".";
+      });
+    }, 400);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  return <span className="inline-block w-3 text-left">{dots}</span>;
 }
 
 type VKey =
@@ -55,12 +63,6 @@ function validateSlot(slot: UserMonsterCreate): VKey[] {
   return errs;
 }
 
-function extractAxiosMessage(e: any): string {
-  const d = e?.response?.data;
-  if (d?.detail) return typeof d.detail === "string" ? d.detail : JSON.stringify(d.detail);
-  return e?.message ?? "Request failed";
-}
-
 // quick helper for clearing a single slot
 const zeroTalent = { hp_boost:0, phy_atk_boost:0, mag_atk_boost:0, phy_def_boost:0, mag_def_boost:0, spd_boost:0 } as const;
 
@@ -77,6 +79,8 @@ export default function BuilderPage() {
     toUpdatePayload,
     analysis,
     setAnalysis,
+    isAnalyzing,
+    setIsAnalyzing,
   } = useBuilderStore();
 
   const [activeIdx, setActiveIdx] = useState<number>(0);
@@ -85,7 +89,7 @@ export default function BuilderPage() {
   const { lang, t } = useI18n();
 
   const magicItems = useQuery<MagicItemOut[]>({
-    queryKey: ["magic_items"],
+    queryKey: QUERY_KEYS.MAGIC_ITEMS,
     queryFn: () => endpoints.magicItems().then((r) => r.data as MagicItemOut[]),
   });
   const qc = useQueryClient();
@@ -96,15 +100,29 @@ export default function BuilderPage() {
   /* ---------- analyze ---------- */
   const analyze = useMutation({
     mutationFn: (payload: TeamCreate) =>
-      endpoints.analyzeTeam(payload).then((r) => r.data as TeamAnalysisOut),
-    onError: (err) => setServerErr(extractAxiosMessage(err)),
+      endpoints.analyzeTeam(payload, lang).then((r) => r.data as TeamAnalysisOut),
+    onMutate: () => {
+      setIsAnalyzing(true);
+    },
+    onError: (err) => {
+      setServerErr(extractErrorMessage(err));
+      setIsAnalyzing(false);
+    },
     onSuccess: (data) => {
       setServerErr(null);
       setAnalysis(data);
+      setIsAnalyzing(false);
+    },
+    onSettled: () => {
+      setIsAnalyzing(false);
     },
   });
 
   const onAnalyze = () => {
+    if (isAnalyzing) {
+      setServerErr(t("builder.analysisInProgress"));
+      return;
+    }
     if (!magic_item_id) {
       setServerErr(t("builder.v_pickMagicItem"));
       return;
@@ -114,6 +132,9 @@ export default function BuilderPage() {
       return;
     }
     try {
+      // Clear previous analysis results immediately when user clicks analyze
+      setAnalysis(null);
+      setServerErr(null);
       analyze.mutate(toPayload());
     } catch (e: any) {
       setServerErr(e?.message || t("builder.incompleteTeamMsg"));
@@ -126,14 +147,14 @@ export default function BuilderPage() {
       endpoints.createTeam(payload).then((r) => r.data as TeamOut),
     onError: (err) => {
       setServerOk(null);
-      setServerErr(extractAxiosMessage(err));
+      setServerErr(extractErrorMessage(err));
     },
     onSuccess: (team) => {
       setServerErr(null);
       setServerOk(t("builder.savedMsg"));           // persistent until closed
       useBuilderStore.setState({ teamId: team.id }); // keep id for future updates
-      qc.invalidateQueries({ queryKey: ["teams"] });
-      qc.invalidateQueries({ queryKey: ["team", team.id] });
+      qc.invalidateQueries({ queryKey: QUERY_KEYS.TEAMS });
+      qc.invalidateQueries({ queryKey: QUERY_KEYS.TEAM_DETAIL(team.id) });
     },
   });
 
@@ -142,13 +163,13 @@ export default function BuilderPage() {
       endpoints.updateTeam(id, body).then((r) => r.data as TeamOut),
     onError: (err) => {
       setServerOk(null);
-      setServerErr(extractAxiosMessage(err));
+      setServerErr(extractErrorMessage(err));
     },
     onSuccess: (_updatedTeam, variables) => {
       setServerErr(null);
       setServerOk(t("builder.updatedMsg"));         // persistent until closed
-      qc.invalidateQueries({ queryKey: ["teams"] });
-      qc.invalidateQueries({ queryKey: ["team", variables.id] });
+      qc.invalidateQueries({ queryKey: QUERY_KEYS.TEAMS });
+      qc.invalidateQueries({ queryKey: QUERY_KEYS.TEAM_DETAIL(variables.id) });
     },
   });
 
@@ -279,7 +300,7 @@ export default function BuilderPage() {
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder={t("builder.teamNamePlaceholder") ?? "My Team"}
-              className="h-9 rounded border px-2 text-sm w-[220px]"
+              className="h-9 rounded border px-2 text-sm w-[150px]"
             />
           </div>
 
@@ -293,7 +314,7 @@ export default function BuilderPage() {
                 ...(magicItems.data ?? []).map((mi) => ({
                   value: mi.id,
                   label: pickName(mi as any, lang) || mi.name,
-                  leftIconUrl: magicItemIconUrl(mi),
+                  leftIconUrl: magicItemImageUrl(mi),
                 })),
               ]}
               placeholder={t("common.select")}
@@ -311,7 +332,14 @@ export default function BuilderPage() {
             className={`h-9 px-4 rounded ${canAnalyze ? "border cursor-pointer" : "bg-zinc-300 text-zinc-600 cursor-not-allowed"}`}
             title={!canAnalyze ? t("builder.incompleteTeamMsg") : ""}
           >
-            {createTeam.isPending ? t("builder.saving") : (t("builder.saveTeam") ?? "Save")}
+            {createTeam.isPending ? (
+              <span className="inline-flex items-center justify-center">
+                {t("builder.saving").replace("…", "").replace("...", "")}
+                <AnimatedDots />
+              </span>
+            ) : (
+              t("builder.saveTeam") ?? "Save"
+            )}
           </button>
 
           {teamId ? (
@@ -321,19 +349,33 @@ export default function BuilderPage() {
               className={`h-9 px-4 rounded ${canAnalyze ? "border cursor-pointer" : "bg-zinc-300 text-zinc-600 cursor-not-allowed"}`}
               title={!canAnalyze ? t("builder.incompleteTeamMsg") : ""}
             >
-              {updateTeam.isPending ? t("builder.updating") : (t("builder.updateTeam") ?? "Update")}
+              {updateTeam.isPending ? (
+                <span className="inline-flex items-center justify-center">
+                  {t("builder.updating").replace("…", "").replace("...", "")}
+                  <AnimatedDots />
+                </span>
+              ) : (
+                t("builder.updateTeam") ?? "Update"
+              )}
             </button>
           ) : null}
 
           {/* analyze */}
           <button
             onClick={onAnalyze}
-            disabled={!canAnalyze || analyze.isPending}
+            disabled={!canAnalyze || analyze.isPending || isAnalyzing}
             className={`h-9 px-4 rounded ${
-              canAnalyze ? "bg-zinc-900 text-white cursor-pointer" : "bg-zinc-300 text-zinc-600 cursor-not-allowed"
+              canAnalyze && !isAnalyzing ? "bg-zinc-900 text-white cursor-pointer" : "bg-zinc-300 text-zinc-600 cursor-not-allowed"
             }`}
           >
-            {analyze.isPending ? t("builder.analyzing") : t("builder.analyze")}
+            {analyze.isPending || isAnalyzing ? (
+              <span className="inline-flex items-center justify-center">
+                {t("builder.analyzing").replace("…", "").replace("...", "")}
+                <AnimatedDots />
+              </span>
+            ) : (
+              t("builder.analyze")
+            )}
           </button>
         </div>
 

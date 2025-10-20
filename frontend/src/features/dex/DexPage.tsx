@@ -1,4 +1,5 @@
-import { useMemo, useState, useEffect, ReactNode } from "react";
+import { useMemo, useState, useEffect } from "react";
+import type { ReactNode } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { endpoints } from "@/lib/api";
 import { useI18n, pickName, pickDesc, pickFormName } from "@/i18n";
@@ -7,14 +8,9 @@ import PageTabs from "@/components/PageTabs";
 import useDebounce from "@/hooks/useDebounce";
 import { useQuery } from "@tanstack/react-query";
 import { useWindowVirtualizer } from "@tanstack/react-virtual";
+import { typeIconUrl, magicItemImageUrl } from "@/lib/images";
 
 /* ---------------- helpers ---------------- */
-
-function typeIconUrl(name?: string, size: 30 | 45 | 60 = 45) {
-  if (!name) return null;
-  const slug = name.toLowerCase().replace(/\s+/g, "-");
-  return `/type-icons/${size}/${slug}.png`;
-}
 
 /** Image filename matches Chinese name (and Chinese form in parentheses if not default). */
 function monsterImgUrlCN(m: any, size: 180 | 270 | 360 = 180) {
@@ -23,12 +19,6 @@ function monsterImgUrlCN(m: any, size: 180 | 270 | 360 = 180) {
   const base = cnForm ? `${cnName}(${cnForm})` : cnName;
   // Use encodeURI to support Chinese and parentheses in URLs.
   return encodeURI(`/monsters/${size}/${base}.png`);
-}
-
-/** Magic-item images are named by their Chinese name. */
-function magicItemImgUrl(it: any, size = 256) {
-  const cnName = pickName(it, "zh") || it.name;
-  return encodeURI(`/magic-items/${cnName}.png`);
 }
 
 function useColumns(kind: "monsters" | "moves") {
@@ -93,20 +83,6 @@ function Pill({
   );
 }
 
-/* ---------------- scroll restore (per-tab) ---------------- */
-function useScrollRestoration(key: string) {
-  useEffect(() => {
-    const y = Number(sessionStorage.getItem(key) || 0);
-    if (!Number.isNaN(y) && y > 0) {
-      // wait a tick so content can paint
-      requestAnimationFrame(() => window.scrollTo(0, y));
-    }
-    return () => {
-      sessionStorage.setItem(key, String(window.scrollY));
-    };
-  }, [key]);
-}
-
 /* ===========================================================
    Monsters tab
    =========================================================== */
@@ -123,8 +99,6 @@ function MonstersTab() {
   const [filterVariant, setFilterVariant] = useState<"all" | "regional" | "leader">(
     (sp.get("form") as any) || "all"
   );
-
-  useScrollRestoration("scroll:dex:monsters");
 
   const types = useQuery<TypeOut[]>({
     queryKey: ["types-all"],
@@ -157,10 +131,10 @@ function MonstersTab() {
       const nameZH = (pickName(m as any, "zh") || "").toLowerCase();
       const formEN = (pickFormName(m as any, "en") || "").toLowerCase();
       const formZH = (pickFormName(m as any, "zh") || "").toLowerCase();
-      const mainEN = (m.main_type?.localized?.en || m.main_type?.name || "").toLowerCase();
-      const mainZH = (m.main_type?.localized?.zh || "").toLowerCase();
-      const subEN  = (m.sub_type?.localized?.en || m.sub_type?.name || "").toLowerCase();
-      const subZH  = (m.sub_type?.localized?.zh || "").toLowerCase();
+      const mainEN = (pickName(m.main_type as any, "en") || m.main_type?.name || "").toLowerCase();
+      const mainZH = (pickName(m.main_type as any, "zh") || "").toLowerCase();
+      const subEN  = (pickName(m.sub_type as any, "en") || m.sub_type?.name || "").toLowerCase();
+      const subZH  = (pickName(m.sub_type as any, "zh") || "").toLowerCase();
       const leaderEN = m.is_leader_form ? "leader" : "";
       const leaderZH = m.is_leader_form ? "首领" : "";
       const hay = [nameEN, nameZH, formEN, formZH, mainEN, mainZH, subEN, subZH, leaderEN, leaderZH].join(" ");
@@ -189,7 +163,6 @@ function MonstersTab() {
   // keep URL in sync
   useEffect(() => {
     const next = new URLSearchParams(sp);
-    next.set("tab", "monsters");
     q ? next.set("q", q) : next.delete("q");
     selectedTypes.length ? next.set("types", selectedTypes.join(",")) : next.delete("types");
     filterVariant !== "all" ? next.set("form", filterVariant) : next.delete("form");
@@ -335,8 +308,6 @@ function MovesTab() {
   });
   const [cat, setCat] = useState<string | null>(sp.get("mcat") ?? null);
 
-  useScrollRestoration("scroll:dex:moves");
-
   const types = useQuery<TypeOut[]>({
     queryKey: ["types-all"],
     queryFn: () => endpoints.types().then((r) => r.data as TypeOut[]),
@@ -418,7 +389,6 @@ function MovesTab() {
   // sync URL
   useEffect(() => {
     const next = new URLSearchParams(sp);
-    next.set("tab", "moves");
     q ? next.set("mq", q) : next.delete("mq");
     typeId ? next.set("mtype", String(typeId)) : next.delete("mtype");
     cat ? next.set("mcat", cat) : next.delete("mcat");
@@ -636,7 +606,7 @@ function MagicItemsTab() {
       {(items.data ?? []).map((it) => {
         const nm = pickName(it as any, lang) || it.name;
         const desc = pickDesc(it as any, lang) || it.description || "";
-        const img = magicItemImgUrl(it);
+        const img = magicItemImageUrl(it) || "/magic-items/placeholder.png";
 
         return (
           <div key={it.id} className="rounded border bg-white p-3 flex items-start gap-3">
@@ -698,8 +668,22 @@ function GameTermsTab() {
 
 export default function DexPage() {
   const { t } = useI18n();
+  const [sp, setSp] = useSearchParams();
+
+  // Get active tab from URL or default to "monsters"
+  const activeTab = sp.get("tab") || "monsters";
+
+  // Handle tab changes - update URL param
+  const handleTabChange = (key: string) => {
+    const next = new URLSearchParams(sp);
+    next.set("tab", key);
+    setSp(next, { replace: true });
+  };
+
   return (
     <PageTabs
+      activeTab={activeTab}
+      onTabChange={handleTabChange}
       tabs={[
         { key: "monsters", label: t("dex.tab_monsters"), content: (<MonstersTab />) as ReactNode },
         { key: "moves",    label: t("dex.tab_moves"),    content: (<MovesTab />) as ReactNode },

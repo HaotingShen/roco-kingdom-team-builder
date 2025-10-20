@@ -1,9 +1,29 @@
 import { useState } from "react";
+import type { ReactNode } from "react";
+
+interface PageTabsProps {
+  tabs: { key: string; label: string; content: ReactNode }[];
+  activeTab?: string;
+  onTabChange?: (key: string) => void;
+}
 
 export default function PageTabs({
-  tabs
-}: { tabs: { key: string; label: string; content: React.ReactNode }[] }) {
-  const [active, setActive] = useState(tabs[0]?.key);
+  tabs,
+  activeTab,
+  onTabChange,
+}: PageTabsProps) {
+  const [internalActive, setInternalActive] = useState(tabs[0]?.key);
+
+  // Support both controlled and uncontrolled usage
+  const active = activeTab ?? internalActive;
+  const setActive = (key: string) => {
+    if (onTabChange) {
+      onTabChange(key);
+    } else {
+      setInternalActive(key);
+    }
+  };
+
   return (
     <div>
       <div className="flex gap-2 border-b mb-3">

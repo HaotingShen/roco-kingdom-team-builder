@@ -5,14 +5,9 @@ import { endpoints } from "@/lib/api";
 import { useI18n, pickName, pickDesc, pickFormName } from "@/i18n";
 import type { TypeOut, MoveOut, MonsterOut, StatKey } from "@/types";
 import { STAT_KEYS } from "@/types";
+import { typeIconUrl } from "@/lib/images";
 
 /* ---------- helpers ---------- */
-
-function typeIconUrl(name?: string, size: 30 | 45 | 60 = 45) {
-  if (!name) return null;
-  const slug = name.toLowerCase().replace(/\s+/g, "-");
-  return `/type-icons/${size}/${slug}.png`;
-}
 
 function monsterImgUrlCN(m: any, size: 180 | 270 | 360 = 270) {
   const cnName = pickName(m, "zh") || m.name || String(m.id);

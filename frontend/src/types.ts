@@ -2,10 +2,27 @@ export type ID = number;
 
 /* ---------- shared ---------- */
 
-export interface LocalizedName { [key: string]: any } // flexible
+/** Localized content structure for different languages */
+export interface LocalizedContent {
+  name?: string;
+  description?: string;
+  form?: string;
+  title?: string;
+  [key: string]: string | undefined;
+}
+
+/** Localized field with language codes as keys */
+export interface LocalizedField {
+  zh?: LocalizedContent | string;
+  en?: LocalizedContent | string;
+  [languageCode: string]: LocalizedContent | string | undefined;
+}
+
+/** Base interface for entities with name and localization */
 export interface Named {
   name: string;
-  localized?: LocalizedName;
+  key?: string;
+  localized?: LocalizedField;
 }
 
 /* Frontend-wide MoveCategory. */
@@ -251,6 +268,13 @@ export interface MagicItemEvaluation {
   reasoning?: string | null;
 }
 
+export interface TeamSynergyRecommendation {
+  key_combos: string[];
+  turn_order_strategy: string[];
+  magic_item_usage: string[];
+  general_strategy: string[];
+}
+
 /** Final analysis response (matches backend) */
 export interface TeamAnalysisOut {
   team: TeamOut;
@@ -259,6 +283,7 @@ export interface TeamAnalysisOut {
   magic_item_eval: MagicItemEvaluation;
   recommendations: string[];
   recommendations_structured: RecItem[];
+  team_synergy?: TeamSynergyRecommendation | null;
 }
 
 /* ---------- (optional) legacy shape kept for back-compat ---------- */
