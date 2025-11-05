@@ -26,12 +26,3 @@ def setup_logger(name: str = "roco_kingdom") -> logging.Logger:
 
 # Create default logger
 logger = setup_logger()
-
-
-class LoggerMixin:
-    """Mixin to add logging capability to any class."""
-
-    @property
-    def logger(self) -> logging.Logger:
-        """Get logger for this class."""
-        return logging.getLogger(self.__class__.__name__)

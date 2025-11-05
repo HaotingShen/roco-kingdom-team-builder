@@ -285,18 +285,3 @@ export interface TeamAnalysisOut {
   recommendations_structured: RecItem[];
   team_synergy?: TeamSynergyRecommendation | null;
 }
-
-/* ---------- (optional) legacy shape kept for back-compat ---------- */
-/** Older components referenced this; keep it to prevent breakage if any remain. */
-export interface LegacyTeamAnalysisOut {
-  team_weak_to?: string[];
-  valid_targets?: number[];
-  recommendations?: string[];
-  monsters?: Array<{
-    monster_id: ID;
-    effective_stats?: Record<string, number>;
-    energy_profile?: any;
-    counter_coverage?: any;
-    trait_synergies?: string[];
-  }>;
-}

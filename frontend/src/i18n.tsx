@@ -201,6 +201,10 @@ const ui: Record<Lang, Dict> = {
       warn: "Warning",
       danger: "Danger",
     },
+    errors: {
+      rateLimitExceeded: "Too many requests. Please wait before analyzing again.",
+      rateLimitTip: "Tip: Analyzing the same team again uses cache and is instant!",
+    },
     dex: {
       tab_monsters: "Monsters",
       tab_moves: "Moves",
@@ -373,6 +377,10 @@ const ui: Record<Lang, Dict> = {
       info: "提示",
       warn: "警告",
       danger: "危险",
+    },
+    errors: {
+      rateLimitExceeded: "请求过于频繁，请等待后再试。",
+      rateLimitTip: "提示：重新分析相同队伍会使用缓存，无需等待！",
     },
     dex: {
       tab_monsters: "精灵图鉴",

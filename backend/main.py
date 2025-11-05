@@ -1,11 +1,23 @@
-from fastapi import FastAPI, Depends, Query, HTTPException, status
+from fastapi import FastAPI, Depends, Query, HTTPException, status, Request
 from fastapi.middleware.cors import CORSMiddleware
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.middleware import SlowAPIMiddleware
 from sqlalchemy.orm import Session, sessionmaker, joinedload
 from sqlalchemy import create_engine, or_, cast, String, func
-from backend.config import DATABASE_URL, OPENAI_API_KEY, GEMINI_API_KEY
+from backend.config import (
+    DATABASE_URL,
+    GEMINI_API_KEY,
+    ALLOWED_ORIGINS,
+    LOG_LEVEL,
+    DB_POOL_SIZE,
+    DB_MAX_OVERFLOW,
+)
 from typing import Optional, List
 from decimal import Decimal, ROUND_HALF_UP
 from backend import models, schemas
+from backend.cache import llm_cache
+from backend.rate_limiter import limiter, analysis_rate_limit, rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
 from collections import Counter
 import re
 from google import genai
@@ -14,24 +26,36 @@ import asyncio
 import json
 import time
 import logging
+import hashlib
 
 # Setup logger
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=getattr(logging, LOG_LEVEL.upper(), logging.INFO))
 logger = logging.getLogger(__name__)
 
 client = genai.Client(api_key=GEMINI_API_KEY)
 
 app = FastAPI()
 
+# Add rate limiter to app state
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
+
+# Add SlowAPI middleware for rate limiting
+app.add_middleware(SlowAPIMiddleware)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allow all for development, restrict for production
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-engine = create_engine(DATABASE_URL)
+engine = create_engine(
+    DATABASE_URL,
+    pool_size=DB_POOL_SIZE,
+    max_overflow=DB_MAX_OVERFLOW,
+)
 SessionLocal = sessionmaker(bind=engine)
 
 def get_db():
@@ -683,6 +707,20 @@ def generate_recommendations(per_monster_analysis, type_coverage, magic_item_eva
 def read_root():
     return {"message": "Welcome to Roco Team Builder!"}
 
+@app.get("/cache/stats")
+def get_cache_stats():
+    """Get cache statistics for monitoring."""
+    return {
+        "llm_cache_size": len(llm_cache._cache),
+        "ttl_seconds": llm_cache.ttl_seconds
+    }
+
+@app.post("/cache/clear")
+def clear_cache():
+    """Clear all LLM cache entries (admin endpoint)."""
+    llm_cache.clear()
+    return {"message": "Cache cleared successfully", "cache_size": len(llm_cache._cache)}
+
 @app.get("/monsters", response_model=List[schemas.MonsterLiteOut])
 def get_monsters(
     db: Session = Depends(get_db),
@@ -946,16 +984,109 @@ def create_team(team: schemas.TeamCreate, db: Session = Depends(get_db)):
     db.refresh(db_team)
     return db_team
 
-# -------- Analyze Team (Inline) --------
+# -------- Cache Key Generation --------
 
-@app.post("/team/analyze", response_model=schemas.TeamAnalysisOut)
-async def analyze_team(req: schemas.TeamAnalyzeInlineRequest, db: Session = Depends(get_db)):
+def generate_monster_cache_key(monster_id: int, personality_id: int, legacy_type_id: int,
+                                 move_ids: tuple, talent: schemas.TalentIn, language: str) -> str:
+    """Generate a unique cache key for a monster's trait synergy analysis."""
+    # Create a stable string representation of the monster configuration
+    key_parts = [
+        f"m:{monster_id}",
+        f"p:{personality_id}",
+        f"l:{legacy_type_id}",
+        f"mv:{'-'.join(map(str, sorted(move_ids)))}",
+        f"t:{talent.hp_boost}-{talent.phy_atk_boost}-{talent.mag_atk_boost}-{talent.phy_def_boost}-{talent.mag_def_boost}-{talent.spd_boost}",
+        f"lang:{language}"
+    ]
+    key_str = "|".join(key_parts)
+    # Hash to keep key size manageable
+    return f"monster_trait:{hashlib.md5(key_str.encode()).hexdigest()}"
+
+def generate_team_cache_key(team_data: schemas.TeamCreate, language: str) -> str:
+    """Generate a unique cache key for team-wide synergy analysis."""
+    # Include magic item in the key (different magic item = different team)
+    key_parts = [f"magic:{team_data.magic_item_id}"]
+
+    # Add each monster's configuration
+    monster_keys = []
+    for um in team_data.user_monsters:
+        monster_key = generate_monster_cache_key(
+            um.monster_id,
+            um.personality_id,
+            um.legacy_type_id,
+            (um.move1_id, um.move2_id, um.move3_id, um.move4_id),
+            um.talent,
+            language
+        )
+        monster_keys.append(monster_key)
+
+    # Sort monster keys to ensure consistent cache key regardless of order
+    monster_keys.sort()
+    key_parts.extend(monster_keys)
+
+    key_str = "|".join(key_parts)
+    return f"team_synergy:{hashlib.md5(key_str.encode()).hexdigest()}"
+
+
+def check_if_all_cached(team_data: schemas.TeamCreate, language: str) -> bool:
+    """
+    Pre-flight cache check to determine if analysis can bypass rate limiting.
+
+    Returns True if ALL 7 LLM calls (6 monster + 1 team) would hit cache.
+    Returns False if ANY call would be a cache miss.
+
+    This allows cached analyses to be served instantly without rate limiting.
+    """
+    # Check all 6 monster cache keys
+    for um in team_data.user_monsters:
+        monster_key = generate_monster_cache_key(
+            um.monster_id,
+            um.personality_id,
+            um.legacy_type_id,
+            (um.move1_id, um.move2_id, um.move3_id, um.move4_id),
+            um.talent,
+            language
+        )
+        if llm_cache.get(monster_key) is None:
+            logger.debug(f"Cache miss detected for monster key: {monster_key[:50]}...")
+            return False  # At least one cache miss
+
+    # Check team-wide cache key
+    team_key = generate_team_cache_key(team_data, language)
+    if llm_cache.get(team_key) is None:
+        logger.debug(f"Cache miss detected for team key: {team_key[:50]}...")
+        return False  # Team synergy cache miss
+
+    logger.info("All cache keys found - bypassing rate limit for fully cached analysis")
+    return True  # All 7 calls are cached
+
+
+# -------- Shared Analysis Logic --------
+
+async def _perform_team_analysis(
+    team_data: schemas.TeamCreate,
+    language: str,
+    db: Session
+) -> schemas.TeamAnalysisOut:
+    """
+    Core team analysis logic shared by both endpoints.
+    This function does NOT have rate limiting - that's applied at the endpoint level.
+    """
     start_time = time.time()
-    
-    team_data = req.team  # This is TeamCreate (with 6 UserMonsterCreate)
-    
-    # --- Helper: Call LLM and Parse Result ---
-    async def call_llm(prompt: str):
+
+    # team_data is TeamCreate (with 6 UserMonsterCreate)
+
+    # --- Helper: Call LLM with Caching ---
+    async def call_llm(prompt: str, cache_key: str):
+        """Call LLM with caching support."""
+        # Check cache first
+        cached_result = llm_cache.get(cache_key)
+        if cached_result is not None:
+            logger.info(f"Cache HIT for key: {cache_key[:50]}...")
+            return cached_result
+
+        # Cache miss - call LLM
+        logger.info(f"Cache MISS for key: {cache_key[:50]}...")
         try:
             resp = await client.aio.models.generate_content(
                 model="gemini-2.5-flash",
@@ -964,7 +1095,13 @@ async def analyze_team(req: schemas.TeamAnalyzeInlineRequest, db: Session = Depe
                     response_mime_type="application/json"
                 ),
             )
-            return json.loads(resp.text)
+            result = json.loads(resp.text)
+
+            # Cache the result
+            llm_cache.set(cache_key, result)
+            logger.info(f"Cached result for key: {cache_key[:50]}...")
+
+            return result
         except Exception as e:
             logger.error(f"LLM error: {e}", exc_info=True)
             return {"synergy_moves": [], "recommendation": ["Error generating analysis."]}
@@ -1027,7 +1164,6 @@ async def analyze_team(req: schemas.TeamAnalyzeInlineRequest, db: Session = Depe
 
     # === CONCURRENT LLM ANALYSIS ===
     logger.debug("Start creating prompt for LLM analysis...")
-    language = req.language  # Get language from request
     logger.info(f"Language received: {language}")
     llm_tasks = []
 
@@ -1044,12 +1180,23 @@ async def analyze_team(req: schemas.TeamAnalyzeInlineRequest, db: Session = Depe
         sub_type = type_db_map[base_monster.sub_type_id] if base_monster.sub_type_id else None
         personality = personality_db_map[um.personality_id]
 
+        # Generate cache key for this monster
+        cache_key = generate_monster_cache_key(
+            um.monster_id,
+            um.personality_id,
+            um.legacy_type_id,
+            (um.move1_id, um.move2_id, um.move3_id, um.move4_id),
+            um.talent,
+            language
+        )
+
         prompt = build_trait_synergy_prompt(base_monster, trait, selected_moves, preferred_attack_style, game_terms, legacy_type, main_type, sub_type, personality, language)
-        llm_tasks.append(call_llm(prompt))
+        llm_tasks.append(call_llm(prompt, cache_key))
 
     # Team-wide synergy analysis
+    team_cache_key = generate_team_cache_key(team_data, language)
     team_synergy_prompt = build_team_synergy_prompt(team_data.user_monsters, monster_db_map, move_db_map, type_db_map, personality_db_map, trait_db_map, magic_item, language)
-    llm_tasks.append(call_llm(team_synergy_prompt))
+    llm_tasks.append(call_llm(team_synergy_prompt, team_cache_key))
 
     llm_results = await asyncio.gather(*llm_tasks)
 
@@ -1183,13 +1330,49 @@ async def analyze_team(req: schemas.TeamAnalyzeInlineRequest, db: Session = Depe
 
     logger.debug("Finish team-level analysis!")
     elapsed = time.time() - start_time
-    logger.info(f"POST /team/analyze took {elapsed:.3f} seconds")
+    logger.info(f"Team analysis took {elapsed:.3f} seconds")
     return result
+
+
+# -------- Helper to apply rate limiting --------
+
+@analysis_rate_limit()
+async def _apply_rate_limit_check(request: Request):
+    """
+    Helper function to check rate limit.
+    Raises RateLimitExceeded if limit is exceeded.
+    Requires Request object for IP-based rate limiting.
+    """
+    pass
+
+
+# -------- Analyze Team (Inline) --------
+
+@app.post("/team/analyze", response_model=schemas.TeamAnalysisOut)
+async def analyze_team(
+    req: schemas.TeamAnalyzeInlineRequest,
+    request: Request,
+    db: Session = Depends(get_db)
+):
+    """Analyze a team configuration (inline data from request)."""
+    # Pre-flight cache check - bypass rate limiting if all cached
+    if not check_if_all_cached(req.team, req.language):
+        # Cache miss detected - apply rate limiting
+        # This will raise RateLimitExceeded (429) if limit exceeded
+        await _apply_rate_limit_check(request)
+
+    return await _perform_team_analysis(req.team, req.language, db)
+
 
 # -------- Analyze Team by ID --------
 
 @app.post("/team/analyze_by_id", response_model=schemas.TeamAnalysisOut)
-async def analyze_team_by_id(req: schemas.TeamAnalyzeByIdRequest, db: Session = Depends(get_db)):
+async def analyze_team_by_id(
+    req: schemas.TeamAnalyzeByIdRequest,
+    request: Request,
+    db: Session = Depends(get_db)
+):
+    """Analyze a saved team by its ID."""
     # Load the Team, its UserMonsters, Talents, etc. from the DB
     db_team = db.query(models.Team).filter(models.Team.id == req.team_id).first()
     if not db_team:
@@ -1223,9 +1406,14 @@ async def analyze_team_by_id(req: schemas.TeamAnalyzeByIdRequest, db: Session = 
         user_monsters=user_monsters,
         magic_item_id=db_team.magic_item_id
     )
-    # Wrap as a TeamAnalyzeInlineRequest and call analysis logic
-    inline_req = schemas.TeamAnalyzeInlineRequest(team=team_data, language=req.language)
-    return await analyze_team(inline_req, db)
+
+    # Pre-flight cache check - bypass rate limiting if all cached
+    if not check_if_all_cached(team_data, req.language):
+        # Cache miss detected - apply rate limiting
+        # This will raise RateLimitExceeded (429) if limit exceeded
+        await _apply_rate_limit_check(request)
+
+    return await _perform_team_analysis(team_data, req.language, db)
 
 # -------- PUT Team (Update) --------
 
