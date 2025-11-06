@@ -16,7 +16,16 @@ from typing import Optional, List
 from decimal import Decimal, ROUND_HALF_UP
 from backend import models, schemas
 from backend.cache import llm_cache
-from backend.rate_limiter import limiter, analysis_rate_limit, rate_limit_exceeded_handler
+from backend.rate_limiter import (
+    limiter,
+    analysis_rate_limit,
+    rate_limit_exceeded_handler,
+    check_analysis_rate_limit,
+    check_global_ip_rate_limit,
+    record_analysis,
+    get_rate_limit_message,
+)
+from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from collections import Counter
 import re
@@ -1028,6 +1037,37 @@ def generate_team_cache_key(team_data: schemas.TeamCreate, language: str) -> str
     return f"team_synergy:{hashlib.md5(key_str.encode()).hexdigest()}"
 
 
+def generate_team_composition_hash(team_data: schemas.TeamCreate) -> str:
+    """
+    Generate language-independent hash of team composition for rate limiting.
+
+    This hash is used to track rate limits per unique team composition,
+    regardless of language. This prevents bypassing rate limits by switching
+    between English and Chinese for the same team.
+    """
+    parts = [
+        f"mi:{team_data.magic_item_id}",
+    ]
+
+    # Sort user_monsters by monster_id to ensure consistent hash regardless of order
+    sorted_monsters = sorted(team_data.user_monsters, key=lambda x: x.monster_id)
+
+    for um in sorted_monsters:
+        # Create a string representation of each monster's configuration
+        # Note: language is NOT included here
+        monster_str = (
+            f"m:{um.monster_id}|p:{um.personality_id}|l:{um.legacy_type_id}|"
+            f"mv:{'-'.join(map(str, sorted([um.move1_id, um.move2_id, um.move3_id, um.move4_id])))}|"
+            f"t:{um.talent.hp_boost}-{um.talent.phy_atk_boost}-{um.talent.mag_atk_boost}-"
+            f"{um.talent.phy_def_boost}-{um.talent.mag_def_boost}-{um.talent.spd_boost}"
+        )
+        parts.append(monster_str)
+
+    # Hash and return first 16 characters (sufficient for rate limiting uniqueness)
+    full_hash = hashlib.md5("|".join(parts).encode()).hexdigest()
+    return full_hash[:16]
+
+
 def check_if_all_cached(team_data: schemas.TeamCreate, language: str) -> bool:
     """
     Pre-flight cache check to determine if analysis can bypass rate limiting.
@@ -1355,11 +1395,39 @@ async def analyze_team(
     db: Session = Depends(get_db)
 ):
     """Analyze a team configuration (inline data from request)."""
-    # Pre-flight cache check - bypass rate limiting if all cached
-    if not check_if_all_cached(req.team, req.language):
-        # Cache miss detected - apply rate limiting
-        # This will raise RateLimitExceeded (429) if limit exceeded
-        await _apply_rate_limit_check(request)
+    # Generate language-independent team composition hash
+    team_hash = generate_team_composition_hash(req.team)
+
+    # Check if fully cached
+    is_fully_cached = check_if_all_cached(req.team, req.language)
+
+    if not is_fully_cached:
+        # Not cached - check rate limit
+        client_ip = get_remote_address(request)
+
+        # First check: Global IP-based rate limit (prevents analyzing different teams rapidly)
+        if not check_global_ip_rate_limit(client_ip):
+            logger.warning(
+                f"Global rate limit exceeded for {client_ip} analyzing team {team_hash} in {req.language}"
+            )
+            raise HTTPException(
+                status_code=429,
+                detail=get_rate_limit_message(req.language)
+            )
+
+        # Second check: Per-team rate limit (prevents language-switching exploits)
+        if not check_analysis_rate_limit(client_ip, team_hash):
+            logger.warning(
+                f"Per-team rate limit exceeded for {client_ip} analyzing team {team_hash} in {req.language}"
+            )
+            raise HTTPException(
+                status_code=429,
+                detail=get_rate_limit_message(req.language)
+            )
+
+        # Record this analysis
+        logger.info(f"Recording analysis for {client_ip}:{team_hash}")
+        record_analysis(client_ip, team_hash)
 
     return await _perform_team_analysis(req.team, req.language, db)
 
@@ -1407,11 +1475,39 @@ async def analyze_team_by_id(
         magic_item_id=db_team.magic_item_id
     )
 
-    # Pre-flight cache check - bypass rate limiting if all cached
-    if not check_if_all_cached(team_data, req.language):
-        # Cache miss detected - apply rate limiting
-        # This will raise RateLimitExceeded (429) if limit exceeded
-        await _apply_rate_limit_check(request)
+    # Generate language-independent team composition hash
+    team_hash = generate_team_composition_hash(team_data)
+
+    # Check if fully cached
+    is_fully_cached = check_if_all_cached(team_data, req.language)
+
+    if not is_fully_cached:
+        # Not cached - check rate limit
+        client_ip = get_remote_address(request)
+
+        # First check: Global IP-based rate limit (prevents analyzing different teams rapidly)
+        if not check_global_ip_rate_limit(client_ip):
+            logger.warning(
+                f"Global rate limit exceeded for {client_ip} analyzing team {team_hash} (ID: {req.team_id}) in {req.language}"
+            )
+            raise HTTPException(
+                status_code=429,
+                detail=get_rate_limit_message(req.language)
+            )
+
+        # Second check: Per-team rate limit (prevents language-switching exploits)
+        if not check_analysis_rate_limit(client_ip, team_hash):
+            logger.warning(
+                f"Per-team rate limit exceeded for {client_ip} analyzing team {team_hash} (ID: {req.team_id}) in {req.language}"
+            )
+            raise HTTPException(
+                status_code=429,
+                detail=get_rate_limit_message(req.language)
+            )
+
+        # Record this analysis
+        logger.info(f"Recording analysis for {client_ip}:{team_hash}")
+        record_analysis(client_ip, team_hash)
 
     return await _perform_team_analysis(team_data, req.language, db)
 

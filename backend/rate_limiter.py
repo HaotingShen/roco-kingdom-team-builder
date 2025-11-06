@@ -1,5 +1,7 @@
 """Rate limiting utilities for API endpoints."""
 
+from datetime import datetime, timedelta
+from typing import Dict, Tuple
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
@@ -73,3 +75,116 @@ def analysis_rate_limit():
     Note: Cached analyses bypass rate limiting (instant response)
     """
     return limiter.limit(ANALYSIS_RATE_LIMIT)
+
+
+# ========== Custom Composite Rate Limiting ==========
+# Track rate limits by IP + team composition (language-independent)
+
+# In-memory storage: {composite_key: (count, window_start)}
+_analysis_rate_limit_storage: Dict[str, Tuple[int, datetime]] = {}
+
+# Global IP-only rate limiting (applies to ALL analyses regardless of team)
+_global_ip_rate_limit_storage: Dict[str, Tuple[int, datetime]] = {}
+
+
+def check_analysis_rate_limit(ip: str, team_hash: str, limit_per_minutes: int = 2) -> bool:
+    """
+    Check if analysis is allowed based on IP + team composition (language-independent).
+
+    Args:
+        ip: Client IP address
+        team_hash: Language-independent hash of team composition
+        limit_per_minutes: Time window in minutes (default: 2)
+
+    Returns:
+        True if analysis is allowed, False if rate limit exceeded
+
+    This prevents bypassing rate limits by switching languages for the same team.
+    """
+    composite_key = f"{ip}:{team_hash}"
+    now = datetime.utcnow()
+
+    if composite_key in _analysis_rate_limit_storage:
+        count, window_start = _analysis_rate_limit_storage[composite_key]
+
+        # Check if window expired
+        if now - window_start > timedelta(minutes=limit_per_minutes):
+            # Reset window
+            _analysis_rate_limit_storage[composite_key] = (1, now)
+            return True
+
+        # Within window - check if limit exceeded
+        if count >= 1:  # 1 analysis per window
+            return False
+
+        # Increment counter (should not reach here with limit=1, but kept for flexibility)
+        _analysis_rate_limit_storage[composite_key] = (count + 1, window_start)
+        return True
+    else:
+        # First analysis for this IP+team combination
+        _analysis_rate_limit_storage[composite_key] = (1, now)
+        return True
+
+
+def check_global_ip_rate_limit(ip: str, limit_per_minutes: int = 2) -> bool:
+    """
+    Check if analysis is allowed based on IP only (global rate limit).
+
+    This prevents users from bypassing rate limits by analyzing different teams.
+
+    Args:
+        ip: Client IP address
+        limit_per_minutes: Time window in minutes (default: 2)
+
+    Returns:
+        True if analysis is allowed, False if rate limit exceeded
+    """
+    now = datetime.utcnow()
+
+    if ip in _global_ip_rate_limit_storage:
+        count, window_start = _global_ip_rate_limit_storage[ip]
+
+        # Check if window expired
+        if now - window_start > timedelta(minutes=limit_per_minutes):
+            # Reset window
+            _global_ip_rate_limit_storage[ip] = (1, now)
+            return True
+
+        # Within window - check if limit exceeded
+        if count >= 1:  # 1 analysis per window
+            return False
+
+        # Increment counter (should not reach here with limit=1, but kept for flexibility)
+        _global_ip_rate_limit_storage[ip] = (count + 1, window_start)
+        return True
+    else:
+        # First analysis for this IP
+        _global_ip_rate_limit_storage[ip] = (1, now)
+        return True
+
+
+def record_analysis(ip: str, team_hash: str):
+    """
+    Record that an analysis was performed for the given IP and team composition.
+
+    This updates the rate limit counter for both global IP and IP+team tracking.
+    """
+    composite_key = f"{ip}:{team_hash}"
+    now = datetime.utcnow()
+    _analysis_rate_limit_storage[composite_key] = (1, now)
+    _global_ip_rate_limit_storage[ip] = (1, now)
+
+
+def get_rate_limit_message(language: str = "en") -> str:
+    """
+    Get localized rate limit error message.
+
+    Args:
+        language: "en" or "zh"
+
+    Returns:
+        Localized error message string
+    """
+    if language == "zh":
+        return "请求过于频繁，请等待后再试。提示：重新分析相同队伍会使用缓存，无需等待！"
+    return "Too many requests. Please wait before analyzing again. Tip: Analyzing the same team again uses cache and is instant!"
