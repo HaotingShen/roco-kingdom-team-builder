@@ -4,7 +4,42 @@ import { endpoints } from "@/lib/api";
 import { formatLocal } from "@/lib/datetime";
 import type { TeamOut } from "@/types";
 import { useI18n, pickName } from "@/i18n";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { monsterImageFallbackChain, magicItemImageUrl } from "@/lib/images";
+
+/** Component for displaying circular monster images with fallback */
+function MonsterAvatar({ monster, size = 60 }: { monster: any; size?: number }) {
+  const [imgSrc, setImgSrc] = useState<string | null>(null);
+  const fallbackChain = monsterImageFallbackChain(monster, 180);
+
+  useEffect(() => {
+    setImgSrc(fallbackChain[0] || "/monsters/placeholder.png");
+  }, [monster]);
+
+  const handleError = () => {
+    const currentIndex = fallbackChain.indexOf(imgSrc || "");
+    if (currentIndex < fallbackChain.length - 1) {
+      const nextSrc = fallbackChain[currentIndex + 1];
+      if (nextSrc) {
+        setImgSrc(nextSrc);
+      }
+    }
+  };
+
+  return (
+    <div
+      className="rounded-full overflow-hidden bg-zinc-100 border-2 border-white shadow-sm"
+      style={{ width: size, height: size }}
+    >
+      <img
+        src={imgSrc || "/monsters/placeholder.png"}
+        alt={monster?.name || "Monster"}
+        className="w-full h-full object-cover"
+        onError={handleError}
+      />
+    </div>
+  );
+}
 
 export default function TeamsListPage() {
   const { t, lang } = useI18n();
@@ -45,7 +80,7 @@ export default function TeamsListPage() {
       const updatePayload = {
         name,
         magic_item_id: team.magic_item.id,
-        user_monsters: team.user_monsters.map((um: any) => ({
+        user_monsters: team.user_monsters.map((um: any, index: number) => ({
           id: um.id,
           monster_id: um.monster.id,
           personality_id: um.personality.id,
@@ -62,6 +97,7 @@ export default function TeamsListPage() {
             mag_def_boost: um.talent.mag_def_boost,
             spd_boost: um.talent.spd_boost,
           },
+          position: um.position ?? index,
         })),
       };
       return endpoints.updateTeam(id, updatePayload).then((r: any) => r.data);
@@ -129,26 +165,56 @@ export default function TeamsListPage() {
         <h2 className="font-medium text-lg">{t("teams.manageTeams")}</h2>
       </div>
 
-      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {(teams.data ?? []).map((team) => (
-          <div key={team.id} className="rounded border bg-white p-3 space-y-2">
-            <div className="flex items-center justify-between">
-              <Link to={`/teams/${team.id}`} className="font-medium">
-                {team.name || `Team #${team.id}`}
-              </Link>
-              <span className="text-xs text-zinc-500">
-                {t("teams.lastModified")}: {formatLocal(team.updated_at, lang === "zh" ? "zh-CN" : "en-US")}
-              </span>
-            </div>
-            <div className="text-xs text-zinc-600">
-              {t("analysis.magicItem")}: {pickName(team.magic_item as any, lang) || "—"}
-            </div>
+          <div key={team.id} className="rounded-lg border bg-white shadow-sm hover:shadow-md transition-shadow overflow-hidden">
+            <Link to={`/teams/${team.id}`} className="block">
+              {/* Header with team name and date */}
+              <div className="p-4 border-b bg-gradient-to-r from-zinc-50 to-white">
+                <div className="font-semibold text-lg mb-1">
+                  {team.name || `Team #${team.id}`}
+                </div>
+                <div className="text-xs text-zinc-500">
+                  {t("teams.lastModified")}: {formatLocal(team.updated_at, lang === "zh" ? "zh-CN" : "en-US")}
+                </div>
+              </div>
 
-            <div className="flex items-center gap-2 pt-1">
+              {/* Monster avatars in a 2x3 grid */}
+              <div className="p-4 bg-gradient-to-b from-zinc-50/50 to-white">
+                <div className="grid grid-cols-3 gap-3 mb-3">
+                  {(team.user_monsters ?? []).slice(0, 6).map((um) => (
+                    <div key={um.id} className="flex flex-col items-center">
+                      <MonsterAvatar monster={um.monster} size={70} />
+                      <div className="text-xs text-center mt-1 text-zinc-700 font-medium truncate w-full">
+                        {pickName(um.monster as any, lang)}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Magic item info */}
+                <div className="flex items-center gap-0.5 border-t pt-2">
+                  <span className="text-xs font-medium text-zinc-600">{t("analysis.magicItem")}:</span>
+                  {magicItemImageUrl(team.magic_item) && (
+                    <div className="w-8 h-8 rounded p-0.5 flex items-center justify-center">
+                      <img
+                        src={magicItemImageUrl(team.magic_item) || ""}
+                        alt={pickName(team.magic_item as any, lang)}
+                        className="w-full h-full object-contain"
+                        onError={(e) => (e.currentTarget.style.display = 'none')}
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+            </Link>
+
+            {/* Action buttons */}
+            <div className="p-3 border-t bg-zinc-50 flex items-center gap-2">
               <Link
                 to={`/teams/${team.id}`}
-                className="inline-flex items-center justify-center h-8 px-2 border rounded text-sm
-                          text-zinc-700 hover:bg-zinc-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400"
+                className="flex-1 inline-flex items-center justify-center h-8 px-2 border rounded text-sm
+                          text-zinc-700 bg-white hover:bg-zinc-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400"
               >
                 {t("teams.open")}
               </Link>
@@ -157,8 +223,8 @@ export default function TeamsListPage() {
                 type="button"
                 onClick={() => onRenameClick(team)}
                 disabled={rename.isPending}
-                className="inline-flex items-center justify-center h-8 px-2 border rounded text-sm
-                          text-zinc-700 hover:bg-zinc-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 cursor-pointer"
+                className="flex-1 inline-flex items-center justify-center h-8 px-2 border rounded text-sm
+                          text-zinc-700 bg-white hover:bg-zinc-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 cursor-pointer"
               >
                 {t("teams.rename")}
               </button>
@@ -167,8 +233,8 @@ export default function TeamsListPage() {
                 type="button"
                 onClick={() => onDeleteClick(team.id)}
                 disabled={remove.isPending}
-                className="inline-flex items-center justify-center h-8 px-2 border rounded text-sm
-                          text-zinc-700 hover:bg-zinc-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 cursor-pointer"
+                className="flex-1 inline-flex items-center justify-center h-8 px-2 border rounded text-sm
+                          text-red-600 bg-white hover:bg-red-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-400 cursor-pointer"
               >
                 {t("teams.delete")}
               </button>

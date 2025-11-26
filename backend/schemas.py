@@ -169,6 +169,7 @@ class UserMonsterCreate(BaseModel):
     move3_id: int
     move4_id: int
     talent: TalentIn
+    position: int = 0
 
 class UserMonsterOut(BaseModel):
     id: int
@@ -181,6 +182,7 @@ class UserMonsterOut(BaseModel):
     move4: MoveOut
     talent: TalentOut
     team_id: Optional[int] = None
+    position: int = 0
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -304,6 +306,7 @@ class UserMonsterUpsert(BaseModel):
     move3_id: int
     move4_id: int
     talent: TalentUpsert
+    position: int = 0
 
 class TeamUpdate(BaseModel):
     name: Optional[str] = None

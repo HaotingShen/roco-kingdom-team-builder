@@ -211,3 +211,4 @@ coverage/
 
 # Claude artifacts
 CLAUDE.md
+.claude

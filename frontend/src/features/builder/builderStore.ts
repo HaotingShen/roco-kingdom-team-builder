@@ -64,7 +64,7 @@ export const useBuilderStore = create<BuilderState>((set, get) => ({
     return {
       name: s.name,
       magic_item_id: s.magic_item_id,
-      user_monsters: s.slots.map(({ id: _omit, ...um }) => um),
+      user_monsters: s.slots.map(({ id: _omit, ...um }, index) => ({ ...um, position: index })),
     };
   },
 
@@ -74,13 +74,14 @@ export const useBuilderStore = create<BuilderState>((set, get) => ({
     return {
       name: s.name,
       magic_item_id: s.magic_item_id,
-      user_monsters: s.slots.map((um) => ({
+      user_monsters: s.slots.map((um, index) => ({
         id: um.id,
         monster_id: um.monster_id,
         personality_id: um.personality_id,
         legacy_type_id: um.legacy_type_id,
         move1_id: um.move1_id, move2_id: um.move2_id, move3_id: um.move3_id, move4_id: um.move4_id,
         talent: { ...um.talent },
+        position: index,
       })),
     };
   },

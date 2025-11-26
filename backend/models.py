@@ -244,6 +244,7 @@ class UserMonster(Base):
     move3_id: Mapped[int] = mapped_column(Integer, ForeignKey("moves.id"))
     move4_id: Mapped[int] = mapped_column(Integer, ForeignKey("moves.id"))
     team_id: Mapped[int] = mapped_column(Integer, ForeignKey("teams.id", ondelete="CASCADE"), nullable=True)
+    position: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     # Relationships
     monster = relationship("Monster", back_populates="user_monsters")
     personality = relationship("Personality", back_populates="user_monsters")
@@ -269,5 +270,5 @@ class Team(Base):
                         nullable=False)
 
     # Relationships
-    user_monsters = relationship("UserMonster", back_populates="team", cascade="all, delete-orphan")
+    user_monsters = relationship("UserMonster", back_populates="team", cascade="all, delete-orphan", order_by="UserMonster.position")
     magic_item = relationship("MagicItem")

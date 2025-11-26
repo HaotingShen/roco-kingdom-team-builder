@@ -971,7 +971,8 @@ def create_team(team: schemas.TeamCreate, db: Session = Depends(get_db)):
             move2_id=um.move2_id,
             move3_id=um.move3_id,
             move4_id=um.move4_id,
-            team_id=db_team.id
+            team_id=db_team.id,
+            position=um.position
         )
         db.add(db_um)
         db.flush()
@@ -1557,6 +1558,7 @@ def update_team(
             um.move2_id = um_data.move2_id
             um.move3_id = um_data.move3_id
             um.move4_id = um_data.move4_id
+            um.position = um_data.position
             # Update nested talent
             if um.talent:
                 t = um_data.talent
@@ -1576,7 +1578,8 @@ def update_team(
                 move2_id=um_data.move2_id,
                 move3_id=um_data.move3_id,
                 move4_id=um_data.move4_id,
-                team=db_team
+                team=db_team,
+                position=um_data.position
             )
             db.add(um)
             db.flush()
