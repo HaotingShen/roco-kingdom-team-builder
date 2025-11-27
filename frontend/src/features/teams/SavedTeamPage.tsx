@@ -184,7 +184,7 @@ export default function SavedTeamPage() {
               />
             </div>
           )}
-          <span>{pickName(team.magic_item as any, lang)}</span>
+          <span className="font-bold">{pickName(team.magic_item as any, lang)}</span>
         </div>
       </div>
 

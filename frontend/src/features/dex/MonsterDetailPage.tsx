@@ -16,14 +16,6 @@ function monsterImgUrlCN(m: any, size: 180 | 270 | 360 = 270) {
   return encodeURI(`/monsters/${size}/${base}.png`);
 }
 
-const catIcon: Record<string, string> = {
-  PHY_ATTACK: "⚔️",
-  MAG_ATTACK: "🪄",
-  DEFENSE: "🛡️",
-  STATUS: "✨",
-  ATTACK: "⚔️",
-};
-
 export function extractStats(m: MonsterOut): Record<StatKey, number> {
   return {
     hp:      m.base_hp ?? 0,
@@ -66,6 +58,36 @@ export default function MonsterDetailPage() {
     enabled: !!id,
   });
 
+  // Check if previous monster exists
+  const prevQ = useQuery({
+    queryKey: ["monster", Number(id) - 1],
+    queryFn: async () => {
+      try {
+        return await endpoints.monsterById(String(Number(id) - 1)).then((r) => r.data);
+      } catch (err) {
+        // Silently fail - 404 is expected when no previous monster exists
+        return null;
+      }
+    },
+    enabled: !!id && Number(id) > 1,
+    retry: false,
+  });
+
+  // Check if next monster exists
+  const nextQ = useQuery({
+    queryKey: ["monster", Number(id) + 1],
+    queryFn: async () => {
+      try {
+        return await endpoints.monsterById(String(Number(id) + 1)).then((r) => r.data);
+      } catch (err) {
+        // Silently fail - 404 is expected when no next monster exists
+        return null;
+      }
+    },
+    enabled: !!id,
+    retry: false,
+  });
+
   useEffect(() => { window.scrollTo(0, 0); }, [id]);
 
   const m = (q.data ?? {}) as any;
@@ -90,78 +112,129 @@ export default function MonsterDetailPage() {
       <div className="flex items-center">
         <Link
           to={`/dex?tab=${fromTab}`}
-          className="inline-flex items-center gap-1 text-sm rounded border px-2 py-1 hover:bg-zinc-50"
+          className="inline-flex items-center gap-1 text-sm font-medium rounded-lg border border-zinc-300 bg-white px-4 py-2 shadow-sm hover:bg-zinc-50 hover:border-zinc-400 hover:shadow transition-all duration-200"
         >
-          <span aria-hidden className="text-lg leading-none">←</span>
-          {t("dex.backToDex") || "Back to Dex"}
+          <span aria-hidden className="text-xl leading-none text-zinc-600 -translate-y-[1px]">←</span>
+          <span className="text-zinc-700">{t("dex.backToDex")}</span>
         </Link>
       </div>
 
-      {/* Top info — more visual & attractive */}
-      <section className="rounded border bg-white p-0 overflow-hidden">
+      {/* Top monster info */}
+      <section className="rounded-lg border border-zinc-200 bg-white shadow-sm overflow-hidden">
         <div className="grid grid-cols-1 lg:grid-cols-2">
-          {/* Left: name, types, image on gradient */}
-          <div className="p-4 bg-gradient-to-b from-zinc-50 to-white">
-            <div className="text-lg font-semibold">{title}</div>
-            <div className="mt-1 flex items-center gap-1">
-              {[m.main_type, m.sub_type].filter(Boolean).map((tp: TypeOut) => (
-                <span key={tp.id} className="inline-flex items-center gap-1 rounded bg-zinc-100 text-xs px-2 py-0.5">
-                  {typeIconUrl(tp.name) ? <img src={typeIconUrl(tp.name)!} alt="" width={18} height={18} /> : null}
-                  {pickName(tp as any, lang)}
-                </span>
-              ))}
+          {/* Left: name, types, image on gradient - vertically centered */}
+          <div className="relative p-6 bg-gradient-to-br from-zinc-50 via-white to-zinc-50 flex flex-col justify-center items-center gap-4 min-h-[320px]">
+            {/* Previous Monster Button */}
+            {prevQ.data && (
+              <Link
+                to={`/dex/monsters/${m.id - 1}?tab=${fromTab}`}
+                className="absolute left-2 top-1/2 -translate-y-1/2 inline-flex items-center justify-center w-10 h-10 rounded-full bg-white border border-zinc-300 shadow-md hover:bg-zinc-50 hover:border-zinc-400 hover:shadow-lg transition-all duration-200 text-zinc-600 hover:text-zinc-900"
+                aria-label="Previous monster"
+              >
+                <span className="text-3xl leading-none -translate-y-[3px]">‹</span>
+              </Link>
+            )}
+
+            {/* Next Monster Button */}
+            {nextQ.data && (
+              <Link
+                to={`/dex/monsters/${m.id + 1}?tab=${fromTab}`}
+                className="absolute right-2 top-1/2 -translate-y-1/2 inline-flex items-center justify-center w-10 h-10 rounded-full bg-white border border-zinc-300 shadow-md hover:bg-zinc-50 hover:border-zinc-400 hover:shadow-lg transition-all duration-200 text-zinc-600 hover:text-zinc-900"
+                aria-label="Next monster"
+              >
+                <span className="text-3xl leading-none -translate-y-[3px]">›</span>
+              </Link>
+            )}
+
+            <div className="text-center space-y-2">
+              <h1 className="text-2xl font-bold text-zinc-800">{title}</h1>
+              <div className="flex items-center justify-center gap-2">
+                {[m.main_type, m.sub_type].filter(Boolean).map((tp: TypeOut) => (
+                  <span key={tp.id} className="inline-flex items-center gap-1 rounded-full bg-white border border-zinc-200 text-sm px-3 py-1 shadow-sm">
+                    {typeIconUrl(tp.name) ? <img src={typeIconUrl(tp.name)!} alt="" width={22} height={22} /> : null}
+                    <span className="font-medium text-zinc-700">{pickName(tp as any, lang)}</span>
+                  </span>
+                ))}
+              </div>
             </div>
-            <div className="mt-3 flex items-center justify-center">
+            <div className="flex items-center justify-center">
               <img
                 src={monsterImgUrlCN(m, 270)}
                 alt=""
                 width={270}
                 height={270}
-                className="h-[200px] w-[200px] object-contain drop-shadow-sm"
+                className="h-[200px] w-[200px] object-contain drop-shadow-md hover:scale-105 transition-transform duration-200"
                 onError={(e)=>{(e.currentTarget as HTMLImageElement).src="/monsters/placeholder.png"}}
               />
             </div>
           </div>
 
-          {/* Right: stat bars */}
-          <div className="p-4">
-            <div className="font-medium mb-1">{t("dex.totalBase")}: {total}</div>
-            <div className="space-y-1">
-              {STAT_KEYS.map((k) => {
-                const labels: Record<StatKey, string> = {
-                  hp: t("labels.hp"),
-                  phy_atk: t("labels.phyAtk"),
-                  mag_atk: t("labels.magAtk"),
-                  phy_def: t("labels.phyDef"),
-                  mag_def: t("labels.magDef"),
-                  spd: t("labels.spd"),
-                };
-                const val = baseStats[k] ?? 0;
-                const pct = Math.min(100, Math.round((val / 200) * 100));
-                return (
-                  <div key={k} className="flex items-center gap-2">
-                    <div className="w-24 text-[12px] text-zinc-600">{labels[k]}</div>
-                    <div className="flex-1 h-2 rounded bg-zinc-100 overflow-hidden">
-                      <div className="h-full bg-zinc-800" style={{ width: `${pct}%` }} />
+          {/* Right: stat bars + trait */}
+          <div className="p-6 bg-white border-l border-zinc-100">
+            <div className="space-y-4">
+              {/* Base Stats */}
+              <div>
+                <div className="flex items-center gap-3 mb-3">
+                  <span className="text-sm font-semibold text-zinc-700">{t("dex.totalBase")}</span>
+                  <span className="text-lg font-bold text-zinc-800 bg-zinc-100 px-3 py-1 rounded-full">
+                    {total}
+                  </span>
+                </div>
+                <div className="space-y-2">
+                  {STAT_KEYS.map((k) => {
+                    const labels: Record<StatKey, string> = {
+                      hp: t("labels.hp"),
+                      phy_atk: t("labels.phyAtk"),
+                      mag_atk: t("labels.magAtk"),
+                      phy_def: t("labels.phyDef"),
+                      mag_def: t("labels.magDef"),
+                      spd: t("labels.spd"),
+                    };
+                    const colors: Record<StatKey, string> = {
+                      hp: "bg-red-500",
+                      phy_atk: "bg-orange-500",
+                      mag_atk: "bg-purple-500",
+                      phy_def: "bg-blue-500",
+                      mag_def: "bg-indigo-500",
+                      spd: "bg-yellow-500",
+                    };
+                    const val = baseStats[k] ?? 0;
+                    const pct = Math.min(100, Math.round((val / 200) * 100));
+                    return (
+                      <div key={k} className="flex items-center gap-3">
+                        <div className="w-12 text-xs font-medium text-zinc-600">{labels[k]}</div>
+                        <div className="flex-1 h-3 rounded-full bg-zinc-100 overflow-hidden shadow-inner">
+                          <div className={`h-full ${colors[k]} transition-all duration-300`} style={{ width: `${pct}%` }} />
+                        </div>
+                        <div className="w-10 text-right text-sm font-semibold text-zinc-700 tabular-nums">{val}</div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Trait */}
+              {trait ? (
+                <div className="pt-4 border-t border-zinc-200">
+                  <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-lg border border-amber-200 p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-amber-400 text-white text-xs font-bold shadow-sm leading-none">
+                        <span className="translate-x-[0.5px] -translate-y-[0.5px]">★</span>
+                      </span>
+                      <span className="font-semibold text-amber-900">
+                        {pickName(trait as any, lang) || trait.name}
+                      </span>
                     </div>
-                    <div className="w-10 text-right text-[11px] text-zinc-600 tabular-nums">{val}</div>
+                    <div className="text-sm text-amber-800 leading-relaxed">
+                      {pickDesc(trait as any, lang) || trait.description || ""}
+                    </div>
                   </div>
-                );
-              })}
+                </div>
+              ) : null}
             </div>
           </div>
         </div>
       </section>
-
-      {/* Trait */}
-      {trait ? (
-        <section className="rounded border bg-white p-3">
-          <div className="font-medium mb-1">{pickName(trait as any, lang) || trait.name}</div>
-          <div className="text-sm text-zinc-700">
-            {pickDesc(trait as any, lang) || trait.description || ""}
-          </div>
-        </section>
-      ) : null}
 
       {/* Evolution chain */}
       {Array.isArray(evo) && evo.length > 1 ? (
@@ -189,14 +262,37 @@ export default function MonsterDetailPage() {
 
       {/* Moves */}
       {(movePool?.length || legacyMoves?.length) ? (
-        <section className="rounded border bg-white p-3">
-          <div className="flex items-center gap-2 mb-2">
-            <Link to={`?tab=${fromTab}&moves=pool`} className={`inline-flex items-center justify-center h-8 px-2 rounded border hover:bg-zinc-50 text-sm ${which === "pool" ? "bg-zinc-200" : ""}`}>
-              {t("dex.learnable")}
-            </Link>
-            <Link to={`?tab=${fromTab}&moves=legacy`} className={`inline-flex items-center justify-center h-8 px-2 rounded border hover:bg-zinc-50 text-sm ${which === "legacy" ? "bg-zinc-200" : ""}`}>
-              {t("dex.legacy")}
-            </Link>
+        <section className="rounded-lg border border-zinc-200 bg-white shadow-sm p-4">
+          {/* Tab Switcher */}
+          <div className="flex items-center justify-center mb-4">
+            <div className="inline-flex items-center gap-1 p-1 rounded-full bg-zinc-100 shadow-inner">
+              <Link
+                to={`?tab=${fromTab}&moves=pool`}
+                className={`
+                  inline-flex items-center justify-center h-9 px-6 rounded-full text-sm font-medium
+                  transition-all duration-200 ease-in-out
+                  ${which === "pool"
+                    ? "bg-white text-zinc-900 shadow-md"
+                    : "text-zinc-600 hover:text-zinc-900 hover:bg-zinc-50"
+                  }
+                `}
+              >
+                {t("dex.learnable")}
+              </Link>
+              <Link
+                to={`?tab=${fromTab}&moves=legacy`}
+                className={`
+                  inline-flex items-center justify-center h-9 px-6 rounded-full text-sm font-medium
+                  transition-all duration-200 ease-in-out
+                  ${which === "legacy"
+                    ? "bg-white text-zinc-900 shadow-md"
+                    : "text-zinc-600 hover:text-zinc-900 hover:bg-zinc-50"
+                  }
+                `}
+              >
+                {t("dex.legacy")}
+              </Link>
+            </div>
           </div>
           <MovesList list={which === "legacy" ? legacyMoves : movePool} />
         </section>
@@ -207,6 +303,30 @@ export default function MonsterDetailPage() {
 
 function MovesList({ list }: { list: any[] }) {
   const { lang, t } = useI18n();
+
+  // Type color mapping for 19 types
+  const typeColors: Record<string, string> = {
+    normal: "border-l-slate-500",
+    grass: "border-l-green-400",
+    fire: "border-l-orange-600",
+    water: "border-l-blue-500",
+    light: "border-l-cyan-400",
+    ground: "border-l-yellow-600",
+    ice: "border-l-sky-500",
+    dragon: "border-l-rose-500",
+    electric: "border-l-yellow-400",
+    poison: "border-l-purple-400",
+    bug: "border-l-lime-400",
+    fighting: "border-l-orange-400",
+    flying: "border-l-teal-400",
+    cute: "border-l-pink-400",
+    ghost: "border-l-violet-500",
+    dark: "border-l-pink-600",
+    mechanical: "border-l-emerald-400",
+    illusion: "border-l-indigo-300",
+    leader: "border-l-zinc-400",
+  };
+
   return (
     <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
       {(list ?? []).map((m: MoveOut & any) => {
@@ -231,8 +351,21 @@ function MovesList({ list }: { list: any[] }) {
         };
         const catImg = `/move-sub-icons/${catToFile[category] ?? "physical-attack"}.png`;
 
+        // Get type color class, fallback to zinc if type not found
+        // Convert type name to lowercase to match our mapping
+        const typeName = tp?.name?.toLowerCase() || "";
+        const typeColorClass = typeName ? (typeColors[typeName] || "border-l-zinc-400") : "border-l-zinc-400";
+
         return (
-          <div key={m.id} className="rounded border bg-white p-3">
+          <div
+            key={m.id}
+            className={`
+              rounded-lg border border-zinc-200 bg-white p-3 shadow-sm
+              border-l-4 ${typeColorClass}
+              transition-all duration-200
+              hover:shadow-md hover:-translate-y-0.5
+            `}
+          >
             <div
               className="
                 grid

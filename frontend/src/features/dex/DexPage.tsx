@@ -53,9 +53,15 @@ function FilterButton({
     <button
       type="button"
       onClick={onClick}
-      className={`inline-flex h-8 items-center px-2 rounded border text-sm cursor-pointer
-                  ${active ? "bg-zinc-200" : "hover:bg-zinc-50"}
-                  ${className}`}
+      className={`
+        inline-flex h-8 items-center px-3 rounded-full text-sm font-medium cursor-pointer
+        transition-all duration-200
+        ${active
+          ? "bg-zinc-800 text-white shadow-md hover:bg-zinc-700"
+          : "bg-white border border-zinc-300 text-zinc-700 hover:bg-zinc-50 hover:border-zinc-400"
+        }
+        ${className}
+      `}
     >
       {children}
     </button>
@@ -172,22 +178,22 @@ function MonstersTab() {
   return (
     <div className="space-y-3">
       {/* Filters */}
-      <div className="rounded border bg-white p-3 space-y-3">
+      <div className="rounded-lg border border-zinc-200 bg-white shadow-sm p-4 space-y-4">
         <div className="flex flex-wrap items-center gap-2">
           <div className="relative">
             <input
               value={q}
               onChange={(e) => setQ(e.target.value)}
               placeholder={t("dex.search")}
-              className="h-9 w-[180px] rounded border pl-3 pr-8"
+              className="h-10 w-[220px] rounded-lg border border-zinc-300 pl-4 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-400 focus:border-transparent transition-all"
             />
-            <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-zinc-500">🔍</span>
+            <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 text-lg">🔍</span>
           </div>
         </div>
 
-        <div className="grid gap-y-2 gap-x-3 [grid-template-columns:max-content_1fr]">
-          <div className="self-center text-sm text-zinc-600 text-center">{t("dex.typesLabel")}</div>
-          <div className="flex flex-wrap gap-1">
+        <div className="grid gap-y-3 gap-x-4 [grid-template-columns:max-content_1fr]">
+          <div className="self-center text-sm font-semibold text-zinc-700">{t("dex.typesLabel")}</div>
+          <div className="flex flex-wrap gap-2">
             <FilterButton
               active={selectedTypes.length === 0}
               onClick={() => setSelectedTypes([])}
@@ -212,7 +218,7 @@ function MonstersTab() {
             ))}
           </div>
 
-          <div className="self-center text-sm text-zinc-600 text-center">{t("dex.formsLabel")}</div>
+          <div className="self-center text-sm font-semibold text-zinc-700">{t("dex.formsLabel")}</div>
           <div className="flex flex-wrap items-center gap-2">
             <FilterButton active={filterVariant === "all"} onClick={() => setFilterVariant("all")}>
               {t("dex.form_all")}
@@ -244,21 +250,21 @@ function MonstersTab() {
                   <Link
                     key={m.id}
                     to={`/dex/monsters/${m.id}?tab=monsters`}
-                    className="rounded border bg-white p-3 hover:bg-zinc-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400"
+                    className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400"
                   >
-                    <div className="text-sm font-medium truncate" title={title}>{title}</div>
-                    <div className="mt-2 flex items-center justify-center">
+                    <div className="text-sm font-semibold truncate text-zinc-800" title={title}>{title}</div>
+                    <div className="mt-3 flex items-center justify-center">
                       <img
                         src={src}
                         alt=""
                         width={180}
                         height={180}
-                        className="h-[120px] w-[120px] object-contain"
+                        className="h-[120px] w-[120px] object-contain drop-shadow-sm"
                         loading="lazy"
                         onError={(e) => { (e.currentTarget as HTMLImageElement).src = "/monsters/placeholder.png"; }}
                       />
                     </div>
-                    <div className="mt-2 flex items-center gap-1">
+                    <div className="mt-3 flex items-center gap-1 flex-wrap">
                       {[m.main_type, m.sub_type].filter(Boolean).map((tp) => (
                         <Pill key={(tp as TypeOut).id}>
                           {typeIconUrl((tp as TypeOut).name) ? (
@@ -307,6 +313,29 @@ function MovesTab() {
     return v ? Number(v) : null;
   });
   const [cat, setCat] = useState<string | null>(sp.get("mcat") ?? null);
+
+  // Type color mapping for 19 types
+  const typeColors: Record<string, string> = {
+    normal: "border-l-slate-500",
+    grass: "border-l-green-400",
+    fire: "border-l-orange-600",
+    water: "border-l-blue-500",
+    light: "border-l-cyan-400",
+    ground: "border-l-yellow-600",
+    ice: "border-l-sky-500",
+    dragon: "border-l-rose-500",
+    electric: "border-l-yellow-400",
+    poison: "border-l-purple-400",
+    bug: "border-l-lime-400",
+    fighting: "border-l-orange-400",
+    flying: "border-l-teal-400",
+    cute: "border-l-pink-400",
+    ghost: "border-l-violet-500",
+    dark: "border-l-pink-600",
+    mechanical: "border-l-emerald-400",
+    illusion: "border-l-indigo-300",
+    leader: "border-l-zinc-400",
+  };
 
   const types = useQuery<TypeOut[]>({
     queryKey: ["types-all"],
@@ -398,22 +427,22 @@ function MovesTab() {
   return (
     <div className="space-y-3">
       {/* Filters */}
-      <div className="rounded border bg-white p-3 space-y-3">
+      <div className="rounded-lg border border-zinc-200 bg-white shadow-sm p-4 space-y-4">
         <div className="flex flex-wrap items-center gap-2">
           <div className="relative">
             <input
               value={q}
               onChange={(e) => setQ(e.target.value)}
               placeholder={t("dex.search")}
-              className="h-9 w-[180px] rounded border pl-3 pr-8"
+              className="h-10 w-[220px] rounded-lg border border-zinc-300 pl-4 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-400 focus:border-transparent transition-all"
             />
-            <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-zinc-500">🔍</span>
+            <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 text-lg">🔍</span>
           </div>
         </div>
 
-        <div className="grid gap-y-2 gap-x-3 [grid-template-columns:max-content_1fr]">
-          <div className="self-center text-sm text-zinc-600 text-center">{t("dex.skill_type")}</div>
-          <div className="flex flex-wrap gap-1">
+        <div className="grid gap-y-3 gap-x-4 [grid-template-columns:max-content_1fr]">
+          <div className="self-center text-sm font-semibold text-zinc-700">{t("dex.skill_type")}</div>
+          <div className="flex flex-wrap gap-2">
             <FilterButton active={typeId == null} onClick={() => setTypeId(null)}>
               {t("dex.form_all")}
             </FilterButton>
@@ -433,8 +462,8 @@ function MovesTab() {
               ))}
           </div>
 
-          <div className="self-center text-sm text-zinc-600 text-center">{t("dex.skill_category")}</div>
-          <div className="flex flex-wrap gap-1">
+          <div className="self-center text-sm font-semibold text-zinc-700">{t("dex.skill_category")}</div>
+          <div className="flex flex-wrap gap-2">
             <FilterButton active={cat == null} onClick={() => setCat(null)}>
               {t("dex.form_all")}
             </FilterButton>
@@ -497,8 +526,20 @@ function MovesTab() {
                     };
                     const catImg = `/move-sub-icons/${catToFile[category] ?? "physical-attack"}.png`;
 
+                    // Get type color class, fallback to zinc if type not found
+                    const typeName = tp?.name?.toLowerCase() || "";
+                    const typeColorClass = typeName ? (typeColors[typeName] || "border-l-zinc-400") : "border-l-zinc-400";
+
                     return (
-                      <div key={m.id} className="rounded border bg-white p-3">
+                      <div
+                        key={m.id}
+                        className={`
+                          rounded-lg border border-zinc-200 bg-white p-3 shadow-sm
+                          border-l-4 ${typeColorClass}
+                          transition-all duration-200
+                          hover:shadow-md hover:-translate-y-0.5
+                        `}
+                      >
                         <div
                           className="
                             grid
@@ -609,18 +650,20 @@ function MagicItemsTab() {
         const img = magicItemImageUrl(it) || "/magic-items/placeholder.png";
 
         return (
-          <div key={it.id} className="rounded border bg-white p-3 flex items-start gap-3">
-            <img
-              src={img}
-              alt=""
-              width={48}
-              height={48}
-              className="h-12 w-12 object-contain rounded"
-              onError={(e) => { (e.currentTarget as HTMLImageElement).src = "/monsters/placeholder.png"; }}
-            />
-            <div className="min-w-0">
-              <div className="font-medium truncate" title={nm}>{nm}</div>
-              <div className="text-sm text-zinc-700 mt-1">{desc}</div>
+          <div key={it.id} className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm hover:shadow-md transition-all duration-200 flex items-start gap-3">
+            <div className="shrink-0 w-14 h-14 rounded-lg bg-gradient-to-br from-zinc-50 to-white flex items-center justify-center p-2">
+              <img
+                src={img}
+                alt=""
+                width={48}
+                height={48}
+                className="w-full h-full object-contain drop-shadow-sm"
+                onError={(e) => { (e.currentTarget as HTMLImageElement).src = "/monsters/placeholder.png"; }}
+              />
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="font-semibold text-zinc-800 truncate" title={nm}>{nm}</div>
+              <div className="text-sm text-zinc-600 mt-1 leading-relaxed">{desc}</div>
             </div>
           </div>
         );
@@ -644,20 +687,23 @@ function GameTermsTab() {
   });
 
   return (
-    <div className="rounded border bg-white p-3">
-      <div className="grid gap-2">
-        {(terms.data ?? []).map((g) => {
-          const label = pickName(g as any, lang) || g.name || g.key;
-          const desc = pickDesc(g as any, lang) || g.description || "";
-          return (
-            <div key={g.id} className="border rounded p-2">
-              <div className="text-sm font-medium">{label}</div>
-              <div className="text-sm text-zinc-700">{desc}</div>
+    <div className="grid gap-3 grid-cols-1 md:grid-cols-2">
+      {(terms.data ?? []).map((g) => {
+        const label = pickName(g as any, lang) || g.name || g.key;
+        const desc = pickDesc(g as any, lang) || g.description || "";
+        return (
+          <div key={g.id} className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm hover:shadow-md transition-all duration-200">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-zinc-800 text-white text-xs font-bold">
+                ?
+              </span>
+              <div className="font-semibold text-zinc-800">{label}</div>
             </div>
-          );
-        })}
-        {!terms.data?.length && <div className="text-zinc-500">{t("dex.noResults")}</div>}
-      </div>
+            <div className="text-sm text-zinc-600 leading-relaxed">{desc}</div>
+          </div>
+        );
+      })}
+      {!terms.data?.length && <div className="text-zinc-500">{t("dex.noResults")}</div>}
     </div>
   );
 }
