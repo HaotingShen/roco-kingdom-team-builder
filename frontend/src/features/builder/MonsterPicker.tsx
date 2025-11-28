@@ -28,12 +28,19 @@ export default function MonsterPicker({
     <div className="space-y-2">
       <div className="text-sm font-medium">{t("builder.pickAMonster")}</div>
 
-      <input
-        value={q}
-        onChange={(e) => setQ(e.target.value)}
-        placeholder={t("builder.searchMonsters")}
-        className="w-full h-9 border rounded px-3"
-      />
+      <div className="relative">
+        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+        </div>
+        <input
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder={t("builder.searchMonsters")}
+          className="w-full h-10 rounded-lg border-2 border-zinc-300 pl-8 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-400 focus:border-transparent transition-all"
+        />
+      </div>
 
       <div className="grid grid-cols-2 gap-2 max-h-[60vh] overflow-auto">
         {items.map((m) => {
@@ -56,11 +63,11 @@ export default function MonsterPicker({
             <button
               key={(m as any).id}
               onClick={() => onPick(m)}
-              className="p-2 border rounded hover:bg-zinc-50 text-left flex items-center justify-between gap-2"
+              className="p-3 border-2 border-zinc-200 rounded-lg bg-white shadow-sm hover:shadow-md hover:border-zinc-300 hover:-translate-y-0.5 text-left flex items-center justify-between gap-2 cursor-pointer transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400"
             >
               {/* left: text block */}
               <div className="min-w-0 flex-1">
-                <div className="font-medium truncate" title={displayName}>
+                <div className="font-semibold truncate" title={displayName}>
                   {displayName}
                 </div>
                 {formLabel ? (
@@ -86,11 +93,11 @@ export default function MonsterPicker({
               <div className="shrink-0">
                 <MonsterImage
                   monster={m}
-                  size={180}
+                  size={360}
                   alt=""
-                  width={40}
-                  height={40}
-                  className="h-12 w-12 rounded object-contain"
+                  width={50}
+                  height={50}
+                  className="rounded object-contain"
                   loading="lazy"
                 />
               </div>

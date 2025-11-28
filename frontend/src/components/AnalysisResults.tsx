@@ -137,9 +137,9 @@ function MonsterAnalysisCard({ data }: { data: MonsterAnalysisOut }) {
             monster={m}
             size={180}
             alt=""
-            width={64}
-            height={64}
-            className="h-20 w-20 rounded-md object-contain"
+            width={80}
+            height={80}
+            className="rounded-md object-contain"
           />
         </div>
 

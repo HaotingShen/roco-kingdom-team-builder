@@ -22,7 +22,7 @@ function BrandLockup() {
         loading="eager"
         decoding="async"
         draggable="false"
-        className="h-8 w-8 rounded-md ring-1 ring-zinc-200 bg-white shadow-sm transition"
+        className="rounded-md ring-1 ring-zinc-200 bg-white shadow-sm transition"
         onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
       />
       <span

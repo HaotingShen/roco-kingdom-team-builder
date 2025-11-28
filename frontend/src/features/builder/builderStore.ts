@@ -27,6 +27,7 @@ type BuilderState = {
   setName: (v: string) => void;
   setMagicItem: (id: ID | null) => void;
   setSlot: (idx: number, patch: PartialNoUndef<UserMonsterCreate & { id?: ID }>) => void;
+  moveSlot: (fromIdx: number, toIdx: number) => void;
 
   toPayload: () => TeamCreate;                    // throws if magic_item_id null
   toUpdatePayload: () => TeamUpdate | null;       // when teamId is known
@@ -55,6 +56,15 @@ export const useBuilderStore = create<BuilderState>((set, get) => ({
     const slots = s.slots.slice();
     const current = slots[idx] ?? emptySlot();
     slots[idx] = mergeWithoutUndef<typeof current>(current, patch);
+    return { slots };
+  }),
+  moveSlot: (fromIdx, toIdx) => set((s) => {
+    if (fromIdx === toIdx || fromIdx < 0 || fromIdx >= 6 || toIdx < 0 || toIdx >= 6) return s;
+    const slots = s.slots.slice();
+    // Swap the slots
+    const temp = slots[fromIdx]!;
+    slots[fromIdx] = slots[toIdx]!;
+    slots[toIdx] = temp;
     return { slots };
   }),
 

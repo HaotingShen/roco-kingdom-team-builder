@@ -11,6 +11,8 @@ import { useI18n, pickName } from "@/i18n";
 import { extractErrorMessage } from "@/hooks/useTeamMutation";
 import { magicItemImageUrl } from "@/lib/images";
 import { QUERY_KEYS } from "@/lib/constants";
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent, DragOverlay, DragStartEvent } from '@dnd-kit/core';
+import { useDraggable, useDroppable } from '@dnd-kit/core';
 
 /* --- Animated dots component --- */
 function AnimatedDots() {
@@ -66,6 +68,78 @@ function validateSlot(slot: UserMonsterCreate): VKey[] {
 // quick helper for clearing a single slot
 const zeroTalent = { hp_boost:0, phy_atk_boost:0, mag_atk_boost:0, phy_def_boost:0, mag_def_boost:0, spd_boost:0 } as const;
 
+/* --- Drag Handle Component --- */
+function DragHandle({ slotIndex, title }: { slotIndex: number; title: string }) {
+  const { attributes, listeners, setNodeRef } = useDraggable({
+    id: String(slotIndex),
+  });
+
+  return (
+    <div
+      ref={setNodeRef}
+      {...listeners}
+      {...attributes}
+      className="cursor-grab active:cursor-grabbing inline-flex items-center justify-center w-8 h-8 rounded-lg bg-white border-2 border-zinc-300 shadow-sm hover:bg-zinc-50 hover:border-zinc-400 transition-colors"
+      title={title}
+    >
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        className="h-4 w-4 text-zinc-600"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+        strokeWidth={2}
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M4 8h16M4 16h16"
+        />
+      </svg>
+    </div>
+  );
+}
+
+/* --- Draggable Slot Component --- */
+function DraggableSlot({
+  id,
+  isDragging,
+  children,
+}: {
+  id: string;
+  isDragging: boolean;
+  children: React.ReactNode;
+}) {
+  const { setNodeRef: setDragRef, transform } = useDraggable({
+    id,
+    disabled: true, // We use dedicated drag handle instead
+  });
+
+  const { setNodeRef: setDropRef, isOver } = useDroppable({
+    id,
+  });
+
+  const style = transform ? {
+    transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
+  } : undefined;
+
+  // Combine drag and drop refs
+  const setRefs = (node: HTMLElement | null) => {
+    setDragRef(node);
+    setDropRef(node);
+  };
+
+  return (
+    <div
+      ref={setRefs}
+      style={style}
+      className={`h-full ${isDragging ? 'opacity-50' : ''} ${isOver ? 'ring-2 ring-blue-400' : ''}`}
+    >
+      {children}
+    </div>
+  );
+}
+
 export default function BuilderPage() {
   const {
     teamId,
@@ -73,6 +147,7 @@ export default function BuilderPage() {
     setName,
     slots,
     setSlot,
+    moveSlot,
     magic_item_id,
     setMagicItem,
     toPayload,
@@ -86,7 +161,44 @@ export default function BuilderPage() {
   const [activeIdx, setActiveIdx] = useState<number>(0);
   const [serverErr, setServerErr] = useState<string | null>(null);
   const [serverOk, setServerOk] = useState<string | null>(null);
+  const [activeDragId, setActiveDragId] = useState<string | null>(null);
   const { lang, t } = useI18n();
+
+  // Setup DnD sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8, // 8px movement required before drag starts
+      },
+    }),
+    useSensor(KeyboardSensor)
+  );
+
+  const handleDragStart = (event: DragStartEvent) => {
+    setActiveDragId(event.active.id as string);
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    setActiveDragId(null);
+
+    if (!over || active.id === over.id) return;
+
+    const fromIdx = parseInt(active.id as string);
+    const toIdx = parseInt(over.id as string);
+
+    moveSlot(fromIdx, toIdx);
+
+    // Update focus to follow the monster being viewed
+    if (activeIdx === fromIdx) {
+      // User was viewing the dragged monster - follow it to new position
+      setActiveIdx(toIdx);
+    } else if (activeIdx === toIdx) {
+      // User was viewing the target slot - it swapped to source position
+      setActiveIdx(fromIdx);
+    }
+    // Otherwise, keep activeIdx unchanged (viewing a different slot)
+  };
 
   const magicItems = useQuery<MagicItemOut[]>({
     queryKey: QUERY_KEYS.MAGIC_ITEMS,
@@ -204,10 +316,22 @@ export default function BuilderPage() {
   };
 
   return (
-    <div className="grid gap-4 grid-cols-1 lg:grid-cols-[1fr_380px] xl:grid-cols-[1fr_420px]">
-      <section className="space-y-3">
-        {/* grid */}
-        <div className="grid grid-cols-3 gap-3">
+    <DndContext
+      sensors={sensors}
+      collisionDetection={closestCenter}
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+    >
+      <div className="grid gap-4 grid-cols-1 lg:grid-cols-[1fr_380px] xl:grid-cols-[1fr_420px]">
+        <section className="space-y-4">
+          {/* Section header */}
+          <div className="flex items-center gap-2 px-1">
+            <div className="h-6 w-1 bg-gradient-to-b from-zinc-800 to-zinc-600 rounded-full" />
+            <h2 className="text-lg font-semibold text-zinc-800">{t("builder.teamComposition") || "Team Composition"}</h2>
+          </div>
+
+          {/* grid */}
+          <div className="grid grid-cols-3 gap-3">
           {slots.map((slot, i) => {
             const errs = allErrors?.[i] ?? [];
             const hasMonster = !!slot.monster_id;
@@ -232,23 +356,40 @@ export default function BuilderPage() {
               ? "border-emerald-300 bg-emerald-50 text-emerald-700"
               : "border-amber-300 bg-amber-50 text-amber-700";
 
+            const isDragging = activeDragId === String(i);
+
             return (
-              <div
+              <DraggableSlot
                 key={i}
-                className={`rounded border ${i === activeIdx ? "border-zinc-900" : "border-zinc-200"} bg-white p-3 space-y-2 cursor-pointer`}
-                onClick={() => setActiveIdx(i)}
-                role="button"
-                tabIndex={0}
-                onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && setActiveIdx(i)}
+                id={String(i)}
+                isDragging={isDragging}
               >
+                <div
+                  className={`
+                    h-full rounded-lg border-2 p-3 space-y-2 cursor-pointer
+                    transition-all duration-200
+                    ${i === activeIdx
+                      ? "border-zinc-800 bg-gradient-to-br from-zinc-50 via-white to-zinc-50 shadow-lg ring-2 ring-zinc-200"
+                      : "border-zinc-200 bg-white shadow-sm hover:shadow-md hover:border-zinc-300 hover:-translate-y-0.5"
+                    }
+                  `}
+                  onClick={() => setActiveIdx(i)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && setActiveIdx(i)}
+                >
                 <div className="flex items-center justify-between">
-                  <div className="text-sm text-zinc-600">{t("builder.slot", { n: i + 1 })}</div>
+                  {hasMonster ? (
+                    <DragHandle slotIndex={i} title={t("builder.dragToReorder")} />
+                  ) : (
+                    <div className="text-sm font-medium text-zinc-700">{t("builder.slot", { n: i + 1 })}</div>
+                  )}
                   <span
-                    className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] ${chipClass}`}
+                    className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium shadow-sm ${chipClass}`}
                     title={statusText}
                     aria-label={statusText}
                   >
-                    <span className={`h-2.5 w-2.5 rounded-full ${dotClass}`} />
+                    <span className={`h-2.5 w-2.5 rounded-full ${dotClass} animate-pulse`} />
                     <span className="hidden sm:inline">{statusText}</span>
                   </span>
                 </div>
@@ -286,27 +427,34 @@ export default function BuilderPage() {
                     ))}
                   </ul>
                 )}
-              </div>
+                </div>
+              </DraggableSlot>
             );
           })}
         </div>
 
+        {/* Team Configuration Section */}
+        <div className="flex items-center gap-2 px-1 mt-6">
+          <div className="h-6 w-1 bg-gradient-to-b from-zinc-800 to-zinc-600 rounded-full" />
+          <h2 className="text-lg font-semibold text-zinc-800">{t("builder.teamSettings") || "Team Settings"}</h2>
+        </div>
+
         {/* bottom bar */}
-        <div className="flex flex-wrap items-center gap-3 bg-white border rounded p-3">
+        <div className="flex flex-wrap items-center gap-3 bg-gradient-to-br from-white via-zinc-50 to-white border-2 border-zinc-200 rounded-lg shadow-md p-4">
           {/* team name */}
           <div className="flex items-center gap-2">
-            <label className="text-sm">{t("builder.teamName") ?? "Team name"}</label>
+            <label className="text-sm font-medium text-zinc-700">{t("builder.teamName") ?? "Team name"}</label>
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder={t("builder.teamNamePlaceholder") ?? "My Team"}
-              className="h-9 rounded border px-2 text-sm w-[150px]"
+              className="h-10 rounded-lg border-2 border-zinc-300 px-3 text-sm w-[160px] focus:outline-none focus:ring-2 focus:ring-zinc-400 focus:border-transparent transition-all shadow-sm"
             />
           </div>
 
           {/* magic item */}
           <div className="flex items-center gap-2">
-            <div className="text-sm">{t("builder.magicItem")}</div>
+            <div className="text-sm font-medium text-zinc-700">{t("builder.magicItem")}</div>
             <CustomSelect
               value={magic_item_id ?? null}
               options={[
@@ -319,17 +467,24 @@ export default function BuilderPage() {
               ]}
               placeholder={t("common.select")}
               onChange={(v) => setMagicItem(v ? v : null)}
-              buttonClassName="min-w-[150px]"
+              buttonClassName="min-w-[160px]"
             />
           </div>
 
           <div className="flex-1" />
 
-          {/* split buttons */}
+          {/* Action buttons */}
           <button
             onClick={onSaveNew}
             disabled={!canAnalyze || createTeam.isPending}
-            className={`h-9 px-4 rounded ${canAnalyze ? "border cursor-pointer" : "bg-zinc-300 text-zinc-600 cursor-not-allowed"}`}
+            className={`
+              h-10 px-5 rounded-lg font-medium text-sm
+              transition-all duration-200
+              ${canAnalyze
+                ? "bg-white border-2 border-zinc-700 text-zinc-800 cursor-pointer shadow-sm hover:bg-zinc-50 hover:shadow-md hover:-translate-y-0.5"
+                : "bg-zinc-200 text-zinc-500 cursor-not-allowed border-2 border-zinc-300"
+              }
+            `}
             title={!canAnalyze ? t("builder.incompleteTeamMsg") : ""}
           >
             {createTeam.isPending ? (
@@ -346,7 +501,14 @@ export default function BuilderPage() {
             <button
               onClick={onUpdateExisting}
               disabled={!canAnalyze || updateTeam.isPending}
-              className={`h-9 px-4 rounded ${canAnalyze ? "border cursor-pointer" : "bg-zinc-300 text-zinc-600 cursor-not-allowed"}`}
+              className={`
+                h-10 px-5 rounded-lg font-medium text-sm
+                transition-all duration-200
+                ${canAnalyze
+                  ? "bg-gradient-to-r from-blue-400 to-blue-500 text-white cursor-pointer shadow-md hover:from-blue-500 hover:to-blue-600 hover:shadow-lg hover:-translate-y-0.5"
+                  : "bg-zinc-200 text-zinc-500 cursor-not-allowed border-2 border-zinc-300"
+                }
+              `}
               title={!canAnalyze ? t("builder.incompleteTeamMsg") : ""}
             >
               {updateTeam.isPending ? (
@@ -364,9 +526,14 @@ export default function BuilderPage() {
           <button
             onClick={onAnalyze}
             disabled={!canAnalyze || analyze.isPending || isAnalyzing}
-            className={`h-9 px-4 rounded ${
-              canAnalyze && !isAnalyzing ? "bg-zinc-900 text-white cursor-pointer" : "bg-zinc-300 text-zinc-600 cursor-not-allowed"
-            }`}
+            className={`
+              h-10 px-6 rounded-lg font-semibold text-sm
+              transition-all duration-200
+              ${canAnalyze && !isAnalyzing
+                ? "bg-gradient-to-r from-zinc-800 to-zinc-900 text-white cursor-pointer shadow-md hover:from-zinc-900 hover:to-black hover:shadow-lg hover:-translate-y-0.5"
+                : "bg-zinc-300 text-zinc-500 cursor-not-allowed"
+              }
+            `}
           >
             {analyze.isPending || isAnalyzing ? (
               <span className="inline-flex items-center justify-center">
@@ -381,28 +548,34 @@ export default function BuilderPage() {
 
         {/* closable messages */}
         {serverErr && (
-          <div className="rounded border border-red-300 bg-red-50 text-red-700 p-3 text-sm flex items-start justify-between">
-            <div className="pr-4">{serverErr}</div>
+          <div className="rounded-lg border-2 border-red-300 bg-gradient-to-r from-red-50 to-red-100 text-red-700 p-4 text-sm flex items-start justify-between shadow-md animate-in slide-in-from-top duration-300">
+            <div className="flex items-start gap-3">
+              <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-red-500 text-white text-xs font-bold shrink-0 mt-0.5">!</span>
+              <div className="pr-4">{serverErr}</div>
+            </div>
             <button
               onClick={() => setServerErr(null)}
-              className="text-red-700 hover:text-red-900 px-1 cursor-pointer"
+              className="inline-flex items-center justify-center w-6 h-6 rounded-full text-red-700 hover:bg-red-200 hover:text-red-900 cursor-pointer transition-colors"
               aria-label="Close"
               title="Close"
             >
-              x
+              ×
             </button>
           </div>
         )}
         {serverOk && (
-          <div className="rounded border border-emerald-300 bg-emerald-50 text-emerald-700 p-3 text-sm flex items-start justify-between">
-            <div className="pr-4">{serverOk}</div>
+          <div className="rounded-lg border-2 border-emerald-300 bg-gradient-to-r from-emerald-50 to-emerald-100 text-emerald-700 p-4 text-sm flex items-start justify-between shadow-md animate-in slide-in-from-top duration-300">
+            <div className="flex items-start gap-3">
+              <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-emerald-500 text-white text-xs font-bold shrink-0 mt-0.5">✓</span>
+              <div className="pr-4">{serverOk}</div>
+            </div>
             <button
               onClick={() => setServerOk(null)}
-              className="text-emerald-700 hover:text-emerald-900 px-1 cursor-pointer"
+              className="inline-flex items-center justify-center w-6 h-6 rounded-full text-emerald-700 hover:bg-emerald-200 hover:text-emerald-900 cursor-pointer transition-colors"
               aria-label="Close"
               title="Close"
             >
-              x
+              ×
             </button>
           </div>
         )}
@@ -412,5 +585,19 @@ export default function BuilderPage() {
 
       <MonsterInspector activeIdx={activeIdx} />
     </div>
+
+    <DragOverlay>
+      {activeDragId !== null ? (
+        <div className="rounded-lg border-2 border-zinc-800 bg-gradient-to-br from-zinc-50 via-white to-zinc-50 shadow-2xl p-3 opacity-90 rotate-3 scale-105">
+          <div className="text-sm font-medium text-zinc-700">
+            {t("builder.slot", { n: parseInt(activeDragId) + 1 })}
+          </div>
+          <div className="text-xs text-zinc-500 mt-1">
+            {t("builder.dragging")}
+          </div>
+        </div>
+      ) : null}
+    </DragOverlay>
+  </DndContext>
   );
 }

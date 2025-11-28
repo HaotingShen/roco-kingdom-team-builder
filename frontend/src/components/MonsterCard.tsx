@@ -174,9 +174,9 @@ export default function MonsterCard({
               monster={monster}
               size={imgSize}
               alt=""
-              width={48}
-              height={48}
-              className="h-16 w-16 rounded-md object-contain"
+              width={60}
+              height={60}
+              className="rounded-md object-contain"
             />
           </div>
 

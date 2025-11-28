@@ -16,9 +16,10 @@ function Warn({ children }: { children: React.ReactNode }) {
   return (
     <div
       role="alert"
-      className="text-[11px] px-2 py-1 rounded border border-amber-300 bg-amber-50 text-amber-800"
+      className="text-[11px] px-3 py-2 rounded-lg border border-amber-300 bg-amber-50 text-amber-800 shadow-sm flex items-start gap-2"
     >
-      {children}
+      <span className="inline-flex items-center justify-center w-3 h-3 rounded-full bg-amber-400 text-white text-[9px] font-bold shrink-0 mt-[3px]">!</span>
+      <div className="flex-1">{children}</div>
     </div>
   );
 }
@@ -312,7 +313,7 @@ function PersonalitySection({
 
   return (
     <div className="space-y-2">
-      <div className="text-sm font-medium">{t("builder.personality")}</div>
+      <div className="text-sm font-semibold text-zinc-800">{t("builder.personality")}</div>
 
       <PersonalitySelect
         value={slot.personality_id || null}
@@ -321,7 +322,7 @@ function PersonalitySection({
       />
 
       {selected && (
-        <div className="text-xs text-emerald-700">
+        <div className="text-xs text-emerald-700 px-3 py-2 rounded-lg bg-emerald-50 border border-emerald-200 shadow-sm">
           {t("builder.effects", {
             text: formatSentenceEffects(selected, t),
           })}
@@ -355,8 +356,8 @@ function LegacyTypeSection({
   }));
 
   return (
-    <div className="space-y-1">
-      <div className="text-sm font-medium">{t("builder.legacyType")}</div>
+    <div className="space-y-2">
+      <div className="text-sm font-semibold text-zinc-800">{t("builder.legacyType")}</div>
 
       <CustomSelect
         value={slot.legacy_type_id || null}
@@ -413,15 +414,15 @@ function TalentsSection({
   }
 
   return (
-    <div className="space-y-2">
-      <div className="text-sm font-medium">{t("builder.talents")}</div>
+    <div className="space-y-3 pt-2">
+      <div className="text-sm font-semibold text-zinc-800">{t("builder.talents")}</div>
       <div className="grid grid-cols-2 gap-2">
         {KEYS.map((k) => {
           const value = slot.talent?.[k] ?? 0;
           const opts = allowed.map((n) => ({ value: n, label: String(n) }));
           return (
             <div key={k} className="flex items-center gap-2">
-              <div className="w-24 text-xs text-zinc-600">{LABELS[k]}</div>
+              <div className="w-24 text-xs font-medium text-zinc-700">{LABELS[k]}</div>
               <CustomSelect
                 ariaLabel={LABELS[k]}
                 value={value}
@@ -511,10 +512,21 @@ export default function MonsterInspector({ activeIdx }: { activeIdx: number }) {
     nav(`/dex/monsters/${monsterId}`);
   };
 
+  const inspectorTitle = useMemo(() => {
+    if (!monsterId || !detail) {
+      return t("builder.inspectorTitle", { n: activeIdx + 1 });
+    }
+    const monsterName = pickName(detail, lang) || detail.name || "";
+    return `${t("builder.inspector")} — ${monsterName}`;
+  }, [monsterId, detail, activeIdx, lang, t]);
+
   return (
-    <aside className="rounded border bg-white p-3 space-y-4">
-      <div className="font-medium">
-        {t("builder.inspectorTitle", { n: activeIdx + 1 })}
+    <aside className="rounded-lg border-2 border-zinc-200 bg-gradient-to-br from-white via-zinc-50 to-white shadow-md p-4 space-y-4">
+      <div className="flex items-center gap-2 pb-3 border-b border-zinc-200">
+        <div className="h-5 w-1 bg-gradient-to-b from-zinc-800 to-zinc-600 rounded-full" />
+        <div className="font-semibold text-zinc-800">
+          {inspectorTitle}
+        </div>
       </div>
 
       {!slot ? (
@@ -527,16 +539,16 @@ export default function MonsterInspector({ activeIdx }: { activeIdx: number }) {
       ) : (
         <>
           {/* View in Dex (left) + Change Monster (right) */}
-          <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
             <button
-              className="text-xs rounded cursor-pointer hover:text-zinc-900 hover:underline underline-offset-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400"
+              className="flex-1 h-9 rounded-lg border-2 border-zinc-300 bg-white text-xs font-medium text-zinc-700 cursor-pointer hover:bg-zinc-50 hover:border-zinc-400 hover:shadow-sm transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400"
               onClick={goDexForMonster}
               title={t("builder.viewInDex")}
             >
               {t("builder.viewInDex")}
             </button>
             <button
-              className="text-xs rounded cursor-pointer hover:text-zinc-900 hover:underline underline-offset-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400"
+              className="flex-1 h-9 rounded-lg border-2 border-zinc-300 bg-white text-xs font-medium text-zinc-700 cursor-pointer hover:bg-zinc-50 hover:border-zinc-400 hover:shadow-sm transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400"
               onClick={() =>
                 onChange({ monster_id: 0, move1_id: 0, move2_id: 0, move3_id: 0, move4_id: 0 })
               }
@@ -558,9 +570,9 @@ export default function MonsterInspector({ activeIdx }: { activeIdx: number }) {
           {/* Note line: "Legacy Type grants ..." */}
           {slot.legacy_type_id ? (
             legacyLoadingMain ? (
-              <div className="text-xs text-zinc-500">{t("common.loading")}</div>
+              <div className="text-xs text-zinc-500 px-3 py-2 rounded-lg bg-zinc-50 border border-zinc-200">{t("common.loading")}</div>
             ) : allowedLegacyMain ? (
-              <div className="text-xs text-emerald-700">
+              <div className="text-xs text-emerald-700 px-3 py-2 rounded-lg bg-emerald-50 border border-emerald-200 shadow-sm">
                 {t("builder.legacyGrants", {
                   name:
                     pickName(allowedLegacyMain as any, lang) ||
@@ -568,16 +580,16 @@ export default function MonsterInspector({ activeIdx }: { activeIdx: number }) {
                 })}
               </div>
             ) : (
-              <div className="text-xs text-amber-700">
+              <div className="text-xs text-amber-700 px-3 py-2 rounded-lg bg-amber-50 border border-amber-200 shadow-sm">
                 {t("builder.legacyMissing")}
               </div>
             )
           ) : null}
 
-          <div>
-            <div className="text-sm font-medium mb-1">{t("builder.moves")}</div>
+          <div className="pt-2">
+            <div className="text-sm font-semibold mb-2 text-zinc-800">{t("builder.moves")}</div>
             {detailQ.isLoading ? (
-              <div className="text-xs text-zinc-500">{t("common.loading")}</div>
+              <div className="text-xs text-zinc-500 px-3 py-2 rounded-lg bg-zinc-50 border border-zinc-200">{t("common.loading")}</div>
             ) : (
               <MovesSection
                 slot={slot}

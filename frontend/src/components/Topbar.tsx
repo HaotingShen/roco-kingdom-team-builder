@@ -98,6 +98,7 @@ export default function Topbar() {
             <button
               onClick={onResetClick}
               className="h-9 px-3 rounded border hover:bg-zinc-50 cursor-pointer"
+              title={t("topbar.reset")}
             >
               {t("topbar.reset") ?? "Reset"}
             </button>
@@ -107,7 +108,7 @@ export default function Topbar() {
         <button
           onClick={() => setLang(lang === "en" ? "zh" : "en")}
           className="h-9 px-3 rounded border hover:bg-zinc-50 cursor-pointer"
-          title={t("topbar.toggleLanguage") ?? "Toggle language"}
+          title={t("topbar.toggleLanguage")}
         >
           {lang === "en" ? t("topbar.lang_en_zh") : t("topbar.lang_zh_en")}
         </button>
