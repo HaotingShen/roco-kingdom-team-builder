@@ -71,8 +71,12 @@ export const useBuilderStore = create<BuilderState>((set, get) => ({
   toPayload: () => {
     const s = get();
     if (!s.magic_item_id) throw new Error("Pick a magic item before saving.");
+
+    const trimmedName = s.name?.trim() || "";
+    if (!trimmedName) throw new Error("Team name cannot be empty.");
+
     return {
-      name: s.name,
+      name: trimmedName,
       magic_item_id: s.magic_item_id,
       user_monsters: s.slots.map(({ id: _omit, ...um }, index) => ({ ...um, position: index })),
     };
@@ -81,8 +85,12 @@ export const useBuilderStore = create<BuilderState>((set, get) => ({
   toUpdatePayload: () => {
     const s = get();
     if (!s.teamId) return null;
+
+    const trimmedName = s.name?.trim() || "";
+    if (!trimmedName) return null;
+
     return {
-      name: s.name,
+      name: trimmedName,
       magic_item_id: s.magic_item_id,
       user_monsters: s.slots.map((um, index) => ({
         id: um.id,

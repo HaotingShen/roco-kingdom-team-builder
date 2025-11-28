@@ -956,6 +956,14 @@ def get_team(team_id: int, db: Session = Depends(get_db)):
 
 @app.post("/teams", response_model=schemas.TeamOut)
 def create_team(team: schemas.TeamCreate, db: Session = Depends(get_db)):
+    # Check for duplicate team name (case-sensitive)
+    existing = db.query(models.Team).filter(models.Team.name == team.name).first()
+    if existing:
+        raise HTTPException(
+            status_code=400,
+            detail=f"A team with the name '{team.name}' already exists"
+        )
+
     # Persist the team and its monsters to DB
     db_team = models.Team(name=team.name, magic_item_id=team.magic_item_id)
     db.add(db_team)
@@ -1523,6 +1531,18 @@ def update_team(
     db_team = db.query(models.Team).filter(models.Team.id == team_id).first()
     if not db_team:
         raise HTTPException(status_code=404, detail="Team not found")
+
+    # Check for duplicate team name (case-sensitive), excluding current team
+    if team_update.name is not None:
+        existing = db.query(models.Team).filter(
+            models.Team.name == team_update.name,
+            models.Team.id != team_id
+        ).first()
+        if existing:
+            raise HTTPException(
+                status_code=400,
+                detail=f"A team with the name '{team_update.name}' already exists"
+            )
 
     # Update team fields if provided
     if team_update.name is not None:

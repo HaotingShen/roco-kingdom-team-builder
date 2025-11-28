@@ -65,6 +65,17 @@ function validateSlot(slot: UserMonsterCreate): VKey[] {
   return errs;
 }
 
+function validateTeamName(name: string | undefined): string | null {
+  const trimmed = name?.trim() || "";
+  if (!trimmed) {
+    return "builder.v_emptyTeamName";
+  }
+  if (trimmed.length > 16) {
+    return "builder.v_teamNameTooLong";
+  }
+  return null;
+}
+
 // quick helper for clearing a single slot
 const zeroTalent = { hp_boost:0, phy_atk_boost:0, mag_atk_boost:0, phy_def_boost:0, mag_def_boost:0, spd_boost:0 } as const;
 
@@ -285,25 +296,74 @@ export default function BuilderPage() {
     },
   });
 
-  const onSaveNew = () => {
+  const onSaveNew = async () => {
+    // Validate team name
+    const nameError = validateTeamName(name);
+    if (nameError) {
+      setServerErr(t(nameError));
+      return;
+    }
+
     if (!magic_item_id || !canAnalyze) {
       setServerErr(t("builder.incompleteTeamMsg"));
       return;
     }
+
     try {
+      // Check for duplicate names (case-sensitive)
+      const existingTeams = await qc.fetchQuery({
+        queryKey: QUERY_KEYS.TEAMS,
+        queryFn: () => endpoints.listTeams().then((r) => r.data as TeamOut[]),
+      });
+
+      const trimmedName = name?.trim();
+      const duplicate = existingTeams.find(
+        (team) => team.name === trimmedName
+      );
+
+      if (duplicate) {
+        setServerErr(t("builder.v_duplicateTeamName", { name: trimmedName }));
+        return;
+      }
+
       createTeam.mutate(toPayload());
     } catch (e: any) {
       setServerErr(e?.message || t("builder.incompleteTeamMsg"));
     }
   };
 
-  const onUpdateExisting = () => {
+  const onUpdateExisting = async () => {
     if (!teamId) return; // hidden if no teamId anyway
+
+    // Validate team name
+    const nameError = validateTeamName(name);
+    if (nameError) {
+      setServerErr(t(nameError));
+      return;
+    }
+
     if (!magic_item_id || !canAnalyze) {
       setServerErr(t("builder.incompleteTeamMsg"));
       return;
     }
+
     try {
+      // Check for duplicate names EXCLUDING current team
+      const existingTeams = await qc.fetchQuery({
+        queryKey: QUERY_KEYS.TEAMS,
+        queryFn: () => endpoints.listTeams().then((r) => r.data as TeamOut[]),
+      });
+
+      const trimmedName = name?.trim();
+      const duplicate = existingTeams.find(
+        (team) => team.id !== teamId && team.name === trimmedName
+      );
+
+      if (duplicate) {
+        setServerErr(t("builder.v_duplicateTeamName", { name: trimmedName }));
+        return;
+      }
+
       const body = toUpdatePayload();
       if (!body) {
         setServerErr(t("builder.incompleteTeamMsg"));
@@ -550,7 +610,7 @@ export default function BuilderPage() {
         {serverErr && (
           <div className="rounded-lg border-2 border-red-300 bg-gradient-to-r from-red-50 to-red-100 text-red-700 p-4 text-sm flex items-start justify-between shadow-md animate-in slide-in-from-top duration-300">
             <div className="flex items-start gap-3">
-              <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-red-500 text-white text-xs font-bold shrink-0 mt-0.5">!</span>
+              <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-red-500 text-white text-xs font-bold shrink-0 mt-[1px]">!</span>
               <div className="pr-4">{serverErr}</div>
             </div>
             <button
@@ -566,7 +626,7 @@ export default function BuilderPage() {
         {serverOk && (
           <div className="rounded-lg border-2 border-emerald-300 bg-gradient-to-r from-emerald-50 to-emerald-100 text-emerald-700 p-4 text-sm flex items-start justify-between shadow-md animate-in slide-in-from-top duration-300">
             <div className="flex items-start gap-3">
-              <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-emerald-500 text-white text-xs font-bold shrink-0 mt-0.5">✓</span>
+              <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-emerald-500 text-white text-xs font-bold shrink-0 mt-[1px]">✓</span>
               <div className="pr-4">{serverOk}</div>
             </div>
             <button

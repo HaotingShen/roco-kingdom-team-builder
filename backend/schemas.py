@@ -187,9 +187,19 @@ class UserMonsterOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 class TeamCreate(BaseModel):
-    name: Optional[str] = None
+    name: str
     user_monsters: List[UserMonsterCreate] = Field(..., min_length=6, max_length=6)
     magic_item_id: int
+
+    @model_validator(mode="after")
+    def validate_name(self) -> "TeamCreate":
+        if self.name is not None:
+            self.name = self.name.strip()
+        if not self.name or not self.name.strip():
+            raise ValueError("Team name cannot be empty or whitespace only")
+        if len(self.name) > 16:
+            raise ValueError("Team name cannot exceed 16 characters")
+        return self
 
 class TeamOut(BaseModel):
     id: int
@@ -312,3 +322,13 @@ class TeamUpdate(BaseModel):
     name: Optional[str] = None
     magic_item_id: Optional[int] = None
     user_monsters: List[UserMonsterUpsert]
+
+    @model_validator(mode="after")
+    def validate_name(self) -> "TeamUpdate":
+        if self.name is not None:
+            self.name = self.name.strip()
+            if not self.name:
+                raise ValueError("Team name cannot be empty or whitespace only")
+            if len(self.name) > 16:
+                raise ValueError("Team name cannot exceed 16 characters")
+        return self
