@@ -248,7 +248,7 @@ def build_trait_synergy_prompt(monster, trait, selected_moves, preferred_attack_
     # Adjust language in the prompt based on user's language
     if language == "zh":
         prompt = f"""你是一位专业的游戏策略专家。
-宠物: {monster_name}
+精灵: {monster_name}
 属性: {type_info}
 血脉类型: {legacy_type_name}
 性格: {personality_name}
@@ -355,7 +355,7 @@ def build_team_synergy_prompt(user_monsters, monster_db_map, move_db_map, type_d
 魔法道具: {magic_item_name} — {magic_item_desc}
 
 请从以下几个方面分析队伍的整体协同作用:
-1. **关键连招组合** (key_combos): 识别2-3个跨宠物的强力连招或协同组合，说明为什么它们有效。
+1. **关键连招组合** (key_combos): 识别2-3个跨精灵的强力连招或协同组合，说明为什么它们有效。
 2. **回合顺序策略** (turn_order_strategy): 提供2-3个关于出手顺序和节奏控制的建议。
 3. **魔法道具使用** (magic_item_usage): 给出1-2个关于如何在关键时刻使用魔法道具的建议。
 4. **整体策略** (general_strategy): 提供2-3个整体战术建议，包括如何应对不同对手类型。
@@ -545,17 +545,17 @@ def generate_recommendations(per_monster_analysis, type_coverage, magic_item_eva
     vt = magic_item_eval.valid_targets
     if not vt:
         if language == "zh":
-            add("magic_item", "warn", "当前队伍中没有宠物可以使用所选择的血脉魔法！")
+            add("magic_item", "warn", "当前队伍中没有精灵可以使用所选择的血脉魔法！")
         else:
             add("magic_item", "warn", "Your selected magic item cannot be used by any monster in your current team!")
     elif len(vt) == 1:
         if language == "zh":
-            add("magic_item", "info", "只有一个宠物可以使用所选择的血脉魔法。", monster_ids=vt)
+            add("magic_item", "info", "只有一个精灵可以使用所选择的血脉魔法。", monster_ids=vt)
         else:
             add("magic_item", "info", "Only one monster can use the selected magic item.", monster_ids=vt)
     else:
         if language == "zh":
-            add("magic_item", "info", "多个宠物可以使用所选择的血脉魔法。", monster_ids=vt)
+            add("magic_item", "info", "多个精灵可以使用所选择的血脉魔法。", monster_ids=vt)
         else:
             add("magic_item", "info", "Multiple monsters can use the selected magic item.", monster_ids=vt)
 
@@ -573,7 +573,7 @@ def generate_recommendations(per_monster_analysis, type_coverage, magic_item_eva
         names = [get_localized_name(type_db_map[t], language) for t in common_type_ids]
         if language == "zh":
             add("weakness", "warn",
-                f"许多宠物共享这些属性：{', '.join(names)}。这会增加对特定克制的脆弱性。",
+                f"许多精灵共享这些属性：{', '.join(names)}。这使队伍容易受到特定克制的影响。",
                 type_ids=common_type_ids)
         else:
             add("weakness", "warn",
@@ -598,7 +598,7 @@ def generate_recommendations(per_monster_analysis, type_coverage, magic_item_eva
         if analysis.counter_coverage.total_counter_moves == 0:
             if language == "zh":
                 add("counters", "warn",
-                    f"{mname}没有选择反制技能。",
+                    f"{mname}没有选择含有应对效果的技能。",
                     monster_ids=[mid])
             else:
                 add("counters", "warn",
@@ -608,11 +608,11 @@ def generate_recommendations(per_monster_analysis, type_coverage, magic_item_eva
         if analysis.defense_status_move.defense_status_move_count < 2:
             if language == "zh":
                 add("defense_status", "info",
-                    f"{mname}的防守/状态技能少于2个。建议增加更多技能以提高生存能力。",
+                    f"{mname}的总防御/状态技能少于2个。建议增加更多相应技能以提升灵活性。",
                     monster_ids=[mid])
             else:
                 add("defense_status", "info",
-                    f"{mname} has fewer than 2 Defense/Status moves. Consider adding more for survivability.",
+                    f"{mname} has fewer than 2 Defense/Status moves. Consider adding more for flexibility.",
                     monster_ids=[mid])
 
         for synergy in analysis.trait_synergies:
@@ -631,7 +631,7 @@ def generate_recommendations(per_monster_analysis, type_coverage, magic_item_eva
     styles = [getattr(a.user_monster.monster, "preferred_attack_style", None) for a in per_monster_analysis]
     if len(set(styles)) == 1 and styles[0]:
         if language == "zh":
-            add("general", "warn", f"所有宠物都是{styles[0]}风格的攻击者。这可能使队伍变得可预测。")
+            add("general", "warn", f"所有精灵都是{styles[0]}风格的攻击者。这可能使队伍变得可预测。")
         else:
             add("general", "warn", f"All monsters are {styles[0]}-style attackers. This may make the team predictable.")
 
@@ -649,7 +649,7 @@ def generate_recommendations(per_monster_analysis, type_coverage, magic_item_eva
         "phy_atk": "主要物理攻击手",
         "mag_atk": "主要魔法攻击手",
         "overall_def": "物理或魔法坦克",
-        "spd": "先手、侦察或收割手",
+        "spd": "侦察或收割手",
     }
 
     stat_roles = stat_roles_zh if language == "zh" else stat_roles_en

@@ -50,6 +50,7 @@ export default function MonsterDetailPage() {
   const [sp] = useSearchParams();
   const fromTab = sp.get("tab") || "monsters";
   const which = sp.get("moves") === "legacy" ? "legacy" : "pool";
+  const fromBuilder = sp.get("from") === "builder";
   const { lang, t } = useI18n();
 
   const q = useQuery({
@@ -111,11 +112,11 @@ export default function MonsterDetailPage() {
     <div className="space-y-3">
       <div className="flex items-center">
         <Link
-          to={`/dex?tab=${fromTab}`}
+          to={fromBuilder ? "/build" : `/dex?tab=${fromTab}`}
           className="inline-flex items-center gap-1 text-sm font-medium rounded-lg border border-zinc-300 bg-white px-4 py-2 shadow-sm hover:bg-zinc-50 hover:border-zinc-400 hover:shadow transition-all duration-200"
         >
           <span aria-hidden className="text-xl leading-none text-zinc-600 -translate-y-[1px]">←</span>
-          <span className="text-zinc-700">{t("dex.backToDex")}</span>
+          <span className="text-zinc-700">{fromBuilder ? t("dex.backToBuilder") : t("dex.backToDex")}</span>
         </Link>
       </div>
 
@@ -127,7 +128,7 @@ export default function MonsterDetailPage() {
             {/* Previous Monster Button */}
             {prevQ.data && (
               <Link
-                to={`/dex/monsters/${m.id - 1}?tab=${fromTab}`}
+                to={`/dex/monsters/${m.id - 1}?tab=${fromTab}${fromBuilder ? "&from=builder" : ""}`}
                 className="absolute left-2 top-1/2 -translate-y-1/2 inline-flex items-center justify-center w-10 h-10 rounded-full bg-white border border-zinc-300 shadow-md hover:bg-zinc-50 hover:border-zinc-400 hover:shadow-lg transition-all duration-200 text-zinc-600 hover:text-zinc-900"
                 aria-label="Previous monster"
               >
@@ -138,7 +139,7 @@ export default function MonsterDetailPage() {
             {/* Next Monster Button */}
             {nextQ.data && (
               <Link
-                to={`/dex/monsters/${m.id + 1}?tab=${fromTab}`}
+                to={`/dex/monsters/${m.id + 1}?tab=${fromTab}${fromBuilder ? "&from=builder" : ""}`}
                 className="absolute right-2 top-1/2 -translate-y-1/2 inline-flex items-center justify-center w-10 h-10 rounded-full bg-white border border-zinc-300 shadow-md hover:bg-zinc-50 hover:border-zinc-400 hover:shadow-lg transition-all duration-200 text-zinc-600 hover:text-zinc-900"
                 aria-label="Next monster"
               >
@@ -267,7 +268,7 @@ export default function MonsterDetailPage() {
           <div className="flex items-center justify-center mb-4">
             <div className="inline-flex items-center gap-1 p-1 rounded-full bg-zinc-100 shadow-inner">
               <Link
-                to={`?tab=${fromTab}&moves=pool`}
+                to={`?tab=${fromTab}&moves=pool${fromBuilder ? "&from=builder" : ""}`}
                 className={`
                   inline-flex items-center justify-center h-9 px-6 rounded-full text-sm font-medium
                   transition-all duration-200 ease-in-out
@@ -280,7 +281,7 @@ export default function MonsterDetailPage() {
                 {t("dex.learnable")}
               </Link>
               <Link
-                to={`?tab=${fromTab}&moves=legacy`}
+                to={`?tab=${fromTab}&moves=legacy${fromBuilder ? "&from=builder" : ""}`}
                 className={`
                   inline-flex items-center justify-center h-9 px-6 rounded-full text-sm font-medium
                   transition-all duration-200 ease-in-out

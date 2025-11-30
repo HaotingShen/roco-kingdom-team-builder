@@ -61,9 +61,15 @@ function TypeBadge({ type, lang }: { type: any; lang: Lang }) {
   const typeName = pickName(type, lang);
 
   return (
-    <div className="inline-flex items-center gap-1 px-2 py-1.5 bg-zinc-100 rounded text-xs font-medium">
+    <div className="inline-flex items-center gap-1 px-2 py-1.5 bg-zinc-100 rounded text-[13px] font-medium">
       {iconUrl && (
-        <img src={iconUrl} alt={typeName} className="w-3.5 h-3.5" onError={(e) => (e.currentTarget.style.display = 'none')} />
+        <img
+          src={iconUrl}
+          alt=""
+          width={20}
+          height={20}
+          onError={(e) => (e.currentTarget.style.display = 'none')}
+        />
       )}
       <span>{typeName}</span>
     </div>
@@ -135,6 +141,13 @@ export default function SavedTeamPage() {
       setAnalysis(res);
       setIsAnalyzing(false);
       nav("/build");
+      // Scroll to analysis section after navigation
+      setTimeout(() => {
+        const element = document.getElementById("analysis-results");
+        if (element) {
+          element.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+      }, 200);
     },
     onSettled: () => {
       setIsAnalyzing(false);
@@ -197,7 +210,7 @@ export default function SavedTeamPage() {
                 {/* Monster image - reduced size */}
                 <div className="relative bg-gradient-to-br from-zinc-50 to-zinc-100 p-4 flex items-center justify-center" style={{ minHeight: '160px' }}>
                   <div className="w-32 h-32">
-                    <MonsterImage monster={um.monster} size={180} />
+                    <MonsterImage monster={um.monster} size={360} />
                   </div>
                   <div className="absolute top-2 left-2 bg-white/90 rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold text-zinc-700 shadow">
                     {idx + 1}
@@ -215,7 +228,7 @@ export default function SavedTeamPage() {
                     </h3>
 
                     {/* Types */}
-                    <div className="flex flex-wrap gap-1 mb-1.5">
+                    <div className="flex flex-wrap gap-1.5 mb-1.5">
                       <TypeBadge type={um.monster.main_type} lang={lang} />
                       {um.monster.sub_type && (
                         <TypeBadge type={um.monster.sub_type} lang={lang} />
@@ -226,8 +239,8 @@ export default function SavedTeamPage() {
                   {/* Personality and Legacy */}
                   <div className="grid grid-cols-2 gap-2 items-start">
                     <div>
-                      <div className="text-zinc-500 mb-1 text-xs">{t("builder.personality")}:</div>
-                      <div className="font-semibold text-zinc-800 text-xs">
+                      <div className="text-zinc-500 mb-1 text-xs">{t("labels.personality")}:</div>
+                      <div className="font-semibold text-zinc-800 text-[13px]">
                         {pickName(um.personality as any, lang)}
                         <span className="ml-1.5 text-zinc-600 font-semibold">
                           {formatRowEffects(um.personality, t)}
@@ -236,12 +249,13 @@ export default function SavedTeamPage() {
                     </div>
                     <div>
                       <div className="text-zinc-500 mb-1 text-xs">{t("labels.legacy")}:</div>
-                      <div className="flex items-center gap-1 font-semibold text-zinc-800 text-xs">
+                      <div className="flex items-center gap-1 font-semibold text-zinc-800 text-[13px]">
                         {typeIconUrl(um.legacy_type?.name) && (
                           <img
                             src={typeIconUrl(um.legacy_type.name) || ""}
                             alt=""
-                            className="w-3.5 h-3.5"
+                            width={22}
+                            height={22}
                             onError={(e) => (e.currentTarget.style.display = 'none')}
                           />
                         )}
@@ -253,14 +267,16 @@ export default function SavedTeamPage() {
                   {/* Moves */}
                   <div>
                     <div className="text-xs text-zinc-500 mb-1.5 font-medium">{t("builder.moves")}:</div>
-                    <div className="grid grid-cols-2 gap-1.5 text-xs">
+                    <div className="grid grid-cols-2 gap-1.5 text-[13px]">
                       {[um.move1, um.move2, um.move3, um.move4].map((move, i) => (
                         <div key={i} className="flex items-center gap-1 bg-zinc-50 px-2 py-1.5 rounded">
                           {typeIconUrl(move.move_type?.name || move.type?.name) && (
                             <img
                               src={typeIconUrl(move.move_type?.name || move.type?.name) || ""}
                               alt=""
-                              className="w-3.5 h-3.5 flex-shrink-0"
+                              width={22}
+                              height={22}
+                              className="flex-shrink-0"
                               onError={(e) => (e.currentTarget.style.display = 'none')}
                             />
                           )}

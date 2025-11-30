@@ -200,7 +200,7 @@ export default function MonsterCard({
             {/* personality + legacy */}
             <div className="mt-2 flex flex-wrap items-center gap-2">
               <span className="inline-flex items-center gap-1 rounded bg-zinc-50 px-2 py-1 text-[11px] text-zinc-600">
-                <span className="whitespace-nowrap">{t("builder.personality")}:</span>
+                <span className="whitespace-nowrap">{t("labels.personality")}:</span>
                 <span className={persName ? "text-zinc-700" : "text-zinc-500"}>{persName || "—"}</span>
               </span>
 

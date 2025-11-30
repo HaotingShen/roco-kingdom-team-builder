@@ -313,7 +313,7 @@ function PersonalitySection({
 
   return (
     <div className="space-y-2">
-      <div className="text-sm font-semibold text-zinc-800">{t("builder.personality")}</div>
+      <div className="text-sm font-semibold text-zinc-800">{t("labels.personality")}</div>
 
       <PersonalitySelect
         value={slot.personality_id || null}
@@ -509,7 +509,7 @@ export default function MonsterInspector({ activeIdx }: { activeIdx: number }) {
 
   const goDexForMonster = () => {
     if (!monsterId) return;
-    nav(`/dex/monsters/${monsterId}`);
+    nav(`/dex/monsters/${monsterId}?from=builder`);
   };
 
   const inspectorTitle = useMemo(() => {
@@ -521,7 +521,7 @@ export default function MonsterInspector({ activeIdx }: { activeIdx: number }) {
   }, [monsterId, detail, activeIdx, lang, t]);
 
   return (
-    <aside className="rounded-lg border-2 border-zinc-200 bg-gradient-to-br from-white via-zinc-50 to-white shadow-md p-4 space-y-4">
+    <aside className="rounded-lg border-2 border-zinc-200 bg-gradient-to-br from-white via-zinc-50 to-white shadow-md p-4 space-y-4 max-h-none lg:max-h-[720px] xl:max-h-[900px] overflow-y-auto">
       <div className="flex items-center gap-2 pb-3 border-b border-zinc-200">
         <div className="h-5 w-1 bg-gradient-to-b from-zinc-800 to-zinc-600 rounded-full" />
         <div className="font-semibold text-zinc-800">
