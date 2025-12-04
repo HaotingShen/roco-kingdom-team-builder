@@ -224,7 +224,7 @@
     }
   },
   {
-    "name": "Copy",
+    "name": "Rewrite",
     "type": "Normal",
     "category": "Status",
     "energy_cost": 0,
@@ -5683,7 +5683,7 @@
     "name": "Wind Veil",
     "type": "Flying",
     "category": "Status",
-    "energy_cost": 2,
+    "energy_cost": 1,
     "power": null,
     "description": "Both opponent and user Exit. Priority -1.",
     "has_counter": false,
@@ -5691,7 +5691,7 @@
     "localized": {
       "zh": {
         "name": "风隐",
-        "description": "目标和自身均脱离, 先手-1。"
+        "description": "敌方和自己均脱离, 先手-1。"
       }
     }
   },

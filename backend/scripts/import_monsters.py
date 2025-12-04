@@ -15,15 +15,85 @@ ATTACK_STYLE_MAP = {
     "Both": "BOTH"
 }
 
+def get_zh_name(obj):
+    """Helper to extract Chinese name from localized field."""
+    if not obj.localized:
+        return None
+    if isinstance(obj.localized, str):
+        return obj.localized
+    if isinstance(obj.localized, dict):
+        zh = obj.localized.get('zh')
+        if isinstance(zh, dict):
+            return zh.get('name')
+        return zh
+    return None
+
+def build_species_lookup_map(session: Session) -> dict:
+    """
+    Build a species lookup map that accepts both English and Chinese species names.
+    Returns a dict mapping species names (both EN and ZH) to species IDs.
+    """
+    species_list = session.query(MonsterSpecies).all()
+    species_map = {}
+
+    for s in species_list:
+        # Map English name
+        species_map[s.name] = s.id
+
+        # Also map Chinese name if available
+        zh_name = s.localized.get('zh') if s.localized else None
+        if zh_name and isinstance(zh_name, str):
+            species_map[zh_name] = s.id
+
+    return species_map
+
+def build_type_lookup_map(session: Session) -> dict:
+    """
+    Build a type lookup map that accepts both English and Chinese type names.
+    Returns a dict mapping type names (both EN and ZH) to type IDs.
+    """
+    types = session.query(Type).all()
+    type_map = {}
+
+    for t in types:
+        # Map English name
+        type_map[t.name] = t.id
+
+        # Also map Chinese name if available
+        zh_name = get_zh_name(t)
+        if zh_name:
+            type_map[zh_name] = t.id
+
+    return type_map
+
+def build_trait_lookup_map(session: Session) -> dict:
+    """
+    Build a trait lookup map that accepts both English and Chinese trait names.
+    Returns a dict mapping trait names (both EN and ZH) to trait IDs.
+    """
+    traits = session.query(Trait).all()
+    trait_map = {}
+
+    for tr in traits:
+        # Map English name
+        trait_map[tr.name] = tr.id
+
+        # Also map Chinese name if available
+        zh_name = get_zh_name(tr)
+        if zh_name:
+            trait_map[zh_name] = tr.id
+
+    return trait_map
+
 def load_monsters_two_pass():
     with open(MONSTERS_JSON_PATH, encoding="utf-8") as f:
         monsters_data = json.load(f)
 
     with Session(engine) as session:
-        # Build all FK maps
-        species_map = {s.name: s.id for s in session.query(MonsterSpecies).all()}
-        type_map = {t.name: t.id for t in session.query(Type).all()}
-        trait_map = {tr.name: tr.id for tr in session.query(Trait).all()}
+        # Build all FK maps with bilingual support
+        species_map = build_species_lookup_map(session)
+        type_map = build_type_lookup_map(session)
+        trait_map = build_trait_lookup_map(session)
 
         # FIRST PASS: Insert all monsters with evolves_from_id=None
         for item in monsters_data:

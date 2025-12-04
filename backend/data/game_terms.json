@@ -61,11 +61,11 @@
   },
   {
     "key": "Windrise Mark",
-    "description": "When acting first, damage +20% for each stack.",
+    "description": "When acting first, damage +20% for each stack, lasts 1 turn only.",
     "localized": {
       "zh": {
         "name": "风起印记",
-        "description": "先手攻击时, 每层使伤害提升20%。"
+        "description": "先手攻击时，每层使伤害提升20%，仅生效1回合。"
       }
     }
   },
@@ -81,7 +81,7 @@
   },
   {
     "key": "Spirit Mark",
-    "description": "When entering the battlefield, lose 1 energy per stack.",
+    "description": "When a monster enters the battlefield (in all situations), lose 1 energy per stack.",
     "localized": {
       "zh": {
         "name": "降灵印记",
@@ -91,27 +91,27 @@
   },
   {
     "key": "Dragonbite Mark",
-    "description": "When using a 5-energy move, Attack +40%. Only 1 stack can be active.",
+    "description": "When using a move that costs 3 energy, gain Attack +30%.",
     "localized": {
       "zh": {
         "name": "龙噬印记",
-        "description": "释放5能耗技能时, 提升40%攻击。仅生效1层。"
+        "description": "释放3能耗技能时, 获得双攻+30%。"
       }
     }
   },
   {
     "key": "Poison Mark",
-    "description": "At the end of each turn, deal Poison-type damage equal to 3% of max HP per stack. The damage amount is affected by type effectiveness.",
+    "description": "At the end of each turn, deal Poison-type damage equal to 3% (rounded down) of max HP. The damage amount is affected by type effectiveness.",
     "localized": {
       "zh": {
         "name": "中毒印记",
-        "description": "回合结束时, 造成3%最大生命的毒属性伤害, 受属性克制影响。"
+        "description": "回合结束时，造成3%（向下取整）毒属性伤害，受到属性克制影响。"
       }
     }
   },
   {
     "key": "Spike Mark",
-    "description": "When entering the battlefield, take damage equal to 6% of max HP per stack.",
+    "description": "When a monster enters the battlefield (in all situations), deal damage equal to 6% of max HP per stack.",
     "localized": {
       "zh": {
         "name": "棘刺印记",
@@ -121,41 +121,11 @@
   },
   {
     "key": "Starfall Mark",
-    "description": "After dealing move damage, remove all stacks of Starfall Marks. Each stack deals 30 magic damage.",
+    "description": "After dealing move damage, remove all stacks of Starfall Mark. Each stack deals 30 power of magic damage.",
     "localized": {
       "zh": {
-        "name": "星陨印记",
+        "name": "星陨",
         "description": "造成技能伤害后, 消除所有星陨层数, 每层星陨造成30威力的魔法伤害"
-      }
-    }
-  },
-  {
-    "key": "Rain",
-    "description": "Water-type environment. Water-type move power +50%.",
-    "localized": {
-      "zh": {
-        "name": "下雨",
-        "description": "水系环境。水系技能提升50%。"
-      }
-    }
-  },
-  {
-    "key": "Sandstorm",
-    "description": "Ground-type environment. Ground-type move energy cost -2.",
-    "localized": {
-      "zh": {
-        "name": "沙暴",
-        "description": "地系环境。地系技能能耗-2。"
-      }
-    }
-  },
-  {
-    "key": "Blizzard",
-    "description": "Ice-type environment. Each turn, inflict 1 stack of Freeze on both monsters currently on the battlefield.",
-    "localized": {
-      "zh": {
-        "name": "暴风雪",
-        "description": "冰系环境。每回合赋予在场精灵1层冰冻效果。"
       }
     }
   },
@@ -170,22 +140,12 @@
     }
   },
   {
-    "key": "Poison Effect",
-    "description": "This includes both the Poison and Poison Mark effects.",
-    "localized": {
-      "zh": {
-        "name": "中毒效果",
-        "description": "包括中毒和中毒印记效果。"
-      }
-    }
-  },
-  {
     "key": "Poison",
-    "description": "At the end of each turn, inflict Poison-type damage equal to 3% of max HP per stack, affected by type effectiveness. All stacks are removed when the monster is switched out.",
+    "description": "At the end of each turn, inflict Poison-type damage equal to 3% (rounded down) of max HP per stack. The damage is affected by type effectiveness. All stacks are removed when the monster is switched out.",
     "localized": {
       "zh": {
         "name": "中毒",
-        "description": "回合结束时, 造成3%最大生命的毒属性伤害, 受属性克制影响, 换下场后清除。"
+        "description": "回合结束时，造成3%（向下取整）毒属性伤害，受到属性克制影响，换下场后清除。"
       }
     }
   },
@@ -220,6 +180,56 @@
     }
   },
   {
+    "key": "Devotion",
+    "description": "When a move with the Devotion effect is used, it grants an enhancement to all monsters' 'Bite' and 'Bug Swarm' moves. These enhancements can stack, and all active Devotion effects apply at the same time. A random Devotion enhancement includes: move power +20, attacks inflict 2 stacks of Poison, Lifesteal 20%, Combo count +1, and move energy cost -2.",
+    "localized": {
+      "zh": {
+        "name": "奉献",
+        "description": "使技能「啃咬」和「虫群」获得额外强化, 全部精灵共享, 强化效果可同时存在并叠加。随机一层奉献的强化效果包括: 技能威力+20, 攻击附加2层中毒, 吸血20%, 连击数+1, 技能能耗-2。"
+      }
+    }
+  },
+  {
+    "key": "Rain",
+    "description": "Water-type environment. Water-type move power +50%.",
+    "localized": {
+      "zh": {
+        "name": "下雨",
+        "description": "水系环境。水系技能威力提升50%。"
+      }
+    }
+  },
+  {
+    "key": "Sandstorm",
+    "description": "Ground-type environment. Ground-type move energy cost -2.",
+    "localized": {
+      "zh": {
+        "name": "沙暴",
+        "description": "地系环境。地系技能能耗-2。"
+      }
+    }
+  },
+  {
+    "key": "Blizzard",
+    "description": "Ice-type environment. Each turn, inflict 1 stack of Freeze on both monsters currently on the battlefield.",
+    "localized": {
+      "zh": {
+        "name": "暴风雪",
+        "description": "冰系环境。每回合赋予在场精灵1层冰冻效果。"
+      }
+    }
+  },
+  {
+    "key": "Poison Effect",
+    "description": "This includes both the Poison and Poison Mark effects.",
+    "localized": {
+      "zh": {
+        "name": "中毒效果",
+        "description": "包括中毒和中毒印记效果。"
+      }
+    }
+  },
+  {
     "key": "Burst",
     "description": "When acting for the first time after entering the battlefield, gain an extra effect.",
     "localized": {
@@ -230,22 +240,142 @@
     }
   },
   {
-    "key": "Devotion",
-    "description": "When a move with the Devotion effect is used, it grants an enhancement to all monsters' 'Bite' and 'Bug Swarm' moves. These enhancements can stack, and all active Devotion effects apply at the same time. Possible enhancements include: move power +20, attacks inflict 2 stacks of Poison, Lifesteal 20%, Combo count +1, and move energy cost -2.",
+    "key": "Barrel Status",
+    "description": "The monster's appearance changes to a barrel, temporarily removing its type. When the monster uses a move, the Barrel status is removed, and the original form is restored.",
     "localized": {
       "zh": {
-        "name": "奉献",
-        "description": "使技能「啃咬」和「虫群」获得额外强化, 全部精灵共享, 强化效果可同时存在并叠加。效果: 技能威力+20, 攻击附加2层中毒, 吸血20%, 连击数+1, 技能能耗-2。"
+        "name": "木桶状态",
+        "description": "精灵的外观变为木桶, 在此状态下暂时移除自身系别。当自身释放技能时, 木桶状态解除, 并恢复原本形态。"
       }
     }
   },
   {
-    "key": "Blood Points",
-    "description": "Each player has 4 Blood Points at the start of the battle. Generally, when a monster is defeated, the player loses 1 Blood Point. Some traits can have different effects on Blood Points. If a player runs out of Blood Points, they lose the battle.",
+    "key": "Stun",
+    "description": "The monster cannot act under this effect.",
+    "localized": {
+      "zh": {
+        "name": "眩晕",
+        "description": "精灵在此效果下无法行动。"
+      }
+    }
+  },
+  {
+    "key": "Charge",
+    "description": "This turn, the monster charges up and spends energy, becoming immune to all forced exit effects. Next turn, user can only use a move that has been charged, use Focus, or switch out. If Focus is used during the charging turn, the charge status remains.",
+    "localized": {
+      "zh": {
+        "name": "蓄力",
+        "description": "本回合进行蓄力并扣除能量, 期间免疫所有离场效果。下回合只可释放已蓄力技能、聚能或下场。如蓄力时释放聚能, 蓄力状态依旧存在。"
+      }
+    }
+  },
+  {
+    "key": "Charge Extension",
+    "description": "Allows the monster to continue Charge for one more turn. The charged move can be used one additional time.",
+    "localized": {
+      "zh": {
+        "name": "积蓄",
+        "description": "可继续蓄力一回合, 最终技能可额外释放次数+1。"
+      }
+    }
+  },
+  {
+    "key": "Quick Entry",
+    "description": "When a monster is actively switched in (not as a result of another monster's defeat), it immediately uses the first available move with this effect and sufficient energy. The turn order for this move is determined by the Speed of the two monsters on the battlefield. However, if this move's Counter effect triggers, it is resolved using Counter's priority rules instead.",
+    "localized": {
+      "zh": {
+        "name": "迅捷",
+        "description": "精灵主动入场时（非因其他精灵力竭而入场）, 立即使用第一个可用的技能（需满足能量要求）。一般情况下，此技能的先手顺序由在场双方精灵的速度决定；如果本技能触发了【应对】效果，则改按【应对】的结算顺序处理。"
+      }
+    }
+  },
+  {
+    "key": "Overload",
+    "description": "The selected move is performed twice, consuming 1 stack of Overload.",
+    "localized": {
+      "zh": {
+        "name": "过载",
+        "description": "所选技能释放两次, 消耗一层过载。"
+      }
+    }
+  },
+  {
+    "key": "Transmission",
+    "description": "At the end of the turn, for every move with Transmission, all moves with Transmission shift down one slot in the move list, in order. Moves below them move up to take their previous positions. When multiple moves have Transmission, all such moves are shifted together, maintaining their original order relative to each other.",
+    "localized": {
+      "zh": {
+        "name": "传动",
+        "description": "回合结束时, 带有传动效果的技能会向下移动一个位置, 并将原先下面那个技能向上顶到传动技能原先的位置。当有多个技能同时带有传动效果时, 所有这些技能会一起移动, 并保持它们之间的原始顺序。"
+      }
+    }
+  },
+  {
+    "key": "Interrupt",
+    "description": "Interrupts the opponent's move this turn. Opponent's move is not executed and the interrupted move's energy cost is refunded to the opponent.",
+    "localized": {
+      "zh": {
+        "name": "打断",
+        "description": "打断敌人本回合释放的技能。敌方技能不执行, 并返还被打断技能的能量。"
+      }
+    }
+  },
+  {
+    "key": "Lifesteal",
+    "description": "When dealing damage, recover HP equal to a percentage of the damage dealt.",
+    "localized": {
+      "zh": {
+        "name": "吸血",
+        "description": "造成伤害时, 按比例回复自身的生命。"
+      }
+    }
+  },
+  {
+    "key": "Defeated",
+    "description": "The monster is defeated and cannot be used.",
+    "localized": {
+      "zh": {
+        "name": "力竭",
+        "description": "精灵被打败, 无法入场使用。"
+      }
+    }
+  },
+  {
+    "key": "Life Point",
+    "description": "Each player has 4 Life Points at the start of the battle. Generally, when a monster is defeated, the player loses 1 Life Point. Some traits can have different effects on Life Points. If a player runs out of Life Points, they lose the battle.",
     "localized": {
       "zh": {
         "name": "魔力值",
         "description": "每位玩家在战斗开始时拥有4点魔力值。一般情况下, 当一只精灵力竭时, 玩家会失去1点魔力值。有些特性会对魔力值有不同的影响。如果玩家的魔力值耗尽, 则输掉战斗。"
+      }
+    }
+  },
+  {
+    "key": "Move Power",
+    "description": "The base power of the move, which is used to calculate damage dealt. Modifiers to Move Power apply to all moves the monster currently has. Modifiers can stack, with each stack increasing or decreasing the total effect. All modifications are removed when the monster leaves the battlefield.",
+    "localized": {
+      "zh": {
+        "name": "技能威力",
+        "description": "技能的基础威力, 用于计算伤害。对技能威力的增减会影响该精灵当前所有技能, 且可叠加。精灵离场时, 所有调整效果移除。"
+      }
+    }
+  },
+  {
+    "key": "Move Energy Cost",
+    "description": "The amount of energy required to use each move. Modifiers to Move Energy Cost apply to all moves the monster currently has. Modifiers can stack, with each stack increasing or decreasing the total effect. All modifications are removed when the monster leaves the battlefield.",
+    "localized": {
+      "zh": {
+        "name": "技能能耗",
+        "description": "每个技能释放所需的能量。对技能能耗的增减会影响该精灵当前所有技能, 且可叠加。精灵离场时, 所有调整效果移除。"
+      }
+    }
+  },
+  {
+    "key": "Same-type Moves",
+    "description": "Moves whose type matches at least one of the monster's own types. For example, if a monster is Water/Grass, then both Water-type and Grass-type moves are considered same-type moves.",
+    "localized": {
+      "zh": {
+        "name": "本系技能",
+        "description": "指与精灵自身任一系别相同的技能。例如：若精灵为水系/草系，则水系技能和草系技能都视为本系技能。"
       }
     }
   },
@@ -256,26 +386,6 @@
       "zh": {
         "name": "冷却",
         "description": "技能在再次使用前必须经过的回合数。一般情况下, 所有防御类技能的冷却为1回合, 而其他类型的技能没有冷却。"
-      }
-    }
-  },
-  {
-    "key": "Move Power",
-    "description": "The base power of the move, which is used to calculate damage dealt. Modifiers to Move Power apply to all moves the monster currently has. Modifiers can stack, with each stack increasing or decreasing the total effect. All modifications are removed when the monster leaves the battlefield.",
-    "localized": {
-      "zh": {
-        "name": "技能威力",
-        "description": "技能的基础威力, 用于计算伤害。对技能威力的增减会影响该精灵当前所有技能, 且可叠加。切换离场时, 所有调整效果移除。"
-      }
-    }
-  },
-  {
-    "key": "Move Energy Cost",
-    "description": "The amount of energy required to use each move. Modifiers to Move Energy Cost apply to all moves the monster currently has. Modifiers can stack, with each stack increasing or decreasing the total effect. All modifications are removed when the monster leaves the battlefield.",
-    "localized": {
-      "zh": {
-        "name": "技能能耗",
-        "description": "每个技能释放所需的能量。对技能能耗的增减会影响该精灵当前所有技能, 且可叠加。切换离场时, 所有调整效果移除。"
       }
     }
   },
@@ -306,26 +416,6 @@
       "zh": {
         "name": "x号位",
         "description": "从上到下第x个位置的技能。"
-      }
-    }
-  },
-  {
-    "key": "Stun",
-    "description": "The monster cannot act under this effect.",
-    "localized": {
-      "zh": {
-        "name": "眩晕",
-        "description": "精灵在此效果下无法行动。"
-      }
-    }
-  },
-  {
-    "key": "Charge",
-    "description": "This turn, the monster charges up and spends energy, becoming immune to all forced exit effects. Next turn, user can only use a move that has been charged, use Focus, or switch out. If Focus is used during the charging turn, the charge status remains.",
-    "localized": {
-      "zh": {
-        "name": "蓄力",
-        "description": "本回合进行蓄力并扣除能量, 期间免疫所有离场效果。下回合只可释放已蓄力技能、聚能或下场。如蓄力时释放聚能, 蓄力状态依旧存在。"
       }
     }
   },
@@ -370,48 +460,8 @@
     }
   },
   {
-    "key": "Quick Entry",
-    "description": "When a monster is actively switched in (not as a result of another monster's defeat), it immediately uses the first available move with this effect and sufficient energy. The turn order for this move is determined by the Speed of the two monsters on the battlefield.",
-    "localized": {
-      "zh": {
-        "name": "迅捷",
-        "description": "精灵主动入场时（非因其他精灵力竭而入场）, 立即使用第一个可用的技能（需满足能量要求）。此技能的先手值由在场双方精灵的速度决定。"
-      }
-    }
-  },
-  {
-    "key": "Charge Extension",
-    "description": "Allows the monster to continue charging for one more turn. The charged move can be used one additional time.",
-    "localized": {
-      "zh": {
-        "name": "积蓄",
-        "description": "可继续蓄力一回合, 蓄力的技能可额外释放一次。"
-      }
-    }
-  },
-  {
-    "key": "Overload",
-    "description": "The selected move is performed twice, consuming 1 stack of Overload.",
-    "localized": {
-      "zh": {
-        "name": "过载",
-        "description": "所选技能释放两次, 消耗一层过载。"
-      }
-    }
-  },
-  {
-    "key": "Transmission",
-    "description": "At the end of the turn, for every move with Transmission, all moves with Transmission shift down one slot in the move list, in order. Moves below them move up to take their previous positions. When multiple moves have Transmission, all such moves are shifted together, maintaining their original order relative to each other.",
-    "localized": {
-      "zh": {
-        "name": "传动",
-        "description": "回合结束时, 带有传动效果的技能会向下移动一个位置, 并将原先下面那个技能向上顶到传动技能原先的位置。当有多个技能同时带有传动效果时, 所有这些技能会一起移动, 并保持它们之间的原始顺序。"
-      }
-    }
-  },
-  {
     "key": "Emergency Exit",
-    "description": "Return to the bench, then randomly select another monster to enter the battlefield. The new monster is immune to this effect.",
+    "description": "Return to the bench, then another monster is randomly selected to enter the battlefield. The new monster is immune to this effect.",
     "localized": {
       "zh": {
         "name": "紧急脱离",
@@ -421,11 +471,21 @@
   },
   {
     "key": "Exit",
-    "description": "Return to the bench, then manually select another monster to enter the battlefield. The new monster is immune to this effect.",
+    "description": "Return to the bench, then player manually selects another monster to enter the battlefield. The new monster is immune to this effect.",
     "localized": {
       "zh": {
         "name": "脱离",
-        "description": "回到背包, 手动选择一只其他精灵替换入场。新入场的精灵免疫此效果。"
+        "description": "回到背包, 玩家手动选择一只其他精灵替换入场。新入场的精灵免疫此效果。"
+      }
+    }
+  },
+  {
+    "key": "Leave Field",
+    "description": "Leave the battlefield by actively switching out or triggering an Exit effect (not including leaving due to monster defeat).",
+    "localized": {
+      "zh": {
+        "name": "离场",
+        "description": "通过主动更换精灵或触发脱离效果的方式下场（不包括精灵力竭后下场）。"
       }
     }
   },
@@ -441,43 +501,22 @@
   },
   {
     "key": "Buffs",
-    "description": "Effects that increase Attack, Defense, Speed, or move power.",
+    "description": "Effects that increase Attack, Defense, Speed, move power, Combo count, Lifesteal, or decrease move energy cost.",
     "localized": {
       "zh": {
         "name": "增益",
-        "description": "增加攻击、防御、速度和技能威力的效果。"
+        "description": "增加攻击、防御、速度、技能威力、连击数、吸血，和减少技能能耗的效果。"
       }
     }
   },
   {
     "key": "Debuffs",
-    "description": "Effects that decrease Attack, Defense, Speed, or move power.",
+    "description": "Effects that decrease Attack, Defense, Speed, move power, Combo count, or increase move energy cost.",
     "localized": {
         "zh": {
         "name": "减益",
-        "description": "降低攻击、防御、速度和技能威力的效果。"
+        "description": "降低攻击、防御、速度、技能威力、连击数，和增加技能能耗的效果。"
         }
     }
-  },
-  {
-    "key": "Interrupt",
-    "description": "Interrupts the opponent's move this turn. Opponent's move is not executed and the interrupted move's energy cost is refunded to the opponent.",
-    "localized": {
-      "zh": {
-        "name": "打断",
-        "description": "打断敌人本回合释放的技能。敌方技能不执行, 并返还被打断技能的能量。"
-      }
-    }
-  },
-  {
-    "key": "Lifesteal",
-    "description": "When dealing damage, recover HP equal to a percentage of the damage dealt.",
-    "localized": {
-      "zh": {
-        "name": "吸血",
-        "description": "造成伤害时, 按比例回复自身的生命。"
-      }
-    }
   }
-
 ]

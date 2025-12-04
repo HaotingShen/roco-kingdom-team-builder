@@ -80,22 +80,28 @@ def round_half_up(n):
     return int(Decimal(n).to_integral_value(rounding=ROUND_HALF_UP))
 
 def compute_effective_stats(monster, personality, talent):
-    # HP formula: hp = [1.7 × (base_stats + hp_talent × 6) + 70 − 2.55 × hp_talent] × (1 + hp_personality_modifier) + 100
+    # New formula (Beta Test 3):
+    # Roco coefficient: L = (base_stat + (talent × 6)/2) / 100
+    # HP: initial_hp = (2L + 1) * 60 + 50L + 10 = 170L + 70
+    #     final_hp = initial_hp * (1 + personality_modifier) + 50
+    # Other stats: initial_stat = L * 60 + 50L + 10 = 110L + 10
+    #              final_stat = initial_stat * (1 + personality_modifier) + 50
+
     base_hp = monster.base_hp
     hp_talent = talent.hp_boost
-    hp = (1.7 * (base_hp + hp_talent * 6) + 70 - 2.55 * hp_talent)
-    hp = hp * (1 + personality.hp_mod_pct)
-    hp = int(round_half_up(hp + 100))  # int() for safety
+    L_hp = (base_hp + (hp_talent * 6) / 2) / 100
+    initial_hp = 170 * L_hp + 70
+    final_hp = initial_hp * (1 + personality.hp_mod_pct) + 50
+    hp = int(round_half_up(final_hp))
 
-    # other stats = round_half_up(1.1 × (base_stats + talent × 6) + 10) × (1 + personality_modifier) + 50
     def other_stat(attr, personality_attr, talent_attr):
         base = getattr(monster, attr)
         pers = getattr(personality, personality_attr)
         tal = getattr(talent, talent_attr)
-        val = 1.1 * (base + tal * 6) + 10
-        val = round_half_up(val) * (1 + pers)
-        val = int(round_half_up(val + 50))
-        return val
+        L = (base + (tal * 6) / 2) / 100
+        initial = 110 * L + 10
+        final = initial * (1 + pers) + 50
+        return int(round_half_up(final))
 
     return schemas.EffectiveStats(
         hp=hp,

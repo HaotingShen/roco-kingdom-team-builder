@@ -9,6 +9,25 @@ MONSTER_MOVES_JSON_PATH = "backend/data/monster_moves.json"
 
 engine = create_engine(DATABASE_URL)
 
+def build_move_lookup_map(session: Session) -> dict:
+    """
+    Build a move lookup map that accepts both English and Chinese move names.
+    Returns a dict mapping move names (both EN and ZH) to move IDs.
+    """
+    moves = session.query(Move).all()
+    move_map = {}
+
+    for mv in moves:
+        # Map English name
+        move_map[mv.name] = mv.id
+
+        # Also map Chinese name if available
+        zh_name = mv.localized.get('zh', {}).get('name') if mv.localized else None
+        if zh_name and isinstance(zh_name, str):
+            move_map[zh_name] = mv.id
+
+    return move_map
+
 def load_monster_moves():
     with open(MONSTERS_JSON_PATH, encoding="utf-8") as f:
         monsters_data = json.load(f)
@@ -21,7 +40,7 @@ def load_monster_moves():
 
         # Build monster and move maps
         monster_by_name_and_form = {(m.name, m.form): m.id for m in session.query(Monster).all()}
-        move_map = {mv.name: mv.id for mv in session.query(Move).all()}
+        move_map = build_move_lookup_map(session)
 
         for monster in monsters_data:
             m_name = monster["name"]

@@ -18,7 +18,7 @@ def recreate_schema():
     Base.metadata.create_all(bind=engine)
 
 if __name__ == "__main__":
-    keep_tables = ['user_monsters', 'teams']  # Tables need to keep
+    keep_tables = []  # Tables need to keep
     drop_all_except(engine, keep_tables)
     recreate_schema()
 

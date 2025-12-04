@@ -32,13 +32,13 @@ def test_effective_stats_flutterfly_cheerful_max_boosts():
         spd_mod_pct=0.2,
     )
     stats = compute_effective_stats(monster, personality, talent)
-    
-    assert stats.hp == 340
-    assert stats.phy_atk == 185
-    assert stats.mag_atk == 114
+
+    assert stats.hp == 265
+    assert stats.phy_atk == 152
+    assert stats.mag_atk == 113
     assert stats.phy_def == 138
     assert stats.mag_def == 143
-    assert stats.spd == 326
+    assert stats.spd == 286
     
 def test_effective_stats_flutterfly_cheerful_random_boosts():
     monster = Dummy(
@@ -66,13 +66,13 @@ def test_effective_stats_flutterfly_cheerful_random_boosts():
         spd_mod_pct=0.2,
     )
     stats = compute_effective_stats(monster, personality, talent)
-    
-    assert stats.hp == 264
-    assert stats.phy_atk == 172
-    assert stats.mag_atk == 114
-    assert stats.phy_def == 184
+
+    assert stats.hp == 214
+    assert stats.phy_atk == 146
+    assert stats.mag_atk == 113
+    assert stats.phy_def == 161
     assert stats.mag_def == 143
-    assert stats.spd == 318
+    assert stats.spd == 282
     
 def test_effective_stats_starlion_timid_max_boosts():
     monster = Dummy(
@@ -101,12 +101,12 @@ def test_effective_stats_starlion_timid_max_boosts():
     )
     stats = compute_effective_stats(monster, personality, talent)
 
-    assert stats.hp == 360
+    assert stats.hp == 285
     assert stats.phy_atk == 175
-    assert stats.mag_atk == 255
+    assert stats.mag_atk == 222
     assert stats.phy_def == 166
     assert stats.mag_def == 188
-    assert stats.spd == 320
+    assert stats.spd == 280
     
 def test_effective_stats_starlion_modest_random_boosts():
     monster = Dummy(
@@ -134,10 +134,10 @@ def test_effective_stats_starlion_modest_random_boosts():
         spd_mod_pct=0,
     )
     stats = compute_effective_stats(monster, personality, talent)
-    
-    assert stats.hp == 284
-    assert stats.phy_atk == 223
-    assert stats.mag_atk == 296
+
+    assert stats.hp == 234
+    assert stats.phy_atk == 199
+    assert stats.mag_atk == 256
     assert stats.phy_def == 166
     assert stats.mag_def == 188
-    assert stats.spd == 268
+    assert stats.spd == 238
