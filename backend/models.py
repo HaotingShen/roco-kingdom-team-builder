@@ -6,11 +6,12 @@ from sqlalchemy.dialects.postgresql import JSONB
 class Base(DeclarativeBase):
     pass
 
-# Association table for many-to-many Monster-Move relationship
+# Association table for many-to-many Monster-Move relationship (including learnable moves and move stones)
 monster_moves = Table(
     "monster_moves", Base.metadata,
     Column("monster_id", Integer, ForeignKey("monsters.id"), primary_key=True),
-    Column("move_id", Integer, ForeignKey("moves.id"), primary_key=True)
+    Column("move_id", Integer, ForeignKey("moves.id"), primary_key=True),
+    Column("is_move_stone", Boolean, nullable=False, default=False)
 )
 
 # Association tables for type effectiveness
@@ -159,7 +160,6 @@ class Move(Base):
     power: Mapped[int] = mapped_column(Integer, nullable=True)
     description: Mapped[str] = mapped_column(Text, nullable=False)
     has_counter: Mapped[bool] = mapped_column(Boolean, default=False)
-    is_move_stone: Mapped[bool] = mapped_column(Boolean, default=False)
     localized: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
     __table_args__ = (
         Index("ix_moves_localized_gin", "localized", postgresql_using="gin"),
@@ -168,7 +168,6 @@ class Move(Base):
     # Relationships
     move_type = relationship("Type", back_populates="moves")
     legacy_for = relationship("LegacyMove", back_populates="move")
-    monsters = relationship("Monster", secondary=monster_moves, back_populates="move_pool")
 
 class LegacyMove(Base):
     __tablename__ = "legacy_moves"
@@ -204,7 +203,7 @@ class Monster(Base):
     main_type_id: Mapped[int] = mapped_column(Integer, ForeignKey("types.id"), nullable=False)
     sub_type_id: Mapped[int] = mapped_column(Integer, ForeignKey("types.id"), nullable=True)
     default_legacy_type_id: Mapped[int] = mapped_column(Integer, ForeignKey("types.id"), nullable=False)
-    trait_id: Mapped[int] = mapped_column(Integer, ForeignKey("traits.id"), nullable=False)
+    trait_id: Mapped[int | None] = mapped_column(Integer, ForeignKey("traits.id"), nullable=True)
     leader_potential: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)  # True if monster is in final evolution stage and can be a leader
     is_leader_form: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     
@@ -225,7 +224,20 @@ class Monster(Base):
     species = relationship("MonsterSpecies", back_populates="forms")
     evolves_from = relationship("Monster", remote_side=[id]) # self-referential FK for evolution
     trait = relationship("Trait", back_populates="monster")
-    move_pool = relationship("Move", secondary=monster_moves, back_populates="monsters")
+    move_pool = relationship(
+        "Move",
+        secondary=monster_moves,
+        primaryjoin="and_(Monster.id==monster_moves.c.monster_id, monster_moves.c.is_move_stone==False)",
+        secondaryjoin="Move.id==monster_moves.c.move_id",
+        viewonly=True
+    )
+    move_stones = relationship(
+        "Move",
+        secondary=monster_moves,
+        primaryjoin="and_(Monster.id==monster_moves.c.monster_id, monster_moves.c.is_move_stone==True)",
+        secondaryjoin="Move.id==monster_moves.c.move_id",
+        viewonly=True
+    )
     legacy_moves = relationship("LegacyMove", back_populates="monster")
     user_monsters = relationship("UserMonster", back_populates="monster")
     main_type = relationship("Type", foreign_keys=[main_type_id], back_populates="monsters_as_main_type")

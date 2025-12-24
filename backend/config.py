@@ -16,6 +16,13 @@ GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 if not GEMINI_API_KEY:
     raise ValueError("GEMINI_API_KEY environment variable is required")
 
+# Gemini model configuration
+# Available models:
+# - "gemini-2.5-flash" (standard, higher quality)
+# - "gemini-2.5-flash-lite" (lighter, faster, higher rate limits)
+# - "gemini-2.0-flash-lite" (2.0 lite variant)
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash-lite")
+
 # CORS configuration
 ALLOWED_ORIGINS_STR = os.getenv("ALLOWED_ORIGINS", "*")
 ALLOWED_ORIGINS: List[str] = [origin.strip() for origin in ALLOWED_ORIGINS_STR.split(",")]

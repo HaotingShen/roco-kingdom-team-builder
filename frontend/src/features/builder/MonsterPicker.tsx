@@ -18,8 +18,8 @@ export default function MonsterPicker({
   const { index: typeIndex } = useTypeIndex();
 
   const list = useQuery({
-    queryKey: QUERY_KEYS.MONSTER_LIST({ name: dq }),
-    queryFn: () => endpoints.monsters({ name: dq }).then((r) => r.data),
+    queryKey: QUERY_KEYS.MONSTER_LIST({ name: dq, is_leader_form: false }),
+    queryFn: () => endpoints.monsters({ name: dq, is_leader_form: false }).then((r) => r.data),
   });
 
   const items: MonsterLiteOut[] = list.data?.items ?? list.data ?? [];

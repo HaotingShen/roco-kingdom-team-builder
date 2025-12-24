@@ -55,7 +55,6 @@ class MoveOut(MoveLiteOut):
     energy_cost: int
     power: Optional[int] = None
     description: str
-    is_move_stone: bool
 
     model_config = ConfigDict(from_attributes=True)
     
@@ -96,7 +95,7 @@ class MonsterLiteOut(BaseModel):
 class MonsterOut(MonsterLiteOut):
     evolves_from_id: Optional[int] = None
     species: MonsterSpeciesOut
-    trait: TraitOut
+    trait: Optional[TraitOut] = None
     base_hp: int
     base_phy_atk: int
     base_mag_atk: int
@@ -104,6 +103,7 @@ class MonsterOut(MonsterLiteOut):
     base_mag_def: int
     base_spd: int
     move_pool: List[MoveOut]
+    move_stones: List[MoveOut] = []
     legacy_moves: List[LegacyMoveOut]
 
     model_config = ConfigDict(from_attributes=True)

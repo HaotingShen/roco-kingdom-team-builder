@@ -5,37 +5,37 @@
     "localized": {
       "zh": {
         "name": "最好的伙伴",
-        "description": "每学会一个不同系别的技能，获得攻防+5%。"
+        "description": "每学会1个不同系别的技能，获得攻防+5%。"
       }
     }
   },
   {
-    "name": "The Best Buddy - Leader",
+    "name": "Power of Companions",
     "description": "For each different type of move learned, gains Attack +5% and Defense +5%. Light-type move power +20%.",
     "localized": {
       "zh": {
-        "name": "最好的伙伴-首领",
-        "description": "每学会一个不同系别的技能，获得攻防+5%。光系技能威力提升20%。"
+        "name": "伙伴的力量",
+        "description": "每学会1个不同系别的技能，获得攻防+5%，光系技能威力+20%。"
       }
     }
   },
   {
     "name": "Oxygen Cycle",
-    "description": "When using a Grass-type move, restores 10% max HP.",
+    "description": "After using a Grass-type move, restores 10% HP.",
     "localized": {
       "zh": {
         "name": "氧循环",
-        "description": "释放草系技能时, 回复10%最大生命。"
+        "description": "使用草系技能后，回复10%生命。"
       }
     }
   },
   {
-    "name": "Oxygen Cycle - Leader",
-    "description": "When using a Grass-type move, restores 15% max HP.",
+    "name": "Deep Oxygen Cycle",
+    "description": "After using a Grass-type move, restores 15% HP.",
     "localized": {
       "zh": {
-        "name": "氧循环-首领",
-        "description": "释放草系技能时, 回复15%最大生命。"
+        "name": "深层氧循环",
+        "description": "使用草系技能后，回复15%生命。"
       }
     }
   },
@@ -45,37 +45,37 @@
     "localized": {
       "zh": {
         "name": "助燃",
-        "description": "释放火系技能后，攻击提升20%。"
+        "description": "使用火系技能后，获得双攻+20%。"
       }
     }
   },
   {
-    "name": "Kindling - Leader",
-    "description": "After using a Fire-type move, gains Attack +30%.",
+    "name": "Detonation",
+    "description": "After using a Fire-type move, permanently gains Attack +30%.",
     "localized": {
       "zh": {
-        "name": "助燃-首领",
-        "description": "释放火系技能后，攻击提升30%。"
+        "name": "爆燃",
+        "description": "使用火系技能后，获得双攻永久+30%。"
       }
     }
   },
   {
-    "name": "Infiltration",
-    "description": "When using a Water-type move, gains Move Energy Cost -1.",
+    "name": "Permeation",
+    "description": "After using a Water-type move, gains Move Energy Cost -1.",
     "localized": {
       "zh": {
         "name": "浸润",
-        "description": "释放水系技能时，所有技能能耗-1。"
+        "description": "使用水系技能后，全技能能耗-1。"
       }
     }
   },
   {
-    "name": "Infiltration - Leader",
-    "description": "When using a Water-type move, gains Move Energy Cost -2.",
+    "name": "Tide Surge",
+    "description": "After using a Water-type move, gains Move Energy Cost -2.",
     "localized": {
       "zh": {
-        "name": "浸润-首领",
-        "description": "释放水系技能时，所有技能能耗-2。"
+        "name": "浪潮",
+        "description": "使用水系技能后，全技能能耗-2。"
       }
     }
   },
@@ -85,17 +85,17 @@
     "localized": {
       "zh": {
         "name": "挺起胸脯",
-        "description": "自己携带的能耗等于1的技能，威力提升50%。"
+        "description": "自己携带的能耗等于1的技能，威力+50%。"
       }
     }
   },
   {
-    "name": "Chest Out - Leader",
-    "description": "Greatly increases base stats. When using a move with an energy cost of 1, move power +50%.",
+    "name": "King's Majesty",
+    "description": "Greatly increases own base stats. When using a move with an energy cost of 1, move power +50%.",
     "localized": {
       "zh": {
-        "name": "挺起胸脯-首领",
-        "description": "大幅提升种族值，自己携带的能耗等于1的技能，威力提升50%。"
+        "name": "“国王”的威严",
+        "description": "自身种族值大幅增加，自己携带的能耗等于1的技能，威力+50%。"
       }
     }
   },
@@ -120,11 +120,11 @@
     }
   },
   {
-    "name": "Tailwind - Leader",
+    "name": "Skybreaker",
     "description": "When acting before the opponent, move power +75%.",
     "localized": {
       "zh": {
-        "name": "顺风-首领",
+        "name": "破空",
         "description": "若先于敌方攻击，本次技能威力+75%。"
       }
     }
@@ -170,11 +170,11 @@
     }
   },
   {
-    "name": "Polarization - Leader",
+    "name": "Complete Polarization",
     "description": "For each type of move equipped by this monster, damage taken from that type -40%.",
     "localized": {
       "zh": {
-        "name": "偏振-首领",
+        "name": "完全偏振",
         "description": "每携带一个系别的技能，受到此系别伤害-40%。"
       }
     }
@@ -200,11 +200,11 @@
     }
   },
   {
-    "name": "Focus - Leader",
+    "name": "Total Focus",
     "description": "At the start of the first turn, gains Attack +100%. Each action reduces this bonus by 20%.",
     "localized": {
       "zh": {
-        "name": "专注力-首领",
+        "name": "全神贯注",
         "description": "入场首回合，获得物攻+100%，每次行动衰减20%。"
       }
     }
@@ -250,11 +250,11 @@
     }
   },
   {
-    "name": "Dissolving Diffusion - Leader",
+    "name": "Dissolving Corrosion",
     "description": "For each Poison-type move this monster carries, Water-type moves inflict 2 stacks of Poison on the opponent.",
     "localized": {
       "zh": {
-        "name": "溶解扩散-首领",
+        "name": "溶解腐蚀",
         "description": "每携带1个毒系技能进入战斗，水系技能使敌方获得2层中毒。"
       }
     }
@@ -285,17 +285,17 @@
     "localized": {
       "zh": {
         "name": "化茧",
-        "description": "受到致命伤害时，获得1层萌化，之后免疫此次伤害。此特性最多触发两次, 如果在最低形态受到致命伤害, 将被直接击败。"
+        "description": "受到致命伤害时，获得1层萌化，之后免疫此次伤害。此特性最多触发两次，如果在最低形态受到致命伤害，将被直接击败。"
       }
     }
   },
   {
     "name": "Unwavering",
-    "description": "Attack-type moves that have no additional effect gain move energy cost -2.",
+    "description": "The energy cost of Attack-type moves that have no additional effect is reduced by 2.",
     "localized": {
       "zh": {
         "name": "不移",
-        "description": "无额外效果的攻击技能获得技能能耗-2。"
+        "description": "无额外效果的攻击技能的技能能耗-2。"
       }
     }
   },
@@ -310,12 +310,12 @@
     }
   },
   {
-    "name": "Pickpocket - Leader",
+    "name": "Big Score",
     "description": "At the end of the turn, steals 2 energy from all of the opponent's monsters.",
     "localized": {
       "zh": {
-        "name": "大捞一笔-首领",
-        "description": "回合结束时, 偷取所有敌方精灵2点能量。"
+        "name": "大捞一笔",
+        "description": "回合结束时，偷取所有敌方精灵2点能量。"
       }
     }
   },
@@ -330,7 +330,7 @@
     }
   },
   {
-    "name": "Alkaloid",
+    "name": "Alkaloids",
     "description": "When using Grass-type moves, the opponent gains 2 stacks of Poison.",
     "localized": {
       "zh": {
@@ -340,12 +340,12 @@
     }
   },
   {
-    "name": "Alkaloid - Leader",
-    "description": "After using any move, the opponent gains 2 stacks of Poison.",
+    "name": "High-Concentration Alkaloids",
+    "description": "When using any move, the opponent gains 2 stacks of Poison.",
     "localized": {
       "zh": {
-        "name": "高浓生物碱-首领",
-        "description": "释放技能后，敌方获得2层中毒。"
+        "name": "高浓生物碱",
+        "description": "使用技能时，敌方获得2层中毒。"
       }
     }
   },
@@ -375,17 +375,17 @@
     "localized": {
       "zh": {
         "name": "腐植循环",
-        "description": "每回复1点能量, 同时回复5%生命。"
+        "description": "每回复1点能量，同时回复5%生命。"
       }
     }
   },
   {
     "name": "Floral Sprite",
-    "description": "At the end of each turn, gains 1 stack of random Devotion.",
+    "description": "At the end of each turn, gains 1 random Devotion enhancement.",
     "localized": {
       "zh": {
         "name": "花精灵",
-        "description": "回合结束时，获得1层随机奉献。"
+        "description": "回合结束时，获得1次随机奉献。"
       }
     }
   },
@@ -395,7 +395,7 @@
     "localized": {
       "zh": {
         "name": "慢热型",
-        "description": "初始能量为0，入场前其他精灵每成功应对一次，回复5能量。"
+        "description": "初始能量为0，入场前己方精灵每成功应对1次，回复5点能量。"
       }
     }
   },
@@ -411,11 +411,11 @@
   },
   {
     "name": "Barrel Trick",
-    "description": "After this monster triggers Leave Field, the next monster to enter the battlefield appears in Barrel Status.",
+    "description": "After this monster triggers Leave Field, the next teammate to enter the battlefield appears in Barrel Status.",
     "localized": {
       "zh": {
         "name": "木桶戏法",
-        "description": "离场后，更换入场的精灵以木桶状态登场。"
+        "description": "离场后，己方下个上场的精灵以木桶状态登场。"
       }
     }
   },
@@ -431,21 +431,21 @@
   },
   {
     "name": "Rarebeast Blossom",
-    "description": "Gains different effects upon entering the battlefield based on its legacy type. Normal Legacy Type: Move Power +30; Grass Legacy Type: Restore 20% HP; Fire Legacy Type: Opponent gains 6 stacks of Burn; Water Legacy Type: Move Energy Cost -2; Light Legacy Type: Gains Magic Attack +80%; Ground Legacy Type: Opponent's Speed -60 and Combo count -3; Ice Legacy Type: Opponent gains 2 stacks of Freeze; Dragon Legacy Type: Opponent's Magic Defense -80%; Electric Legacy Type: Speed +80; Poison Legacy: Type Opponent gains 3 stacks of Poison; Bug Legacy Type: Opponent's Physical Defense -70%; Fighting Legacy Type: Physical Attack +80%; Wing Legacy Type: Combo count +2; Cute Legacy Type: Opponent's Attack -60%; Ghost Legacy Type: Opponent loses 3 energy; Dark Legacy Type: Gains 50% Lifesteal; Mechanical Legacy Type: Defense +60%; Illusion Legacy Type: Opponent gains 2 stacks of Starfall Mark.",
+    "description": "Gains different effects upon entering the battlefield based on its legacy type. Normal Legacy Type: gains Move Power +30; Grass Legacy Type: Restore 20% HP; Fire Legacy Type: Opponent gains 6 stacks of Burn; Water Legacy Type: Move Energy Cost -2; Light Legacy Type: Gains Magic Attack +80%; Ground Legacy Type: Opponent gains Speed -60 and Combo count -3; Ice Legacy Type: Opponent gains 2 stacks of Freeze; Dragon Legacy Type: Opponent gains Magic Defense -80%; Electric Legacy Type: Speed +80; Poison Legacy: Type Opponent gains 3 stacks of Poison; Bug Legacy Type: Opponent gains Physical Defense -70%; Fighting Legacy Type: Physical Attack +80%; Wing Legacy Type: Combo count +2; Cute Legacy Type: Opponent gains Attack -60%; Ghost Legacy Type: Opponent loses 3 energy; Dark Legacy Type: Gains 50% Lifesteal; Mechanical Legacy Type: Defense +60%; Illusion Legacy Type: Opponent gains 2 stacks of Starfall Mark.",
     "localized": {
       "zh": {
         "name": "稀兽花宝",
-        "description": "根据自身的血脉，入场时获得不同效果。普血脉：技能威力+30；草血脉：回复20%生命；火血脉：敌方获得6层灼烧；水血脉：技能能耗-2；光血脉：自身提升80%魔攻；地血脉：降低敌方60点速度且技能连击数-3；冰血脉：敌方获得2层冻结；龙血脉：降低敌方80%魔防；电血脉：自身提升80点速度；毒血脉：敌方获得3层中毒；虫血脉：降低敌方70%物防；武血脉：自身提升80%物攻；翼血脉：技能连击数+2；萌血脉：降低敌方60%双攻；幽血脉：敌方失去3点能量；恶血脉：自身获得50%吸血；机械血脉：自身提升60%双防；幻血脉：敌方获得2层星陨。"
+        "description": "根据自身的血脉，入场时获得不同效果。普血脉：全技能威力+30；草血脉：回复20%生命；火血脉：敌方获得6层灼烧；水血脉：技能能耗-2；光血脉：自身提升80%魔攻；地血脉：降低敌方60点速度且技能连击数-3；冰血脉：敌方获得2层冻结；龙血脉：降低敌方80%魔防；电血脉：自身提升80点速度；毒血脉：敌方获得3层中毒；虫血脉：降低敌方70%物防；武血脉：自身提升80%物攻；翼血脉：技能连击数+2；萌血脉：降低敌方60%双攻；幽血脉：敌方失去3点能量；恶血脉：自身获得50%吸血；机械血脉：自身提升60%双防；幻血脉：敌方获得2层星陨。"
       }
     }
   },
   {
     "name": "Electric Surge",
-    "description": "Attack-type moves gain Burst: move power +40.",
+    "description": "Attack-type moves gain Burst: power +40.",
     "localized": {
       "zh": {
         "name": "电流刺激",
-        "description": "攻击技能获得进发：技能威力+40。"
+        "description": "攻击技能获得迸发：威力+40。"
       }
     }
   },
@@ -470,11 +470,11 @@
     }
   },
   {
-    "name": "Swarm Inspiration - Leader",
+    "name": "Swarm Assault",
     "description": "For each other Bug-type monster in the team, gains Attack +15%, Defense +15%, and Speed +15% upon entering the battlefield.",
     "localized": {
       "zh": {
-        "name": "虫群鼓舞-首领",
+        "name": "虫群突袭",
         "description": "队伍中每有1只其他的虫系精灵，入场时获得攻防速+15%。"
       }
     }
@@ -485,7 +485,7 @@
     "localized": {
       "zh": {
         "name": "栗子壳",
-        "description": "被攻击时, 赋予敌方一层棘刺印记。"
+        "description": "被攻击时，赋予敌方一层棘刺印记。"
       }
     }
   },
@@ -515,27 +515,27 @@
     "localized": {
       "zh": {
         "name": "贪婪",
-        "description": "在场时，敌方增益和减益会被对方下个入场的精灵继承。"
+        "description": "在场时，敌方增益和减益会被敌方下个入场的精灵继承。"
       }
     }
   },
   {
     "name": "Hydro Wing Boost",
-    "description": "Each time a teammate uses a Water-type move, this monster's Move Energy Cost -1 when entering the battlefield.",
+    "description": "Each time a teammate uses a Water-type move, this monster gains Move Energy Cost -1 when entering the battlefield.",
     "localized": {
       "zh": {
         "name": "水翼推进",
-        "description": "己方精灵每释放1次水系技能，自己入场时获得所有技能能耗-1。"
+        "description": "己方精灵每使用1次水系技能，自己入场时获得全技能能耗-1。"
       }
     }
   },
   {
-    "name": "Hydro Wing Boost - Leader",
-    "description": "Each time a teammate uses a Water-type move, this monster's Move Energy Cost -1 when entering the battlefield. Additionally, moves with 0 energy cost gain move power +30%.",
+    "name": "Hydro Wing Ascension",
+    "description": "Each time a teammate uses a Water-type move, this monster gains Move Energy Cost -1 when entering the battlefield. Additionally, moves with 0 energy cost gain move power +30%.",
     "localized": {
       "zh": {
-        "name": "水翼推进-首领",
-        "description": "己方精灵每释放1次水系技能，自己入场时获得所有技能能耗-1, 同时0能耗技能威力+30%。"
+        "name": "水翼飞升",
+        "description": "己方精灵每使用1次水系技能，自己入场时获得全技能能耗-1，0能耗技能威力+30%。"
       }
     }
   },
@@ -545,22 +545,22 @@
     "localized": {
       "zh": {
         "name": "养分重吸收",
-        "description": "回合结束时, 获得4点能量。"
+        "description": "回合结束时，获得4点能量。"
       }
     }
   },
   {
-    "name": "Nutrient Reabsorption - Leader",
+    "name": "Nutrient Circulation",
     "description": "At the end of each turn, gains 7 energy.",
     "localized": {
       "zh": {
-        "name": "养分重吸收-首领",
-        "description": "回合结束时, 获得7点能量。"
+        "name": "养分内循环",
+        "description": "回合结束时，获得7点能量。"
       }
     }
   },
   {
-    "name": "Lifesteal",
+    "name": "Craving",
     "description": "Gains 50% Lifesteal.",
     "localized": {
       "zh": {
@@ -590,7 +590,7 @@
     }
   },
   {
-    "name": "Scamper",
+    "name": "Bait and Claim",
     "description": "After using a Dark-type move, the opponent loses 3 energy.",
     "localized": {
       "zh": {
@@ -600,7 +600,7 @@
     }
   },
   {
-    "name": "Geotectonics",
+    "name": "Leylines",
     "description": "Initial energy is 0. Before entering the battlefield, for each Ground-type move used by teammates, restores 3 energy.",
     "localized": {
       "zh": {
@@ -610,12 +610,12 @@
     }
   },
   {
-    "name": "Geotectonics - Leader",
+    "name": "Leyline Blessing",
     "description": "Immediately restores 10 energy. Before entering the battlefield, for each Ground-type move used by teammates, restores 3 energy.",
     "localized": {
       "zh": {
-        "name": "地脉馈赠-首领",
-        "description": "立即回复10能量。入场前己方精灵每放1次地系技能，回复3能量。"
+        "name": "地脉馈赠",
+        "description": "立即回复10点能量。入场前己方精灵每放1次地系技能，回复3点能量。"
       }
     }
   },
@@ -630,7 +630,7 @@
     }
   },
   {
-    "name": "Compassion",
+    "name": "Mercy",
     "description": "For each defeated teammate in the team, gains Attack +20% when entering the battlefield.",
     "localized": {
       "zh": {
@@ -640,18 +640,18 @@
     }
   },
   {
-    "name": "Compassion - Leader",
+    "name": "Mourning",
     "description": "For each defeated monster on both teams, gains Attack +20% when entering the battlefield.",
     "localized": {
       "zh": {
-        "name": "悲悯-首领",
+        "name": "悼亡",
         "description": "双方每有1只力竭的精灵，入场时获得双攻+20%。"
       }
     }
   },
   {
     "name": "Stargazing",
-    "description": "For each stack of Starfall Mark on the opponent, this monster's Move Power +10%.",
+    "description": "For each stack of Starfall Mark on the opponent, this monster's move power +10%.",
     "localized": {
       "zh": {
         "name": "观星",
@@ -660,17 +660,17 @@
     }
   },
   {
-    "name": "Stargazing - Leader",
-    "description": "For each stack of Starfall Mark on the opponent, this monster's Move Power +15%.",
+    "name": "Starfall",
+    "description": "For each stack of Starfall Mark on the opponent, this monster's move power +15%.",
     "localized": {
       "zh": {
-        "name": "观星-首领",
+        "name": "坠星",
         "description": "敌方每有1层星陨，自己技能威力+15%。"
       }
     }
   },
   {
-    "name": "Blind Following",
+    "name": "Blind Obedience",
     "description": "Can carry multiple random-move-type moves (including Borrow, Rewrite, and Mind Grab), non-Illusion-type moves have move energy cost -2.",
     "localized": {
       "zh": {
@@ -681,21 +681,21 @@
   },
   {
     "name": "Kaka Dash",
-    "description": "After acting before the opponent, gains Combo count +1.",
+    "description": "If acting before the opponent, gains Combo count +1 after action.",
     "localized": {
       "zh": {
         "name": "咔咔冲刺",
-        "description": "先于敌方行动后，获得连击数+1。"
+        "description": "若先于敌方行动，行动后获得连击数+1。"
       }
     }
   },
   {
     "name": "Vigilance",
-    "description": "If energy is 0 at the end of the turn, this monster triggers Leave Field.",
+    "description": "At the end of the turn, if this monster has 0 energy, it triggers Exit.",
     "localized": {
       "zh": {
         "name": "警惕",
-        "description": "回合结束时若自己能量为0，脱离。"
+        "description": "回合结束时，若自己能量为0则脱离。"
       }
     }
   },
@@ -710,7 +710,7 @@
     }
   },
   {
-    "name": "Eye of the Storm",
+    "name": "Contempt",
     "description": "Non-Light-type moves gain move power +25%.",
     "localized": {
       "zh": {
@@ -720,22 +720,22 @@
     }
   },
   {
-    "name": "Eye of the Storm - Leader",
+    "name": "Dazzle",
     "description": "Gains 3 additional random moves from this monster's move pool. Non-Light-type moves gain move power +25%.",
     "localized": {
       "zh": {
-        "name": "目空-首领",
+        "name": "夺目",
         "description": "额外获得3个随机技能，非光系技能威力+25%。"
       }
     }
   },
   {
     "name": "Resonance",
-    "description": "This monster's carried 'Bug Cry' moves gain move power +20.",
+    "description": "This monster's carried 'Chitter' move gains move power +20.",
     "localized": {
       "zh": {
         "name": "共鸣",
-        "description": "自己携带的「虫鸣」技能威力+20。"
+        "description": "自己携带的【虫鸣】技能威力+20。"
       }
     }
   },
@@ -750,7 +750,7 @@
     }
   },
   {
-    "name": "Black Hand",
+    "name": "Underhand",
     "description": "Opponent gains 3 stacks of Poison upon entering the battlefield.",
     "localized": {
       "zh": {
@@ -801,11 +801,11 @@
   },
   {
     "name": "Icebound",
-    "description": "While this monster is on the battlefield, opponent's Move Energy Cost +1.",
+    "description": "While this monster is on the battlefield, opponent gains Move Energy Cost +1.",
     "localized": {
       "zh": {
         "name": "冰封",
-        "description": "自身在场时, 敌方全技能能耗+1。"
+        "description": "自身在场时，敌方全技能能耗+1。"
       }
     }
   },
@@ -815,7 +815,7 @@
     "localized": {
       "zh": {
         "name": "冻土",
-        "description": "每携带一个冰系技能进入战斗，地系技能威力提升10%。"
+        "description": "每携带1个冰系技能进入战斗，地系技能威力+10%。"
       }
     }
   },
@@ -835,13 +835,13 @@
     "localized": {
       "zh": {
         "name": "灵魂灼伤",
-        "description": "冰系技能赋予敌方4层灼烧, 火系技能赋予敌方2层冻结。"
+        "description": "冰系技能使敌方获得4层灼烧，火系技能使敌方获得2层冻结。"
       }
     }
   },
   {
     "name": "Hide and Seek",
-    "description": "When the opponent is inflicted with Freeze, they also receive Move Energy Cost +1.",
+    "description": "When the opponent is inflicted with Freeze, they also gain Move Energy Cost +1.",
     "localized": {
       "zh": {
         "name": "捉迷藏",
@@ -850,12 +850,12 @@
     }
   },
   {
-    "name": "Hide and Seek - Leader",
-    "description": "Upon entering the battlefield, inflicts 2 stacks of Freeze on the opponent. For each stack of Freeze inflicted, the opponent's Move Energy Cost +1.",
+    "name": "Gotcha",
+    "description": "Upon entering the battlefield, inflicts 2 stacks of Freeze on the opponent. When the opponent is inflicted with Freeze, they also gain Move Energy Cost +1.",
     "localized": {
       "zh": {
-        "name": "捉迷藏-首领",
-        "description": "入场时赋予敌方2层冻结，每赋予1次冻结，敌方技能能耗+1。"
+        "name": "抓到你了",
+        "description": "自己入场时敌方获得2层冻结，使敌方获得冻结时，也会使其获得技能能耗+1。"
       }
     }
   },
@@ -875,7 +875,7 @@
     "localized": {
       "zh": {
         "name": "野性感官",
-        "description": "应对成功后，下回合行动先手+1。"
+        "description": "应对成功后，下次行动先手+1。"
       }
     }
   },
@@ -921,11 +921,11 @@
   },
   {
     "name": "Bioelectricity",
-    "description": "Electric-type moves gain Burst: move energy cost -2.",
+    "description": "Electric-type moves gain Burst: energy cost -2.",
     "localized": {
       "zh": {
         "name": "生物电",
-        "description": "电系技能获得进发：技能能耗-2。"
+        "description": "电系技能获得迸发：能耗-2。"
       }
     }
   },
@@ -950,11 +950,11 @@
     }
   },
   {
-    "name": "Seasoned Veteran",
+    "name": "Battle-Hardened",
     "description": "Each time a teammate performs a successful Counter, this monster's Water-type move power +20% and Fighting-type move power +20% when entering the battlefield.",
     "localized": {
       "zh": {
-        "name": "身经百战",
+        "name": "身经百练",
         "description": "己方精灵每应对1次，自己入场时水系和武系技能威力+20%。"
       }
     }
@@ -970,7 +970,7 @@
     }
   },
   {
-    "name": "Add a Snowball",
+    "name": "Snowballing",
     "description": "When inflicting Freeze on the opponent, additionally inflicts 2 stacks of Freeze.",
     "localized": {
       "zh": {
@@ -981,11 +981,11 @@
   },
   {
     "name": "Coral Bone",
-    "description": "When the opponent's monster triggers Leave Field, this monster's Move Energy Cost -3. (Cannot be dispelled)",
+    "description": "When the opponent triggers Leave Field, this monster gains Move Energy Cost -3. (Cannot be dispelled)",
     "localized": {
       "zh": {
         "name": "珊瑚骨",
-        "description": "敌方精灵离场时，自身技能能耗-3。(不可被驱散)。"
+        "description": "敌方精灵离场时，自身技能能耗-3。（不可被驱散）。"
       }
     }
   },
@@ -1005,7 +1005,7 @@
     "localized": {
       "zh": {
         "name": "茶多酚",
-        "description": "离场时, 下个入场精灵恢复20%生命且免疫寄生。"
+        "description": "离场时，下个入场精灵回复20%生命并免疫寄生。"
       }
     }
   },
@@ -1015,7 +1015,7 @@
     "localized": {
       "zh": {
         "name": "吉利丁片",
-        "description": "离场时, 下个入场精灵获得双防+20%且免疫冻结。"
+        "description": "离场时，下个入场精灵获得双防+20%并免疫冻结。"
       }
     }
   },
@@ -1025,7 +1025,7 @@
     "localized": {
       "zh": {
         "name": "美拉德反应",
-        "description": "离场时, 下个入场精灵获得双攻+20%且免疫灼烧。"
+        "description": "离场时，下个入场精灵获得双攻+20%并免疫灼烧。"
       }
     }
   },
@@ -1050,7 +1050,7 @@
     }
   },
   {
-    "name": "Battery",
+    "name": "Charge Cell",
     "description": "Each time this monster enters the battlefield, it permanently gains Attack +20%.",
     "localized": {
       "zh": {
@@ -1060,18 +1060,18 @@
     }
   },
   {
-    "name": "Battery - Leader",
+    "name": "Supercharged Cell",
     "description": "Each time this monster enters the battlefield, it permanently gains Attack +30%.",
     "localized": {
       "zh": {
-        "name": "蓄电池-首领",
+        "name": "超级电池",
         "description": "每入场1次，永久获得双攻+30%。"
       }
     }
   },
   {
     "name": "Overload Protection",
-    "description": "This monster triggers Leave Field after each action.",
+    "description": "This monster triggers Exit after each action.",
     "localized": {
       "zh": {
         "name": "防过载保护",
@@ -1081,7 +1081,7 @@
   },
   {
     "name": "Blood Type Attraction",
-    "description": "For each type of move the opponent carries, this monster's Move Power +10.",
+    "description": "For each type of move the opponent carries, this monster's move power +10.",
     "localized": {
       "zh": {
         "name": "血型吸引",
@@ -1090,7 +1090,7 @@
     }
   },
   {
-    "name": "Measurement",
+    "name": "Fair Measure",
     "description": "Opponent's Buffs are shared with this monster, and this monster's Debuffs are shared with the opponent. This effect also triggers upon entering the battlefield.",
     "localized": {
       "zh": {
@@ -1115,12 +1115,12 @@
     "localized": {
       "zh": {
         "name": "泛音列",
-        "description": "使用状态技能后，敌方获得「聒噪」技能的效果。"
+        "description": "使用状态技能后，敌方获得【聒噪】技能的效果。"
       }
     }
   },
   {
-    "name": "Tilted Rolling",
+    "name": "Compounding Force",
     "description": "When this monster gains an energy cost Buffs, the number of stacks gained is doubled.",
     "localized": {
       "zh": {
@@ -1140,7 +1140,7 @@
     }
   },
   {
-    "name": "Inflation",
+    "name": "Rally Breath",
     "description": "When using a move with an energy cost of 3, this monster gains Attack +20% and Defense +20%.",
     "localized": {
       "zh": {
@@ -1150,11 +1150,11 @@
     }
   },
   {
-    "name": "Inflation - Leader",
+    "name": "Full Rally",
     "description": "When using a move with an energy cost of 3, this monster permanently gains Attack +20% and Defense +20%.",
     "localized": {
       "zh": {
-        "name": "三鼓作气-首领",
+        "name": "三鼓作气",
         "description": "使用能耗为3的技能时，获得攻防永久+20%。"
       }
     }
@@ -1170,12 +1170,12 @@
     }
   },
   {
-    "name": "Jealousy - Leader",
+    "name": "Skirmish",
     "description": "While in Charge state, this monster can use any of its carried moves, and gains Defense +100%.",
     "localized": {
       "zh": {
-        "name": "游弋-首领",
-        "description": "蓄力状态下，可以使用任一携带技能，且获得防御+100%。"
+        "name": "游弋",
+        "description": "蓄力时可以使用任一携带技能，且获得防御+100%。"
       }
     }
   },
@@ -1191,31 +1191,31 @@
   },
   {
     "name": "Shifting Stance",
-    "description": "After successfully countering with an Attack-type move twice, this monster gains Attack +20%, Defense +20%, fully restores HP, and transforms into Chess Queen.",
+    "description": "After this monster successfully performs Counter using an Attack-type move twice, it gains Attack +20%, Defense +20%, fully restores HP, and transforms into Chess Queen. After transforming, its base stats and trait become those of Chess Queen, while its equipped moves remain unchanged. The Attack and Defense bonuses gained before transformation persist after transforming. Before transformation, Chess Queen’s trait can already be triggered normally, and its effects will take effect after transformation.",
     "localized": {
       "zh": {
         "name": "腾挪",
-        "description": "攻击技能应对2次后，获得攻防+20%，回满状态，变为棋绮后。"
+        "description": "自身以攻击技能应对2次后，获得攻防+20%，回满状态，变身为棋绮后。变身后，基础种族值与特性变为棋绮后，但不改变已携带的技能。变身前获得的攻防提升效果在变身后依然保留。变身之前，棋绮后的特性可被正常触发，其效果将在变身后生效。"
       }
     }
   },
   {
     "name": "Guard Duty",
-    "description": "After successfully countering with a Defense-type move three times, this monster gains Attack +20%, Defense +20%, fully restores HP, and transforms into Chess Queen.",
+    "description": "After this monster successfully performs Counter using a Defense-type move three times, it gains Attack +20%, Defense +20%, fully restores HP, and transforms into Chess Queen. After transforming, its base stats and trait become those of Chess Queen, while its equipped moves remain unchanged. The Attack and Defense bonuses gained before transformation persist after transforming. Before transformation, Chess Queen’s trait can already be triggered normally, and its effects will take effect after transformation.",
     "localized": {
       "zh": {
         "name": "保卫",
-        "description": "防御技能应对3次后，获得攻防+20%，回满状态，变为棋绮后。"
+        "description": "自身以防御技能应对3次后，获得攻防+20%，回满状态，变身为棋绮后。变身后，基础种族值与特性变为棋绮后，但不改变已携带的技能。变身前获得的攻防提升效果在变身后依然保留。变身之前，棋绮后的特性可被正常触发，其效果将在变身后生效。"
       }
     }
   },
   {
-    "name": "Twin Elephants",
-    "description": "After successfully countering with a Status-type move once, this monster gains Attack +20%, Defense +20%, fully restores HP, and transforms into Chess Queen.",
+    "name": "Dual Omens",
+    "description": "After this monster successfully performs Counter using a Status-type move once, it gains Attack +20%, Defense +20%, fully restores HP, and transforms into Chess Queen. After transforming, its base stats and trait become those of Chess Queen, while its equipped moves remain unchanged. The Attack and Defense bonuses gained before transformation persist after transforming. Before transformation, Chess Queen’s trait can already be triggered normally, and its effects will take effect after transformation.",
     "localized": {
       "zh": {
         "name": "好象坏象",
-        "description": "状态技能应对1次后，获得攻防+20%，回满状态，变为棋绮后。"
+        "description": "自身以状态技能应对1次后，获得攻防+20%，回满状态，变身为棋绮后。变身后，基础种族值与特性变为棋绮后，但不改变已携带的技能。变身前获得的攻防提升效果在变身后依然保留。变身之前，棋绮后的特性可被正常触发，其效果将在变身后生效。"
       }
     }
   },
@@ -1230,38 +1230,38 @@
     }
   },
   {
-    "name": "Royal Command - Leader",
+    "name": "Royal Command",
     "description": "Greatly increases base stats. When defeated, the player loses 4 Life Point.",
     "localized": {
       "zh": {
-        "name": "御驾亲征-首领",
-        "description": "大幅提升种族值, 力竭时扣除4点魔力值。"
+        "name": "御驾亲征",
+        "description": "大幅提升种族值，力竭时扣除4点魔力值。"
       }
     }
   },
   {
     "name": "Sword of Justice",
-    "description": "Only the move in Slot 1 can be used.",
+    "description": "Can only use the move in Slot 1.",
     "localized": {
       "zh": {
         "name": "正位宝剑",
-        "description": "仅可使用1号位技能。"
+        "description": "仅可以使用1号位技能。"
       }
     }
   },
   {
-    "name": "Sword of Justice - Leader",
-    "description": "Can use all moves.",
+    "name": "Ace of Swords",
+    "description": "Can use all carried moves.",
     "localized": {
       "zh": {
-        "name": "正位宝剑-首领",
-        "description": "可以使用所有技能。"
+        "name": "宝剑王牌",
+        "description": "可以使用所有携带的技能。"
       }
     }
   },
   {
     "name": "Nutrient Bubble",
-    "description": "The number of Buffs stacks gained +2.",
+    "description": "Gains 2 more stacks of any Buffs obtained.",
     "localized": {
       "zh": {
         "name": "营养液泡",
@@ -1290,11 +1290,11 @@
     }
   },
   {
-    "name": "Pipa!",
+    "name": "Crackle!",
     "description": "On the first turn after entering the battlefield, the selected move's usage count +1.",
     "localized": {
       "zh": {
-        "name": "辟啪!",
+        "name": "噼啪！",
         "description": "入场首回合，所选技能使用次数+1。"
       }
     }
@@ -1305,7 +1305,7 @@
     "localized": {
       "zh": {
         "name": "连续负荷",
-        "description": "自己技能的进发效果延长1回合。"
+        "description": "自己技能的迸发效果延长1回合。"
       }
     }
   },
@@ -1325,17 +1325,17 @@
     "localized": {
       "zh": {
         "name": "搜刮",
-        "description": "敌方每使用1次「聚能」技能或替换精灵，自己入场时获得魔攻+20%。"
+        "description": "敌方每使用1次【聚能】技能或替换精灵，自己入场时获得魔攻+20%。"
       }
     }
   },
   {
     "name": "Demon's Banquet",
-    "description": "When this monster actively defeats an opponent's monster, its Attack +50%.",
+    "description": "When this monster actively defeats an opponent, this monster gains Attack +50%.",
     "localized": {
       "zh": {
         "name": "恶魔的晚宴",
-        "description": "主动击败敌方精灵时，提升50%攻击。"
+        "description": "主动击败敌方精灵时，自己获得双攻+50%。"
       }
     }
   },
@@ -1361,7 +1361,7 @@
   },
   {
     "name": "Duelist",
-    "description": "After each successful Counter, this monster's Move Power +20 permanently.",
+    "description": "After each successful Counter, this monster gains Move Power +20 permanently.",
     "localized": {
       "zh": {
         "name": "斗技",
@@ -1415,7 +1415,7 @@
     "localized": {
       "zh": {
         "name": "生长",
-        "description": "回合结束时，恢复12%生命。"
+        "description": "回合结束时，回复12%生命。"
       }
     }
   },
@@ -1435,7 +1435,7 @@
     "localized": {
       "zh": {
         "name": "侵蚀",
-        "description": "敌方每拥有一层中毒效果, 自己获得连击数+1。"
+        "description": "敌方每拥有1层中毒效果，自己获得连击数+1。"
       }
     }
   },
@@ -1450,12 +1450,22 @@
     }
   },
   {
-    "name": "Invigorate Insect Heart",
-    "description": "For each time this monster takes attack damage, gain 1 stack of random Devotion.",
+    "name": "Resilient Armor",
+    "description": "For each time this monster takes attack damage, gain 1 random Devotion enhancement.",
+    "localized": {
+      "zh": {
+        "name": "坚韧铠甲",
+        "description": "每受到1次攻击伤害，获得1次随机奉献。"
+      }
+    }
+  },
+  {
+    "name": "Rousing Swarmheart",
+    "description": "Upon actively defeating an opponent, gain 5 random Devotion enhancements.",
     "localized": {
       "zh": {
         "name": "振奋虫心",
-        "description": "每受到1次攻击伤害，获得1次随机奉献。"
+        "description": "主动击败敌方后，获得5次随机奉献。"
       }
     }
   },
@@ -1465,7 +1475,7 @@
     "localized": {
       "zh": {
         "name": "无差别过滤",
-        "description": "在场时, 所有精灵连击数固定为3。"
+        "description": "在场时，所有精灵连击数固定为3。"
       }
     }
   },
@@ -1485,7 +1495,7 @@
     "localized": {
       "zh": {
         "name": "悬一线",
-        "description": "首次受到致命伤害时, 保留1生命值。"
+        "description": "首次受到致命伤害时，保留1生命值。"
       }
     }
   },
@@ -1520,8 +1530,8 @@
     }
   },
   {
-    "name": "Early Warning",
-    "description": "If an enemy's move is enough to defeat this monster, this monster gains Speed +50 at the start of the turn.",
+    "name": "Premonition",
+    "description": "If an opponent's move is enough to defeat this monster, this monster gains Speed +50 at the start of the turn.",
     "localized": {
       "zh": {
         "name": "预警",
@@ -1530,18 +1540,18 @@
     }
   },
   {
-    "name": "Early Warning - Leader",
-    "description": "If an enemy's move is enough to defeat this monster, this monster gains Speed +50 and Attack +50% at the start of the turn.",
+    "name": "Foresight",
+    "description": "If an opponent's move is enough to defeat this monster, this monster gains Speed +50 and Attack +50% at the start of the turn.",
     "localized": {
       "zh": {
-        "name": "先知-首领",
+        "name": "先知",
         "description": "若敌方技能足够击败自己，回合开始时自己获得速度+50，攻击+50%。"
       }
     }
   },
   {
     "name": "Sweep and Mop",
-    "description": "At the end of the turn, dispels 1 stack of Mark from the enemy and gains 1 stack of random Devotion.",
+    "description": "At the end of the turn, dispels 1 Marks stack from the opponent and gains 1 random Devotion enhancement.",
     "localized": {
       "zh": {
         "name": "扫拖一体",
@@ -1551,11 +1561,11 @@
   },
   {
     "name": "Special Cleaning Scenario",
-    "description": "At the end of the turn, steals 1 stack of Mark from the enemy.",
+    "description": "At the end of the turn, steals 1 Marks stack from the opponent.",
     "localized": {
       "zh": {
         "name": "特殊清洁场景",
-        "description": "回合结束时偷取敌方一层印记。"
+        "description": "回合结束时偷取敌方1层印记。"
       }
     }
   },
@@ -1565,7 +1575,7 @@
     "localized": {
       "zh": {
         "name": "星地善良",
-        "description": "若场上的己方精灵能量等于0, 自己立即替换此精灵。"
+        "description": "若场上的己方精灵能量等于0，自己立即替换此精灵。"
       }
     }
   },
@@ -1581,7 +1591,7 @@
   },
   {
     "name": "Gray Portrait",
-    "description": "Attacks increase the enemy's existing Debuffs stacks by 3.",
+    "description": "Attacks increase the opponent's existing Debuffs stacks by 3.",
     "localized": {
       "zh": {
         "name": "灰色肖像",
@@ -1591,11 +1601,11 @@
   },
   {
     "name": "Morphing Living Painting",
-    "description": "When attacking, for each Buffs on the enemy, move power +10%.",
+    "description": "When attacking, for each Buffs stack on the opponent, move power +10%.",
     "localized": {
       "zh": {
         "name": "变形活画",
-        "description": "攻击时，敌方每有一层增益，本次技能威力+10%。"
+        "description": "攻击时，敌方每有1层增益，本次技能威力+10%。"
       }
     }
   },
@@ -1611,17 +1621,17 @@
   },
   {
     "name": "Constructed Covenanter",
-    "description": "Upon entering the battlefield, if the enemy has only 1 Life Point, this monster gains Attack +50% and Defense +50%.",
+    "description": "Upon entering the battlefield, if the opponent has only 1 Life Point, this monster gains Defense +50%.",
     "localized": {
       "zh": {
         "name": "构装契约者",
-        "description": "入场时，若敌方魔力值为1，自己获得攻防+50%。"
+        "description": "入场时，若敌方魔力值为1，自己获得双防+50%。"
       }
     }
   },
   {
     "name": "Under the Dome",
-    "description": "When using an Attack-type move, all enemy Marks are converted to Starfall Mark.",
+    "description": "When using an Attack-type move, all opponent's Marks are converted to Starfall Mark.",
     "localized": {
       "zh": {
         "name": "穹顶之下",
@@ -1631,7 +1641,7 @@
   },
   {
     "name": "Velvet Stardust",
-    "description": "If the enemy's Legacy Type is different from enemy's own types, this monster deals +100% damage to it.",
+    "description": "If the opponent's legacy type is different from opponent's own types, this monster deals +100% damage to it.",
     "localized": {
       "zh": {
         "name": "绒粉星光",
@@ -1641,7 +1651,7 @@
   },
   {
     "name": "Moonlight Judgment",
-    "description": "Deals +100% damage to monsters with the Leader Legacy Type.",
+    "description": "Deals +100% damage to monsters with the Leader legacy type.",
     "localized": {
       "zh": {
         "name": "月光审判",
@@ -1681,7 +1691,7 @@
   },
   {
     "name": "Ice Drill",
-    "description": "For each point of total energy cost of enemy's carried moves, this monster's Move Power +10%.",
+    "description": "For each point of total energy cost of opponent's carried moves, this monster's move power +10%.",
     "localized": {
       "zh": {
         "name": "冰钻",
@@ -1695,7 +1705,7 @@
     "localized": {
       "zh": {
         "name": "擒拿",
-        "description": "攻击技能应对成功时, 回复25%生命。"
+        "description": "攻击技能应对成功时，回复25%生命。"
       }
     }
   },
@@ -1705,7 +1715,7 @@
     "localized": {
       "zh": {
         "name": "马步",
-        "description": "状态技能应对成功时, 获得10点能量。"
+        "description": "状态技能应对成功时，获得10点能量。"
       }
     }
   },
@@ -1715,7 +1725,7 @@
     "localized": {
       "zh": {
         "name": "受身",
-        "description": "防御技能应对成功时, 速度永久+40。"
+        "description": "防御技能应对成功时，速度永久+40。"
       }
     }
   },
@@ -1725,12 +1735,12 @@
     "localized": {
       "zh": {
         "name": "超聚能",
-        "description": "蓄力时，「聚能」变为「积蓄」。"
+        "description": "蓄力时，【聚能】变为【积蓄】。"
       }
     }
   },
   {
-    "name": "System Development",
+    "name": "Phylogenesis",
     "description": "Overflowing HP and energy are randomly distributed to monsters on the bench.",
     "localized": {
       "zh": {
@@ -1750,7 +1760,7 @@
     }
   },
   {
-    "name": "Exchange Student",
+    "name": "Visiting Scholar",
     "description": "This monster's Move Energy Cost +2, but it can learn all Attack-type moves.",
     "localized": {
       "zh": {
@@ -1761,7 +1771,7 @@
   },
   {
     "name": "Hasty",
-    "description": "After acting before the enemy, Move Power +10.",
+    "description": "After acting before the opponent, move's power +10.",
     "localized": {
       "zh": {
         "name": "急性子",
@@ -1775,7 +1785,7 @@
     "localized": {
       "zh": {
         "name": "蒸汽膨胀",
-        "description": "己方精灵每使用1次火系技能，自己入场时获得全技能威力+10。"
+        "description": "己方精灵每使用1次火系技能，自己入场时全技能威力+10。"
       }
     }
   },
@@ -1785,7 +1795,7 @@
     "localized": {
       "zh": {
         "name": "威慑",
-        "description": "打断敌方时, 被打断的技能进入2回合冷却。"
+        "description": "打断敌方时，被打断的技能进入2回合冷却。"
       }
     }
   },
@@ -1811,7 +1821,7 @@
   },
   {
     "name": "Overload",
-    "description": "Attack-type moves gain Burst: Opponent's Move Energy Cost +1.",
+    "description": "Attack-type moves gain Burst: Opponent gains Move Energy Cost +1.",
     "localized": {
       "zh": {
         "name": "超负荷",
@@ -1820,8 +1830,8 @@
     }
   },
   {
-    "name": "Busy Life",
-    "description": "After using a Defense-type move, this monster triggers Leave Field at the end of the turn.",
+    "name": "Restless Fate",
+    "description": "After using a Defense-type move, this monster triggers Exit at the end of the turn.",
     "localized": {
       "zh": {
         "name": "奔波命",
@@ -1830,7 +1840,7 @@
     }
   },
   {
-    "name": "Confused Squid",
+    "name": "Chaotic Ink",
     "description": "Move power +50% when not using Same-type Moves.",
     "localized": {
       "zh": {
@@ -1845,13 +1855,13 @@
     "localized": {
       "zh": {
         "name": "绝对秩序",
-        "description": "受到的非敌方本系技能威力降低50%。"
+        "description": "受到非敌方系别的技能威力-50%。"
       }
     }
   },
   {
     "name": "Sentinel",
-    "description": "At the start of the turn, if an opponent's move can defeat this monster, gains Speed +50 and triggers Leave Field after acting.",
+    "description": "At the start of the turn, if an opponent's move can defeat this monster, gains Speed +50 and triggers Exit after acting.",
     "localized": {
       "zh": {
         "name": "哨兵",

@@ -69,12 +69,15 @@ export interface MoveOut extends Named {
   category?: MoveCategoryWide;
 
   has_counter?: boolean;
-  is_move_stone?: boolean;
 
   /** Backend extras (optional in FE) */
   energy_cost?: number;
   power?: number | null;
   description?: string;
+}
+
+export interface MonsterSpeciesOut extends Named {
+  id: ID;
 }
 
 export interface MonsterLiteOut extends Named {
@@ -93,6 +96,17 @@ export interface MonsterOut {
   name: string;
   localized?: Record<string, unknown>;
 
+  trait?: TraitOut | null;
+  species?: MonsterSpeciesOut;
+  evolves_from_id?: number | null;
+  form?: string;
+  main_type?: TypeOut;
+  sub_type?: TypeOut | null;
+  default_legacy_type?: TypeOut | null;
+  leader_potential?: boolean;
+  is_leader_form?: boolean;
+  preferred_attack_style?: AttackStyle;
+
   base_hp: number;
   base_phy_atk: number;
   base_mag_atk: number;
@@ -101,6 +115,7 @@ export interface MonsterOut {
   base_spd: number;
 
   move_pool?: Array<number | { id: number } | { move_id: number }>;
+  move_stones?: Array<number | { id: number } | { move_id: number }>;
   legacy_moves?: Array<number | { id: number } | { move_id: number }>;
 }
 

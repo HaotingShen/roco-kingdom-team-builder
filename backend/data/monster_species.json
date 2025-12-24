@@ -1,150 +1,920 @@
 [
   {
-    "name": "Fuzzlet",
-    "localized": {"zh": "毛毛"}
-  },
-  {
-    "name": "Chessie",
-    "localized": {"zh": "棋棋"}
-  },
-  {
-    "name": "Starlite",
-    "localized": {"zh": "小星光"}
-  },
-  {
-    "name": "Jelly",
-    "localized": {"zh": "果冻"}
-  },
-  {
-    "name": "Starlet",
-    "localized": {"zh": "粉星仔"}
-  },
-  {
-    "name": "Dio",
-    "localized": {"zh": "丢丢"}
-  },
-  {
-    "name": "Snowbabe",
-    "localized": {"zh": "雪娃娃"}
-  },
-  {
-    "name": "Jadejelly",
-    "localized": {"zh": "翡翠水母"}
-  },
-  {
-    "name": "Grifflet",
-    "localized": {"zh": "小狮鹫"}
-  },
-  {
-    "name": "Doling",
-    "localized": {"zh": "多灵"}
-  },
-  {
-    "name": "Pinkstar",
-    "localized": {"zh": "粉粉星"}
-  },
-  {
-    "name": "Crystil",
-    "localized": {"zh": "矿晶虫"}
-  },
-  {
-    "name": "Shadowwood",
-    "localized": {"zh": "幽影树"}
-  },
-  {
-    "name": "Chrysapear",
-    "localized": {"zh": "菊花梨"}
-  },
-  {
-    "name": "Fighto-5",
-    "localized": {"zh": "格斗小五"}
-  },
-  {
-    "name": "Fighto-6",
-    "localized": {"zh": "格斗小六"}
-  },
-  {
-    "name": "Fighto-8",
-    "localized": {"zh": "格斗小八"}
+    "name": "Dimo",
+    "localized": {
+      "zh": "迪莫"
+    }
   },
   {
     "name": "Meowmi",
-    "localized": {"zh": "喵喵"}
+    "localized": {
+      "zh": "喵喵"
+    }
   },
   {
-    "name": "Shyeel",
-    "localized": {"zh": "胆小鳗鱼"}
+    "name": "Spark",
+    "localized": {
+      "zh": "火花"
+    }
   },
   {
-    "name": "Spirapa",
-    "localized": {"zh": "螺旋帕帕"}
+    "name": "Blueva",
+    "localized": {
+      "zh": "水蓝蓝"
+    }
   },
   {
-    "name": "Spiritfox",
-    "localized": {"zh": "灵狐"}
+    "name": "Yajiri",
+    "localized": {
+      "zh": "鸭吉吉"
+    }
   },
   {
-    "name": "Qiulo",
-    "localized": {"zh": "裘洛"}
+    "name": "Plankshell",
+    "localized": {
+      "zh": "板板壳"
+    }
   },
   {
-    "name": "Toxilora",
-    "localized": {"zh": "厉毒小萝"}
+    "name": "Snowplume",
+    "localized": {
+      "zh": "雪绒鸟"
+    }
   },
   {
-    "name": "Ebayle",
-    "localized": {"zh": "伊贝儿"}
+    "name": "Roundlet",
+    "localized": {
+      "zh": "圆眼蜘蛛"
+    }
   },
   {
-    "name": "Chestnut",
-    "localized": {"zh": "栗鼠"}
+    "name": "Myclet",
+    "localized": {
+      "zh": "小灵菇"
+    }
   },
   {
-    "name": "Cubrage",
-    "localized": {"zh": "小勇狮"}
+    "name": "Healbunny",
+    "localized": {
+      "zh": "治愈兔"
+    }
   },
   {
-    "name": "Pricklet",
-    "localized": {"zh": "刺轮砣"}
+    "name": "Crystil",
+    "localized": {
+      "zh": "矿晶虫"
+    }
   },
   {
-    "name": "Sealior",
-    "localized": {"zh": "海豹战士"}
+    "name": "Ottermite",
+    "localized": {
+      "zh": "小鼠獭"
+    }
   },
   {
-    "name": "Conetina",
-    "localized": {"zh": "脆筒甜甜"}
+    "name": "Guardhound",
+    "localized": {
+      "zh": "护主犬"
+    }
+  },
+  {
+    "name": "Dio",
+    "localized": {
+      "zh": "丢丢"
+    }
+  },
+  {
+    "name": "Greenearrel",
+    "localized": {
+      "zh": "绿耳松鼠"
+    }
+  },
+  {
+    "name": "Masklet",
+    "localized": {
+      "zh": "小灵面"
+    }
+  },
+  {
+    "name": "Seablade",
+    "localized": {
+      "zh": "海盔虫"
+    }
+  },
+  {
+    "name": "Duolamp",
+    "localized": {
+      "zh": "双灯鱼"
+    }
+  },
+  {
+    "name": "DuduPot",
+    "localized": {
+      "zh": "嘟嘟煲"
+    }
+  },
+  {
+    "name": "Fuzzlet",
+    "localized": {
+      "zh": "毛毛"
+    }
+  },
+  {
+    "name": "Memostone",
+    "localized": {
+      "zh": "记忆石"
+    }
+  },
+  {
+    "name": "Shadowwood",
+    "localized": {
+      "zh": "幽影树"
+    }
   },
   {
     "name": "Mechacube",
-    "localized": {"zh": "机械方方"}
+    "localized": {
+      "zh": "机械方方"
+    }
+  },
+  {
+    "name": "Bounseed",
+    "localized": {
+      "zh": "蹦蹦种子"
+    }
+  },
+  {
+    "name": "Voltbaa",
+    "localized": {
+      "zh": "电咩咩"
+    }
+  },
+  {
+    "name": "Dandella",
+    "localized": {
+      "zh": "蒲公英"
+    }
+  },
+  {
+    "name": "Ebayle",
+    "localized": {
+      "zh": "伊贝儿"
+    }
+  },
+  {
+    "name": "Sprigbug",
+    "localized": {
+      "zh": "小草虫"
+    }
+  },
+  {
+    "name": "Slowlume",
+    "localized": {
+      "zh": "白发懒人"
+    }
+  },
+  {
+    "name": "Somnwalk",
+    "localized": {
+      "zh": "梦游"
+    }
+  },
+  {
+    "name": "Verdling",
+    "localized": {
+      "zh": "绿草精灵"
+    }
+  },
+  {
+    "name": "Burrownix",
+    "localized": {
+      "zh": "伏地兽"
+    }
+  },
+  {
+    "name": "Beastbud",
+    "localized": {
+      "zh": "兽花蕾"
+    }
+  },
+  {
+    "name": "Starlite",
+    "localized": {
+      "zh": "小星光"
+    }
+  },
+  {
+    "name": "Rockskin",
+    "localized": {
+      "zh": "石肤蜥"
+    }
+  },
+  {
+    "name": "Swarmlet",
+    "localized": {
+      "zh": "一窝蜂"
+    }
+  },
+  {
+    "name": "Chestnut",
+    "localized": {
+      "zh": "栗鼠"
+    }
   },
   {
     "name": "Nylette",
-    "localized": {"zh": "小夜"}
+    "localized": {
+      "zh": "小夜"
+    }
   },
   {
-    "name": "Kindlbug",
-    "localized": {"zh": "柴渣虫"}
-  },
-  {
-    "name": "Mudgull",
-    "localized": {"zh": "吸泥鸥"}
-  },
-  {
-    "name": "Kapo",
-    "localized": {"zh": "卡波"}
-  },
-  {
-    "name": "Scaredicat",
-    "localized": {"zh": "小怂猫"}
+    "name": "Mildgull",
+    "localized": {
+      "zh": "乖乖鹄"
+    }
   },
   {
     "name": "Bellshark",
-    "localized": {"zh": "风铃鲨"}
+    "localized": {
+      "zh": "风铃鲨"
+    }
   },
   {
     "name": "Chiligrass",
-    "localized": {"zh": "奇丽草"}
+    "localized": {
+      "zh": "奇丽草"
+    }
+  },
+  {
+    "name": "Demobit",
+    "localized": {
+      "zh": "恶魔叮"
+    }
+  },
+  {
+    "name": "Verdwing",
+    "localized": {
+      "zh": "绿翼鸟"
+    }
+  },
+  {
+    "name": "Hammerstork",
+    "localized": {
+      "zh": "锤头鹳"
+    }
+  },
+  {
+    "name": "Thornram",
+    "localized": {
+      "zh": "锥尾羊"
+    }
+  },
+  {
+    "name": "Bristone",
+    "localized": {
+      "zh": "布是石"
+    }
+  },
+  {
+    "name": "Amiyat",
+    "localized": {
+      "zh": "阿米亚特"
+    }
+  },
+  {
+    "name": "Demonwolf",
+    "localized": {
+      "zh": "恶魔狼"
+    }
+  },
+  {
+    "name": "Ritualite",
+    "localized": {
+      "zh": "仪使者"
+    }
+  },
+  {
+    "name": "Stringet",
+    "localized": {
+      "zh": "牵线木偶"
+    }
+  },
+  {
+    "name": "Kacrafeather",
+    "localized": {
+      "zh": "咔咔羽毛"
+    }
+  },
+  {
+    "name": "Terramole",
+    "localized": {
+      "zh": "地鼠"
+    }
+  },
+  {
+    "name": "Winglet",
+    "localized": {
+      "zh": "小翼龙"
+    }
+  },
+  {
+    "name": "Unilett",
+    "localized": {
+      "zh": "小独角兽"
+    }
+  },
+  {
+    "name": "Spinleaf",
+    "localized": {
+      "zh": "旋叶虫"
+    }
+  },
+  {
+    "name": "Chrysapear",
+    "localized": {
+      "zh": "菊花梨"
+    }
+  },
+  {
+    "name": "Misttail",
+    "localized": {
+      "zh": "忽幽狸"
+    }
+  },
+  {
+    "name": "Dodoar",
+    "localized": {
+      "zh": "多多"
+    }
+  },
+  {
+    "name": "Cryshroom",
+    "localized": {
+      "zh": "哭哭菇"
+    }
+  },
+  {
+    "name": "Hulacat",
+    "localized": {
+      "zh": "呼拉猫"
+    }
+  },
+  {
+    "name": "Snowdlet",
+    "localized": {
+      "zh": "雪豆丁"
+    }
+  },
+  {
+    "name": "Snowling",
+    "localized": {
+      "zh": "雪娃娃"
+    }
+  },
+  {
+    "name": "Puffhog",
+    "localized": {
+      "zh": "呼呼猪"
+    }
+  },
+  {
+    "name": "Scepter II",
+    "localized": {
+      "zh": "权杖-II"
+    }
+  },
+  {
+    "name": "Spiritfox",
+    "localized": {
+      "zh": "灵狐"
+    }
+  },
+  {
+    "name": "Hoodlette",
+    "localized": {
+      "zh": "大耳帽兜"
+    }
+  },
+  {
+    "name": "Pebblin",
+    "localized": {
+      "zh": "石石"
+    }
+  },
+  {
+    "name": "Pinelet",
+    "localized": {
+      "zh": "松仔"
+    }
+  },
+  {
+    "name": "Cubrage",
+    "localized": {
+      "zh": "小勇狮"
+    }
+  },
+  {
+    "name": "Dripserp",
+    "localized": {
+      "zh": "水滴蛇"
+    }
+  },
+  {
+    "name": "Spiklet",
+    "localized": {
+      "zh": "刺轮砣"
+    }
+  },
+  {
+    "name": "Minnifin",
+    "localized": {
+      "zh": "豆丁鱼"
+    }
+  },
+  {
+    "name": "Shyeel",
+    "localized": {
+      "zh": "胆小鳗鱼"
+    }
+  },
+  {
+    "name": "Jade Jelly",
+    "localized": {
+      "zh": "翡翠水母"
+    }
+  },
+  {
+    "name": "Liraray",
+    "localized": {
+      "zh": "里拉鳐"
+    }
+  },
+  {
+    "name": "Sealior",
+    "localized": {
+      "zh": "海豹战士"
+    }
+  },
+  {
+    "name": "Piplet",
+    "localized": {
+      "zh": "小鹬"
+    }
+  },
+  {
+    "name": "Conetina",
+    "localized": {
+      "zh": "脆筒甜甜"
+    }
+  },
+  {
+    "name": "Seabranch",
+    "localized": {
+      "zh": "海枝枝"
+    }
+  },
+  {
+    "name": "Mushdlet",
+    "localized": {
+      "zh": "菇菇丁"
+    }
+  },
+  {
+    "name": "Jelly",
+    "localized": {
+      "zh": "果冻"
+    }
+  },
+  {
+    "name": "Titali",
+    "localized": {
+      "zh": "缇塔"
+    }
+  },
+  {
+    "name": "Gearling",
+    "localized": {
+      "zh": "齿轮小子"
+    }
+  },
+  {
+    "name": "Electrogira",
+    "localized": {
+      "zh": "电动长颈鹿"
+    }
+  },
+  {
+    "name": "Voltiring",
+    "localized": {
+      "zh": "闪电环"
+    }
+  },
+  {
+    "name": "Luminbuzz",
+    "localized": {
+      "zh": "嗜光嗡嗡"
+    }
+  },
+  {
+    "name": "Fairdove",
+    "localized": {
+      "zh": "公平鸽"
+    }
+  },
+  {
+    "name": "Spottle",
+    "localized": {
+      "zh": "斑斑"
+    }
+  },
+  {
+    "name": "Honkerel",
+    "localized": {
+      "zh": "号儿鱼"
+    }
+  },
+  {
+    "name": "Deepblue",
+    "localized": {
+      "zh": "深蓝鲸"
+    }
+  },
+  {
+    "name": "Grifflet",
+    "localized": {
+      "zh": "小狮鹫"
+    }
+  },
+  {
+    "name": "Doodle",
+    "localized": {
+      "zh": "逗逗"
+    }
+  },
+  {
+    "name": "Yirei",
+    "localized": {
+      "zh": "伊雷龙"
+    }
+  },
+  {
+    "name": "Wavelo",
+    "localized": {
+      "zh": "波波螺"
+    }
+  },
+  {
+    "name": "Chessie",
+    "localized": {
+      "zh": "棋棋"
+    }
+  },
+  {
+    "name": "Sacred Squire",
+    "localized": {
+      "zh": "圣剑侍从"
+    }
+  },
+  {
+    "name": "Dululu",
+    "localized": {
+      "zh": "呆小路"
+    }
+  },
+  {
+    "name": "Sproutduck",
+    "localized": {
+      "zh": "草头鸭"
+    }
+  },
+  {
+    "name": "Nokuko",
+    "localized": {
+      "zh": "不咕钟"
+    }
+  },
+  {
+    "name": "Ratel",
+    "localized": {
+      "zh": "拉特"
+    }
+  },
+  {
+    "name": "Cracklewing",
+    "localized": {
+      "zh": "噼啪鸟"
+    }
+  },
+  {
+    "name": "Bloomgrudge",
+    "localized": {
+      "zh": "花怨鳗"
+    }
+  },
+  {
+    "name": "Hollowkull",
+    "localized": {
+      "zh": "空空颅"
+    }
+  },
+  {
+    "name": "Uda",
+    "localized": {
+      "zh": "乌达"
+    }
+  },
+  {
+    "name": "Spirapa",
+    "localized": {
+      "zh": "螺旋帕帕"
+    }
+  },
+  {
+    "name": "Dosi",
+    "localized": {
+      "zh": "多西"
+    }
+  },
+  {
+    "name": "Standchick",
+    "localized": {
+      "zh": "可立鸡"
+    }
+  },
+  {
+    "name": "Kindlbug",
+    "localized": {
+      "zh": "柴渣虫"
+    }
+  },
+  {
+    "name": "Bellserp",
+    "localized": {
+      "zh": "古钟蛇"
+    }
+  },
+  {
+    "name": "Miniboxer",
+    "localized": {
+      "zh": "小箱怪"
+    }
+  },
+  {
+    "name": "Granseed",
+    "localized": {
+      "zh": "格兰种子"
+    }
+  },
+  {
+    "name": "Qiulo",
+    "localized": {
+      "zh": "裘洛"
+    }
+  },
+  {
+    "name": "Toxilora",
+    "localized": {
+      "zh": "厉毒小萝"
+    }
+  },
+  {
+    "name": "Doling",
+    "localized": {
+      "zh": "多灵"
+    }
+  },
+  {
+    "name": "Minibeetle",
+    "localized": {
+      "zh": "小甲虫"
+    }
+  },
+  {
+    "name": "Mudgull",
+    "localized": {
+      "zh": "吸泥鸥"
+    }
+  },
+  {
+    "name": "Rosetteye",
+    "localized": {
+      "zh": "瑰眼仔"
+    }
+  },
+  {
+    "name": "Kapo",
+    "localized": {
+      "zh": "卡波"
+    }
+  },
+  {
+    "name": "Skullmaw",
+    "localized": {
+      "zh": "大头骨龙"
+    }
+  },
+  {
+    "name": "Starlette",
+    "localized": {
+      "zh": "粉星仔"
+    }
+  },
+  {
+    "name": "Shadowkit",
+    "localized": {
+      "zh": "小黑猫"
+    }
+  },
+  {
+    "name": "Fuzzling",
+    "localized": {
+      "zh": "毛头小蛛"
+    }
+  },
+  {
+    "name": "Pinkstar",
+    "localized": {
+      "zh": "粉粉星"
+    }
+  },
+  {
+    "name": "Starid",
+    "localized": {
+      "zh": "星尘虫"
+    }
+  },
+  {
+    "name": "Artling",
+    "localized": {
+      "zh": "画精灵"
+    }
+  },
+  {
+    "name": "Scriptmite",
+    "localized": {
+      "zh": "书魔虫"
+    }
+  },
+  {
+    "name": "Nebulancer",
+    "localized": {
+      "zh": "星云旅者"
+    }
+  },
+  {
+    "name": "Flufflet",
+    "localized": {
+      "zh": "绒绒"
+    }
+  },
+  {
+    "name": "Hornwing",
+    "localized": {
+      "zh": "犀角鸟"
+    }
+  },
+  {
+    "name": "Palet",
+    "localized": {
+      "zh": "小帕尔"
+    }
+  },
+  {
+    "name": "Lio",
+    "localized": {
+      "zh": "里奥"
+    }
+  },
+  {
+    "name": "Sweetnail",
+    "localized": {
+      "zh": "甜田螺"
+    }
+  },
+  {
+    "name": "Blus",
+    "localized": {
+      "zh": "布鲁斯"
+    }
+  },
+  {
+    "name": "Fighto Five",
+    "localized": {
+      "zh": "格斗小五"
+    }
+  },
+  {
+    "name": "Fighto Six",
+    "localized": {
+      "zh": "格斗小六"
+    }
+  },
+  {
+    "name": "Fighto Eight",
+    "localized": {
+      "zh": "格斗小八"
+    }
+  },
+  {
+    "name": "Abu",
+    "localized": {
+      "zh": "阿布"
+    }
+  },
+  {
+    "name": "Springlet",
+    "localized": {
+      "zh": "春团"
+    }
+  },
+  {
+    "name": "Dusklight",
+    "localized": {
+      "zh": "幽星光"
+    }
+  },
+  {
+    "name": "Scholabbit",
+    "localized": {
+      "zh": "学院呱呱"
+    }
+  },
+  {
+    "name": "Drillflare",
+    "localized": {
+      "zh": "烈钻鸟"
+    }
+  },
+  {
+    "name": "Firewatt",
+    "localized": {
+      "zh": "火尾瓦特"
+    }
+  },
+  {
+    "name": "Scaredicat",
+    "localized": {
+      "zh": "小怂猫"
+    }
+  },
+  {
+    "name": "Cutaroo",
+    "localized": {
+      "zh": "可爱猿"
+    }
+  },
+  {
+    "name": "Besor",
+    "localized": {
+      "zh": "贝瑟"
+    }
+  },
+  {
+    "name": "Sparkquin",
+    "localized": {
+      "zh": "小电企鹅"
+    }
+  },
+  {
+    "name": "Runrat",
+    "localized": {
+      "zh": "奔波鼠"
+    }
+  },
+  {
+    "name": "Shortcrawl",
+    "localized": {
+      "zh": "矮脚爬爬"
+    }
+  },
+  {
+    "name": "Inklit",
+    "localized": {
+      "zh": "墨鱿士"
+    }
+  },
+  {
+    "name": "Yuyu",
+    "localized": {
+      "zh": "优优"
+    }
+  },
+  {
+    "name": "Cresnowbear",
+    "localized": {
+      "zh": "月牙雪熊"
+    }
+  },
+  {
+    "name": "Fanyx",
+    "localized": {
+      "zh": "凡鹰"
+    }
+  },
+  {
+    "name": "Tadpass",
+    "localized": {
+      "zh": "布瓜蝌"
+    }
   }
 ]

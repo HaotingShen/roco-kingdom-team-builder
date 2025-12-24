@@ -1,7 +1,7 @@
 [
   {
     "name": "Normal",
-    "localized": {"zh": "普"},
+    "localized": {"zh": "普通"},
     "effective_against": [],
     "weak_against": ["Ground", "Ghost", "Mechanical"]
   },

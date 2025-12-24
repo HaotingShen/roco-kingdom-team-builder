@@ -153,6 +153,9 @@ const ui: Record<Lang, Dict> = {
       status_complete: "Complete",
       status_incomplete: "Incomplete",
       status_empty: "Empty",
+      // warnings
+      noMovesWarning: "This monster has no moves available.",
+      noMovesCannotBuild: "Cannot build team with this monster (no move pool recorded).",
     },
     stats: {
       noStats: "No stats.",
@@ -237,10 +240,13 @@ const ui: Record<Lang, Dict> = {
       cat_sta: "Status",
       defense: "Defense",
       status: "Status",
-      move_stone: "Stone",
+      move_stones: "Move Stones",
       learnable: "Learnable Moves",
       legacy: "Legacy Moves",
       evolution: "Evolution",
+      evolvedFrom: "Evolved From",
+      noMovesAvailable: "No move data available for this monster.",
+      noMovesExplanation: "This monster's move pool has not been recorded yet.",
     },
     teams: {
       manageTeams: "Manage Your Teams",
@@ -349,6 +355,9 @@ const ui: Record<Lang, Dict> = {
       status_complete: "已完成",
       status_incomplete: "待完善",
       status_empty: "未选择",
+      // warnings
+      noMovesWarning: "该精灵暂无可用技能。",
+      noMovesCannotBuild: "该精灵无技能池数据，无法组队。",
     },
     stats: {
       noStats: "暂无属性数据。",
@@ -433,10 +442,13 @@ const ui: Record<Lang, Dict> = {
       cat_sta: "状态",
       defense: "防御",
       status: "状态",
-      move_stone: "技能石",
-      learnable: "可学习技能",
+      move_stones: "技能石",
+      learnable: "自学技能",
       legacy: "血脉技能",
       evolution: "进化链",
+      evolvedFrom: "进化自",
+      noMovesAvailable: "暂无该精灵的技能数据。",
+      noMovesExplanation: "该精灵的技能池尚未录入。",
     },
     teams: {
       manageTeams: "管理你的队伍",

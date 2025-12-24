@@ -1,0 +1,352 @@
+================================================================================
+COMBINED VALIDATION REPORT - ALL CHECKS
+================================================================================
+
+Generated: 2025-12-20 23:57:55
+
+================================================================================
+OVERALL SUMMARY
+================================================================================
+
+Total Checks: 3
+Passed: 2
+Failed: 1
+
+Individual Results:
+  - Frontend Images Check: PASSED ✓
+  - Local Consistency Check: PASSED ✓
+  - Source Correctness Check: FAILED ✗
+
+❌ 1 VALIDATION CHECK(S) FAILED
+
+================================================================================
+DETAILED OUTPUT FROM EACH CHECK
+================================================================================
+
+--------------------------------------------------------------------------------
+Frontend Images Check
+--------------------------------------------------------------------------------
+
+
+================================================================================
+FRONTEND IMAGE VALIDATION
+================================================================================
+Project root: /mnt/d/Alan/Github Projects/roco-kingdom-team-builder
+Data directory: /mnt/d/Alan/Github Projects/roco-kingdom-team-builder/backend/data
+Frontend public: /mnt/d/Alan/Github Projects/roco-kingdom-team-builder/frontend/public
+
+================================================================================
+VALIDATING MONSTER IMAGES
+================================================================================
+✓ Monsters with all images: 503/503
+
+================================================================================
+VALIDATING MOVE ICONS
+================================================================================
+✓ Moves with icons: 467/467
+
+================================================================================
+VALIDATING MAGIC ITEM IMAGES
+================================================================================
+✓ Magic items with images: 5/5
+
+================================================================================
+SUMMARY
+================================================================================
+
+NOTES (5):
+--------------------------------------------------------------------------------
+
+Shiny variant images found (异色):
+  180/: 49 shiny variants
+  270/: 49 shiny variants
+  360/: 49 shiny variants
+  Note: These are not currently displayed on frontend
+
+================================================================================
+VALIDATION COMPLETE
+================================================================================
+Errors: 0
+Warnings: 0
+Notes: 5
+
+
+--------------------------------------------------------------------------------
+Local Consistency Check
+--------------------------------------------------------------------------------
+
+Data directory: /mnt/d/Alan/Github Projects/roco-kingdom-team-builder/backend/data
+
+Starting Local Data Consistency Checks...
+
+Checking monster_species.json consistency...
+  ✓ Checked 153 species definitions
+
+Checking types.json consistency...
+  ✓ Checked 19 type definitions
+
+Checking traits.json consistency...
+  ✓ Checked 189 trait definitions
+
+Checking monsters.json data integrity...
+  ✓ Checked 503 monster entries
+
+Checking moveset_key validity...
+  ✓ Checked 503 moveset keys
+
+Checking move references between monster_moves.json and moves.json...
+  Total moves in moves.json: 467
+  Total moves used in monster_moves.json: 464
+  Invalid move references: 0
+  Unused moves: 3
+  ✓ Move reference check complete
+
+
+================================================================================
+SUMMARY
+================================================================================
+
+WARNINGS (22):
+  ⚠ Chessie (index 285): moveset_key is '棋骑士-白子', expected '棋绮后-白子' based on naming rules
+  ⚠ Chessie (index 286): moveset_key is '棋骑士-黑子', expected '棋绮后-黑子' based on naming rules
+  ⚠ Chess Knight (index 287): moveset_key is '棋骑士-白子', expected '棋绮后-白子' based on naming rules
+  ⚠ Chess Knight (index 288): moveset_key is '棋骑士-黑子', expected '棋绮后-黑子' based on naming rules
+  ⚠ Chess Guard (index 289): moveset_key is '棋齐垒-白子', expected '棋绮后-白子' based on naming rules
+  ⚠ Chess Guard (index 290): moveset_key is '棋齐垒-黑子', expected '棋绮后-黑子' based on naming rules
+  ⚠ Chess Overseer (index 291): moveset_key is '棋祈督-白子', expected '棋绮后-白子' based on naming rules
+  ⚠ Chess Overseer (index 292): moveset_key is '棋祈督-黑子', expected '棋绮后-黑子' based on naming rules
+  ⚠ Chess Majesty (index 295): moveset_key is '棋骑士-白子', expected '棋绮后-棋骑士-白子' based on naming rules
+  ⚠ Chess Majesty (index 296): moveset_key is '棋骑士-黑子', expected '棋绮后-棋骑士-黑子' based on naming rules
+  ⚠ Chess Majesty (index 297): moveset_key is '棋齐垒-白子', expected '棋绮后-棋齐垒-白子' based on naming rules
+  ⚠ Chess Majesty (index 298): moveset_key is '棋齐垒-黑子', expected '棋绮后-棋齐垒-黑子' based on naming rules
+  ⚠ Chess Majesty (index 299): moveset_key is '棋祈督-白子', expected '棋绮后-棋祈督-白子' based on naming rules
+  ⚠ Chess Majesty (index 300): moveset_key is '棋祈督-黑子', expected '棋绮后-棋祈督-黑子' based on naming rules
+  ⚠ Chess Majesty (index 301): moveset_key is '棋绮后-白子', expected '棋绮后-棋绮后-白子' based on naming rules
+  ⚠ Chess Majesty (index 302): moveset_key is '棋绮后-黑子', expected '棋绮后-棋绮后-黑子' based on naming rules
+  ⚠ Vanitina (index 343): moveset_key is '圣代甜甜-樱桃巧克力口味', expected '圣代甜甜-樱桃饰品' based on naming rules
+  ⚠ Vanitina (index 344): moveset_key is '圣代甜甜-杨桃巧克力口味', expected '圣代甜甜-杨桃饰品' based on naming rules
+  ⚠ Vanitina (index 345): moveset_key is '圣代甜甜-蓝莓巧克力口味', expected '圣代甜甜-蓝莓饰品' based on naming rules
+  ⚠ Move '愿力冲击' defined in moves.json but never used in monster_moves.json
+  ⚠ Move '指指点点' defined in moves.json but never used in monster_moves.json
+  ⚠ Move '聚能' defined in moves.json but never used in monster_moves.json
+
+================================================================================
+⚠️  VALIDATION PASSED with 22 warning(s)
+
+
+--------------------------------------------------------------------------------
+Source Correctness Check
+--------------------------------------------------------------------------------
+
+Data directory: /mnt/d/Alan/Github Projects/roco-kingdom-team-builder/backend/data
+Excel file: /mnt/d/Alan/Github Projects/roco-kingdom-team-builder/backend/data/data_all.xlsx
+
+Starting Source Data Correctness Checks...
+
+Source: /mnt/d/Alan/Github Projects/roco-kingdom-team-builder/backend/data/data_all.xlsx
+
+Checking monster data coverage...
+  Excel monsters: 475
+  JSON monsters: 503
+  Matched monsters: 475
+  ✓ Coverage check complete
+
+Checking monster base stats...
+  ✓ All base stats match
+
+Checking monster types...
+  ✓ All types match
+
+Checking monster traits...
+  ✓ All traits match
+
+Checking monster forms...
+  ✓ All forms match
+
+Checking evolution chain consistency...
+  ✓ All evolution chains are consistent
+
+Checking preferred_attack_style consistency...
+  ✓ All preferred_attack_style values match stats
+
+Checking moveset_key references...
+  ✓ All moveset_key references are valid
+
+Checking moveset coverage...
+  Excel movesets: 195
+  JSON movesets: 210
+  ✓ Coverage check complete
+
+Checking moveset contents and order...
+  Found moveset content/order mismatches
+
+
+================================================================================
+SUMMARY
+================================================================================
+
+ERRORS (14):
+  ✗ Monster '嗜波螺-长苔藓的样子' exists in Excel but not in monsters.json
+  ✗ Monster '波波螺-长苔藓的样子' exists in Excel but not in monsters.json
+  ✗ Monster '消波螺-长苔藓的样子' exists in Excel but not in monsters.json
+  ✗ Moveset '电球咩咩': learnable moves count mismatch - Excel: 12, JSON: 14
+  ✗ Moveset '电球咩咩': learnable move position 6 - Excel: '集中', JSON: '感电'
+  ✗ Moveset '电球咩咩': learnable move position 7 - Excel: '落雷', JSON: '电离爆破'
+  ✗ Moveset '电球咩咩': learnable move position 8 - Excel: '鼓劲', JSON: '集中'
+  ✗ Moveset '电球咩咩': learnable move position 9 - Excel: '闪击折返', JSON: '落雷'
+  ✗ Moveset '电球咩咩': learnable move position 10 - Excel: '电磁偏转', JSON: '鼓劲'
+  ✗ Moveset '电球咩咩': learnable move position 11 - Excel: '强制重启', JSON: '闪击折返'
+  ✗ Moveset '电球咩咩': learnable move position 12 - Excel: '有效预防', JSON: '电磁偏转'
+  ✗ Moveset '电球咩咩': learnable move position 13 - Excel: N/A, JSON: '强制重启'
+  ✗ Moveset '电球咩咩': learnable move position 14 - Excel: N/A, JSON: '有效预防'
+  ✗ Moveset '电球咩咩': 9 position difference(s) in learnable moves
+
+WARNINGS (1):
+  ⚠ Moveset '嗜波螺-长苔藓的样子' exists in Excel but not in monster_moves.json
+
+INFO (137):
+  ℹ Monster '上岸蛙' exists in monsters.json but not in Excel (will be skipped)
+  ℹ Monster '不咕钟' exists in monsters.json but not in Excel (will be skipped)
+  ℹ Monster '健猫教练' exists in monsters.json but not in Excel (will be skipped)
+  ℹ Monster '凡鹰' exists in monsters.json but not in Excel (will be skipped)
+  ℹ Monster '卡拉波斯' exists in monsters.json but not in Excel (will be skipped)
+  ℹ Monster '卡波' exists in monsters.json but not in Excel (will be skipped)
+  ℹ Monster '呼拉猫' exists in monsters.json but not in Excel (will be skipped)
+  ℹ Monster '增肌猫' exists in monsters.json but not in Excel (will be skipped)
+  ℹ Monster '壳栗丝鼠' exists in monsters.json but not in Excel (will be skipped)
+  ℹ Monster '多灵' exists in monsters.json but not in Excel (will be skipped)
+  ℹ Monster '多灵主' exists in monsters.json but not in Excel (will be skipped)
+  ℹ Monster '多西' exists in monsters.json but not in Excel (will be skipped)
+  ℹ Monster '布瓜蝌' exists in monsters.json but not in Excel (will be skipped)
+  ℹ Monster '帅帅魔偶' exists in monsters.json but not in Excel (will be skipped)
+  ℹ Monster '库多西' exists in monsters.json but not in Excel (will be skipped)
+  ℹ Monster '星云旅者' exists in monsters.json but not in Excel (will be skipped)
+  ℹ Monster '机甲小子' exists in monsters.json but not in Excel (will be skipped)
+  ℹ Monster '栗鼠' exists in monsters.json but not in Excel (will be skipped)
+  ℹ Monster '格斗小五' exists in monsters.json but not in Excel (will be skipped)
+  ℹ Monster '格斗小八' exists in monsters.json but not in Excel (will be skipped)
+  ℹ Monster '格斗小六' exists in monsters.json but not in Excel (will be skipped)
+  ℹ Monster '波多西' exists in monsters.json but not in Excel (will be skipped)
+  ℹ Monster '溯源钟' exists in monsters.json but not in Excel (will be skipped)
+  ℹ Monster '火羽' exists in monsters.json but not in Excel (will be skipped)
+  ℹ Monster '烈钻鸟' exists in monsters.json but not in Excel (will be skipped)
+  ℹ Monster '牵线木偶' exists in monsters.json but not in Excel (will be skipped)
+  ℹ Monster '瑰眼仔' exists in monsters.json but not in Excel (will be skipped)
+  ℹ Monster '耳翎瑰魅' exists in monsters.json but not in Excel (will be skipped)
+  ℹ Monster '邪眼巨魔' exists in monsters.json but not in Excel (will be skipped)
+  ℹ Monster '长尾火鸟' exists in monsters.json but not in Excel (will be skipped)
+  ℹ Monster '齿轮小子' exists in monsters.json but not in Excel (will be skipped)
+  ℹ Moveset '上岸蛙' exists in monster_moves.json but not in Excel
+  ℹ Moveset '健猫教练' exists in monster_moves.json but not in Excel
+  ℹ Moveset '凡鹰' exists in monster_moves.json but not in Excel
+  ℹ Moveset '卡拉波斯' exists in monster_moves.json but not in Excel
+  ℹ Moveset '壳栗丝鼠' exists in monster_moves.json but not in Excel
+  ℹ Moveset '多灵主' exists in monster_moves.json but not in Excel
+  ℹ Moveset '帅帅魔偶' exists in monster_moves.json but not in Excel
+  ℹ Moveset '星云旅者' exists in monster_moves.json but not in Excel
+  ℹ Moveset '机甲小子' exists in monster_moves.json but not in Excel
+  ℹ Moveset '格斗小五' exists in monster_moves.json but not in Excel
+  ℹ Moveset '格斗小八' exists in monster_moves.json but not in Excel
+  ℹ Moveset '格斗小六' exists in monster_moves.json but not in Excel
+  ℹ Moveset '波多西' exists in monster_moves.json but not in Excel
+  ℹ Moveset '溯源钟' exists in monster_moves.json but not in Excel
+  ℹ Moveset '火羽' exists in monster_moves.json but not in Excel
+  ℹ Moveset '邪眼巨魔' exists in monster_moves.json but not in Excel
+  ℹ Skipped 89 empty movesets (no data in Excel)
+  ℹ   - Empty moveset: '记忆石'
+  ℹ   - Empty moveset: '黑猫巫师'
+  ℹ   - Empty moveset: '花衣蝶'
+  ℹ   - Empty moveset: '魔眷鸟'
+  ℹ   - Empty moveset: '罗隐'
+  ℹ   - Empty moveset: '彩蝶鲨'
+  ℹ   - Empty moveset: '巨灵石'
+  ℹ   - Empty moveset: '白金独角兽'
+  ℹ   - Empty moveset: '影狸'
+  ℹ   - Empty moveset: '古啦多'
+  ℹ   - Empty moveset: '怖哭菇'
+  ℹ   - Empty moveset: '恶魔狼'
+  ℹ   - Empty moveset: '电企鹅'
+  ℹ   - Empty moveset: '雪巨人'
+  ℹ   - Empty moveset: '獠牙猪'
+  ℹ   - Empty moveset: '雪灵'
+  ℹ   - Empty moveset: '雪影娃娃'
+  ℹ   - Empty moveset: '权杖-V'
+  ℹ   - Empty moveset: '尖嘴狐仙'
+  ℹ   - Empty moveset: '圣羽翼王'
+  ℹ   - Empty moveset: '公平鸽'
+  ℹ   - Empty moveset: '怒目怂猫'
+  ℹ   - Empty moveset: '芋香巨角蛛'
+  ℹ   - Empty moveset: '九幽菇'
+  ℹ   - Empty moveset: '斑枭'
+  ℹ   - Empty moveset: '伊兰亚龙'
+  ℹ   - Empty moveset: '卷毛鸭'
+  ℹ   - Empty moveset: '海豹船长'
+  ℹ   - Empty moveset: '圆号鱼'
+  ℹ   - Empty moveset: '卡洛儿'
+  ℹ   - Empty moveset: '古卷执政官'
+  ℹ   - Empty moveset: '古卷匣魔像'
+  ℹ   - Empty moveset: '流浪鼠'
+  ℹ   - Empty moveset: '白发路路'
+  ℹ   - Empty moveset: '梦想三三'
+  ℹ   - Empty moveset: '鳗尾兽'
+  ℹ   - Empty moveset: '圣剑-X'
+  ℹ   - Empty moveset: '酷拉'
+  ℹ   - Empty moveset: '荆棘电环'
+  ℹ   - Empty moveset: '迷迷箱怪'
+  ℹ   - Empty moveset: '寒音蛇-本命年的样子'
+  ℹ   - Empty moveset: '恶魔红钻'
+  ℹ   - Empty moveset: '里拉鳐'
+  ℹ   - Empty moveset: '爵士鹿'
+  ℹ   - Empty moveset: '声波缇塔'
+  ℹ   - Empty moveset: '高脚鹬'
+  ℹ   - Empty moveset: '龙鱼'
+  ℹ   - Empty moveset: '闪电鳗鱼'
+  ℹ   - Empty moveset: '琉璃水母'
+  ℹ   - Empty moveset: '烈火守护'
+  ℹ   - Empty moveset: '噼啪鸟'
+  ℹ   - Empty moveset: '红绒十字'
+  ℹ   - Empty moveset: '帕帕斯卡'
+  ℹ   - Empty moveset: '立方人'
+  ℹ   - Empty moveset: '混乱鱿彩'
+  ℹ   - Empty moveset: '秩序鱿墨'
+  ℹ   - Empty moveset: '绅士鸡'
+  ℹ   - Empty moveset: '武者鸡'
+  ℹ   - Empty moveset: '绒光优优'
+  ℹ   - Empty moveset: '捕尘长绒'
+  ℹ   - Empty moveset: '食尘短绒'
+  ℹ   - Empty moveset: '厉毒修萝'
+  ℹ   - Empty moveset: '深蓝鲸'
+  ℹ   - Empty moveset: '格兰球'
+  ℹ   - Empty moveset: '画间法师手'
+  ℹ   - Empty moveset: '画间沉铁兽'
+  ℹ   - Empty moveset: '翼龙'
+  ℹ   - Empty moveset: '裘卡'
+  ℹ   - Empty moveset: '铠甲虫'
+  ℹ   - Empty moveset: '泥吼牙'
+  ℹ   - Empty moveset: '寂灭骨龙'
+  ℹ   - Empty moveset: '抹茶布丁'
+  ℹ   - Empty moveset: '椰浆布丁'
+  ℹ   - Empty moveset: '熔岩布丁'
+  ℹ   - Empty moveset: '冰钻布鲁斯'
+  ℹ   - Empty moveset: '陨星虫'
+  ℹ   - Empty moveset: '火焰猿'
+  ℹ   - Empty moveset: '绒仙子'
+  ℹ   - Empty moveset: '疾光千兽'
+  ℹ   - Empty moveset: '利灯鱼'
+  ℹ   - Empty moveset: '月牙雪熊'
+  ℹ   - Empty moveset: '窃光蚊'
+  ℹ   - Empty moveset: '燃薪虫'
+  ℹ   - Empty moveset: '夜枭'
+  ℹ   - Empty moveset: '小皮球'
+  ℹ   - Empty moveset: '贝古斯'
+  ℹ   - Empty moveset: '粉耳星兔'
+  ℹ   - Empty moveset: '落陨星兔'
+  ℹ   - Empty moveset: '龙息帕尔'
+
+================================================================================
+❌ VALIDATION FAILED with 14 error(s)
+
+
+================================================================================
+END OF COMBINED VALIDATION REPORT
+================================================================================

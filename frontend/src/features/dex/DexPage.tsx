@@ -8,18 +8,9 @@ import PageTabs from "@/components/PageTabs";
 import useDebounce from "@/hooks/useDebounce";
 import { useQuery } from "@tanstack/react-query";
 import { useWindowVirtualizer } from "@tanstack/react-virtual";
-import { typeIconUrl, magicItemImageUrl } from "@/lib/images";
+import { typeIconUrl, magicItemImageUrl, monsterImageFallbackChain } from "@/lib/images";
 
 /* ---------------- helpers ---------------- */
-
-/** Image filename matches Chinese name (and Chinese form in parentheses if not default). */
-function monsterImgUrlCN(m: any, size: 180 | 270 | 360 = 180) {
-  const cnName = pickName(m, "zh") || m.name || String(m.id);
-  const cnForm = pickFormName(m, "zh");
-  const base = cnForm ? `${cnName}(${cnForm})` : cnName;
-  // Use encodeURI to support Chinese and parentheses in URLs.
-  return encodeURI(`/monsters/${size}/${base}.png`);
-}
 
 function useColumns(kind: "monsters" | "moves") {
   const [w, setW] = useState<number>(() => (typeof window !== "undefined" ? window.innerWidth : 1024));
@@ -54,7 +45,7 @@ function FilterButton({
       type="button"
       onClick={onClick}
       className={`
-        inline-flex h-8 items-center px-3 rounded-full text-sm font-medium cursor-pointer
+        inline-flex h-9 items-center px-3 rounded-full text-sm font-medium cursor-pointer
         transition-all duration-200
         ${active
           ? "bg-zinc-800 text-white shadow-md hover:bg-zinc-700"
@@ -83,7 +74,7 @@ function Pill({
     red: "border-red-300 bg-red-50 text-red-700",
   };
   return (
-    <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] ${styles[tone]}`}>
+    <span className={`inline-flex h-7 items-center gap-0.5 rounded-full border px-2 text-xs ${styles[tone]}`}>
       {children}
     </span>
   );
@@ -128,7 +119,7 @@ function MonstersTab() {
         if (!hit) return false;
       }
       // form filters
-      if (filterVariant === "regional" && (!m.form || m.form.toLowerCase() === "default")) return false;
+      if (filterVariant === "regional" && (m.is_leader_form || !m.form || m.form.toLowerCase() === "default")) return false;
       if (filterVariant === "leader" && !m.is_leader_form) return false;
 
       // local search – SUPPORT EN & 中文 regardless of current UI language
@@ -148,12 +139,36 @@ function MonstersTab() {
     });
   }, [monsters.data, dq, selectedTypes, filterVariant]);
 
+  // Always group leader forms by monster name to show only one card per species
+  const displayList = useMemo(() => {
+    // Group leader forms, keep only the form with lowest ID (first documented)
+    const grouped = new Map<string, MonsterLiteOut>();
+    const nonLeaders: MonsterLiteOut[] = [];
+
+    filtered.forEach((m) => {
+      if (m.is_leader_form) {
+        const name = pickName(m as any, lang) || m.name;
+        const existing = grouped.get(name);
+
+        if (!existing || (m as any).id < (existing as any).id) {
+          grouped.set(name, m);
+        }
+      } else {
+        nonLeaders.push(m);
+      }
+    });
+
+    // Combine grouped leaders with non-leaders, maintaining original order
+    const groupedLeaders = Array.from(grouped.values());
+    return [...nonLeaders, ...groupedLeaders].sort((a, b) => (a as any).id - (b as any).id);
+  }, [filtered, lang]);
+
   const toggleType = (id: number) =>
     setSelectedTypes((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
 
   // --- virtualization (treat each grid *row* as one virtual item) ---
   const cols = useColumns("monsters");
-  const rowCount = Math.ceil((filtered?.length ?? 0) / cols);
+  const rowCount = Math.ceil((displayList?.length ?? 0) / cols);
   const rowEstimate = 220; // ~ card + gaps
   const rowVirt = useWindowVirtualizer({
     count: rowCount,
@@ -164,7 +179,7 @@ function MonstersTab() {
   const fromRow = vItems[0]?.index ?? 0;
   const toRow = vItems[vItems.length - 1]?.index ?? -1;
   const startIdx = fromRow * cols;
-  const endIdx = Math.min(filtered.length, (toRow + 1) * cols);
+  const endIdx = Math.min(displayList.length, (toRow + 1) * cols);
 
   // keep URL in sync
   useEffect(() => {
@@ -210,7 +225,7 @@ function MonstersTab() {
               >
                 <span className="inline-flex items-center gap-0.5">
                   {typeIconUrl(tp.name) ? (
-                    <img src={typeIconUrl(tp.name)!} alt="" width={20} height={20} />
+                    <img src={typeIconUrl(tp.name)!} alt="" width={22} height={22} />
                   ) : null}
                   {pickName(tp as any, lang) || tp.name}
                 </span>
@@ -234,17 +249,19 @@ function MonstersTab() {
       </div>
 
       {/* Virtualized grid (window-based) */}
-      {(!monsters.data || !filtered.length) ? (
+      {(!monsters.data || !displayList.length) ? (
         <div className="text-zinc-500">{t("dex.noResults")}</div>
       ) : (
         <div style={{ height: rowVirt.getTotalSize(), position: "relative" }}>
           <div style={{ transform: `translateY(${vItems[0]?.start ?? 0}px)` }}>
             <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-              {filtered.slice(startIdx, endIdx).map((m) => {
+              {displayList.slice(startIdx, endIdx).map((m) => {
                 const titleName = pickName(m as any, lang) || m.name;
-                const formLabel = pickFormName(m as any, lang);
+                // Don't show form name for leader monsters in the card list
+                const formLabel = m.is_leader_form ? "" : pickFormName(m as any, lang);
                 const title = [titleName, formLabel ? `(${formLabel})` : ""].filter(Boolean).join(" ");
-                const src = monsterImgUrlCN(m, 180);
+                const fallbackChain = monsterImageFallbackChain(m, 180);
+                const src = fallbackChain[0] || "/monsters/placeholder.png";
 
                 return (
                   <Link
@@ -261,14 +278,25 @@ function MonstersTab() {
                         height={180}
                         className="h-[120px] w-[120px] object-contain drop-shadow-sm"
                         loading="lazy"
-                        onError={(e) => { (e.currentTarget as HTMLImageElement).src = "/monsters/placeholder.png"; }}
+                        data-fallback-step="0"
+                        onError={(e) => {
+                          const img = e.currentTarget as HTMLImageElement;
+                          const step = Number(img.dataset.fallbackStep || "0");
+                          const next = step + 1;
+                          if (next < fallbackChain.length) {
+                            img.dataset.fallbackStep = String(next);
+                            img.src = fallbackChain[next]!;
+                          } else if (img.src !== "/monsters/placeholder.png") {
+                            img.src = "/monsters/placeholder.png";
+                          }
+                        }}
                       />
                     </div>
                     <div className="mt-3 flex items-center gap-1 flex-wrap">
                       {[m.main_type, m.sub_type].filter(Boolean).map((tp) => (
                         <Pill key={(tp as TypeOut).id}>
                           {typeIconUrl((tp as TypeOut).name) ? (
-                            <img src={typeIconUrl((tp as TypeOut).name)!} alt="" width={16} height={16} />
+                            <img src={typeIconUrl((tp as TypeOut).name)!} alt="" width={20} height={20} />
                           ) : null}
                           {pickName(tp as any, lang)}
                         </Pill>
@@ -300,7 +328,6 @@ type LocalMove = MoveOut & {
   power?: number | null;
   description?: string | null;
   localized?: any;
-  is_move_stone?: boolean;
 };
 
 function MovesTab() {
@@ -543,16 +570,16 @@ function MovesTab() {
                         <div
                           className="
                             grid
-                            sm:grid-cols-[80px_minmax(0,1fr)_40px_8px_50px]
-                            md:grid-cols-[80px_minmax(0,1fr)_40px_16px_50px]
-                            lg:grid-cols-[80px_minmax(0,1fr)_40px_24px_50px]
-                            grid-rows-[auto_auto_auto]
+                            sm:grid-cols-[80px_minmax(0,1fr)_40px_12px_50px_4px]
+                            md:grid-cols-[80px_minmax(0,1fr)_40px_20px_50px_8px]
+                            lg:grid-cols-[80px_minmax(0,1fr)_40px_28px_50px_12px]
+                            grid-rows-[auto_auto]
                             items-start
                             gap-2
                             text-sm
                           "
                         >
-                          {/* Image (spans rows 1–2) */}
+                          {/* Image (spans both rows) */}
                           <div className="row-[1/3] h-[80px] w-[80px] rounded bg-zinc-100/60 overflow-hidden flex items-center justify-center">
                             <img
                               src={moveImg}
@@ -587,7 +614,7 @@ function MovesTab() {
                           {/* Energy icon + value (col 3) */}
                           <div className="col-[3] self-center flex items-center justify-end gap-[6px]">
                             <img src={energyImg} alt="" aria-hidden="true" width={15} height={15} />
-                            <span className="w-8 text-xs text-left tabular-nums">{energy ?? "—"}</span>
+                            <span className="w-8 text-sm text-left tabular-nums">{energy ?? "—"}</span>
                           </div>
 
                           {/* (col 4 is the spacer) */}
@@ -595,24 +622,16 @@ function MovesTab() {
                           {/* Category icon + power/label (col 5) */}
                           <div className="col-[5] self-center flex items-center justify-end gap-x-[6px]">
                             <img src={catImg} alt="" aria-hidden="true" width={15} height={15} />
-                            <span className="w-10 text-xs text-left tabular-nums">
+                            <span className="w-10 text-sm text-left tabular-nums">
                               {isDef ? t("dex.defense") : isSta ? t("dex.status") : (power ?? "—")}
                             </span>
                           </div>
 
-                          {/* Description (rows 2–3, cols 2–5) */}
-                          <div className="row-[2/4] col-[2/6] text-sm text-zinc-600 pl-1">
-                            {desc}
-                          </div>
+                          {/* (col 6 is the end spacer) */}
 
-                          {/* Move Stone badge */}
-                          <div className="row-[3] col-[1] flex items-center justify-center">
-                            {m.is_move_stone ? (
-                              <span className="inline-flex items-center gap-0.5 rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[10px] font-medium text-amber-700 shadow-[0_0_0_1px_rgba(245,158,11,0.2)]">
-                                <img alt="" width="13" height="13" src="/decorative-icons/move-stone.png" />
-                                {t("dex.move_stone")}
-                              </span>
-                            ) : null}
+                          {/* Description (row 2, spans full width from col 2 to end) */}
+                          <div className="row-[2/3] col-[2/-1] text-sm text-zinc-600 pl-1">
+                            {desc}
                           </div>
                         </div>
                       </div>

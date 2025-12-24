@@ -1,20 +1,14 @@
-import { Link, useParams, useSearchParams } from "react-router-dom";
-import { useEffect } from "react";
+import { Link, useParams, useSearchParams, useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { endpoints } from "@/lib/api";
 import { useI18n, pickName, pickDesc, pickFormName } from "@/i18n";
 import type { TypeOut, MoveOut, MonsterOut, StatKey } from "@/types";
 import { STAT_KEYS } from "@/types";
-import { typeIconUrl } from "@/lib/images";
+import { typeIconUrl, monsterImageFallbackChain } from "@/lib/images";
+import { useMonsterNavigation } from "./useMonsterNavigation";
 
 /* ---------- helpers ---------- */
-
-function monsterImgUrlCN(m: any, size: 180 | 270 | 360 = 270) {
-  const cnName = pickName(m, "zh") || m.name || String(m.id);
-  const cnForm = pickFormName(m, "zh");
-  const base = cnForm ? `${cnName}(${cnForm})` : cnName;
-  return encodeURI(`/monsters/${size}/${base}.png`);
-}
 
 export function extractStats(m: MonsterOut): Record<StatKey, number> {
   return {
@@ -49,9 +43,13 @@ export default function MonsterDetailPage() {
   const { id } = useParams();
   const [sp] = useSearchParams();
   const fromTab = sp.get("tab") || "monsters";
-  const which = sp.get("moves") === "legacy" ? "legacy" : "pool";
+  const movesParam = sp.get("moves");
+  const which = movesParam === "legacy" ? "legacy" : movesParam === "stones" ? "stones" : "pool";
   const fromBuilder = sp.get("from") === "builder";
   const { lang, t } = useI18n();
+  const navigate = useNavigate();
+
+  const [formDropdownOpen, setFormDropdownOpen] = useState(false);
 
   const q = useQuery({
     queryKey: ["monster", id],
@@ -59,51 +57,67 @@ export default function MonsterDetailPage() {
     enabled: !!id,
   });
 
-  // Check if previous monster exists
-  const prevQ = useQuery({
-    queryKey: ["monster", Number(id) - 1],
+  const m = q.data;
+
+  // Fetch all forms of the same species (for leader form selection)
+  const allForms = useQuery({
+    queryKey: ["monster-forms", m?.name],
     queryFn: async () => {
-      try {
-        return await endpoints.monsterById(String(Number(id) - 1)).then((r) => r.data);
-      } catch (err) {
-        // Silently fail - 404 is expected when no previous monster exists
-        return null;
-      }
+      if (!m?.name) return [];
+      const response = await endpoints.monsters({ name: m.name });
+      const items = response.data?.items ?? response.data ?? [];
+      // Filter to only leader forms of this monster
+      return items.filter((item: any) =>
+        item.is_leader_form === true &&
+        (pickName(item, lang) || item.name) === (pickName(m, lang) || m.name)
+      );
     },
-    enabled: !!id && Number(id) > 1,
-    retry: false,
+    enabled: !!m && m.is_leader_form === true,
   });
 
-  // Check if next monster exists
-  const nextQ = useQuery({
-    queryKey: ["monster", Number(id) + 1],
-    queryFn: async () => {
-      try {
-        return await endpoints.monsterById(String(Number(id) + 1)).then((r) => r.data);
-      } catch (err) {
-        // Silently fail - 404 is expected when no next monster exists
-        return null;
-      }
-    },
-    enabled: !!id,
-    retry: false,
-  });
+  const leaderForms = (allForms.data ?? []) as any[];
+  const hasMultipleForms = leaderForms.length > 1;
+
+  // Use smart navigation to skip monster forms
+  const { prevMonsterId, nextMonsterId, isLoadingPrev, isLoadingNext } =
+    useMonsterNavigation(m, lang);
 
   useEffect(() => { window.scrollTo(0, 0); }, [id]);
 
-  const m = (q.data ?? {}) as any;
-  const nm = pickName(m as any, lang) || m.name;
-  const fm = pickFormName(m as any, lang);
-  const title = [nm, fm ? `(${fm})` : ""].filter(Boolean).join(" ");
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest('[data-form-dropdown]')) {
+        setFormDropdownOpen(false);
+      }
+    };
 
-  const trait = m.trait || m.ability || null;
-  const evo = m.evolution_chain || []; // array of ids or {id, name, form}
-  
-  const baseStats = extractStats(m);
+    if (formDropdownOpen) {
+      document.addEventListener('click', handleClickOutside);
+      return () => document.removeEventListener('click', handleClickOutside);
+    }
+  }, [formDropdownOpen]);
+
+  const nm = pickName(m as any, lang) || m?.name;
+  const fm = pickFormName(m as any, lang);
+  // Don't show form in title for leader monsters with multiple forms
+  const showFormInTitle = !(m?.is_leader_form && hasMultipleForms);
+  const title = showFormInTitle && fm ? `${nm} (${fm})` : nm;
+
+  const trait = m?.trait || m?.ability || null;
+  const evo = m?.evolution_chain || []; // array of ids or {id, name, form}
+
+  const baseStats = extractStats(m || {});
   const total = STAT_KEYS.reduce<number>((s, k) => s + (baseStats[k] ?? 0), 0);
 
-  const movePool = useMoveObjects(m.move_pool);
-  const legacyMoves = useMoveObjects(m.legacy_moves);
+  const movePool = useMoveObjects(m?.move_pool);
+  const moveStones = useMoveObjects(m?.move_stones);
+  const legacyMoves = useMoveObjects(m?.legacy_moves);
+
+  // Image fallback chain for leader form handling
+  const fallbackChain = m ? monsterImageFallbackChain(m, 270) : [];
+  const mainImageSrc = fallbackChain[0] || "/monsters/placeholder.png";
 
   if (q.isLoading) return <div>{t("common.loading")}</div>;
   if (!q.data) return <div>Not found.</div>;
@@ -126,9 +140,9 @@ export default function MonsterDetailPage() {
           {/* Left: name, types, image on gradient - vertically centered */}
           <div className="relative p-6 bg-gradient-to-br from-zinc-50 via-white to-zinc-50 flex flex-col justify-center items-center gap-4 min-h-[320px]">
             {/* Previous Monster Button */}
-            {prevQ.data && (
+            {prevMonsterId !== null && (
               <Link
-                to={`/dex/monsters/${m.id - 1}?tab=${fromTab}${fromBuilder ? "&from=builder" : ""}`}
+                to={`/dex/monsters/${prevMonsterId}?tab=${fromTab}${fromBuilder ? "&from=builder" : ""}`}
                 className="absolute left-2 top-1/2 -translate-y-1/2 inline-flex items-center justify-center w-10 h-10 rounded-full bg-white border border-zinc-300 shadow-md hover:bg-zinc-50 hover:border-zinc-400 hover:shadow-lg transition-all duration-200 text-zinc-600 hover:text-zinc-900"
                 aria-label="Previous monster"
               >
@@ -136,10 +150,17 @@ export default function MonsterDetailPage() {
               </Link>
             )}
 
+            {/* Loading spinner while searching for previous */}
+            {isLoadingPrev && (
+              <div className="absolute left-2 top-1/2 -translate-y-1/2 inline-flex items-center justify-center w-10 h-10">
+                <div className="animate-spin h-4 w-4 border-2 border-zinc-300 border-t-zinc-600 rounded-full" />
+              </div>
+            )}
+
             {/* Next Monster Button */}
-            {nextQ.data && (
+            {nextMonsterId !== null && (
               <Link
-                to={`/dex/monsters/${m.id + 1}?tab=${fromTab}${fromBuilder ? "&from=builder" : ""}`}
+                to={`/dex/monsters/${nextMonsterId}?tab=${fromTab}${fromBuilder ? "&from=builder" : ""}`}
                 className="absolute right-2 top-1/2 -translate-y-1/2 inline-flex items-center justify-center w-10 h-10 rounded-full bg-white border border-zinc-300 shadow-md hover:bg-zinc-50 hover:border-zinc-400 hover:shadow-lg transition-all duration-200 text-zinc-600 hover:text-zinc-900"
                 aria-label="Next monster"
               >
@@ -147,8 +168,89 @@ export default function MonsterDetailPage() {
               </Link>
             )}
 
+            {/* Loading spinner while searching for next */}
+            {isLoadingNext && (
+              <div className="absolute right-2 top-1/2 -translate-y-1/2 inline-flex items-center justify-center w-10 h-10">
+                <div className="animate-spin h-4 w-4 border-2 border-zinc-300 border-t-zinc-600 rounded-full" />
+              </div>
+            )}
+
             <div className="text-center space-y-2">
               <h1 className="text-2xl font-bold text-zinc-800">{title}</h1>
+
+              {/* Leader Evolution Source Dropdown - Shows which form this leader evolved from */}
+              {m?.is_leader_form && hasMultipleForms && (
+                <div className="relative inline-block mt-1" data-form-dropdown>
+                  <button
+                    onClick={() => setFormDropdownOpen(!formDropdownOpen)}
+                    className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-lg border-2 border-amber-400 bg-amber-50 text-amber-800 hover:bg-amber-100 hover:border-amber-500 transition-all focus:outline-none focus:ring-2 focus:ring-amber-400 cursor-pointer"
+                  >
+                    {/* Evolution icon */}
+                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M7 17L17 7M17 7H7M17 7V17" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+
+                    {/* Label and current form */}
+                    <span className="text-xs opacity-75">
+                      {t("dex.evolvedFrom")}:
+                    </span>
+                    <span className="font-semibold">
+                      {pickFormName(m as any, lang) || m?.form || "—"}
+                    </span>
+
+                    {/* Dropdown arrow */}
+                    <svg
+                      className={`w-4 h-4 transition-transform ${formDropdownOpen ? 'rotate-180' : ''}`}
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+
+                  {/* Dropdown menu */}
+                  {formDropdownOpen && (
+                    <div className="absolute left-0 mt-2 min-w-full rounded-lg border-2 border-amber-300 bg-white shadow-lg z-10">
+                      <div className="max-h-60 overflow-y-auto p-1">
+                        {leaderForms
+                          .sort((a, b) => (a as any).id - (b as any).id)
+                          .map((form) => {
+                            const formName = pickFormName(form as any, lang) || (form as any).form;
+                            const isActive = (form as any).id === m?.id;
+
+                            return (
+                              <button
+                                key={(form as any).id}
+                                onClick={() => {
+                                  navigate(`/dex/monsters/${(form as any).id}?tab=${fromTab}`);
+                                  setFormDropdownOpen(false);
+                                }}
+                                className={`
+                                  w-full text-left px-3 py-2 rounded-md text-sm transition-all cursor-pointer
+                                  ${isActive
+                                    ? 'bg-amber-100 text-amber-900 font-semibold border-l-4 border-amber-500'
+                                    : 'text-zinc-700 hover:bg-zinc-50 hover:text-zinc-900'
+                                  }
+                                `}
+                              >
+                                <div className="flex items-center gap-2">
+                                  {isActive && (
+                                    <svg className="w-4 h-4 text-amber-600" fill="currentColor" viewBox="0 0 20 20">
+                                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                    </svg>
+                                  )}
+                                  <span>{formName}</span>
+                                </div>
+                              </button>
+                            );
+                          })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
               <div className="flex items-center justify-center gap-2">
                 {[m.main_type, m.sub_type].filter(Boolean).map((tp: TypeOut) => (
                   <span key={tp.id} className="inline-flex items-center gap-1 rounded-full bg-white border border-zinc-200 text-sm px-3 py-1 shadow-sm">
@@ -160,12 +262,23 @@ export default function MonsterDetailPage() {
             </div>
             <div className="flex items-center justify-center">
               <img
-                src={monsterImgUrlCN(m, 270)}
+                src={mainImageSrc}
                 alt=""
                 width={270}
                 height={270}
                 className="h-[200px] w-[200px] object-contain drop-shadow-md hover:scale-105 transition-transform duration-200"
-                onError={(e)=>{(e.currentTarget as HTMLImageElement).src="/monsters/placeholder.png"}}
+                data-fallback-step="0"
+                onError={(e) => {
+                  const img = e.currentTarget as HTMLImageElement;
+                  const step = Number(img.dataset.fallbackStep || "0");
+                  const next = step + 1;
+                  if (next < fallbackChain.length) {
+                    img.dataset.fallbackStep = String(next);
+                    img.src = fallbackChain[next]!;
+                  } else if (img.src !== "/monsters/placeholder.png") {
+                    img.src = "/monsters/placeholder.png";
+                  }
+                }}
               />
             </div>
           </div>
@@ -248,7 +361,7 @@ export default function MonsterDetailPage() {
               return (
                 <div key={`${mid}-${i}`} className="inline-flex items-center gap-2">
                   <img
-                    src={monsterImgUrlCN(typeof n === "number" ? { id: mid, name: label } : n, 180)}
+                    src={monsterImageFallbackChain(typeof n === "number" ? { id: mid, name: label } : n, 180)[0] || "/monsters/placeholder.png"}
                     onError={(e)=>{(e.currentTarget as HTMLImageElement).src="/monsters/placeholder.png"}}
                     alt=""
                     className="h-16 w-16 object-contain"
@@ -262,48 +375,76 @@ export default function MonsterDetailPage() {
       ) : null}
 
       {/* Moves */}
-      {(movePool?.length || legacyMoves?.length) ? (
-        <section className="rounded-lg border border-zinc-200 bg-white shadow-sm p-4">
-          {/* Tab Switcher */}
-          <div className="flex items-center justify-center mb-4">
-            <div className="inline-flex items-center gap-1 p-1 rounded-full bg-zinc-100 shadow-inner">
-              <Link
-                to={`?tab=${fromTab}&moves=pool${fromBuilder ? "&from=builder" : ""}`}
-                className={`
-                  inline-flex items-center justify-center h-9 px-6 rounded-full text-sm font-medium
-                  transition-all duration-200 ease-in-out
-                  ${which === "pool"
-                    ? "bg-white text-zinc-900 shadow-md"
-                    : "text-zinc-600 hover:text-zinc-900 hover:bg-zinc-50"
-                  }
-                `}
-              >
-                {t("dex.learnable")}
-              </Link>
-              <Link
-                to={`?tab=${fromTab}&moves=legacy${fromBuilder ? "&from=builder" : ""}`}
-                className={`
-                  inline-flex items-center justify-center h-9 px-6 rounded-full text-sm font-medium
-                  transition-all duration-200 ease-in-out
-                  ${which === "legacy"
-                    ? "bg-white text-zinc-900 shadow-md"
-                    : "text-zinc-600 hover:text-zinc-900 hover:bg-zinc-50"
-                  }
-                `}
-              >
-                {t("dex.legacy")}
-              </Link>
-            </div>
+      <section className="rounded-lg border border-zinc-200 bg-white shadow-sm p-4">
+        {/* Tab Switcher */}
+        <div className="flex items-center justify-center mb-4">
+          <div className="inline-flex items-center gap-1 p-1 rounded-full bg-zinc-100 shadow-inner">
+            <Link
+              to={`?tab=${fromTab}&moves=pool${fromBuilder ? "&from=builder" : ""}`}
+              className={`
+                inline-flex items-center justify-center h-9 px-6 rounded-full text-sm font-medium
+                transition-all duration-200 ease-in-out
+                ${which === "pool"
+                  ? "bg-white text-zinc-900 shadow-md"
+                  : "text-zinc-600 hover:text-zinc-900 hover:bg-zinc-50"
+                }
+              `}
+            >
+              {t("dex.learnable")}
+            </Link>
+            <Link
+              to={`?tab=${fromTab}&moves=stones${fromBuilder ? "&from=builder" : ""}`}
+              className={`
+                inline-flex items-center justify-center h-9 px-6 rounded-full text-sm font-medium
+                transition-all duration-200 ease-in-out
+                ${which === "stones"
+                  ? "bg-white text-zinc-900 shadow-md"
+                  : "text-zinc-600 hover:text-zinc-900 hover:bg-zinc-50"
+                }
+              `}
+            >
+              {t("dex.move_stones")}
+            </Link>
+            <Link
+              to={`?tab=${fromTab}&moves=legacy${fromBuilder ? "&from=builder" : ""}`}
+              className={`
+                inline-flex items-center justify-center h-9 px-6 rounded-full text-sm font-medium
+                transition-all duration-200 ease-in-out
+                ${which === "legacy"
+                  ? "bg-white text-zinc-900 shadow-md"
+                  : "text-zinc-600 hover:text-zinc-900 hover:bg-zinc-50"
+                }
+              `}
+            >
+              {t("dex.legacy")}
+            </Link>
           </div>
-          <MovesList list={which === "legacy" ? legacyMoves : movePool} />
-        </section>
-      ) : null}
+        </div>
+        <MovesList list={which === "legacy" ? legacyMoves : which === "stones" ? moveStones : movePool} />
+      </section>
     </div>
   );
 }
 
 function MovesList({ list }: { list: any[] }) {
   const { lang, t } = useI18n();
+
+  // Show warning if no moves available
+  if (!list || list.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
+        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-amber-100 mb-4">
+          <span className="inline-block text-3xl translate-y-[-5px]">⚠️</span>
+        </div>
+        <div className="text-lg font-semibold text-zinc-800 mb-2">
+          {t("dex.noMovesAvailable")}
+        </div>
+        <div className="text-sm text-zinc-600">
+          {t("dex.noMovesExplanation")}
+        </div>
+      </div>
+    );
+  }
 
   // Type color mapping for 19 types
   const typeColors: Record<string, string> = {
@@ -370,16 +511,16 @@ function MovesList({ list }: { list: any[] }) {
             <div
               className="
                 grid
-                sm:grid-cols-[80px_minmax(0,1fr)_40px_8px_50px]
-                md:grid-cols-[80px_minmax(0,1fr)_40px_16px_50px]
-                lg:grid-cols-[80px_minmax(0,1fr)_40px_24px_50px]
-                grid-rows-[auto_auto_auto]
+                sm:grid-cols-[80px_minmax(0,1fr)_40px_12px_50px_4px]
+                md:grid-cols-[80px_minmax(0,1fr)_40px_20px_50px_8px]
+                lg:grid-cols-[80px_minmax(0,1fr)_40px_28px_50px_12px]
+                grid-rows-[auto_auto]
                 items-start
                 gap-2
                 text-sm
               "
             >
-              {/* Image (spans rows 1–2) */}
+              {/* Image (spans both rows) */}
               <div className="row-[1/3] h-[80px] w-[80px] rounded bg-zinc-100/60 overflow-hidden flex items-center justify-center">
                 <img
                   src={moveImg}
@@ -427,19 +568,11 @@ function MovesList({ list }: { list: any[] }) {
                 </span>
               </div>
 
-              {/* Description (rows 2–3, cols 2–5) */}
-              <div className="row-[2/4] col-[2/6] text-sm text-zinc-600 pl-1">
-                {desc}
-              </div>
+              {/* (col 6 is the end spacer) */}
 
-              {/* Move Stone badge */}
-              <div className="row-[3] col-[1] flex items-center justify-center">
-                {m.is_move_stone ? (
-                  <span className="inline-flex items-center gap-0.5 rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[10px] font-medium text-amber-700 shadow-[0_0_0_1px_rgba(245,158,11,0.2)]">
-                    <img alt="" width="13" height="13" src="/decorative-icons/move-stone.png" />
-                    {t("dex.move_stone")}
-                  </span>
-                ) : null}
+              {/* Description (row 2, spans full width from col 2 to end) */}
+              <div className="row-[2/3] col-[2/-1] text-sm text-zinc-600 pl-1">
+                {desc}
               </div>
             </div>
           </div>

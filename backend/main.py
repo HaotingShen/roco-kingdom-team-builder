@@ -7,6 +7,7 @@ from sqlalchemy import create_engine, or_, cast, String, func
 from backend.config import (
     DATABASE_URL,
     GEMINI_API_KEY,
+    GEMINI_MODEL,
     ALLOWED_ORIGINS,
     LOG_LEVEL,
     DB_POOL_SIZE,
@@ -145,6 +146,27 @@ def compute_energy_profile(moves):
         zero_cost_moves=zero_cost_moves,
         energy_restore_moves=energy_restore_moves
     )
+
+def resolve_dynamic_move_properties(move, user_monster, monster, personality, talent, type_db_map):
+    """
+    Resolve dynamic properties for special moves like Willpower Impact.
+
+    Returns dict with 'type' and 'category' (resolved or original values).
+    """
+    # Check if this is Willpower Impact (the only dynamic move currently)
+    if move.name != "Willpower Impact":
+        return {'type': move.move_type, 'category': move.move_category}
+
+    # Resolve type: Use user's legacy type (stored as null)
+    resolved_type = type_db_map.get(user_monster.legacy_type_id)
+
+    # Resolve category: Based on effective stats comparison
+    effective_stats = compute_effective_stats(monster, personality, talent)
+    resolved_category = (models.MoveCategory.PHY_ATTACK
+                        if effective_stats.phy_atk > effective_stats.mag_atk
+                        else models.MoveCategory.MAG_ATTACK)
+
+    return {'type': resolved_type, 'category': resolved_category}
 
 # Compute counter coverage for moves with attack/defense/status counters
 def compute_counter_coverage(moves):
@@ -399,7 +421,7 @@ Output as JSON in the following format (each recommendation should be a complete
     return prompt
 
 # Compute team-level analysis
-def compute_type_coverage(user_monsters, move_db_map, monster_db_map, type_db_map):
+def compute_type_coverage(user_monsters, move_db_map, monster_db_map, type_db_map, personality_db_map=None):
     IGNORED_TYPE_NAMES = {"Leader"}
     ignored_type_ids = {t.id for t in type_db_map.values() if t.name in IGNORED_TYPE_NAMES}
     all_type_ids = set(type_db_map.keys()) - ignored_type_ids
@@ -407,9 +429,18 @@ def compute_type_coverage(user_monsters, move_db_map, monster_db_map, type_db_ma
     # Gather all move types for offense
     team_move_types = set()
     for um in user_monsters:
+        base_monster = monster_db_map[um.monster_id]
+        personality = personality_db_map.get(um.personality_id) if personality_db_map else None
+
         for move_id in [um.move1_id, um.move2_id, um.move3_id, um.move4_id]:
             move = move_db_map[move_id]
-            if move.move_type_id:
+
+            # Resolve dynamic move properties if needed
+            if personality and move.name == "Willpower Impact":
+                resolved_props = resolve_dynamic_move_properties(move, um, base_monster, personality, um.talent, type_db_map)
+                if resolved_props['type']:
+                    team_move_types.add(resolved_props['type'].id)
+            elif move.move_type_id:
                 team_move_types.add(move.move_type_id)
 
     # Offensive coverage
@@ -472,9 +503,10 @@ def compute_magic_item_eval(magic_item, user_monster_outs, type_db_map):
         main_type_id = getattr(m.main_type, "id", None)
         sub_type_id = getattr(m.sub_type, "id", None)
 
-        # Enhancement Spell: any monster
+        # Willpower Enhancement: any monster except Leader legacy type
         if effect_code == models.MagicEffectCode.ENHANCE_SPELL:
-            valid_targets.append(user_monster.id)
+            if legacy_type_id != LEADER_TYPE_ID:
+                valid_targets.append(user_monster.id)
 
         # Sun Healing: grass main/sub/legacy
         elif effect_code == models.MagicEffectCode.SUN_HEALING:
@@ -743,7 +775,7 @@ def get_monsters(
     type_id: Optional[int] = Query(None),
     trait_id: Optional[int] = Query(None),
     is_leader_form: Optional[bool] = Query(None),
-    limit: int = Query(117, ge=1, le=117),
+    limit: int = Query(1000, ge=1, le=1000),
     offset: int = Query(0, ge=0),
 ):
     query = db.query(models.Monster).options(
@@ -806,6 +838,7 @@ def get_monster_detail(monster_id: int, db: Session = Depends(get_db)):
         joinedload(models.Monster.trait),
         joinedload(models.Monster.species),
         joinedload(models.Monster.move_pool).joinedload(models.Move.move_type),
+        joinedload(models.Monster.move_stones).joinedload(models.Move.move_type),
         joinedload(models.Monster.legacy_moves)
     ).filter(models.Monster.id == monster_id).first()
     if not monster:
@@ -821,7 +854,6 @@ def get_moves(
     move_type_id: Optional[int] = Query(None),
     move_category: Optional[schemas.MoveCategory] = Query(None),
     has_counter: Optional[bool] = Query(None),
-    is_move_stone: Optional[bool] = Query(None),
     limit: int = Query(468, ge=1, le=468),
     offset: int = Query(0, ge=0),
 ):
@@ -842,8 +874,6 @@ def get_moves(
         query = query.filter(models.Move.move_category == models.MoveCategory(move_category.value))
     if has_counter is not None:
         query = query.filter(models.Move.has_counter == has_counter)
-    if is_move_stone is not None:
-        query = query.filter(models.Move.is_move_stone == is_move_stone)
     return query.offset(offset).limit(limit).all()
 
 @app.get("/moves/{move_id}", response_model=schemas.MoveOut)
@@ -1144,7 +1174,7 @@ async def _perform_team_analysis(
         logger.info(f"Cache MISS for key: {cache_key[:50]}...")
         try:
             resp = await client.aio.models.generate_content(
-                model="gemini-2.5-flash",
+                model=GEMINI_MODEL,
                 contents=prompt,
                 config=types.GenerateContentConfig(
                     response_mime_type="application/json"
@@ -1235,6 +1265,21 @@ async def _perform_team_analysis(
         sub_type = type_db_map[base_monster.sub_type_id] if base_monster.sub_type_id else None
         personality = personality_db_map[um.personality_id]
 
+        # Resolve dynamic move properties for LLM prompt
+        # Create copies with resolved properties for Willpower Impact
+        resolved_moves_for_prompt = []
+        for move in selected_moves:
+            resolved_props = resolve_dynamic_move_properties(move, um, base_monster, personality, um.talent, type_db_map)
+            # Create a shallow copy and update properties if needed
+            if resolved_props['type'] != move.move_type or resolved_props['category'] != move.move_category:
+                move_copy = type('Move', (), {})()
+                move_copy.__dict__.update(move.__dict__)
+                move_copy.move_type = resolved_props['type']
+                move_copy.move_category = resolved_props['category']
+                resolved_moves_for_prompt.append(move_copy)
+            else:
+                resolved_moves_for_prompt.append(move)
+
         # Generate cache key for this monster
         cache_key = generate_monster_cache_key(
             um.monster_id,
@@ -1245,7 +1290,7 @@ async def _perform_team_analysis(
             language
         )
 
-        prompt = build_trait_synergy_prompt(base_monster, trait, selected_moves, preferred_attack_style, game_terms, legacy_type, main_type, sub_type, personality, language)
+        prompt = build_trait_synergy_prompt(base_monster, trait, resolved_moves_for_prompt, preferred_attack_style, game_terms, legacy_type, main_type, sub_type, personality, language)
         llm_tasks.append(call_llm(prompt, cache_key))
 
     # Team-wide synergy analysis
@@ -1296,6 +1341,12 @@ async def _perform_team_analysis(
         counter_coverage = compute_counter_coverage(selected_moves)
         defense_status_move = compute_defense_status_move(selected_moves)
 
+        # Resolve dynamic move properties for display
+        move1_props = resolve_dynamic_move_properties(move1, um, base_monster, personality, talent, type_db_map)
+        move2_props = resolve_dynamic_move_properties(move2, um, base_monster, personality, talent, type_db_map)
+        move3_props = resolve_dynamic_move_properties(move3, um, base_monster, personality, talent, type_db_map)
+        move4_props = resolve_dynamic_move_properties(move4, um, base_monster, personality, talent, type_db_map)
+
         # Build UserMonsterOut
         def to_monster_lite_out(monster, type_db_map):
             return schemas.MonsterLiteOut(
@@ -1310,15 +1361,25 @@ async def _perform_team_analysis(
                 localized=monster.localized
             )
 
+        # Helper to create MoveOut with resolved properties
+        def to_move_out(move, resolved_props):
+            move_dict = move.__dict__.copy()
+            move_dict['move_type'] = resolved_props['type']
+            move_dict['move_category'] = resolved_props['category']
+            # Handle the type_id field
+            if resolved_props['type']:
+                move_dict['move_type_id'] = resolved_props['type'].id
+            return schemas.MoveOut(**move_dict)
+
         user_monster_out = schemas.UserMonsterOut(
             id=i,
             monster=to_monster_lite_out(base_monster, type_db_map),
             personality=schemas.PersonalityOut(**personality.__dict__),
             legacy_type=schemas.TypeOut(**legacy_type.__dict__),
-            move1=schemas.MoveOut(**move1.__dict__),
-            move2=schemas.MoveOut(**move2.__dict__),
-            move3=schemas.MoveOut(**move3.__dict__),
-            move4=schemas.MoveOut(**move4.__dict__),
+            move1=to_move_out(move1, move1_props),
+            move2=to_move_out(move2, move2_props),
+            move3=to_move_out(move3, move3_props),
+            move4=to_move_out(move4, move4_props),
             talent=schemas.TalentOut(id=i, **talent.model_dump()),
         )
         
@@ -1339,7 +1400,7 @@ async def _perform_team_analysis(
 
     # Call the top-level helper functions
     logger.debug("Start team-level analysis...")
-    type_coverage = compute_type_coverage(team_data.user_monsters, move_db_map, monster_db_map, type_db_map)
+    type_coverage = compute_type_coverage(team_data.user_monsters, move_db_map, monster_db_map, type_db_map, personality_db_map)
     magic_item_eval_dict = compute_magic_item_eval(magic_item, user_monster_outs, type_db_map)
     magic_item_out = schemas.MagicItemOut(**magic_item.__dict__)
     magic_item_eval = schemas.MagicItemEvaluation(

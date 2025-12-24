@@ -230,8 +230,17 @@ function MovesSection({
     setNth(n, id);
   };
 
+  // Check if there are no moves available
+  const hasNoMoves = candidates.length === 0;
+
   return (
     <div className="space-y-2">
+      {hasNoMoves && (
+        <Warn>
+          <div className="font-semibold">{t("builder.noMovesWarning")}</div>
+          <div className="mt-1">{t("builder.noMovesCannotBuild")}</div>
+        </Warn>
+      )}
       {[1, 2, 3, 4].map((n) => {
         const currentId = (slot as any)[moveKeys[n as 1 | 2 | 3 | 4]] as ID;
 

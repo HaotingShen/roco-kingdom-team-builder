@@ -1,20 +1,17 @@
 [
   {
-    "name": "Enhancement Spell",
-    "description": "Can be applied to any monster. Converts the move at Slot 1 into Legacy Emerge for the whole battle.",
+    "name": "Evolution Power",
+    "description": "Can be applied only to monsters with Leader legacy type, allowing them to evolve into a Leader form.",
     "localized": {
       "zh": {
-        "name": "强化术",
-        "description": "对任意血脉的精灵使用, 使用后技能栏第一个技能被替换为【血脉显现】技能, 保持全场。"
+        "name": "进化之力",
+        "description": "对首领血脉的精灵使用，可以使该精灵在本场战斗中进化，部分精灵会激活远古血脉。"
       }
     },
-    "effect_code": "ENHANCE_SPELL",
-    "applies_to_type": null,
+    "effect_code": "EVOLUTION_POWER",
+    "applies_to_type": "Leader",
     "effect_parameters": {
-      "move_name": "Legacy Emerge",
-      "move_type": null,
-      "energy_cost": 3,
-      "move_power": 100,
+      "evolve_leader_form": true,
       "applies_to_round": "entire_battle"
     }
   },
@@ -24,7 +21,7 @@
     "localized": {
       "zh": {
         "name": "光合治愈",
-        "description": "对草系或者草血脉的精灵使用, 恢复精灵50%生命。"
+        "description": "对草系或者草血脉的精灵使用，恢复精灵50%生命。"
       }
     },
     "effect_code": "SUN_HEALING",
@@ -40,7 +37,7 @@
     "localized": {
       "zh": {
         "name": "闪焰爆发",
-        "description": "对火系或者火血脉的精灵使用, 本回合技能威力提升150%。"
+        "description": "对火系或者火血脉的精灵使用，本回合技能威力提升150%。"
       }
     },
     "effect_code": "FLARE_BURST",
@@ -56,7 +53,7 @@
     "localized": {
       "zh": {
         "name": "节流术",
-        "description": "对水系或者水血脉的精灵使用, 本回合技能不扣除能耗。"
+        "description": "对水系或者水血脉的精灵使用，本回合技能不扣除能耗。"
       }
     },
     "effect_code": "FLOW_SPELL",
@@ -67,19 +64,19 @@
     }
   },
   {
-    "name": "Evolution Power",
-    "description": "Can be applied only to monsters with Leader legacy type, allowing them to evolve into a Leader form.",
+    "name": "Willpower Enhancement",
+    "description": "Can be applied to any monster except those with Leader legacy type. Replaces the first move in user's move list with the 'Willpower Impact' move for 1 turn. Cooldown is 3 turns.",
     "localized": {
       "zh": {
-        "name": "进化之力",
-        "description": "对首领血脉的精灵使用, 可以使该精灵在本场战斗中进化, 部分精灵会激活远古血脉。"
+        "name": "愿力强化",
+        "description": "对任意血脉的精灵使用（首领血脉除外），使用后技能栏第一个技能本回合被替换为【愿力冲击】技能。效果持续1回合，冷却时间3回合。"
       }
     },
-    "effect_code": "EVOLUTION_POWER",
-    "applies_to_type": "Leader",
+    "effect_code": "ENHANCE_SPELL",
+    "applies_to_type": null,
     "effect_parameters": {
-      "evolve_leader_form": true,
-      "applies_to_round": "entire_battle"
+      "replace_move_with_code": "WILLPOWER_IMPACT",
+      "applies_to_round": "current"
     }
   }
 ]
