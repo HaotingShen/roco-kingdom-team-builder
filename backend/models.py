@@ -11,7 +11,8 @@ monster_moves = Table(
     "monster_moves", Base.metadata,
     Column("monster_id", Integer, ForeignKey("monsters.id"), primary_key=True),
     Column("move_id", Integer, ForeignKey("moves.id"), primary_key=True),
-    Column("is_move_stone", Boolean, nullable=False, default=False)
+    Column("is_move_stone", Boolean, nullable=False, default=False),
+    Column("position", Integer, nullable=False, default=0)  # Preserves JSON order
 )
 
 # Association tables for type effectiveness
@@ -229,6 +230,7 @@ class Monster(Base):
         secondary=monster_moves,
         primaryjoin="and_(Monster.id==monster_moves.c.monster_id, monster_moves.c.is_move_stone==False)",
         secondaryjoin="Move.id==monster_moves.c.move_id",
+        order_by=monster_moves.c.position,
         viewonly=True
     )
     move_stones = relationship(
@@ -236,6 +238,7 @@ class Monster(Base):
         secondary=monster_moves,
         primaryjoin="and_(Monster.id==monster_moves.c.monster_id, monster_moves.c.is_move_stone==True)",
         secondaryjoin="Move.id==monster_moves.c.move_id",
+        order_by=monster_moves.c.position,
         viewonly=True
     )
     legacy_moves = relationship("LegacyMove", back_populates="monster")

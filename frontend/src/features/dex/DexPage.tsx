@@ -224,8 +224,8 @@ function MonstersTab() {
                 onClick={() => toggleType(tp.id)}
               >
                 <span className="inline-flex items-center gap-0.5">
-                  {typeIconUrl(tp.name) ? (
-                    <img src={typeIconUrl(tp.name)!} alt="" width={22} height={22} />
+                  {typeIconUrl(tp.name, 30) ? (
+                    <img src={typeIconUrl(tp.name, 30)!} alt="" width={22} height={22} />
                   ) : null}
                   {pickName(tp as any, lang) || tp.name}
                 </span>
@@ -252,7 +252,7 @@ function MonstersTab() {
       {(!monsters.data || !displayList.length) ? (
         <div className="text-zinc-500">{t("dex.noResults")}</div>
       ) : (
-        <div style={{ height: rowVirt.getTotalSize(), position: "relative" }}>
+        <div style={{ height: rowVirt.getTotalSize() + 24, position: "relative" }}>
           <div style={{ transform: `translateY(${vItems[0]?.start ?? 0}px)` }}>
             <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
               {displayList.slice(startIdx, endIdx).map((m) => {
@@ -295,8 +295,8 @@ function MonstersTab() {
                     <div className="mt-3 flex items-center gap-1 flex-wrap">
                       {[m.main_type, m.sub_type].filter(Boolean).map((tp) => (
                         <Pill key={(tp as TypeOut).id}>
-                          {typeIconUrl((tp as TypeOut).name) ? (
-                            <img src={typeIconUrl((tp as TypeOut).name)!} alt="" width={20} height={20} />
+                          {typeIconUrl((tp as TypeOut).name, 30) ? (
+                            <img src={typeIconUrl((tp as TypeOut).name, 30)!} alt="" width={20} height={20} />
                           ) : null}
                           {pickName(tp as any, lang)}
                         </Pill>
@@ -307,6 +307,8 @@ function MonstersTab() {
                 );
               })}
             </div>
+            {/* Bottom spacer for breathing room */}
+            <div style={{ height: 24 }} />
           </div>
         </div>
       )}
@@ -315,7 +317,7 @@ function MonstersTab() {
 }
 
 /* ===========================================================
-   Moves tab  (UPDATED: Plan B + padding spacers) + hide first DB move
+   Moves tab  (UPDATED: Plan B + padding spacers) + "Other" type for universal moves
    =========================================================== */
 
 type LocalMove = MoveOut & {
@@ -335,9 +337,11 @@ function MovesTab() {
   const [sp, setSp] = useSearchParams();
   const [q, setQ] = useState(sp.get("mq") ?? "");
   const dq = useDebounce(q, 200);
-  const [typeId, setTypeId] = useState<number | null>(() => {
+  // Special handling for "Other" type filter (stored as string "OTHER" instead of numeric ID)
+  const [typeId, setTypeId] = useState<number | string | null>(() => {
     const v = sp.get("mtype");
-    return v ? Number(v) : null;
+    if (!v) return null;
+    return v === "OTHER" ? "OTHER" : Number(v);
   });
   const [cat, setCat] = useState<string | null>(sp.get("mcat") ?? null);
 
@@ -374,33 +378,55 @@ function MovesTab() {
     queryFn: () => endpoints.moves().then((r) => (r.data?.items ?? r.data) as LocalMove[]),
   });
 
-  // Identify the very first move ever recorded (lowest id) and hide it
-  const firstMoveId = useMemo<number | null>(() => {
-    const list = moves.data ?? [];
-    if (!list.length) return null;
-    let min = Infinity;
-    for (const m of list) {
-      const idNum = Number((m as any).id);
-      if (!Number.isNaN(idNum) && idNum < min) min = idNum;
-    }
-    return min === Infinity ? null : min;
-  }, [moves.data]);
+  // Define special "Other" type moves (universal moves for all monsters)
+  const otherTypeMoves = useMemo(() => new Set(["Focus", "focus", "聚能", "Willpower Impact", "willpower impact", "愿力冲击"]), []);
 
   const filtered = useMemo(() => {
     const list = moves.data ?? [];
     const kw = dq.trim().toLowerCase();
 
+    // Helper to check if a move is in the "Other" type
+    const isOtherTypeMove = (m: LocalMove): boolean => {
+      const nameEN = (pickName(m as any, "en") || m.name || "").toLowerCase();
+      const nameZH = (pickName(m as any, "zh") || "").toLowerCase();
+      return otherTypeMoves.has(m.name) || otherTypeMoves.has(nameEN) || otherTypeMoves.has(nameZH);
+    };
+
+    // Helper to check if a move is "Willpower Impact"
+    const isWillpowerImpact = (m: LocalMove): boolean => {
+      const nameEN = (pickName(m as any, "en") || m.name || "").toLowerCase();
+      const nameZH = (pickName(m as any, "zh") || "").toLowerCase();
+      return m.name === "Willpower Impact" || nameEN === "willpower impact" || nameZH === "愿力冲击";
+    };
+
     return list.filter((m) => {
-      // hide the very first DB move regardless of filters
-      if (firstMoveId != null && m.id === firstMoveId) return false;
+      const isOtherType = isOtherTypeMove(m);
 
-      // type
-      const tp = (m.move_type || m.type) as TypeOut | null;
-      if (typeId && (!tp || tp.id !== typeId)) return false;
+      // Move Type filtering
+      if (typeId === "OTHER") {
+        // Only show "Other" type moves
+        if (!isOtherType) return false;
+      } else if (typeId !== null) {
+        // Regular type filtering - only show moves with the exact type
+        const tp = (m.move_type || m.type) as TypeOut | null;
+        if (!tp || tp.id !== typeId) {
+          // Not a match for the selected type - filter it out
+          return false;
+        }
+      }
 
-      // category (normalize) — compare to selected cat (single-select)
-      const catUpper = (m.move_category || m.category || "").toUpperCase();
-      if (cat && catUpper !== cat) return false;
+      // Category filtering with special handling for "Willpower Impact"
+      if (cat) {
+        const catUpper = (m.move_category || m.category || "").toUpperCase();
+        const isWillpower = isWillpowerImpact(m);
+
+        // "Willpower Impact" should appear in BOTH Physical and Magical filters
+        if (isWillpower && (cat === "PHY_ATTACK" || cat === "MAG_ATTACK")) {
+          // Allow it through for both physical and magical categories
+        } else if (catUpper !== cat) {
+          return false;
+        }
+      }
 
       if (!kw) return true;
 
@@ -411,7 +437,7 @@ function MovesTab() {
       const descZH = (m.localized?.zh?.description ?? "").toLowerCase();
       return [nmEN, nmZH, descEN, descZH].some((s) => s.includes(kw));
     });
-  }, [moves.data, dq, typeId, cat, firstMoveId]);
+  }, [moves.data, dq, typeId, cat, otherTypeMoves]);
 
   const catOptions = [
     { key: "PHY_ATTACK", label: t("dex.cat_phy") },
@@ -446,7 +472,7 @@ function MovesTab() {
   useEffect(() => {
     const next = new URLSearchParams(sp);
     q ? next.set("mq", q) : next.delete("mq");
-    typeId ? next.set("mtype", String(typeId)) : next.delete("mtype");
+    typeId !== null ? next.set("mtype", String(typeId)) : next.delete("mtype");
     cat ? next.set("mcat", cat) : next.delete("mcat");
     setSp(next, { replace: true });
   }, [q, typeId, cat]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -482,11 +508,17 @@ function MovesTab() {
                   onClick={() => setTypeId((prev) => (prev === tp.id ? null : tp.id))}
                 >
                   <span className="inline-flex items-center gap-0.5">
-                    {typeIconUrl(tp.name) ? <img src={typeIconUrl(tp.name)!} alt="" width={20} height={20} /> : null}
+                    {typeIconUrl(tp.name, 30) ? <img src={typeIconUrl(tp.name, 30)!} alt="" width={20} height={20} /> : null}
                     {pickName(tp as any, lang) || tp.name}
                   </span>
                 </FilterButton>
               ))}
+            <FilterButton
+              active={typeId === "OTHER"}
+              onClick={() => setTypeId((prev) => (prev === "OTHER" ? null : "OTHER"))}
+            >
+              {t("dex.type_other")}
+            </FilterButton>
           </div>
 
           <div className="self-center text-sm font-semibold text-zinc-700">{t("dex.skill_category")}</div>
@@ -511,7 +543,7 @@ function MovesTab() {
       {(!moves.data || !filtered.length) ? (
         <div className="text-zinc-500">{t("dex.noResults")}</div>
       ) : (
-        <div /* wrapper keeps the total scroll height */ style={{ height: rowVirt.getTotalSize(), position: "relative" }}>
+        <div /* wrapper keeps the total scroll height */ style={{ height: rowVirt.getTotalSize() + 24, position: "relative" }}>
           {/* TOP spacer equals the offset to the first visible row */}
           <div style={{ height: topPad }} />
 
@@ -545,13 +577,21 @@ function MovesTab() {
                     const moveImg = encodeURI(`/move-icons/${moveNameZh}.png`); // 128x128 source
                     const typeImg = tp?.name ? typeIconUrl(tp.name, 30) : null;
                     const energyImg = "/move-sub-icons/energy.png";
+
+                    // Special handling for Willpower Impact - use conditional-attack icon
+                    const isWillpower = m.name === "Willpower Impact" ||
+                                       (pickName(m as any, "en") || "").toLowerCase() === "willpower impact" ||
+                                       (pickName(m as any, "zh") || "") === "愿力冲击";
+
                     const catToFile: Record<string, string> = {
                       PHY_ATTACK: "physical-attack",
                       MAG_ATTACK: "magic-attack",
                       DEFENSE: "defense",
                       STATUS: "status",
                     };
-                    const catImg = `/move-sub-icons/${catToFile[category] ?? "physical-attack"}.png`;
+                    const catImg = isWillpower
+                      ? "/move-sub-icons/conditional-attack.png"
+                      : `/move-sub-icons/${catToFile[category] ?? "physical-attack"}.png`;
 
                     // Get type color class, fallback to zinc if type not found
                     const typeName = tp?.name?.toLowerCase() || "";
@@ -644,6 +684,8 @@ function MovesTab() {
 
           {/* BOTTOM spacer to fill the remaining height */}
           <div style={{ height: bottomPad }} />
+          {/* Additional bottom spacer for breathing room */}
+          <div style={{ height: 24 }} />
         </div>
       )}
     </div>

@@ -865,7 +865,7 @@ def get_moves(
         id_list = [int(x) for x in ids.split(",") if x.strip().isdigit()]
         if id_list:
             query = query.filter(models.Move.id.in_(id_list))
-            return query.all()
+            return query.order_by(models.Move.id).all()
     if name:
         query = query.filter(models.Move.name.ilike(f"%{name}%"))
     if move_type_id:
@@ -874,7 +874,7 @@ def get_moves(
         query = query.filter(models.Move.move_category == models.MoveCategory(move_category.value))
     if has_counter is not None:
         query = query.filter(models.Move.has_counter == has_counter)
-    return query.offset(offset).limit(limit).all()
+    return query.order_by(models.Move.id).offset(offset).limit(limit).all()
 
 @app.get("/moves/{move_id}", response_model=schemas.MoveOut)
 def get_move_detail(move_id: int, db: Session = Depends(get_db)):
@@ -888,32 +888,32 @@ def get_move_detail(move_id: int, db: Session = Depends(get_db)):
 
 @app.get("/traits", response_model=List[schemas.TraitOut])
 def get_traits(db: Session = Depends(get_db)):
-    return db.query(models.Trait).all()
+    return db.query(models.Trait).order_by(models.Trait.id).all()
 
 
 @app.get("/types", response_model=List[schemas.TypeOut])
 def get_types(db: Session = Depends(get_db)):
-    return db.query(models.Type).all()
+    return db.query(models.Type).order_by(models.Type.id).all()
 
 
 @app.get("/personalities", response_model=List[schemas.PersonalityOut])
 def get_personalities(db: Session = Depends(get_db)):
-    return db.query(models.Personality).all()
+    return db.query(models.Personality).order_by(models.Personality.id).all()
 
 
 @app.get("/magic_items", response_model=List[schemas.MagicItemOut])
 def get_magic_items(db: Session = Depends(get_db)):
-    return db.query(models.MagicItem).all()
+    return db.query(models.MagicItem).order_by(models.MagicItem.id).all()
 
 
 @app.get("/game_terms", response_model=List[schemas.GameTermOut])
 def get_game_terms(db: Session = Depends(get_db)):
-    return db.query(models.GameTerm).all()
+    return db.query(models.GameTerm).order_by(models.GameTerm.id).all()
 
 
 @app.get("/species", response_model=List[schemas.MonsterSpeciesOut])
 def get_species(db: Session = Depends(get_db)):
-    return db.query(models.MonsterSpecies).all()
+    return db.query(models.MonsterSpecies).order_by(models.MonsterSpecies.id).all()
 
 
 @app.get("/teams", response_model=List[schemas.TeamOut])

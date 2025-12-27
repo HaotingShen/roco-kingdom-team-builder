@@ -57,7 +57,7 @@ function MonsterImage({ monster, size = 180 }: { monster: any; size?: number }) 
 
 /* --- Type badge component --- */
 function TypeBadge({ type, lang }: { type: any; lang: Lang }) {
-  const iconUrl = typeIconUrl(type?.name);
+  const iconUrl = typeIconUrl(type?.name, 30);
   const typeName = pickName(type, lang);
 
   return (
@@ -250,9 +250,9 @@ export default function SavedTeamPage() {
                     <div>
                       <div className="text-zinc-500 mb-1 text-xs">{t("labels.legacy")}:</div>
                       <div className="flex items-center gap-1 font-semibold text-zinc-800 text-[13px]">
-                        {typeIconUrl(um.legacy_type?.name) && (
+                        {typeIconUrl(um.legacy_type?.name, 30) && (
                           <img
-                            src={typeIconUrl(um.legacy_type.name) || ""}
+                            src={typeIconUrl(um.legacy_type.name, 30) || ""}
                             alt=""
                             width={22}
                             height={22}
@@ -270,9 +270,9 @@ export default function SavedTeamPage() {
                     <div className="grid grid-cols-2 gap-1.5 text-[13px]">
                       {[um.move1, um.move2, um.move3, um.move4].map((move, i) => (
                         <div key={i} className="flex items-center gap-1 bg-zinc-50 px-2 py-1.5 rounded">
-                          {typeIconUrl(move.move_type?.name || move.type?.name) && (
+                          {typeIconUrl(move.move_type?.name || move.type?.name, 30) && (
                             <img
-                              src={typeIconUrl(move.move_type?.name || move.type?.name) || ""}
+                              src={typeIconUrl(move.move_type?.name || move.type?.name, 30) || ""}
                               alt=""
                               width={22}
                               height={22}

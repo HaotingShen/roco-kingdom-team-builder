@@ -54,28 +54,28 @@ def load_monster_moves():
             # Collect moves separately: learnable moves and move stones
             moveset = monster_moves_data[moveset_key]
 
-            # Insert learnable moves
+            # Insert learnable moves with position to preserve JSON order
             learnable_moves = moveset.get("learnable_moves", [])
-            for move_name in learnable_moves:
+            for position, move_name in enumerate(learnable_moves):
                 move_id = move_map.get(move_name)
                 if move_id is None:
                     print(f"Warning: Move '{move_name}' not found in DB for monster '{m_name}' (form '{m_form}')")
                     continue
                 session.execute(
-                    text("INSERT INTO monster_moves (monster_id, move_id, is_move_stone) VALUES (:mid, :moid, :is_stone) ON CONFLICT DO NOTHING"),
-                    {"mid": monster_id, "moid": move_id, "is_stone": False}
+                    text("INSERT INTO monster_moves (monster_id, move_id, is_move_stone, position) VALUES (:mid, :moid, :is_stone, :pos) ON CONFLICT (monster_id, move_id) DO UPDATE SET position = :pos"),
+                    {"mid": monster_id, "moid": move_id, "is_stone": False, "pos": position}
                 )
 
-            # Insert move stones
+            # Insert move stones with position to preserve JSON order
             move_stones = moveset.get("move_stones", [])
-            for move_name in move_stones:
+            for position, move_name in enumerate(move_stones):
                 move_id = move_map.get(move_name)
                 if move_id is None:
                     print(f"Warning: Move stone '{move_name}' not found in DB for monster '{m_name}' (form '{m_form}')")
                     continue
                 session.execute(
-                    text("INSERT INTO monster_moves (monster_id, move_id, is_move_stone) VALUES (:mid, :moid, :is_stone) ON CONFLICT DO NOTHING"),
-                    {"mid": monster_id, "moid": move_id, "is_stone": True}
+                    text("INSERT INTO monster_moves (monster_id, move_id, is_move_stone, position) VALUES (:mid, :moid, :is_stone, :pos) ON CONFLICT (monster_id, move_id) DO UPDATE SET position = :pos"),
+                    {"mid": monster_id, "moid": move_id, "is_stone": True, "pos": position}
                 )
         session.commit()
         print("Monster-move associations imported successfully!")

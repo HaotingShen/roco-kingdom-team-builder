@@ -202,7 +202,7 @@ function MonsterAnalysisCard({ data }: { data: MonsterAnalysisOut }) {
           <div className="mt-2 flex flex-wrap gap-1.5">
             {[m.main_type, m.sub_type].filter(Boolean).map((tObj) => {
               const nm = pickName(tObj as any, lang);
-              const icon = typeIconUrl((tObj as any)?.name);
+              const icon = typeIconUrl((tObj as any)?.name, 30);
               return (
                 <span key={nm} className="inline-flex items-center gap-1 rounded-lg bg-gradient-to-r from-zinc-100 to-zinc-50 border border-zinc-300 px-2.5 py-1 text-xs font-medium shadow-sm">
                   {icon ? <img src={icon} alt="" width={20} height={20} /> : null}
@@ -234,7 +234,7 @@ function MonsterAnalysisCard({ data }: { data: MonsterAnalysisOut }) {
               <span className="text-purple-600">{t("labels.legacy")}:</span>
               {(() => {
                 const legacyType = data.user_monster.legacy_type;
-                const typeIcon = typeIconUrl((legacyType as any)?.name, 45);
+                const typeIcon = typeIconUrl((legacyType as any)?.name, 30);
                 return typeIcon ? (
                   <img src={typeIcon} alt={pickName(legacyType as any, lang)} width={20} height={20} />
                 ) : (
@@ -437,7 +437,7 @@ export default function AnalysisResults({ analysis }: { analysis: TeamAnalysisOu
                   const typeObj = byId.get(typeId);
                   if (!typeObj) return null;
                   const typeName = pickName(typeObj as any, lang) || typeObj.name;
-                  const typeIcon = typeIconUrl(typeObj.name, 45);
+                  const typeIcon = typeIconUrl(typeObj.name, 30);
                   return (
                     <div key={typeId} className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-white border border-orange-200 shadow-sm">
                       {typeIcon && <img src={typeIcon} alt="" width={20} height={20} />}
@@ -462,7 +462,7 @@ export default function AnalysisResults({ analysis }: { analysis: TeamAnalysisOu
                   const typeObj = byId.get(typeId);
                   if (!typeObj) return null;
                   const typeName = pickName(typeObj as any, lang) || typeObj.name;
-                  const typeIcon = typeIconUrl(typeObj.name, 45);
+                  const typeIcon = typeIconUrl(typeObj.name, 30);
                   return (
                     <div key={typeId} className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-white border border-rose-200 shadow-sm">
                       {typeIcon && <img src={typeIcon} alt="" width={20} height={20} />}

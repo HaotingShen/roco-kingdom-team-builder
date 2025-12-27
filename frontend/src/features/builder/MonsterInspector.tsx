@@ -9,7 +9,7 @@ import CustomSelect from "@/components/CustomSelect";
 import { useNavigate } from "react-router-dom";
 import { typeIconUrl } from "@/lib/images";
 import { formatRowEffects, formatSentenceEffects } from "@/lib/personality";
-import { QUERY_KEYS } from "@/lib/constants";
+import { QUERY_KEYS, LEGACY_TYPES_ORDER } from "@/lib/constants";
 
 // ---------- helpers ----------
 function Warn({ children }: { children: React.ReactNode }) {
@@ -140,25 +140,60 @@ function MovesSection({
   detail,
   legacyTypeId,
   onChange,
+  allTypes,
 }: {
   slot: UserMonsterCreate;
   detail: any;
   legacyTypeId: ID;
   onChange: (patch: Partial<UserMonsterCreate>) => void;
+  allTypes: TypeOut[] | undefined;
 }) {
   const { lang, t } = useI18n();
-  const movePool: MoveOut[] = detail?.move_pool ?? [];
+  // Combine learnable moves and move stones in order: learnable first, then move stones
+  const learnableMoves: MoveOut[] = detail?.move_pool ?? [];
+  const moveStones: MoveOut[] = detail?.move_stones ?? [];
+  const allNonLegacyMoves: MoveOut[] = useMemo(
+    () => [...learnableMoves, ...moveStones],
+    [learnableMoves, moveStones]
+  );
 
   const { legacyMap, loading: legacyLoading } = useLegacyMap(detail);
 
   const allowedLegacy = legacyTypeId ? legacyMap.get(legacyTypeId) : undefined;
-  const allLegacyMoves = useMemo(
-    () => Array.from(legacyMap.values()),
-    [legacyMap]
-  );
 
+  // Sort legacy moves by LEGACY_TYPES_ORDER (based on move type)
+  const allLegacyMoves = useMemo(() => {
+    if (!allTypes || allTypes.length === 0) {
+      // Fallback to unsorted if types not loaded
+      return Array.from(legacyMap.values());
+    }
+
+    // Create a map from type_id to type_name for fallback
+    const typeIdToName = new Map<number, string>();
+    allTypes.forEach(type => {
+      typeIdToName.set(type.id, type.name);
+    });
+
+    // Get all legacy moves and sort by MOVE type (not legacy type)
+    const moves = Array.from(legacyMap.values());
+
+    return moves.sort((a, b) => {
+      const typeA = (a as any).move_type || (a as any).type;
+      const typeB = (b as any).move_type || (b as any).type;
+
+      const nameA = typeA?.name || typeIdToName.get(typeA?.id) || "";
+      const nameB = typeB?.name || typeIdToName.get(typeB?.id) || "";
+
+      const indexA = LEGACY_TYPES_ORDER.indexOf(nameA as any);
+      const indexB = LEGACY_TYPES_ORDER.indexOf(nameB as any);
+
+      return (indexA === -1 ? 999 : indexA) - (indexB === -1 ? 999 : indexB);
+    });
+  }, [legacyMap, allTypes]);
+
+  // Build candidate list: legacy moves at top, then learnable moves, then move stones
   const candidates: { move: MoveOut; isLegacy: boolean }[] = useMemo(() => {
-    const base = movePool.map((m) => ({ move: m, isLegacy: false }));
+    const base = allNonLegacyMoves.map((m) => ({ move: m, isLegacy: false }));
     if (legacyTypeId) {
       if (allowedLegacy) base.unshift({ move: allowedLegacy, isLegacy: true });
     } else {
@@ -169,7 +204,7 @@ function MovesSection({
       }
     }
     return base;
-  }, [movePool, allowedLegacy, legacyTypeId, allLegacyMoves, legacyLoading]);
+  }, [allNonLegacyMoves, allowedLegacy, legacyTypeId, allLegacyMoves, legacyLoading]);
 
   const legacyIdSet = useMemo(
     () => new Set(allLegacyMoves.map((m) => m.id)),
@@ -346,11 +381,13 @@ function LegacyTypeSection({
   onChange,
   onLegacyChange,
   disabled,
+  monsterDetail,
 }: {
   slot: UserMonsterCreate;
   onChange: (patch: Partial<UserMonsterCreate>) => void;
   onLegacyChange?: (newTypeId: ID) => void;
   disabled?: boolean;
+  monsterDetail?: any;
 }) {
   const { lang, t } = useI18n();
   const { data } = useQuery({
@@ -358,11 +395,29 @@ function LegacyTypeSection({
     queryFn: () => endpoints.types().then((r) => r.data as TypeOut[]),
   });
 
-  const opts = (data ?? []).map(type => ({
-    value: type.id,
-    label: pickName(type as any, lang),
-    leftIconUrl: typeIconUrl(getTypeName(type), 30),
-  }));
+  // Sort types by LEGACY_TYPES_ORDER
+  const sortedTypes = useMemo(() => {
+    if (!data) return [];
+    return [...data].sort((a, b) => {
+      const indexA = LEGACY_TYPES_ORDER.indexOf(a.name as any);
+      const indexB = LEGACY_TYPES_ORDER.indexOf(b.name as any);
+      return (indexA === -1 ? 999 : indexA) - (indexB === -1 ? 999 : indexB);
+    });
+  }, [data]);
+
+  const opts = sortedTypes.map(type => {
+    const isLeaderDisabled = type.name === "Leader" && !monsterDetail?.leader_potential;
+    return {
+      value: type.id,
+      label: pickName(type as any, lang),
+      leftIconUrl: typeIconUrl(getTypeName(type), 30),
+      // Disable "Leader" type if monster doesn't have leader_potential
+      disabled: isLeaderDisabled,
+      title: isLeaderDisabled ? t("builder.v_leaderTypeDisabled") : undefined,
+      // Show red exclamation mark ONLY for disabled Leader type
+      showDisabledIndicator: isLeaderDisabled,
+    };
+  });
 
   return (
     <div className="space-y-2">
@@ -574,6 +629,7 @@ export default function MonsterInspector({ activeIdx }: { activeIdx: number }) {
             onChange={onChange}
             onLegacyChange={handleLegacyChange}
             disabled={isLeaderForm}
+            monsterDetail={detail}
           />
 
           {/* Note line: "Legacy Type grants ..." */}
@@ -605,6 +661,7 @@ export default function MonsterInspector({ activeIdx }: { activeIdx: number }) {
                 detail={detail}
                 legacyTypeId={slot.legacy_type_id || 0}
                 onChange={onChange}
+                allTypes={typesQ.data}
               />
             )}
           </div>

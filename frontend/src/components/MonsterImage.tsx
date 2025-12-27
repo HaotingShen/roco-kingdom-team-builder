@@ -1,4 +1,4 @@
-import { monsterImageFallbackChain } from "@/lib/images";
+import { monsterImageFallbackChain, monsterImageSrcSet } from "@/lib/images";
 
 interface MonsterImageProps {
   monster: any;
@@ -8,6 +8,8 @@ interface MonsterImageProps {
   height?: number;
   className?: string;
   loading?: "lazy" | "eager";
+  /** Whether to use srcset for responsive images (default: true) */
+  useSrcSet?: boolean;
 }
 
 export function MonsterImage({
@@ -18,13 +20,25 @@ export function MonsterImage({
   height,
   className = "",
   loading = "lazy",
+  useSrcSet = true,
 }: MonsterImageProps) {
   const fallbackChain = monsterImageFallbackChain(monster, size);
   const initialSrc = fallbackChain[0] || "/monsters/placeholder.png";
 
+  // Generate srcset if enabled
+  const srcSet = useSrcSet ? monsterImageSrcSet(monster) : undefined;
+
+  // Compute sizes attribute based on width prop
+  // This tells browser which image to download based on display size
+  const sizes = useSrcSet && width
+    ? `${width}px`
+    : undefined;
+
   return (
     <img
       src={initialSrc}
+      srcSet={srcSet}
+      sizes={sizes}
       alt={alt}
       width={width}
       height={height}

@@ -71,33 +71,25 @@ export default function MonsterPicker({
                   {displayName}
                 </div>
                 {formLabel ? (
-                  <div
-                    className="text-xs text-zinc-500 truncate"
-                    title={formLabel}
-                  >
+                  <div className="text-xs text-zinc-500 truncate" title={formLabel}>
                     {formLabel}
                   </div>
                 ) : null}
                 <div className="mt-1 text-xs text-zinc-600 truncate">
                   {mainType}
                   {subType ? ` / ${subType}` : ""}
-                  {(m as any).is_leader_form
-                    ? lang === "zh"
-                      ? " • 首领"
-                      : " • Leader"
-                    : ""}
                 </div>
               </div>
 
               {/* right: thumbnail */}
-              <div className="shrink-0">
+              <div className="shrink-0 w-[50px] h-[50px] overflow-hidden rounded flex items-center justify-center">
                 <MonsterImage
                   monster={m}
-                  size={360}
+                  size={180}
                   alt=""
-                  width={50}
-                  height={50}
-                  className="rounded object-contain"
+                  width={55}
+                  height={55}
+                  className="min-w-[55px] min-h-[55px] w-[55px] h-[55px] object-cover"
                   loading="lazy"
                 />
               </div>

@@ -14,7 +14,7 @@ function typeNameRaw(t: any): string | undefined {
 }
 
 function TypeBadge({ type, label }: { type: any; label: string }) {
-  const src = typeIconUrl(typeNameRaw(type), 60);
+  const src = typeIconUrl(typeNameRaw(type), 30);
   return (
     <span className="inline-flex items-center gap-1 rounded bg-zinc-100 px-2 py-1 text-xs">
       {src ? (
@@ -75,7 +75,7 @@ export default function MonsterCard({
   talent = null,
   onClick,
   onDelete,
-  imgSize = 360,
+  imgSize = 180,
 }: Props) {
   const { lang, t } = useI18n();
 
@@ -207,9 +207,9 @@ export default function MonsterCard({
               <span className="inline-flex items-center gap-1 rounded bg-zinc-50 px-2 py-1 text-[11px] text-zinc-600">
                 <span className="whitespace-nowrap">{t("labels.legacy")}:</span>
                 <span className="inline-flex items-center gap-0.5">
-                  {legacyObj && typeIconUrl(typeNameRaw(legacyObj)) ? (
+                  {legacyObj && typeIconUrl(typeNameRaw(legacyObj), 30) ? (
                     <img
-                      src={typeIconUrl(typeNameRaw(legacyObj))!}
+                      src={typeIconUrl(typeNameRaw(legacyObj), 30)!}
                       alt=""
                       width={18}
                       height={18}

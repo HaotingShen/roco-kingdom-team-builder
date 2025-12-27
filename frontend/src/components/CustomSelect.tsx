@@ -6,6 +6,9 @@ export type CustomSelectOption = {
   rightLabel?: string;
   disabled?: boolean;
   leftIconUrl?: string | null;
+  title?: string;
+  /** Show red exclamation mark on hover when disabled (default: false) */
+  showDisabledIndicator?: boolean;
 };
 
 type Props = {
@@ -46,10 +49,48 @@ export default function CustomSelect({
     const r = btn.getBoundingClientRect();
     const GAP = 8;
     const vh = window.visualViewport?.height ?? window.innerHeight;
-    const spaceBelow = vh - r.bottom - GAP;
-    const spaceAbove = r.top - GAP;
+
+    // Find nearest scrolling parent container
+    let scrollParent: HTMLElement | null = null;
+    let parent = btn.parentElement;
+    while (parent && parent !== document.body) {
+      const overflow = window.getComputedStyle(parent).overflowY;
+      if (overflow === 'auto' || overflow === 'scroll') {
+        scrollParent = parent;
+        break;
+      }
+      parent = parent.parentElement;
+    }
+
+    let spaceBelow: number;
+    let spaceAbove: number;
+
+    if (scrollParent) {
+      // Calculate space within scrolling container's visible area
+      const parentRect = scrollParent.getBoundingClientRect();
+
+      // Space below = distance from button bottom to parent's visible bottom edge
+      const parentVisibleBottom = Math.min(parentRect.bottom, vh);
+      spaceBelow = parentVisibleBottom - r.bottom - GAP;
+
+      // Space above = distance from button top to parent's visible top edge
+      const parentVisibleTop = Math.max(parentRect.top, 0);
+      spaceAbove = r.top - parentVisibleTop - GAP;
+
+      // Ensure we don't have negative space
+      spaceBelow = Math.max(0, spaceBelow);
+      spaceAbove = Math.max(0, spaceAbove);
+    } else {
+      // Fallback to viewport-based calculation
+      spaceBelow = vh - r.bottom - GAP;
+      spaceAbove = r.top - GAP;
+    }
+
+    // Decide whether to flip upward
     const flipUp = spaceBelow < 240 && spaceAbove > spaceBelow;
     setPlacement(flipUp ? "top" : "bottom");
+
+    // Calculate usable height with more conservative minimum
     const usable = Math.max(120, Math.floor(flipUp ? spaceAbove : spaceBelow));
     setMaxH(usable);
   }
@@ -145,7 +186,7 @@ export default function CustomSelect({
           ref={popRef}
           id={listboxId}
           role="listbox"
-          className={`absolute z-20 w-full border rounded bg-white shadow overflow-auto left-0
+          className={`absolute z-50 w-full border-2 border-zinc-300 rounded-lg bg-white shadow-xl overflow-auto left-0
             ${placement === "bottom" ? "top-full mt-1" : "bottom-full mb-1"} ${menuClassName}`}
           style={{ maxHeight: maxH }}
           onWheel={(e) => e.stopPropagation()}
@@ -160,12 +201,13 @@ export default function CustomSelect({
                 role="option"
                 aria-selected={selected}
                 aria-disabled={isDisabled || undefined}
+                title={opt.title}
                 onClick={() => {
                   if (isDisabled) return;
                   onChange(opt.value);
                   setOpen(false);
                 }}
-                className={`px-3 py-2 flex items-center gap-2 cursor-pointer hover:bg-zinc-50
+                className={`px-3 py-2 flex items-center gap-2 cursor-pointer hover:bg-zinc-50 group relative
                   ${selected ? "bg-zinc-100" : ""} ${isDisabled ? "opacity-40 cursor-not-allowed hover:bg-transparent" : ""}`}
               >
                 {opt.leftIconUrl ? (
@@ -181,6 +223,11 @@ export default function CustomSelect({
                 {opt.rightLabel ? (
                   <span className="ml-auto text-right text-xs text-zinc-600">{opt.rightLabel}</span>
                 ) : null}
+                {isDisabled && opt.showDisabledIndicator && (
+                  <span className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity inline-flex items-center justify-center w-4 h-4 rounded-full bg-red-500 text-white text-xs font-bold shrink-0">
+                    !
+                  </span>
+                )}
               </div>
             );
           })}

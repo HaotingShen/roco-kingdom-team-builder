@@ -1,5 +1,5 @@
 import { Link, useParams, useSearchParams, useNavigate } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { endpoints } from "@/lib/api";
 import { useI18n, pickName, pickDesc, pickFormName } from "@/i18n";
@@ -7,6 +7,7 @@ import type { TypeOut, MoveOut, MonsterOut, StatKey } from "@/types";
 import { STAT_KEYS } from "@/types";
 import { typeIconUrl, monsterImageFallbackChain } from "@/lib/images";
 import { useMonsterNavigation } from "./useMonsterNavigation";
+import { QUERY_KEYS, LEGACY_TYPES_ORDER } from "@/lib/constants";
 
 /* ---------- helpers ---------- */
 
@@ -113,7 +114,41 @@ export default function MonsterDetailPage() {
 
   const movePool = useMoveObjects(m?.move_pool);
   const moveStones = useMoveObjects(m?.move_stones);
-  const legacyMoves = useMoveObjects(m?.legacy_moves);
+  const legacyMovesRaw = useMoveObjects(m?.legacy_moves);
+
+  // Fetch types for sorting legacy moves
+  const typesQ = useQuery({
+    queryKey: QUERY_KEYS.TYPES,
+    queryFn: () => endpoints.types().then((r) => r.data as TypeOut[]),
+  });
+
+  // Sort legacy moves by LEGACY_TYPES_ORDER
+  const legacyMoves = useMemo(() => {
+    if (!typesQ.data || !legacyMovesRaw || legacyMovesRaw.length === 0) {
+      return legacyMovesRaw;
+    }
+
+    // Create a map from type_id to type_name
+    const typeIdToName = new Map<number, string>();
+    typesQ.data.forEach(type => {
+      typeIdToName.set(type.id, type.name);
+    });
+
+    // Sort legacy moves based on their type's position in LEGACY_TYPES_ORDER
+    return [...legacyMovesRaw].sort((a, b) => {
+      const typeA = (a as any).move_type || (a as any).type;
+      const typeB = (b as any).move_type || (b as any).type;
+
+      const nameA = typeA?.name || typeIdToName.get(typeA?.id) || "";
+      const nameB = typeB?.name || typeIdToName.get(typeB?.id) || "";
+
+      const indexA = LEGACY_TYPES_ORDER.indexOf(nameA as any);
+      const indexB = LEGACY_TYPES_ORDER.indexOf(nameB as any);
+
+      // If not found in order, put at end
+      return (indexA === -1 ? 999 : indexA) - (indexB === -1 ? 999 : indexB);
+    });
+  }, [legacyMovesRaw, typesQ.data]);
 
   // Image fallback chain for leader form handling
   const fallbackChain = m ? monsterImageFallbackChain(m, 270) : [];
@@ -254,10 +289,15 @@ export default function MonsterDetailPage() {
               <div className="flex items-center justify-center gap-2">
                 {[m.main_type, m.sub_type].filter(Boolean).map((tp: TypeOut) => (
                   <span key={tp.id} className="inline-flex items-center gap-1 rounded-full bg-white border border-zinc-200 text-sm px-3 py-1 shadow-sm">
-                    {typeIconUrl(tp.name) ? <img src={typeIconUrl(tp.name)!} alt="" width={22} height={22} /> : null}
+                    {typeIconUrl(tp.name, 30) ? <img src={typeIconUrl(tp.name, 30)!} alt="" width={22} height={22} /> : null}
                     <span className="font-medium text-zinc-700">{pickName(tp as any, lang)}</span>
                   </span>
                 ))}
+                {m.is_leader_form && (
+                  <span className="inline-flex items-center gap-1 rounded-full border border-amber-300 bg-amber-50 text-amber-800 text-sm px-3 py-1 shadow-sm">
+                    <span className="font-medium">{t("labels.leader")}</span>
+                  </span>
+                )}
               </div>
             </div>
             <div className="flex items-center justify-center">
@@ -290,7 +330,7 @@ export default function MonsterDetailPage() {
               <div>
                 <div className="flex items-center gap-3 mb-3">
                   <span className="text-sm font-semibold text-zinc-700">{t("dex.totalBase")}</span>
-                  <span className="text-lg font-bold text-zinc-800 bg-zinc-100 px-3 py-1 rounded-full">
+                  <span className="text-lg font-bold text-zinc-800 bg-zinc-200 px-3 py-1 rounded-full">
                     {total}
                   </span>
                 </div>

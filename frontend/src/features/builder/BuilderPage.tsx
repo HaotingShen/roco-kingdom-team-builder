@@ -596,6 +596,7 @@ export default function BuilderPage() {
             <button
               onClick={onAnalyze}
               disabled={!canAnalyze || analyze.isPending || isAnalyzing}
+              title={!canAnalyze ? t("builder.incompleteTeamMsg") : ""}
               className={`
                 h-10 px-6 rounded-lg font-semibold text-sm
                 transition-all duration-200
