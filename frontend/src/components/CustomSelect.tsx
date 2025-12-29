@@ -168,8 +168,8 @@ export default function CustomSelect({
             <img
               src={displayIcon}
               alt=""
-              width={20}
-              height={20}
+              width={22}
+              height={22}
               className="inline-block"
               onError={(e) => ((e.currentTarget as HTMLImageElement).style.display = "none")}
             />
@@ -214,8 +214,8 @@ export default function CustomSelect({
                   <img
                     src={opt.leftIconUrl}
                     alt=""
-                    width={20}
-                    height={20}
+                    width={22}
+                    height={22}
                     onError={(e) => ((e.currentTarget as HTMLImageElement).style.display = "none")}
                   />
                 ) : null}

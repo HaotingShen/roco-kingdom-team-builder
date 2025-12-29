@@ -9,19 +9,34 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 if not DATABASE_URL:
     raise ValueError("DATABASE_URL environment variable is required")
 
-# API Keys
-# Note: OPENAI_API_KEY is reserved for future use (potential alternative LLM provider)
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-if not GEMINI_API_KEY:
-    raise ValueError("GEMINI_API_KEY environment variable is required")
+# === LLM Provider Configuration ===
 
-# Gemini model configuration
-# Available models:
-# - "gemini-2.5-flash" (standard, higher quality)
-# - "gemini-2.5-flash-lite" (lighter, faster, higher rate limits)
-# - "gemini-2.0-flash-lite" (2.0 lite variant)
+# Provider selection: gemini, deepseek
+LLM_PROVIDER = os.getenv("LLM_PROVIDER", "gemini")
+
+# Gemini Configuration (testing - free tier)
+# Current free tier limits (Dec 2025): 10 RPM, 20 RPD
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash-lite")
+
+# Gemini Thinking Mode Configuration
+# thinking_budget range: 512-24576 tokens (higher = more reasoning depth)
+# Default: 24576 (maximum capacity for best quality analysis)
+GEMINI_THINKING_BUDGET = int(os.getenv("GEMINI_THINKING_BUDGET", "24576"))
+
+# DeepSeek Official API Configuration (production - for China access)
+DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY", "")
+DEEPSEEK_MODEL = os.getenv("DEEPSEEK_MODEL", "deepseek-chat")
+
+# LLM Response Configuration
+ANALYSIS_TEMPERATURE = float(os.getenv("ANALYSIS_TEMPERATURE", "0.7"))
+ANALYSIS_MAX_TOKENS = int(os.getenv("ANALYSIS_MAX_TOKENS", "4096"))
+
+# Validate API keys based on selected provider
+if LLM_PROVIDER == "gemini" and not GEMINI_API_KEY:
+    raise ValueError("GEMINI_API_KEY required when LLM_PROVIDER=gemini")
+elif LLM_PROVIDER == "deepseek" and not DEEPSEEK_API_KEY:
+    raise ValueError("DEEPSEEK_API_KEY required when LLM_PROVIDER=deepseek")
 
 # CORS configuration
 ALLOWED_ORIGINS_STR = os.getenv("ALLOWED_ORIGINS", "*")
@@ -37,13 +52,18 @@ DB_MAX_OVERFLOW = int(os.getenv("DB_MAX_OVERFLOW", "20"))
 
 # Rate limiting
 # IMPORTANT: Each analysis makes 7 LLM calls (6 per-monster + 1 team-wide)
-# Gemini 2.5 Flash FREE TIER: 10 requests per minute (RPM)
+#
+# Gemini 2.5 Flash Lite FREE TIER (Dec 2025): 10 RPM, 20 RPD
+# - 10 requests per minute (RPM)
+# - 20 requests per day (RPD)
+# - Very restrictive! Effectively ~2-3 full team analyses per day max
+#
+# DeepSeek Official API (production): No hard rate limits (queuing system)
 #
 # Recommended settings:
-# - "1/2minutes" = 3.5 LLM calls/min per user (FREE TIER - extra safe, well under 10 RPM)
-# - "1/minute" = 7 LLM calls/min per user (FREE TIER - stays under 10 RPM limit)
-# - "1/90seconds" = ~0.67/min (FREE TIER - safe buffer)
-# - "2/minute" = 14 LLM calls/min per user (PAID - requires higher limits)
+# - "1/2minutes" = 3.5 LLM calls/min per user (works with Gemini free tier)
+# - "1/minute" = 7 LLM calls/min per user (works with Gemini, stays under 10 RPM)
+# - "2/minute" = 14 LLM calls/min per user (requires DeepSeek or paid tier)
 #
 # With caching enabled, repeated analyses are instant (bypasses rate limit)
 RATE_LIMIT_ENABLED = os.getenv("RATE_LIMIT_ENABLED", "true").lower() == "true"

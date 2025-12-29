@@ -6,8 +6,7 @@ from sqlalchemy.orm import Session, sessionmaker, joinedload
 from sqlalchemy import create_engine, or_, cast, String, func
 from backend.config import (
     DATABASE_URL,
-    GEMINI_API_KEY,
-    GEMINI_MODEL,
+    LLM_PROVIDER,
     ALLOWED_ORIGINS,
     LOG_LEVEL,
     DB_POOL_SIZE,
@@ -30,21 +29,21 @@ from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from collections import Counter
 import re
-from google import genai
-from google.genai import types
 import asyncio
 import json
 import time
 import logging
 import hashlib
+from backend.llm_service import generate_analysis_json
 
 # Setup logger
 logging.basicConfig(level=getattr(logging, LOG_LEVEL.upper(), logging.INFO))
 logger = logging.getLogger(__name__)
 
-client = genai.Client(api_key=GEMINI_API_KEY)
-
 app = FastAPI()
+
+# Log LLM provider on startup
+logger.info(f"Using LLM provider: {LLM_PROVIDER}")
 
 # Add rate limiter to app state
 app.state.limiter = limiter
@@ -245,29 +244,63 @@ def get_localized_description(entity, language="en"):
             pass
     return getattr(entity, "description", "")
 
-def build_trait_synergy_prompt(monster, trait, selected_moves, preferred_attack_style, game_terms, legacy_type, main_type, sub_type, personality, language="en"):
+def build_trait_synergy_prompt(monster, trait, selected_moves, game_terms, main_type, sub_type, type_db_map, language="en"):
     # Use localized names and descriptions
     monster_name = get_localized_name(monster, language)
     trait_name = get_localized_name(trait, language)
     trait_desc = get_localized_description(trait, language)
-    personality_name = get_localized_name(personality, language)
 
     # Build type information
-    legacy_type_name = get_localized_name(legacy_type, language)
     main_type_name = get_localized_name(main_type, language)
     type_info = main_type_name
     if sub_type:
         sub_type_name = get_localized_name(sub_type, language)
         type_info = f"{main_type_name}/{sub_type_name}"
 
-    # Build move information with type and category
+    # Build complete type effectiveness table for all types
+    type_chart_lines = []
+    # Get all types and sort them by name for consistency
+    all_types = sorted(type_db_map.values(), key=lambda t: get_localized_name(t, language))
+
+    for t in all_types:
+        type_name = get_localized_name(t, language)
+        # Skip "Leader" or other special types that aren't real battle types
+        if type_name in ["Leader", "领袖"]:
+            continue
+
+        effective = []
+        weak = []
+
+        if hasattr(t, 'effective_against') and t.effective_against:
+            effective = sorted([get_localized_name(target, language) for target in t.effective_against])
+        if hasattr(t, 'weak_against') and t.weak_against:
+            weak = sorted([get_localized_name(target, language) for target in t.weak_against])
+
+        if language == "zh":
+            eff_str = ', '.join(effective) if effective else '无'
+            weak_str = ', '.join(weak) if weak else '无'
+            type_chart_lines.append(f"  {type_name} → 克制: {eff_str} | 被克制: {weak_str}")
+        else:
+            eff_str = ', '.join(effective) if effective else 'None'
+            weak_str = ', '.join(weak) if weak else 'None'
+            type_chart_lines.append(f"  {type_name} → Strong vs: {eff_str} | Weak vs: {weak_str}")
+
+    type_chart = "\n".join(type_chart_lines)
+
+    # Build move information with type, category, energy cost, and power
     move_lines = []
     for m in selected_moves:
         move_name = get_localized_name(m, language)
         move_desc = get_localized_description(m, language)
         move_type_name = get_localized_name(m.move_type, language) if m.move_type else "None"
         move_category = m.move_category.value if m.move_category else "Unknown"
-        move_lines.append(f"- {move_name} ({move_type_name}, {move_category}): {move_desc}")
+        energy_cost = getattr(m, 'energy_cost', 'N/A')
+        power = getattr(m, 'power', 'N/A')
+
+        if language == "zh":
+            move_lines.append(f"- {move_name} ({move_type_name}, {move_category}, 能量消耗:{energy_cost}, 威力:{power}): {move_desc}")
+        else:
+            move_lines.append(f"- {move_name} ({move_type_name}, {move_category}, Energy:{energy_cost}, Power:{power}): {move_desc}")
     move_lines_str = "\n".join(move_lines)
     glossary = "\n".join(
         f"- {gt.key}: {get_localized_description(gt, language)}" for gt in game_terms
@@ -278,12 +311,13 @@ def build_trait_synergy_prompt(monster, trait, selected_moves, preferred_attack_
         prompt = f"""你是一位专业的游戏策略专家。
 精灵: {monster_name}
 属性: {type_info}
-血脉类型: {legacy_type_name}
-性格: {personality_name}
 特性: {trait_name} — {trait_desc}
-偏好攻击风格: {preferred_attack_style}
+
 已选技能:
 {move_lines_str}
+
+属性克制表:
+{type_chart}
 
 游戏术语表:
 {glossary}
@@ -292,7 +326,10 @@ def build_trait_synergy_prompt(monster, trait, selected_moves, preferred_attack_
 1. 识别哪些技能与特性特别有协同作用。
 2. 对于你的建议:
     - 给出**恰好两条建议** (最多3-4句话)，**详细解释用户应该如何组合使用所选技能**，包括可能的连招、回合顺序、防守或进攻应用，以及如何利用当前技能集与特性的配合。
-    - 给出**一条额外的建议** (1-2句话) 说明如何改善整体技能选择 (例如偏好某些类型、效果或实用性，但请勿建议具体的技能替换)。
+    - 给出**一条额外的建议** (2-3句话)，**分析技能配置的合理性**：
+      * 分析攻击类技能的属性克制覆盖（能够有效克制哪些属性，缺少对哪些常见属性的克制）
+      * 评估攻击/防御/辅助类技能的配比是否合理（例如是否过于偏重进攻而缺乏防守，或是否需要更多辅助技能来配合特性）
+      * 若技能配置极度不合理，基于以上分析建议改善方向（但请勿建议具体的技能替换）
 3. 以以下JSON格式输出 (使用中文回复):
 {{
 "synergy_moves": [协同技能名称列表],
@@ -303,12 +340,13 @@ def build_trait_synergy_prompt(monster, trait, selected_moves, preferred_attack_
         prompt = f"""You are an expert game strategist.
 Monster: {monster_name}
 Type: {type_info}
-Legacy Type: {legacy_type_name}
-Personality: {personality_name}
 Trait: {trait_name} — {trait_desc}
-Preferred attack style: {preferred_attack_style}
+
 Selected moves:
 {move_lines_str}
+
+Type Effectiveness Table:
+{type_chart}
 
 Game Terms Glossary:
 {glossary}
@@ -317,7 +355,10 @@ Instructions:
 1. Identify which moves are especially synergistic with the trait.
 2. For your recommendations:
     - Give **exactly two recommendations** (3-4 sentences max) that **explain in detail how the user should use the selected moves together**, including possible combos, turn order, defensive or offensive applications, and how to leverage the trait with the current moveset.
-    - Give **one additional recommendation** (1-2 sentences) for how to improve move selection in general (such as favoring certain types, effects, or utility, but do NOT suggest specific move swaps).
+    - Give **one additional recommendation** (2-3 sentences) that **analyzes the moveset's composition**:
+      * If attack moves are present: Analyze their type coverage (which types they effectively counter, which common types lack coverage)
+      * Evaluate the balance of attack/defense/status moves (e.g., whether the set is too offensive and lacks defensive options, or needs more utility moves to synergize with the trait)
+      * If the moveset is extremely unbalanced, suggest directions for improvement based on this analysis, (but do NOT suggest specific move swaps)
 3. Output as JSON in the following format:
 {{
 "synergy_moves": [list of move names],
@@ -326,7 +367,7 @@ Instructions:
 """
     return prompt
 
-def build_team_synergy_prompt(user_monsters, monster_db_map, move_db_map, type_db_map, personality_db_map, trait_db_map, magic_item, language="en"):
+def build_team_synergy_prompt(user_monsters, monster_db_map, move_db_map, type_db_map, trait_db_map, magic_item, game_terms, language="en"):
     """Build a prompt for team-wide synergy analysis."""
     # Build a summary of each monster in the team
     team_summary_lines = []
@@ -343,36 +384,81 @@ def build_team_synergy_prompt(user_monsters, monster_db_map, move_db_map, type_d
             sub_type_name = get_localized_name(sub_type, language)
             type_str = f"{main_type_name}/{sub_type_name}"
 
-        # Get legacy type, personality, and trait
+        # Get legacy type and trait
         legacy_type = type_db_map[um.legacy_type_id]
         legacy_type_name = get_localized_name(legacy_type, language)
-        personality = personality_db_map[um.personality_id]
-        personality_name = get_localized_name(personality, language)
         trait = trait_db_map[monster.trait_id]
         trait_name = get_localized_name(trait, language)
+        trait_desc = get_localized_description(trait, language)
 
-        # Get moves with types
+        # Get base stats
+        base_stats = f"HP:{monster.base_hp} Atk:{monster.base_phy_atk}/{monster.base_mag_atk} Def:{monster.base_phy_def}/{monster.base_mag_def} Spd:{monster.base_spd}"
+
+        # Get moves with full details
         moves = [move_db_map[um.move1_id], move_db_map[um.move2_id], move_db_map[um.move3_id], move_db_map[um.move4_id]]
         move_details = []
         for m in moves:
             move_name = get_localized_name(m, language)
+            move_desc = get_localized_description(m, language)
             move_type_name = get_localized_name(m.move_type, language) if m.move_type else "None"
-            move_details.append(f"{move_name}({move_type_name})")
+            move_category = m.move_category.value if m.move_category else "Unknown"
+            energy_cost = getattr(m, 'energy_cost', 'N/A')
+            power = getattr(m, 'power', 'N/A')
+
+            if language == "zh":
+                move_details.append(f"    - {move_name} ({move_type_name}, {move_category}, 能量:{energy_cost}, 威力:{power}): {move_desc}")
+            else:
+                move_details.append(f"    - {move_name} ({move_type_name}, {move_category}, Energy:{energy_cost}, Power:{power}): {move_desc}")
 
         if language == "zh":
             team_summary_lines.append(
-                f"{i}. {monster_name} | 属性:{type_str} | 血脉:{legacy_type_name} | 性格:{personality_name} | 特性:{trait_name}\n"
-                f"   技能: {', '.join(move_details)}"
+                f"{i}. {monster_name} | 属性:{type_str} | 血脉:{legacy_type_name} | 特性:{trait_name}\n"
+                f"   {trait_desc}\n"
+                f"   基础属性: {base_stats}\n"
+                f"   技能:\n{chr(10).join(move_details)}"
             )
         else:
             team_summary_lines.append(
-                f"{i}. {monster_name} | Type:{type_str} | Legacy:{legacy_type_name} | Personality:{personality_name} | Trait:{trait_name}\n"
-                f"   Moves: {', '.join(move_details)}"
+                f"{i}. {monster_name} | Type:{type_str} | Legacy:{legacy_type_name} | Trait:{trait_name}\n"
+                f"   {trait_desc}\n"
+                f"   Base Stats: {base_stats}\n"
+                f"   Moves:\n{chr(10).join(move_details)}"
             )
 
     team_summary = "\n".join(team_summary_lines)
     magic_item_name = get_localized_name(magic_item, language)
     magic_item_desc = get_localized_description(magic_item, language)
+
+    # Build game terms glossary
+    glossary = "\n".join(
+        f"- {gt.key}: {get_localized_description(gt, language)}" for gt in game_terms
+    )
+
+    # Build complete type effectiveness table
+    type_chart_lines = []
+    all_types = sorted(type_db_map.values(), key=lambda t: get_localized_name(t, language))
+    for t in all_types:
+        type_name = get_localized_name(t, language)
+        if type_name in ["Leader", "领袖"]:
+            continue
+
+        effective = []
+        weak = []
+        if hasattr(t, 'effective_against') and t.effective_against:
+            effective = sorted([get_localized_name(target, language) for target in t.effective_against])
+        if hasattr(t, 'weak_against') and t.weak_against:
+            weak = sorted([get_localized_name(target, language) for target in t.weak_against])
+
+        if language == "zh":
+            eff_str = ', '.join(effective) if effective else '无'
+            weak_str = ', '.join(weak) if weak else '无'
+            type_chart_lines.append(f"  {type_name} → 克制: {eff_str} | 被克制: {weak_str}")
+        else:
+            eff_str = ', '.join(effective) if effective else 'None'
+            weak_str = ', '.join(weak) if weak else 'None'
+            type_chart_lines.append(f"  {type_name} → Strong vs: {eff_str} | Weak vs: {weak_str}")
+
+    type_chart = "\n".join(type_chart_lines)
 
     if language == "zh":
         prompt = f"""你是一位专业的游戏策略专家。请分析以下队伍的整体协同作用和战术建议。
@@ -381,6 +467,12 @@ def build_team_synergy_prompt(user_monsters, monster_db_map, move_db_map, type_d
 {team_summary}
 
 魔法道具: {magic_item_name} — {magic_item_desc}
+
+属性克制表:
+{type_chart}
+
+游戏术语表:
+{glossary}
 
 请从以下几个方面分析队伍的整体协同作用:
 1. **关键连招组合** (key_combos): 识别2-3个跨精灵的强力连招或协同组合，说明为什么它们有效。
@@ -403,6 +495,12 @@ Team Composition:
 {team_summary}
 
 Magic Item: {magic_item_name} — {magic_item_desc}
+
+Type Effectiveness Table:
+{type_chart}
+
+Game Terms Glossary:
+{glossary}
 
 Please analyze the team's overall synergy from the following perspectives:
 1. **Key Combos** (key_combos): Identify 2-3 powerful cross-monster combos or synergy combinations and explain why they work.
@@ -1040,16 +1138,12 @@ def create_team(team: schemas.TeamCreate, db: Session = Depends(get_db)):
 
 # -------- Cache Key Generation --------
 
-def generate_monster_cache_key(monster_id: int, personality_id: int, legacy_type_id: int,
-                                 move_ids: tuple, talent: schemas.TalentIn, language: str) -> str:
+def generate_monster_cache_key(monster_id: int, move_ids: tuple, language: str) -> str:
     """Generate a unique cache key for a monster's trait synergy analysis."""
     # Create a stable string representation of the monster configuration
     key_parts = [
         f"m:{monster_id}",
-        f"p:{personality_id}",
-        f"l:{legacy_type_id}",
         f"mv:{'-'.join(map(str, sorted(move_ids)))}",
-        f"t:{talent.hp_boost}-{talent.phy_atk_boost}-{talent.mag_atk_boost}-{talent.phy_def_boost}-{talent.mag_def_boost}-{talent.spd_boost}",
         f"lang:{language}"
     ]
     key_str = "|".join(key_parts)
@@ -1061,22 +1155,28 @@ def generate_team_cache_key(team_data: schemas.TeamCreate, language: str) -> str
     # Include magic item in the key (different magic item = different team)
     key_parts = [f"magic:{team_data.magic_item_id}"]
 
-    # Add each monster's configuration
+    # Add each monster's configuration (using simplified monster cache keys)
     monster_keys = []
+    legacy_type_ids = []
     for um in team_data.user_monsters:
         monster_key = generate_monster_cache_key(
             um.monster_id,
-            um.personality_id,
-            um.legacy_type_id,
             (um.move1_id, um.move2_id, um.move3_id, um.move4_id),
-            um.talent,
             language
         )
         monster_keys.append(monster_key)
+        legacy_type_ids.append(um.legacy_type_id)
 
     # Sort monster keys to ensure consistent cache key regardless of order
-    monster_keys.sort()
-    key_parts.extend(monster_keys)
+    # Note: We sort indices to maintain legacy_type alignment with monster_keys
+    sorted_indices = sorted(range(len(monster_keys)), key=lambda i: monster_keys[i])
+    sorted_monster_keys = [monster_keys[i] for i in sorted_indices]
+    sorted_legacy_types = [legacy_type_ids[i] for i in sorted_indices]
+
+    key_parts.extend(sorted_monster_keys)
+
+    # Add legacy types explicitly (needed for magic item analysis)
+    key_parts.append(f"legacy:{'-'.join(map(str, sorted_legacy_types))}")
 
     key_str = "|".join(key_parts)
     return f"team_synergy:{hashlib.md5(key_str.encode()).hexdigest()}"
@@ -1089,6 +1189,9 @@ def generate_team_composition_hash(team_data: schemas.TeamCreate) -> str:
     This hash is used to track rate limits per unique team composition,
     regardless of language. This prevents bypassing rate limits by switching
     between English and Chinese for the same team.
+
+    Note: Personality and talent are excluded as they no longer affect LLM analysis.
+    Legacy type is included as it affects team-wide analysis (magic items).
     """
     parts = [
         f"mi:{team_data.magic_item_id}",
@@ -1099,12 +1202,10 @@ def generate_team_composition_hash(team_data: schemas.TeamCreate) -> str:
 
     for um in sorted_monsters:
         # Create a string representation of each monster's configuration
-        # Note: language is NOT included here
+        # Note: language, personality, and talent are NOT included
         monster_str = (
-            f"m:{um.monster_id}|p:{um.personality_id}|l:{um.legacy_type_id}|"
-            f"mv:{'-'.join(map(str, sorted([um.move1_id, um.move2_id, um.move3_id, um.move4_id])))}|"
-            f"t:{um.talent.hp_boost}-{um.talent.phy_atk_boost}-{um.talent.mag_atk_boost}-"
-            f"{um.talent.phy_def_boost}-{um.talent.mag_def_boost}-{um.talent.spd_boost}"
+            f"m:{um.monster_id}|l:{um.legacy_type_id}|"
+            f"mv:{'-'.join(map(str, sorted([um.move1_id, um.move2_id, um.move3_id, um.move4_id])))}"
         )
         parts.append(monster_str)
 
@@ -1126,10 +1227,7 @@ def check_if_all_cached(team_data: schemas.TeamCreate, language: str) -> bool:
     for um in team_data.user_monsters:
         monster_key = generate_monster_cache_key(
             um.monster_id,
-            um.personality_id,
-            um.legacy_type_id,
             (um.move1_id, um.move2_id, um.move3_id, um.move4_id),
-            um.talent,
             language
         )
         if llm_cache.get(monster_key) is None:
@@ -1163,33 +1261,17 @@ async def _perform_team_analysis(
 
     # --- Helper: Call LLM with Caching ---
     async def call_llm(prompt: str, cache_key: str):
-        """Call LLM with caching support."""
-        # Check cache first
-        cached_result = llm_cache.get(cache_key)
-        if cached_result is not None:
-            logger.info(f"Cache HIT for key: {cache_key[:50]}...")
-            return cached_result
+        """
+        Call LLM with caching support.
 
-        # Cache miss - call LLM
-        logger.info(f"Cache MISS for key: {cache_key[:50]}...")
-        try:
-            resp = await client.aio.models.generate_content(
-                model=GEMINI_MODEL,
-                contents=prompt,
-                config=types.GenerateContentConfig(
-                    response_mime_type="application/json"
-                ),
-            )
-            result = json.loads(resp.text)
-
-            # Cache the result
-            llm_cache.set(cache_key, result)
-            logger.info(f"Cached result for key: {cache_key[:50]}...")
-
-            return result
-        except Exception as e:
-            logger.error(f"LLM error: {e}", exc_info=True)
-            return {"synergy_moves": [], "recommendation": ["Error generating analysis."]}
+        Wrapper for backward compatibility - delegates to generate_analysis_json.
+        """
+        return await generate_analysis_json(
+            prompt=prompt,
+            cache_key=cache_key,
+            llm_cache=llm_cache,
+            temperature=None,  # Use default from config
+        )
 
     # === EFFICIENT DATA LOADING ===
     logger.debug("Start loading data for analysis...")
@@ -1283,19 +1365,16 @@ async def _perform_team_analysis(
         # Generate cache key for this monster
         cache_key = generate_monster_cache_key(
             um.monster_id,
-            um.personality_id,
-            um.legacy_type_id,
             (um.move1_id, um.move2_id, um.move3_id, um.move4_id),
-            um.talent,
             language
         )
 
-        prompt = build_trait_synergy_prompt(base_monster, trait, resolved_moves_for_prompt, preferred_attack_style, game_terms, legacy_type, main_type, sub_type, personality, language)
+        prompt = build_trait_synergy_prompt(base_monster, trait, resolved_moves_for_prompt, game_terms, main_type, sub_type, type_db_map, language)
         llm_tasks.append(call_llm(prompt, cache_key))
 
     # Team-wide synergy analysis
     team_cache_key = generate_team_cache_key(team_data, language)
-    team_synergy_prompt = build_team_synergy_prompt(team_data.user_monsters, monster_db_map, move_db_map, type_db_map, personality_db_map, trait_db_map, magic_item, language)
+    team_synergy_prompt = build_team_synergy_prompt(team_data.user_monsters, monster_db_map, move_db_map, type_db_map, trait_db_map, magic_item, game_terms, language)
     llm_tasks.append(call_llm(team_synergy_prompt, team_cache_key))
 
     llm_results = await asyncio.gather(*llm_tasks)
