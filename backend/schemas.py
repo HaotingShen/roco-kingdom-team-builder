@@ -251,10 +251,25 @@ class TraitSynergyFinding(BaseModel):
     synergy_moves: List[int] = Field(default_factory=list)
     recommendation: List[str] = Field(default_factory=list)
 
+class EnhancedCoverageReport(BaseModel):
+    """Enhanced coverage when using Willpower Enhancement (愿力强化) magic item"""
+    super_effective_types: List[int] = Field(default_factory=list)
+    neutral_types: List[int] = Field(default_factory=list)
+    resisted_types: List[int] = Field(default_factory=list)
+
 class TypeCoverageReport(BaseModel):
+    # NEW primary fields (base coverage from original moves)
+    super_effective_types: List[int] = Field(default_factory=list)
+    neutral_types: List[int] = Field(default_factory=list)
+    resisted_types: List[int] = Field(default_factory=list)
+    team_weak_to: List[int] = Field(default_factory=list)
+
+    # Enhanced coverage (only present if Willpower Enhancement is selected)
+    enhanced_coverage: Optional[EnhancedCoverageReport] = None
+
+    # DEPRECATED (backward compatibility)
     effective_against_types: List[int] = Field(default_factory=list)
     weak_against_types: List[int] = Field(default_factory=list)
-    team_weak_to: List[int] = Field(default_factory=list)
 
 class RecItem(BaseModel):
     category: Literal["coverage", "weakness", "magic_item", "energy", "counters", "defense_status", "trait_synergy", "role_diversity", "stat_highlight", "general"] = "general"

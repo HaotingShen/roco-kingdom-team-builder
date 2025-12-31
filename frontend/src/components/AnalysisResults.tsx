@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import type { TeamAnalysisOut, MonsterAnalysisOut, RecItem, TypeOut } from "@/types";
+import type { ID, TeamAnalysisOut, MonsterAnalysisOut, RecItem, TypeOut } from "@/types";
 import { useI18n, pickName, pickFormName } from "@/i18n";
 import { useQuery } from "@tanstack/react-query";
 import { endpoints } from "@/lib/api";
@@ -424,57 +424,151 @@ export default function AnalysisResults({ analysis }: { analysis: TeamAnalysisOu
           </div>
         </div>
 
-        {/* Type Coverage */}
-        <div className="grid md:grid-cols-2 gap-4">
-          {/* Offensive Gaps */}
-          <div className="p-4 rounded-lg border-2 border-orange-200 bg-gradient-to-br from-orange-50/30 via-white to-orange-50/20">
-            <div className="flex items-center gap-2 mb-3">
-              <span className="text-sm font-semibold text-zinc-800">{t("analysis.offensiveGaps")}</span>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {analysis.type_coverage.weak_against_types?.length ? (
-                analysis.type_coverage.weak_against_types.map(typeId => {
-                  const typeObj = byId.get(typeId);
-                  if (!typeObj) return null;
-                  const typeName = pickName(typeObj as any, lang) || typeObj.name;
-                  const typeIcon = typeIconUrl(typeObj.name, 30);
-                  return (
-                    <div key={typeId} className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-white border border-orange-200 shadow-sm">
-                      {typeIcon && <img src={typeIcon} alt="" width={20} height={20} />}
-                      <span className="text-sm font-medium text-zinc-700">{typeName}</span>
+        {/* Type Coverage - Dual Coverage Display */}
+        <div className="space-y-6">
+          {/* Helper function to render a single coverage row (3 boxes) */}
+          {(() => {
+            const renderCoverageRow = (
+              effectiveTypes: ID[],
+              resistedTypes: ID[],
+              teamWeakTo: ID[],
+              isEnhanced = false
+            ) => {
+              return (
+                <div className="grid md:grid-cols-3 gap-4">
+                  {/* Box 1: Effective Against */}
+                  <div className="p-4 rounded-lg border-2 border-emerald-200 bg-gradient-to-br from-emerald-50/30 via-white to-emerald-50/20">
+                    <div className="flex items-center gap-2 mb-3">
+                      <span className="text-sm font-semibold text-zinc-800">
+                        {t("analysis.effectiveAgainst")}
+                      </span>
                     </div>
-                  );
-                })
-              ) : (
-                <span className="text-sm text-zinc-400">—</span>
-              )}
-            </div>
-          </div>
+                    <div className="flex flex-wrap gap-2">
+                      {effectiveTypes.length ? (
+                        effectiveTypes.map(typeId => {
+                          const typeObj = byId.get(typeId);
+                          if (!typeObj) return null;
+                          const typeName = pickName(typeObj as any, lang) || typeObj.name;
+                          const typeIcon = typeIconUrl(typeObj.name, 30);
+                          return (
+                            <div key={typeId} className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-white border border-emerald-300 shadow-sm">
+                              {typeIcon && <img src={typeIcon} alt="" width={20} height={20} />}
+                              <span className="text-sm font-medium text-zinc-700">{typeName}</span>
+                            </div>
+                          );
+                        })
+                      ) : (
+                        <span className="text-sm text-zinc-400">—</span>
+                      )}
+                    </div>
+                  </div>
 
-          {/* Team Weak To */}
-          <div className="p-4 rounded-lg border-2 border-rose-200 bg-gradient-to-br from-rose-50/30 via-white to-rose-50/20">
-            <div className="flex items-center gap-2 mb-3">
-              <span className="text-sm font-semibold text-zinc-800">{t("analysis.teamWeakTo")}</span>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {analysis.type_coverage.team_weak_to?.length ? (
-                analysis.type_coverage.team_weak_to.map(typeId => {
-                  const typeObj = byId.get(typeId);
-                  if (!typeObj) return null;
-                  const typeName = pickName(typeObj as any, lang) || typeObj.name;
-                  const typeIcon = typeIconUrl(typeObj.name, 30);
-                  return (
-                    <div key={typeId} className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-white border border-rose-200 shadow-sm">
-                      {typeIcon && <img src={typeIcon} alt="" width={20} height={20} />}
-                      <span className="text-sm font-medium text-zinc-700">{typeName}</span>
+                  {/* Box 2: Resisted By */}
+                  <div className="p-4 rounded-lg border-2 border-orange-200 bg-gradient-to-br from-orange-50/30 via-white to-orange-50/20">
+                    <div className="flex items-center gap-2 mb-3">
+                      <span className="text-sm font-semibold text-zinc-800">
+                        {t("analysis.resistedTypes")}
+                      </span>
                     </div>
-                  );
-                })
-              ) : (
-                <span className="text-sm text-zinc-400">—</span>
-              )}
-            </div>
-          </div>
+                    <div className="flex flex-wrap gap-2">
+                      {resistedTypes.length ? (
+                        resistedTypes.map(typeId => {
+                          const typeObj = byId.get(typeId);
+                          if (!typeObj) return null;
+                          const typeName = pickName(typeObj as any, lang) || typeObj.name;
+                          const typeIcon = typeIconUrl(typeObj.name, 30);
+                          return (
+                            <div key={typeId} className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-white border border-red-300 shadow-sm">
+                              {typeIcon && <img src={typeIcon} alt="" width={20} height={20} />}
+                              <span className="text-sm font-medium text-zinc-700">{typeName}</span>
+                            </div>
+                          );
+                        })
+                      ) : (
+                        <span className="text-sm text-emerald-600 font-medium">
+                          ✓ {t("analysis.noCoverageGaps")}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Box 3: Team Weak To */}
+                  <div className="p-4 rounded-lg border-2 border-rose-200 bg-gradient-to-br from-rose-50/30 via-white to-rose-50/20">
+                    <div className="flex items-center gap-2 mb-3">
+                      <span className="text-sm font-semibold text-zinc-800">
+                        {t("analysis.teamWeakTo")}
+                      </span>
+                      {isEnhanced && (
+                        <span className="text-xs text-zinc-500">{t("analysis.defensiveNote")}</span>
+                      )}
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {teamWeakTo.length ? (
+                        teamWeakTo.map(typeId => {
+                          const typeObj = byId.get(typeId);
+                          if (!typeObj) return null;
+                          const typeName = pickName(typeObj as any, lang) || typeObj.name;
+                          const typeIcon = typeIconUrl(typeObj.name, 30);
+                          return (
+                            <div key={typeId} className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-white border border-rose-200 shadow-sm">
+                              {typeIcon && <img src={typeIcon} alt="" width={20} height={20} />}
+                              <span className="text-sm font-medium text-zinc-700">{typeName}</span>
+                            </div>
+                          );
+                        })
+                      ) : (
+                        <span className="text-sm text-zinc-400">—</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            };
+
+            return (
+              <>
+                {/* Base Coverage (always shown) */}
+                <div>
+                  {/* Section label for base coverage (only if enhanced exists) */}
+                  {analysis.type_coverage.enhanced_coverage && (
+                    <div className="flex items-center gap-2 mb-3 px-3 py-2 rounded-md bg-white border border-zinc-200">
+                      <span className="text-sm font-semibold text-zinc-700">
+                        📋 {t("analysis.baseCoverage")}
+                      </span>
+                    </div>
+                  )}
+
+                  {/* 3-box layout */}
+                  {renderCoverageRow(
+                    analysis.type_coverage.super_effective_types ?? analysis.type_coverage.effective_against_types ?? [],
+                    analysis.type_coverage.resisted_types ?? analysis.type_coverage.weak_against_types ?? [],
+                    analysis.type_coverage.team_weak_to ?? [],
+                    false
+                  )}
+                </div>
+
+                {/* Enhanced Coverage (only if Willpower Enhancement) */}
+                {analysis.type_coverage.enhanced_coverage && (
+                  <div>
+                    {/* Section label for enhanced coverage */}
+                    <div className="flex items-center gap-2 mb-3 px-3 py-2 rounded-md bg-purple-50 border border-purple-300">
+                      <span className="text-sm font-semibold text-purple-700">
+                        ⚡ {t("analysis.withWillpowerEnhancement")}
+                      </span>
+                    </div>
+
+                    {/* 3-box layout with enhanced data */}
+                    {renderCoverageRow(
+                      analysis.type_coverage.enhanced_coverage.super_effective_types,
+                      analysis.type_coverage.enhanced_coverage.resisted_types,
+                      analysis.type_coverage.team_weak_to ?? [], // Same as base
+                      true
+                    )}
+                  </div>
+                )}
+              </>
+            );
+          })()}
         </div>
         </div>
         )}

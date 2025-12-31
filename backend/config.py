@@ -26,7 +26,8 @@ GEMINI_THINKING_BUDGET = int(os.getenv("GEMINI_THINKING_BUDGET", "24576"))
 
 # DeepSeek Official API Configuration (production - for China access)
 DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY", "")
-DEEPSEEK_MODEL = os.getenv("DEEPSEEK_MODEL", "deepseek-chat")
+# Models: deepseek-chat (非思考模式), deepseek-reasoner (思考模式)
+DEEPSEEK_MODEL = os.getenv("DEEPSEEK_MODEL", "deepseek-reasoner")
 
 # LLM Response Configuration
 ANALYSIS_TEMPERATURE = float(os.getenv("ANALYSIS_TEMPERATURE", "0.7"))
@@ -68,3 +69,9 @@ DB_MAX_OVERFLOW = int(os.getenv("DB_MAX_OVERFLOW", "20"))
 # With caching enabled, repeated analyses are instant (bypasses rate limit)
 RATE_LIMIT_ENABLED = os.getenv("RATE_LIMIT_ENABLED", "true").lower() == "true"
 ANALYSIS_RATE_LIMIT = os.getenv("ANALYSIS_RATE_LIMIT", "1/2minutes")
+
+# Reference Resolution
+# When enabled, LLM prompts include only referenced game terms instead of all 50+ terms
+# Improves signal-to-noise ratio for better analysis quality
+# Default: false (safe rollout - enable after validation)
+ENABLE_REFERENCE_RESOLUTION = os.getenv("ENABLE_REFERENCE_RESOLUTION", "false").lower() == "true"

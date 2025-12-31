@@ -9,6 +9,7 @@ Provides unified interface for multiple LLM providers:
 from typing import Optional, Dict, Any
 import json
 import logging
+import time
 from google import genai
 from google.genai import types as genai_types
 from openai import AsyncOpenAI
@@ -22,6 +23,7 @@ from backend.config import (
     ANALYSIS_TEMPERATURE,
     ANALYSIS_MAX_TOKENS,
 )
+from backend.prompt_logger import save_prompt
 
 logger = logging.getLogger(__name__)
 
@@ -63,7 +65,7 @@ class LLMClient:
         system_prompt: Optional[str] = None,
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
-    ) -> Dict[str, Any]:
+    ) -> tuple[Dict[str, Any], Dict[str, Any]]:
         """
         Generate JSON response from LLM.
 
@@ -74,7 +76,7 @@ class LLMClient:
             max_tokens: Maximum tokens to generate, defaults to ANALYSIS_MAX_TOKENS
 
         Returns:
-            Parsed JSON response as dictionary
+            Tuple of (parsed JSON response, metadata dictionary)
 
         Raises:
             Exception: If LLM call fails
@@ -96,8 +98,8 @@ class LLMClient:
         self,
         prompt: str,
         system_prompt: Optional[str] = None
-    ) -> Dict[str, Any]:
-        """Call Gemini API with thinking mode enabled."""
+    ) -> tuple[Dict[str, Any], Dict[str, Any]]:
+        """Call Gemini API with thinking mode enabled. Returns (result, metadata)."""
         # Gemini uses single prompt with system context prepended
         full_prompt = prompt
         if system_prompt:
@@ -115,33 +117,41 @@ class LLMClient:
             ),
         )
 
-        # Log usage metadata (includes thinking tokens)
+        # Extract usage metadata
+        metadata = {
+            'provider': 'gemini',
+            'model': GEMINI_MODEL,
+            'prompt_tokens': 0,
+            'output_tokens': 0,
+            'thinking_tokens': 0,
+            'total_tokens': 0,
+        }
+
         if hasattr(resp, 'usage_metadata'):
             usage = resp.usage_metadata
-            prompt_tokens = getattr(usage, 'prompt_token_count', 0)
-            output_tokens = getattr(usage, 'candidates_token_count', 0)
-            thinking_tokens = getattr(usage, 'thoughts_token_count', 0)
-            total_tokens = getattr(usage, 'total_token_count', 0)
+            metadata['prompt_tokens'] = getattr(usage, 'prompt_token_count', 0)
+            metadata['output_tokens'] = getattr(usage, 'candidates_token_count', 0)
+            metadata['thinking_tokens'] = getattr(usage, 'thoughts_token_count', 0)
+            metadata['total_tokens'] = getattr(usage, 'total_token_count', 0)
 
-            if thinking_tokens > 0:
-                # Thinking mode was used
+            # Log usage
+            if metadata['thinking_tokens'] > 0:
                 logger.info(
                     f"Gemini usage (with thinking) - "
-                    f"Input: {prompt_tokens}, "
-                    f"🧠 Thinking: {thinking_tokens}, "
-                    f"Output: {output_tokens}, "
-                    f"Total: {total_tokens}"
+                    f"Input: {metadata['prompt_tokens']}, "
+                    f"🧠 Thinking: {metadata['thinking_tokens']}, "
+                    f"Output: {metadata['output_tokens']}, "
+                    f"Total: {metadata['total_tokens']}"
                 )
             else:
-                # No thinking tokens
                 logger.info(
                     f"Gemini usage - "
-                    f"Input: {prompt_tokens}, "
-                    f"Output: {output_tokens}, "
-                    f"Total: {total_tokens}"
+                    f"Input: {metadata['prompt_tokens']}, "
+                    f"Output: {metadata['output_tokens']}, "
+                    f"Total: {metadata['total_tokens']}"
                 )
 
-        return json.loads(resp.text)
+        return json.loads(resp.text), metadata
 
     async def _generate_openai_compatible(
         self,
@@ -149,9 +159,9 @@ class LLMClient:
         system_prompt: Optional[str] = None,
         temperature: float = 0.7,
         max_tokens: int = 4096,
-    ) -> Dict[str, Any]:
+    ) -> tuple[Dict[str, Any], Dict[str, Any]]:
         """
-        Call OpenAI-compatible API (DeepSeek).
+        Call OpenAI-compatible API (DeepSeek). Returns (result, metadata).
 
         Note: DeepSeek does NOT support strict json_schema mode.
         We use json_object mode and rely on prompt engineering.
@@ -166,8 +176,7 @@ class LLMClient:
         # Use DeepSeek model
         model = DEEPSEEK_MODEL
 
-        # Important: DeepSeek-reasoner does NOT support temperature
-        # Use chat model for temperature control
+        # Build request kwargs
         kwargs = {
             "model": model,
             "messages": messages,
@@ -176,6 +185,7 @@ class LLMClient:
         }
 
         # Only add temperature if NOT using reasoner model
+        # (deepseek-reasoner doesn't support temperature parameter)
         if "reasoner" not in model.lower():
             kwargs["temperature"] = temperature
 
@@ -199,27 +209,61 @@ class LLMClient:
             logger.error(f"Empty content from API. Full response: {response}")
             raise ValueError("API returned empty content")
 
-        # Log reasoning if available (DeepSeek R1)
+        # Extract reasoning content if available (DeepSeek V3.2 thinking mode)
+        reasoning_content = None
         if hasattr(response.choices[0].message, 'reasoning_content'):
-            reasoning = response.choices[0].message.reasoning_content
-            if reasoning:
-                logger.debug(f"LLM Reasoning (first 200 chars): {reasoning[:200]}...")
+            reasoning_content = response.choices[0].message.reasoning_content
+            if reasoning_content:
+                logger.debug(f"LLM Reasoning (first 200 chars): {reasoning_content[:200]}...")
 
-        # Log DeepSeek cache metrics if available
-        if hasattr(response, 'usage') and hasattr(response.usage, 'prompt_cache_hit_tokens'):
+        # Extract usage metadata
+        metadata = {
+            'provider': 'deepseek',
+            'model': model,
+            'prompt_tokens': 0,
+            'output_tokens': 0,
+            'thinking_tokens': 0,  # For thinking mode
+            'total_tokens': 0,
+            'cache_hit_tokens': 0,
+            'cache_miss_tokens': 0,
+            'reasoning_content': reasoning_content,  # Store reasoning for logging
+        }
+
+        if hasattr(response, 'usage'):
             usage = response.usage
-            hit_tokens = getattr(usage, 'prompt_cache_hit_tokens', 0)
-            miss_tokens = getattr(usage, 'prompt_cache_miss_tokens', 0)
-            total_tokens = usage.prompt_tokens
+            metadata['prompt_tokens'] = getattr(usage, 'prompt_tokens', 0)
+            metadata['output_tokens'] = getattr(usage, 'completion_tokens', 0)
+            metadata['total_tokens'] = getattr(usage, 'total_tokens', 0)
 
-            if total_tokens > 0:
-                hit_rate = (hit_tokens / total_tokens * 100)
+            # Check for thinking/reasoning tokens (if DeepSeek returns them separately)
+            # Similar to Gemini's thoughts_token_count
+            if hasattr(usage, 'reasoning_tokens') or hasattr(usage, 'thinking_tokens'):
+                metadata['thinking_tokens'] = getattr(usage, 'reasoning_tokens', 0) or getattr(usage, 'thinking_tokens', 0)
+
+            # DeepSeek cache metrics
+            if hasattr(usage, 'prompt_cache_hit_tokens'):
+                metadata['cache_hit_tokens'] = getattr(usage, 'prompt_cache_hit_tokens', 0)
+                metadata['cache_miss_tokens'] = getattr(usage, 'prompt_cache_miss_tokens', 0)
+
+                # Log cache metrics
+                if metadata['prompt_tokens'] > 0:
+                    hit_rate = (metadata['cache_hit_tokens'] / metadata['prompt_tokens'] * 100)
+                    logger.info(
+                        f"DeepSeek Cache: {metadata['cache_hit_tokens']} hits, "
+                        f"{metadata['cache_miss_tokens']} misses ({hit_rate:.1f}% hit rate)"
+                    )
+
+            # Log thinking mode usage if available
+            if metadata['thinking_tokens'] > 0:
                 logger.info(
-                    f"DeepSeek Cache: {hit_tokens} hits, {miss_tokens} misses "
-                    f"({hit_rate:.1f}% hit rate)"
+                    f"DeepSeek thinking mode - "
+                    f"Input: {metadata['prompt_tokens']}, "
+                    f"🧠 Thinking: {metadata['thinking_tokens']}, "
+                    f"Output: {metadata['output_tokens']}, "
+                    f"Total: {metadata['total_tokens']}"
                 )
 
-        return json.loads(content)
+        return json.loads(content), metadata
 
 
 # Global client instance
@@ -240,6 +284,11 @@ async def generate_analysis_json(
     llm_cache,
     system_prompt: Optional[str] = None,
     temperature: Optional[float] = None,
+    # Optional metadata for prompt logging
+    context: Optional[str] = None,
+    team_hash: Optional[str] = None,
+    language: Optional[str] = None,
+    monster_name: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
     Generate analysis with caching support.
@@ -252,25 +301,71 @@ async def generate_analysis_json(
         llm_cache: Cache instance
         system_prompt: Optional system message
         temperature: Sampling temperature (uses ANALYSIS_TEMPERATURE if None)
+        context: Optional context for logging (e.g., "trait_synergy", "team_synergy")
+        team_hash: Optional team hash for logging
+        language: Optional language code for logging
+        monster_name: Optional monster name for logging
 
     Returns:
         Analysis result as dictionary
     """
     # Check cache first
     cached_result = llm_cache.get(cache_key)
+    cache_status = "HIT" if cached_result is not None else "MISS"
+
     if cached_result is not None:
         logger.info(f"Cache HIT for key: {cache_key[:50]}...")
+
+        # Log cached prompt for review
+        save_prompt(
+            prompt=prompt,
+            system_prompt=system_prompt,
+            context=context,
+            team_hash=team_hash,
+            language=language,
+            monster_name=monster_name,
+            cache_status="HIT",
+        )
+
         return cached_result
 
     # Cache miss - call LLM
     logger.info(f"Cache MISS for key: {cache_key[:50]}...")
 
     try:
+        start_time = time.time()
+
         client = get_llm_client()
-        result = await client.generate_json(
+
+        result, metadata = await client.generate_json(
             prompt=prompt,
             system_prompt=system_prompt,
             temperature=temperature,
+        )
+
+        # Calculate response time
+        response_time_ms = int((time.time() - start_time) * 1000)
+
+        # Log prompt with full metadata after API call
+        save_prompt(
+            prompt=prompt,
+            system_prompt=system_prompt,
+            context=context,
+            team_hash=team_hash,
+            language=language,
+            monster_name=monster_name,
+            cache_status="MISS",
+            prompt_tokens=metadata.get('prompt_tokens'),
+            output_tokens=metadata.get('output_tokens'),
+            thinking_tokens=metadata.get('thinking_tokens'),
+            total_tokens=metadata.get('total_tokens'),
+            cache_hit_tokens=metadata.get('cache_hit_tokens'),
+            cache_miss_tokens=metadata.get('cache_miss_tokens'),
+            response_time_ms=response_time_ms,
+            provider=metadata.get('provider'),
+            model=metadata.get('model'),
+            reasoning_content=metadata.get('reasoning_content'),
+            save_reasoning=False,  # Set to True to save reasoning to log files (can be very long)
         )
 
         # Cache the result

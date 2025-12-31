@@ -1191,31 +1191,31 @@
   },
   {
     "name": "Shifting Stance",
-    "description": "After this monster successfully performs Counter using an Attack-type move twice, it gains Attack +20%, Defense +20%, fully restores HP, and transforms into Chess Queen. After transforming, its base stats and trait become those of Chess Queen, while its equipped moves remain unchanged. The Attack and Defense bonuses gained before transformation persist after transforming. Before transformation, Chess Queen’s trait can already be triggered normally, and its effects will take effect after transformation.",
+    "description": "After this monster successfully performs Counter using an Attack-type move twice, it gains Attack +20%, Defense +20%, fully restores HP, and transforms into 'Chess Queen'. After transforming, its base stats and trait become those of Chess Queen, while its equipped moves remain unchanged. The Attack and Defense bonuses gained before transformation persist after transforming. Before transformation, Chess Queen’s trait can already be triggered normally, and its effects will take effect after transformation.",
     "localized": {
       "zh": {
         "name": "腾挪",
-        "description": "自身以攻击技能应对2次后，获得攻防+20%，回满状态，变身为棋绮后。变身后，基础种族值与特性变为棋绮后，但不改变已携带的技能。变身前获得的攻防提升效果在变身后依然保留。变身之前，棋绮后的特性可被正常触发，其效果将在变身后生效。"
+        "description": "自身以攻击技能应对2次后，获得攻防+20%，回满状态，变身为【棋绮后】。变身后，基础种族值与特性变为棋绮后，但不改变已携带的技能。变身前获得的攻防提升效果在变身后依然保留。变身之前，棋绮后的特性可被正常触发，其效果将在变身后生效。"
       }
     }
   },
   {
     "name": "Guard Duty",
-    "description": "After this monster successfully performs Counter using a Defense-type move three times, it gains Attack +20%, Defense +20%, fully restores HP, and transforms into Chess Queen. After transforming, its base stats and trait become those of Chess Queen, while its equipped moves remain unchanged. The Attack and Defense bonuses gained before transformation persist after transforming. Before transformation, Chess Queen’s trait can already be triggered normally, and its effects will take effect after transformation.",
+    "description": "After this monster successfully performs Counter using a Defense-type move three times, it gains Attack +20%, Defense +20%, fully restores HP, and transforms into 'Chess Queen'. After transforming, its base stats and trait become those of Chess Queen, while its equipped moves remain unchanged. The Attack and Defense bonuses gained before transformation persist after transforming. Before transformation, Chess Queen’s trait can already be triggered normally, and its effects will take effect after transformation.",
     "localized": {
       "zh": {
         "name": "保卫",
-        "description": "自身以防御技能应对3次后，获得攻防+20%，回满状态，变身为棋绮后。变身后，基础种族值与特性变为棋绮后，但不改变已携带的技能。变身前获得的攻防提升效果在变身后依然保留。变身之前，棋绮后的特性可被正常触发，其效果将在变身后生效。"
+        "description": "自身以防御技能应对3次后，获得攻防+20%，回满状态，变身为【棋绮后】。变身后，基础种族值与特性变为棋绮后，但不改变已携带的技能。变身前获得的攻防提升效果在变身后依然保留。变身之前，棋绮后的特性可被正常触发，其效果将在变身后生效。"
       }
     }
   },
   {
     "name": "Dual Omens",
-    "description": "After this monster successfully performs Counter using a Status-type move once, it gains Attack +20%, Defense +20%, fully restores HP, and transforms into Chess Queen. After transforming, its base stats and trait become those of Chess Queen, while its equipped moves remain unchanged. The Attack and Defense bonuses gained before transformation persist after transforming. Before transformation, Chess Queen’s trait can already be triggered normally, and its effects will take effect after transformation.",
+    "description": "After this monster successfully performs Counter using a Status-type move once, it gains Attack +20%, Defense +20%, fully restores HP, and transforms into 'Chess Queen'. After transforming, its base stats and trait become those of Chess Queen, while its equipped moves remain unchanged. The Attack and Defense bonuses gained before transformation persist after transforming. Before transformation, Chess Queen’s trait can already be triggered normally, and its effects will take effect after transformation.",
     "localized": {
       "zh": {
         "name": "好象坏象",
-        "description": "自身以状态技能应对1次后，获得攻防+20%，回满状态，变身为棋绮后。变身后，基础种族值与特性变为棋绮后，但不改变已携带的技能。变身前获得的攻防提升效果在变身后依然保留。变身之前，棋绮后的特性可被正常触发，其效果将在变身后生效。"
+        "description": "自身以状态技能应对1次后，获得攻防+20%，回满状态，变身为【棋绮后】。变身后，基础种族值与特性变为棋绮后，但不改变已携带的技能。变身前获得的攻防提升效果在变身后依然保留。变身之前，棋绮后的特性可被正常触发，其效果将在变身后生效。"
       }
     }
   },

@@ -11,6 +11,7 @@ from backend.config import (
     LOG_LEVEL,
     DB_POOL_SIZE,
     DB_MAX_OVERFLOW,
+    ENABLE_REFERENCE_RESOLUTION,
 )
 from typing import Optional, List
 from decimal import Decimal, ROUND_HALF_UP
@@ -35,10 +36,52 @@ import time
 import logging
 import hashlib
 from backend.llm_service import generate_analysis_json
+from backend import reference_resolver
 
 # Setup logger
 logging.basicConfig(level=getattr(logging, LOG_LEVEL.upper(), logging.INFO))
 logger = logging.getLogger(__name__)
+
+# Battle Mechanics System Prompts
+BATTLE_MECHANICS_ZH = """每位玩家携带6只精灵对战，每只精灵有6项属性（生命、物攻、魔攻、物防、魔防、速度）。实战中每只精灵只能携带4个技能。技能描述中的"攻击"或"双攻"同时影响物攻与魔攻；"防御"或"双防"同时影响物防与魔防。
+
+战斗开始时双方各有4点魔力值，场上各只能同时上场1只精灵。精灵力竭（被击败）时失去1点魔力值（部分特性会改变此规则）。魔力值归零则判负。力竭后需手动选择新精灵入场。
+
+每只精灵初始10点能量（部分特性影响初始值）。能量按精灵单独记录，释放技能消耗对应能量。
+
+每回合双方同时选择一个行动：（1）释放技能：从4个技能中选1个并支付能量；（2）聚能：本回合不行动，恢复5点能量（属于状态类技能）；（3）主动更换精灵。血脉魔法可在任意行动时使用，不消耗行动/能量，在己方技能前生效，默认每场限用1次，除非其具体描述中注明冷却回合数等可重复使用规则。
+
+主动更换精灵先于所有技能结算。精灵主动入场时，若技能栏存在迅捷技能且能量充足，会立即自动释放首个满足条件的迅捷技能（按技能栏顺序）。迅捷仅在主动换上时触发，被动入场不触发。
+
+所有技能分为三类：攻击类（物攻/魔攻）、防御类、状态类。存在"应对"系统：若敌方技能类别与本技能可应对类别匹配，则应对成功，本技能以最高优先级立即释放，忽略速度顺序。双方不可同时应对成功。未触发应对时按先手值判定顺序，先手值相同则速度高者先行动。主动更换始终优先于技能结算。
+
+应对关系：防御类技能自带应对攻击（应对成功获得先手+1）；部分状态类技能带应对防御（应对成功返还能量）；部分攻击类技能带应对状态（应对成功威力+50%）。这形成克制三角，预测对手技能类别选择应对是PvP关键策略。
+
+增益指提升攻击、防御、速度、技能威力、连击数、吸血或降低技能能耗；减益相反。技能中的"全技能威力/全技能能耗"影响该精灵当前所有技能。精灵离场时清除非永久性增减益和大多数状态效果（印记除外）。
+
+层数定义：当"层数"用于增益/减益时，以10为换算基准。百分比增减：每10% = 1层，如物攻+150% = +15层物攻。数值增减（非百分比且为10的倍数）：每10点 = 1层，如技能威力+20 = +2层技能威力。当"层数"用于状态/印记时，层数按状态本身叠加规则计算，不做上述换算。
+
+在进行队伍与精灵分析时，请默认对战结算遵循以上关于魔力值、力竭、能量、技能类别、应对系统、增减益、迅捷、先手与速度、血脉魔法及层数定义的规则。"""
+
+BATTLE_MECHANICS_EN = """Each player brings 6 monsters into battle. Each monster has 6 stats (HP, Physical Attack, Magic Attack, Physical Defense, Magic Defense, Speed). In battle, each monster can only carry 4 moves. In move descriptions, "Attack" affects both Physical and Magic Attack; "Defense" affects both Physical and Magic Defense.
+
+At battle start, each player has 4 Life Points. Only 1 monster per side can be on the field at once. When a monster is defeated, the player loses 1 Life Point (some traits alter this). When Life Points reach 0, that player loses. After defeat, manually select a new monster to enter.
+
+Each monster starts with 10 energy (some traits affect initial energy). Energy is tracked per monster. Using moves consumes their marked energy cost.
+
+Each turn, both players simultaneously choose one action: (1) Use a move: select 1 of 4 moves and pay its energy cost; (2) Focus: skip this turn, restore 5 energy (classified as Status-type move); (3) Actively switch monsters. Magic Items can be used with any action, don't consume action/energy, take effect before your move, limited to once per battle by default unless its description specifies a cooldown that allows repeated use.
+
+Active switching executes before all move resolutions. When a monster enters via active switch, if its moveset contains a Quick Entry move with sufficient energy, it immediately auto-uses the first eligible Quick Entry move (by moveset slot order). Quick Entry only triggers on active switch-in, not passive entry.
+
+All moves fall into three categories: Attack-type (Physical/Magic Attack), Defense-type, Status-type. A "Counter" system exists: if the opponent's move category matches this move's counterable category, counter succeeds and this move resolves immediately with highest priority, ignoring speed order. Both sides cannot counter simultaneously. Without counter triggers, turn order is determined by priority value; if equal, higher speed acts first. Active switching always executes before move resolution.
+
+Counter relationships: All Defense moves have Counter Attack (successful counter grants Priority +1 next turn); some Status moves have Counter Defense (successful counter refunds energy cost); some Attack moves have Counter Status (successful counter grants +50% power). This forms a counter triangle—predicting opponent's move category to select counters is key PvP strategy.
+
+Buffs increase Attack, Defense, Speed, move power, Combo count, Lifesteal, or decrease move energy cost; Debuffs do the opposite. "All Move Power/Move Energy Cost" affects all moves currently carried by that monster. When monsters leave the field, non-permanent buffs/debuffs and most of status effects are removed (except marks).
+
+Stack definition: When "stacks" are used for buffs/debuffs, convert using 10 as the base unit. For percentage changes, every 10% = 1 stack (e.g., Physical Attack +150% = +15 stacks of Physical Attack). For flat value changes (non-percentage and a multiple of 10), every 10 points = 1 stack (e.g., Move Power +20 = +2 stacks of Move Power). When "stacks" refer to status/mark effects, stacks follow their own stacking rules and do not use the above conversion.
+
+When performing monster and team analysis, assume battle resolution follows the above rules regarding Life Points, defeated state, energy, move categories, counter system, buffs/debuffs, Quick Entry, priority and speed, Magic Items, and stack definitions."""
 
 app = FastAPI()
 
@@ -308,7 +351,22 @@ def build_trait_synergy_prompt(monster, trait, selected_moves, game_terms, main_
 
     # Adjust language in the prompt based on user's language
     if language == "zh":
-        prompt = f"""你是一位专业的游戏策略专家。
+        prompt = f"""你是一位专业的游戏策略专家，精通洛克王国的对战机制、属性克制和精灵配队。
+
+【核心对战规则】
+以下规则适用于所有PvP对战，是分析队伍和精灵配置的基础：
+
+## 对战机制
+{BATTLE_MECHANICS_ZH}
+
+## 属性克制表
+{type_chart}
+
+## 游戏术语表
+{glossary}
+
+---
+
 精灵: {monster_name}
 属性: {type_info}
 特性: {trait_name} — {trait_desc}
@@ -316,11 +374,7 @@ def build_trait_synergy_prompt(monster, trait, selected_moves, game_terms, main_
 已选技能:
 {move_lines_str}
 
-属性克制表:
-{type_chart}
-
-游戏术语表:
-{glossary}
+---
 
 指示:
 1. 识别哪些技能与特性特别有协同作用。
@@ -337,7 +391,22 @@ def build_trait_synergy_prompt(monster, trait, selected_moves, game_terms, main_
 }}
 """
     else:
-        prompt = f"""You are an expert game strategist.
+        prompt = f"""You are an expert game strategist specializing in Roco Kingdom battle mechanics, type matchups, and team composition.
+
+【Core Battle Rules】
+The following rules apply to all PvP battles and form the foundation for team and monster analysis:
+
+## Battle Mechanics
+{BATTLE_MECHANICS_EN}
+
+## Type Effectiveness Table
+{type_chart}
+
+## Game Terms Glossary
+{glossary}
+
+---
+
 Monster: {monster_name}
 Type: {type_info}
 Trait: {trait_name} — {trait_desc}
@@ -345,11 +414,7 @@ Trait: {trait_name} — {trait_desc}
 Selected moves:
 {move_lines_str}
 
-Type Effectiveness Table:
-{type_chart}
-
-Game Terms Glossary:
-{glossary}
+---
 
 Instructions:
 1. Identify which moves are especially synergistic with the trait.
@@ -461,18 +526,28 @@ def build_team_synergy_prompt(user_monsters, monster_db_map, move_db_map, type_d
     type_chart = "\n".join(type_chart_lines)
 
     if language == "zh":
-        prompt = f"""你是一位专业的游戏策略专家。请分析以下队伍的整体协同作用和战术建议。
+        prompt = f"""你是一位专业的游戏策略专家，精通洛克王国的对战机制、属性克制和精灵配队。
+
+【核心对战规则】
+以下规则适用于所有PvP对战，是分析队伍和精灵配置的基础：
+
+## 对战机制
+{BATTLE_MECHANICS_ZH}
+
+## 属性克制表
+{type_chart}
+
+## 游戏术语表
+{glossary}
+
+---
 
 队伍组成:
 {team_summary}
 
 魔法道具: {magic_item_name} — {magic_item_desc}
 
-属性克制表:
-{type_chart}
-
-游戏术语表:
-{glossary}
+---
 
 请从以下几个方面分析队伍的整体协同作用:
 1. **关键连招组合** (key_combos): 识别2-3个跨精灵的强力连招或协同组合，说明为什么它们有效。
@@ -489,18 +564,28 @@ def build_team_synergy_prompt(user_monsters, monster_db_map, move_db_map, type_d
 }}
 """
     else:
-        prompt = f"""You are an expert game strategist. Please analyze the overall team synergy and tactical recommendations for the following team.
+        prompt = f"""You are an expert game strategist specializing in Roco Kingdom battle mechanics, type matchups, and team composition.
+
+【Core Battle Rules】
+The following rules apply to all PvP battles and form the foundation for team and monster analysis:
+
+## Battle Mechanics
+{BATTLE_MECHANICS_EN}
+
+## Type Effectiveness Table
+{type_chart}
+
+## Game Terms Glossary
+{glossary}
+
+---
 
 Team Composition:
 {team_summary}
 
 Magic Item: {magic_item_name} — {magic_item_desc}
 
-Type Effectiveness Table:
-{type_chart}
-
-Game Terms Glossary:
-{glossary}
+---
 
 Please analyze the team's overall synergy from the following perspectives:
 1. **Key Combos** (key_combos): Identify 2-3 powerful cross-monster combos or synergy combinations and explain why they work.
@@ -519,13 +604,64 @@ Output as JSON in the following format (each recommendation should be a complete
     return prompt
 
 # Compute team-level analysis
-def compute_type_coverage(user_monsters, move_db_map, monster_db_map, type_db_map, personality_db_map=None):
+def compute_type_coverage(user_monsters, move_db_map, monster_db_map, type_db_map, personality_db_map=None, magic_item=None):
+    """
+    Compute offensive type coverage for a team.
+
+    If magic_item is Willpower Enhancement (愿力强化), returns both:
+    - Base coverage (original moves only)
+    - Enhanced coverage (with legacy types added as Willpower Impact)
+    """
     IGNORED_TYPE_NAMES = {"Leader"}
     ignored_type_ids = {t.id for t in type_db_map.values() if t.name in IGNORED_TYPE_NAMES}
     all_type_ids = set(type_db_map.keys()) - ignored_type_ids
 
-    # Gather all move types for offense
-    team_move_types = set()
+    # Helper function to compute coverage for a given set of attack types
+    def compute_coverage_levels(attack_type_ids_set):
+        if not attack_type_ids_set:
+            # No attack moves
+            return {
+                "super_effective_types": [],
+                "neutral_types": [],
+                "resisted_types": sorted(all_type_ids),
+            }
+
+        super_effective_types = []
+        neutral_types = []
+        resisted_types = []
+
+        for def_type_id in all_type_ids:
+            def_type = type_db_map[def_type_id]
+
+            # Check if any attack type is super-effective
+            has_super_effective = any(
+                def_type in type_db_map[atk_id].effective_against
+                for atk_id in attack_type_ids_set
+            )
+
+            if has_super_effective:
+                super_effective_types.append(def_type_id)
+                continue
+
+            # Check if any attack type is at least neutral (not resisted)
+            has_non_resisted_option = any(
+                def_type not in type_db_map[atk_id].weak_against
+                for atk_id in attack_type_ids_set
+            )
+
+            if has_non_resisted_option:
+                neutral_types.append(def_type_id)
+            else:
+                resisted_types.append(def_type_id)
+
+        return {
+            "super_effective_types": sorted(super_effective_types),
+            "neutral_types": sorted(neutral_types),
+            "resisted_types": sorted(resisted_types),
+        }
+
+    # Gather all ATTACK move types for offense (exclude STATUS/DEFENSE)
+    attack_type_ids = set()
     for um in user_monsters:
         base_monster = monster_db_map[um.monster_id]
         personality = personality_db_map.get(um.personality_id) if personality_db_map else None
@@ -533,21 +669,41 @@ def compute_type_coverage(user_monsters, move_db_map, monster_db_map, type_db_ma
         for move_id in [um.move1_id, um.move2_id, um.move3_id, um.move4_id]:
             move = move_db_map[move_id]
 
+            # Only count ATTACK category moves (PHY_ATTACK or MAG_ATTACK)
+            if move.move_category not in [models.MoveCategory.PHY_ATTACK, models.MoveCategory.MAG_ATTACK]:
+                continue  # Skip STATUS/DEFENSE moves
+
             # Resolve dynamic move properties if needed
             if personality and move.name == "Willpower Impact":
                 resolved_props = resolve_dynamic_move_properties(move, um, base_monster, personality, um.talent, type_db_map)
                 if resolved_props['type']:
-                    team_move_types.add(resolved_props['type'].id)
+                    attack_type_ids.add(resolved_props['type'].id)
             elif move.move_type_id:
-                team_move_types.add(move.move_type_id)
+                attack_type_ids.add(move.move_type_id)
 
-    # Offensive coverage
-    effective_against_types = set()
-    for move_type_id in team_move_types:
-        move_type = type_db_map[move_type_id]
-        effective_against_types.update([t.id for t in move_type.effective_against])
+    # Compute base coverage (original moves only)
+    base_coverage = compute_coverage_levels(attack_type_ids)
 
-    weak_against_types = list(all_type_ids - effective_against_types)
+    # Check if Willpower Enhancement (愿力强化) is active
+    willpower_enhancement_active = (
+        magic_item and
+        getattr(magic_item, "effect_code", None) == models.MagicEffectCode.ENHANCE_SPELL
+    )
+
+    # Compute enhanced coverage if Willpower Enhancement is active
+    enhanced_coverage = None
+    if willpower_enhancement_active:
+        leader_type_id = next((t.id for t in type_db_map.values() if t.name == "Leader"), None)
+        enhanced_attack_types = attack_type_ids.copy()
+
+        # Add legacy types as additional attack types (simulating Willpower Impact)
+        for um in user_monsters:
+            legacy_type_id = um.legacy_type_id
+            # Add if legacy type exists and is not Leader (Willpower Enhancement doesn't work on Leader)
+            if legacy_type_id and legacy_type_id != leader_type_id:
+                enhanced_attack_types.add(legacy_type_id)
+
+        enhanced_coverage = compute_coverage_levels(enhanced_attack_types)
 
     # Defensive weakness, build weakness count per type across team
     type_weak_count = Counter()
@@ -577,11 +733,26 @@ def compute_type_coverage(user_monsters, move_db_map, monster_db_map, type_db_ma
     # Only include types that appear >= 3 times
     team_weak_to = [type_id for type_id, count in type_weak_count.items() if count >= 3]
 
-    return {
-        "effective_against_types": sorted(effective_against_types),
-        "weak_against_types": sorted(weak_against_types),
+    # Build result with base coverage
+    result = {
+        "super_effective_types": base_coverage["super_effective_types"],
+        "neutral_types": base_coverage["neutral_types"],
+        "resisted_types": base_coverage["resisted_types"],
         "team_weak_to": sorted(team_weak_to),
+        # Backward compatibility (deprecated)
+        "effective_against_types": base_coverage["super_effective_types"],
+        "weak_against_types": base_coverage["resisted_types"],
     }
+
+    # Add enhanced coverage if Willpower Enhancement is active
+    if enhanced_coverage:
+        result["enhanced_coverage"] = {
+            "super_effective_types": enhanced_coverage["super_effective_types"],
+            "neutral_types": enhanced_coverage["neutral_types"],
+            "resisted_types": enhanced_coverage["resisted_types"],
+        }
+
+    return result
     
 def compute_magic_item_eval(magic_item, user_monster_outs, type_db_map):
     valid_targets = []
@@ -653,17 +824,17 @@ def generate_recommendations(per_monster_analysis, type_coverage, magic_item_eva
             move_ids=move_ids or []
         ))
 
-    # 1) Type coverage – offense
-    if type_coverage["weak_against_types"]:
-        names = [get_localized_name(type_db_map[t], language) for t in type_coverage["weak_against_types"]]
+    # 1) Type coverage – offense (resisted types only)
+    if type_coverage["resisted_types"]:
+        names = [get_localized_name(type_db_map[t], language) for t in type_coverage["resisted_types"]]
         if language == "zh":
-            add("coverage", "warn",
-                f"你的队伍无法对这些属性造成克制伤害：{', '.join(names)}。建议增加相应属性的技能来覆盖。",
-                type_ids=type_coverage["weak_against_types"])
+            add("coverage", "danger",
+                f"你的攻击技能被以下属性完全抵抗：{', '.join(names)}。建议增加其他属性的攻击技能以提升覆盖面。",
+                type_ids=type_coverage["resisted_types"])
         else:
-            add("coverage", "warn",
-                f"Your team cannot hit these types super-effectively: {', '.join(names)}. Consider adding moves for coverage.",
-                type_ids=type_coverage["weak_against_types"])
+            add("coverage", "danger",
+                f"Your team's attacks are resisted by: {', '.join(names)}. Add different attack types for better coverage.",
+                type_ids=type_coverage["resisted_types"])
 
     # 2) Team defensive weaknesses
     if type_coverage["team_weak_to"]:
@@ -777,15 +948,15 @@ def generate_recommendations(per_monster_analysis, type_coverage, magic_item_eva
         "phy_atk": "main physical attacker",
         "mag_atk": "main magic attacker",
         "overall_def": "physical or special tank",
-        "spd": "lead, scout, or revenge killer",
+        "spd": "pressure role or finisher",
     }
 
     stat_roles_zh = {
         "hp": "前排或防守核心",
-        "phy_atk": "主要物理攻击手",
-        "mag_atk": "主要魔法攻击手",
+        "phy_atk": "主要物理输出手",
+        "mag_atk": "主要魔法输出手",
         "overall_def": "物理或魔法坦克",
-        "spd": "侦察或收割手",
+        "spd": "压制位或收割手",
     }
 
     stat_roles = stat_roles_zh if language == "zh" else stat_roles_en
@@ -1260,17 +1431,29 @@ async def _perform_team_analysis(
     # team_data is TeamCreate (with 6 UserMonsterCreate)
 
     # --- Helper: Call LLM with Caching ---
-    async def call_llm(prompt: str, cache_key: str):
+    async def call_llm(
+        prompt: str,
+        cache_key: str,
+        context: str = None,
+        monster_name: str = None,
+    ):
         """
         Call LLM with caching support.
 
         Wrapper for backward compatibility - delegates to generate_analysis_json.
         """
+        # Extract team hash from cache key for logging
+        team_hash = cache_key[:50] if cache_key else None
+
         return await generate_analysis_json(
             prompt=prompt,
             cache_key=cache_key,
             llm_cache=llm_cache,
             temperature=None,  # Use default from config
+            context=context,
+            team_hash=team_hash,
+            language=language,
+            monster_name=monster_name,
         )
 
     # === EFFICIENT DATA LOADING ===
@@ -1324,14 +1507,46 @@ async def _perform_team_analysis(
     magic_item = (db.query(models.MagicItem).filter(models.MagicItem.id == team_data.magic_item_id).first())
     if not magic_item:
         raise HTTPException(status_code=400, detail=f"Magic item with ID {team_data.magic_item_id} not found")
-    game_terms = db.query(models.GameTerm).all()
-    logger.debug(f"Loaded game terms: {len(game_terms)}")
+
+    # Load game terms as a map for efficient lookup (used for reference resolution)
+    game_term_db_map = {gt.id: gt for gt in db.query(models.GameTerm).all()}
+    logger.debug(f"Loaded game terms: {len(game_term_db_map)}")
 
     logger.debug("Finish loading data for analysis!")
 
     # === CONCURRENT LLM ANALYSIS ===
     logger.debug("Start creating prompt for LLM analysis...")
     logger.info(f"Language received: {language}")
+
+    # Resolve references if feature flag is enabled
+    if ENABLE_REFERENCE_RESOLUTION:
+        logger.info("Reference resolution ENABLED - filtering game terms")
+
+        # Collect all entities to analyze (traits + moves for all monsters)
+        entities_to_analyze = []
+        for um in team_data.user_monsters:
+            base_monster = monster_db_map[um.monster_id]
+            trait = trait_db_map[base_monster.trait_id]
+            selected_moves = [move_db_map[um.move1_id], move_db_map[um.move2_id], move_db_map[um.move3_id], move_db_map[um.move4_id]]
+
+            entities_to_analyze.append(trait)
+            entities_to_analyze.extend(selected_moves)
+
+        # Resolve all references
+        resolved_refs = reference_resolver.resolve_references_for_prompt(entities_to_analyze, language, db)
+
+        # Build filtered game terms list
+        game_terms = [game_term_db_map[gt_id] for gt_id in sorted(resolved_refs.game_terms)]
+        logger.info(f"Filtered to {len(game_terms)} game terms (from {len(game_term_db_map)} total)")
+
+        # DEBUG: Log which game terms are included
+        if logger.level <= 10:  # DEBUG level
+            term_keys = [gt.key for gt in game_terms]
+            logger.debug(f"Included game terms: {', '.join(term_keys)}")
+    else:
+        logger.info("Reference resolution DISABLED - using all game terms")
+        game_terms = list(game_term_db_map.values())
+
     llm_tasks = []
 
     # Per-monster trait synergy analysis
@@ -1370,12 +1585,26 @@ async def _perform_team_analysis(
         )
 
         prompt = build_trait_synergy_prompt(base_monster, trait, resolved_moves_for_prompt, game_terms, main_type, sub_type, type_db_map, language)
-        llm_tasks.append(call_llm(prompt, cache_key))
+
+        # Get monster name for logging
+        monster_name = pickName(base_monster.localized, language)
+
+        llm_tasks.append(call_llm(
+            prompt=prompt,
+            cache_key=cache_key,
+            context="trait_synergy",
+            monster_name=monster_name,
+        ))
 
     # Team-wide synergy analysis
     team_cache_key = generate_team_cache_key(team_data, language)
     team_synergy_prompt = build_team_synergy_prompt(team_data.user_monsters, monster_db_map, move_db_map, type_db_map, trait_db_map, magic_item, game_terms, language)
-    llm_tasks.append(call_llm(team_synergy_prompt, team_cache_key))
+    llm_tasks.append(call_llm(
+        prompt=team_synergy_prompt,
+        cache_key=team_cache_key,
+        context="team_synergy",
+        monster_name=None,  # Team-wide analysis, no specific monster
+    ))
 
     llm_results = await asyncio.gather(*llm_tasks)
 
@@ -1479,7 +1708,7 @@ async def _perform_team_analysis(
 
     # Call the top-level helper functions
     logger.debug("Start team-level analysis...")
-    type_coverage = compute_type_coverage(team_data.user_monsters, move_db_map, monster_db_map, type_db_map, personality_db_map)
+    type_coverage = compute_type_coverage(team_data.user_monsters, move_db_map, monster_db_map, type_db_map, personality_db_map, magic_item)
     magic_item_eval_dict = compute_magic_item_eval(magic_item, user_monster_outs, type_db_map)
     magic_item_out = schemas.MagicItemOut(**magic_item.__dict__)
     magic_item_eval = schemas.MagicItemEvaluation(

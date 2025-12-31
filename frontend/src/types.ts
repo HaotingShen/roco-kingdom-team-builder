@@ -248,10 +248,25 @@ export interface MonsterAnalysisOut {
   trait_synergies: TraitSynergyFinding[];
 }
 
+export interface EnhancedCoverageReport {
+  super_effective_types: ID[];
+  neutral_types: ID[];
+  resisted_types: ID[];
+}
+
 export interface TypeCoverageReport {
+  // NEW primary fields (base coverage from original moves)
+  super_effective_types?: ID[];
+  neutral_types?: ID[];
+  resisted_types?: ID[];
+  team_weak_to: ID[];
+
+  // Enhanced coverage (only present if Willpower Enhancement is selected)
+  enhanced_coverage?: EnhancedCoverageReport;
+
+  // DEPRECATED (backward compatibility)
   effective_against_types: ID[];
   weak_against_types: ID[];
-  team_weak_to: ID[];
 }
 
 export type Severity = "info" | "warn" | "danger";
