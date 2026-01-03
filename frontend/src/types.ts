@@ -315,3 +315,22 @@ export interface TeamAnalysisOut {
   recommendations_structured: RecItem[];
   team_synergy?: TeamSynergyRecommendation | null;
 }
+/** Saved analysis types */
+export interface SavedAnalysisOut {
+  id: number;
+  team_id: number;
+  language: "en" | "zh";
+  is_from_cache: boolean;
+  created_at: string;
+}
+
+export interface FullSavedAnalysisOut extends SavedAnalysisOut {
+  analysis_data: TeamAnalysisOut;
+}
+
+export interface SaveAnalysisRequest {
+  team_id: number;
+  language?: "en" | "zh";
+  analysis_data: TeamAnalysisOut;
+  is_from_cache?: boolean;
+}

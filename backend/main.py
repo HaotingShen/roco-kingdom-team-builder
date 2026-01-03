@@ -13,7 +13,8 @@ from backend.config import (
     DB_MAX_OVERFLOW,
     ENABLE_REFERENCE_RESOLUTION,
 )
-from typing import Optional, List
+from typing import Optional, List, Literal
+from datetime import datetime
 from decimal import Decimal, ROUND_HALF_UP
 from backend import models, schemas
 from backend.cache import llm_cache
@@ -1587,7 +1588,7 @@ async def _perform_team_analysis(
         prompt = build_trait_synergy_prompt(base_monster, trait, resolved_moves_for_prompt, game_terms, main_type, sub_type, type_db_map, language)
 
         # Get monster name for logging
-        monster_name = pickName(base_monster.localized, language)
+        monster_name = get_localized_name(base_monster, language)
 
         llm_tasks.append(call_llm(
             prompt=prompt,
@@ -1606,7 +1607,81 @@ async def _perform_team_analysis(
         monster_name=None,  # Team-wide analysis, no specific monster
     ))
 
-    llm_results = await asyncio.gather(*llm_tasks)
+    # Gather all LLM results, capturing exceptions to handle errors gracefully
+    llm_results = await asyncio.gather(*llm_tasks, return_exceptions=True)
+
+    # Categorize errors by type for better handling
+    quota_errors = []
+    rate_limit_errors = []
+    server_errors = []
+    auth_errors = []
+    other_errors = []
+
+    for i, result in enumerate(llm_results):
+        if isinstance(result, Exception):
+            error_msg = str(result).lower()
+
+            # Quota exhaustion (Gemini, OpenAI, etc.)
+            if any(pattern in error_msg for pattern in ["429", "resource_exhausted", "quota", "insufficient_quota"]):
+                quota_errors.append((i, result))
+            # Rate limiting (DeepSeek, OpenAI)
+            elif any(pattern in error_msg for pattern in ["rate_limit", "too_many_requests", "requests per"]):
+                rate_limit_errors.append((i, result))
+            # Server errors (500, 502, 503, timeout)
+            elif any(pattern in error_msg for pattern in ["500", "502", "503", "504", "timeout", "timed out", "unavailable"]):
+                server_errors.append((i, result))
+            # Authentication errors (401, 403, invalid API key)
+            elif any(pattern in error_msg for pattern in ["401", "403", "unauthorized", "forbidden", "invalid.*key", "api.*key"]):
+                auth_errors.append((i, result))
+            else:
+                other_errors.append((i, result))
+
+    # Fail fast if ANY critical error detected (prioritize by severity)
+    # 1. Authentication errors (most critical - prevents all future requests)
+    if auth_errors:
+        logger.error(f"Authentication failed: {len(auth_errors)} of {len(llm_tasks)} LLM calls failed due to auth issues")
+        if language == "zh":
+            error_detail = "API 认证失败。请检查 API 密钥配置。"
+        else:
+            error_detail = "API authentication failed. Please check your API key configuration."
+        raise HTTPException(status_code=401, detail=error_detail)
+
+    # 2. Quota exhaustion (common with free tiers)
+    if quota_errors:
+        logger.error(f"Quota exhausted: {len(quota_errors)} of {len(llm_tasks)} LLM calls failed due to quota limits")
+        if language == "zh":
+            error_detail = f"API 配额已用尽。当前提供商: {LLM_PROVIDER}。请稍后重试或检查配额限制。"
+        else:
+            error_detail = f"API quota exhausted for provider: {LLM_PROVIDER}. Please try again later or check your quota limits."
+        raise HTTPException(status_code=429, detail=error_detail)
+
+    # 3. Rate limiting (temporary)
+    if rate_limit_errors:
+        logger.error(f"Rate limited: {len(rate_limit_errors)} of {len(llm_tasks)} LLM calls exceeded rate limits")
+        if language == "zh":
+            error_detail = "API 请求频率超限。请稍后重试。"
+        else:
+            error_detail = "API rate limit exceeded. Please try again in a few moments."
+        raise HTTPException(status_code=429, detail=error_detail)
+
+    # 4. Server errors (provider issues)
+    if server_errors:
+        logger.error(f"Server error: {len(server_errors)} of {len(llm_tasks)} LLM calls failed due to server issues")
+        if language == "zh":
+            error_detail = f"API 服务暂时不可用 ({LLM_PROVIDER})。请稍后重试。"
+        else:
+            error_detail = f"API service temporarily unavailable ({LLM_PROVIDER}). Please try again later."
+        raise HTTPException(status_code=503, detail=error_detail)
+
+    # 5. Other unexpected errors
+    if other_errors:
+        idx, error = other_errors[0]
+        logger.error(f"LLM call {idx} failed with unexpected error: {error}")
+        if language == "zh":
+            error_detail = f"分析失败: {str(error)[:100]}"
+        else:
+            error_detail = f"Analysis failed: {str(error)[:100]}"
+        raise HTTPException(status_code=500, detail=error_detail)
 
     logger.debug("Finish creating prompt for LLM analysis!")
 
@@ -2004,5 +2079,108 @@ def delete_team(team_id: int, db: Session = Depends(get_db)):
     if not db_team:
         raise HTTPException(status_code=404, detail="Team not found")
     db.delete(db_team)
+    db.commit()
+    return
+# -------- Saved Analysis Helper Functions --------
+
+def save_or_update_analysis(
+    team_id: int,
+    language: str,
+    analysis_data: dict,
+    is_from_cache: bool,
+    db: Session
+) -> models.TeamAnalysis:
+    """Save or update analysis for a team (replaces if exists)."""
+    existing = (
+        db.query(models.TeamAnalysis)
+        .filter(
+            models.TeamAnalysis.team_id == team_id,
+            models.TeamAnalysis.language == language
+        )
+        .first()
+    )
+
+    if existing:
+        existing.analysis_data = analysis_data
+        existing.is_from_cache = is_from_cache
+        existing.created_at = datetime.utcnow()
+        db.commit()
+        db.refresh(existing)
+        return existing
+    else:
+        new_analysis = models.TeamAnalysis(
+            team_id=team_id,
+            language=language,
+            analysis_data=analysis_data,
+            is_from_cache=is_from_cache
+        )
+        db.add(new_analysis)
+        db.commit()
+        db.refresh(new_analysis)
+        return new_analysis
+
+# -------- Saved Analysis Endpoints --------
+
+@app.post("/analysis/save", response_model=schemas.SavedAnalysisOut)
+def save_analysis(
+    req: schemas.SaveAnalysisRequest,
+    db: Session = Depends(get_db)
+):
+    """Save an analysis result for a team. Replaces existing if present."""
+    team = db.query(models.Team).filter(models.Team.id == req.team_id).first()
+    if not team:
+        raise HTTPException(status_code=404, detail="Team not found")
+
+    saved = save_or_update_analysis(
+        team_id=req.team_id,
+        language=req.language,
+        analysis_data=req.analysis_data.model_dump(),
+        is_from_cache=req.is_from_cache,
+        db=db
+    )
+
+    return saved
+
+@app.get("/teams/{team_id}/analysis", response_model=schemas.FullSavedAnalysisOut)
+def get_saved_analysis(
+    team_id: int,
+    language: Literal["en", "zh"] = "en",
+    db: Session = Depends(get_db)
+):
+    """Retrieve saved analysis for a team."""
+    saved = (
+        db.query(models.TeamAnalysis)
+        .filter(
+            models.TeamAnalysis.team_id == team_id,
+            models.TeamAnalysis.language == language
+        )
+        .first()
+    )
+
+    if not saved:
+        raise HTTPException(status_code=404, detail="No saved analysis found for this team")
+
+    return saved
+
+@app.delete("/teams/{team_id}/analysis", status_code=status.HTTP_204_NO_CONTENT)
+def delete_saved_analysis(
+    team_id: int,
+    language: Literal["en", "zh"] = "en",
+    db: Session = Depends(get_db)
+):
+    """Delete saved analysis for a team."""
+    saved = (
+        db.query(models.TeamAnalysis)
+        .filter(
+            models.TeamAnalysis.team_id == team_id,
+            models.TeamAnalysis.language == language
+        )
+        .first()
+    )
+
+    if not saved:
+        raise HTTPException(status_code=404, detail="No saved analysis found")
+
+    db.delete(saved)
     db.commit()
     return

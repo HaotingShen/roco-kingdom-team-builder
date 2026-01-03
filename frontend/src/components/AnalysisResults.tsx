@@ -264,12 +264,12 @@ function MonsterAnalysisCard({ data }: { data: MonsterAnalysisOut }) {
         <div className="text-xs font-semibold text-zinc-600 mb-2">
           {t("analysis.finalStats")}
         </div>
-        <StatRow label={t("labels.hp")} value={data.effective_stats.hp} max={500} color="red" />
-        <StatRow label={t("labels.phyAtk")} value={data.effective_stats.phy_atk} max={300} color="orange" />
-        <StatRow label={t("labels.magAtk")} value={data.effective_stats.mag_atk} max={300} color="purple" />
-        <StatRow label={t("labels.phyDef")} value={data.effective_stats.phy_def} max={300} color="blue" />
-        <StatRow label={t("labels.magDef")} value={data.effective_stats.mag_def} max={300} color="indigo" />
-        <StatRow label={t("labels.spd")} value={data.effective_stats.spd} max={300} color="yellow" />
+        <StatRow label={t("labels.hp")} value={data.effective_stats.hp} max={600} color="red" />
+        <StatRow label={t("labels.phyAtk")} value={data.effective_stats.phy_atk} max={350} color="orange" />
+        <StatRow label={t("labels.magAtk")} value={data.effective_stats.mag_atk} max={350} color="purple" />
+        <StatRow label={t("labels.phyDef")} value={data.effective_stats.phy_def} max={350} color="blue" />
+        <StatRow label={t("labels.magDef")} value={data.effective_stats.mag_def} max={350} color="indigo" />
+        <StatRow label={t("labels.spd")} value={data.effective_stats.spd} max={350} color="yellow" />
       </div>
 
       {/* synergy */}

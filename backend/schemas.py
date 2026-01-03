@@ -60,7 +60,7 @@ class MoveOut(MoveLiteOut):
     
     @field_serializer("move_category")
     def _ser_move_category(self, v: MoveCategory, _info):
-        return v.name
+        return v.value
 
 class LegacyMoveOut(BaseModel):
     monster_id: int
@@ -90,6 +90,10 @@ class MonsterLiteOut(BaseModel):
     localized: Dict
 
     model_config = ConfigDict(from_attributes=True)
+
+    @field_serializer("preferred_attack_style")
+    def _ser_attack_style(self, v: AttackStyle, _info):
+        return v.value
 
 # Full version of MonsterOut
 class MonsterOut(MonsterLiteOut):
@@ -312,7 +316,25 @@ class TeamAnalysisOut(BaseModel):
     team_synergy: Optional[TeamSynergyRecommendation] = None
 
     model_config = ConfigDict(from_attributes=True)
-    
+
+class SavedAnalysisOut(BaseModel):
+    id: int
+    team_id: int
+    language: Literal["en", "zh"]
+    is_from_cache: bool
+    created_at: datetime
+    model_config = ConfigDict(from_attributes=True)
+
+class FullSavedAnalysisOut(SavedAnalysisOut):
+    analysis_data: TeamAnalysisOut
+    model_config = ConfigDict(from_attributes=True)
+
+class SaveAnalysisRequest(BaseModel):
+    team_id: int
+    language: Literal["en", "zh"] = "en"
+    analysis_data: TeamAnalysisOut
+    is_from_cache: bool = False
+
 class TalentUpsert(BaseModel):
     hp_boost: int = 0
     phy_atk_boost: int = 0

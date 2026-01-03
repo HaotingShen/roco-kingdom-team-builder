@@ -287,3 +287,22 @@ class Team(Base):
     # Relationships
     user_monsters = relationship("UserMonster", back_populates="team", cascade="all, delete-orphan", order_by="UserMonster.position")
     magic_item = relationship("MagicItem")
+    analyses = relationship("TeamAnalysis", back_populates="team", cascade="all, delete-orphan")
+
+class TeamAnalysis(Base):
+    __tablename__ = "team_analyses"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    team_id: Mapped[int] = mapped_column(Integer, ForeignKey("teams.id", ondelete="CASCADE"), nullable=False)
+    language: Mapped[str] = mapped_column(String(2), nullable=False)
+    analysis_data: Mapped[dict] = mapped_column(JSONB, nullable=False)
+    is_from_cache: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=text("timezone('utc', now())"), nullable=False)
+
+    __table_args__ = (
+        UniqueConstraint("team_id", "language", name="uq_team_analysis_team_language"),
+        Index("ix_team_analyses_team_id", "team_id"),
+        Index("ix_team_analyses_created_at", "created_at"),
+    )
+
+    team = relationship("Team", back_populates="analyses")

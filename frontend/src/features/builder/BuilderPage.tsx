@@ -248,6 +248,25 @@ export default function BuilderPage() {
     },
   });
 
+  /* ---------- save analysis mutation ---------- */
+  const saveAnalysis = useMutation({
+    mutationFn: async () => {
+      if (!teamId || !analysis) throw new Error("No team or analysis");
+      return endpoints.saveAnalysis({
+        team_id: teamId,
+        language: lang,
+        analysis_data: analysis,
+        is_from_cache: false,
+      }).then((r) => r.data);
+    },
+    onSuccess: () => {
+      setServerOk(t("builder.analysisSaved"));
+    },
+    onError: (err: any) => {
+      setServerErr(err?.response?.data?.detail || t("builder.failedToSave"));
+    },
+  });
+
   const onAnalyze = () => {
     if (isAnalyzing) {
       setServerErr(t("builder.analysisInProgress"));
@@ -615,6 +634,17 @@ export default function BuilderPage() {
                 t("builder.analyze")
               )}
             </button>
+
+            {/* save analysis */}
+            {analysis && teamId && (
+              <button
+                onClick={() => saveAnalysis.mutate()}
+                disabled={saveAnalysis.isPending}
+                className="h-10 px-4 rounded-lg font-semibold text-sm bg-emerald-600 text-white hover:bg-emerald-700 transition-colors disabled:bg-zinc-300 disabled:text-zinc-500"
+              >
+                {saveAnalysis.isPending ? "Saving..." : t("builder.saveAnalysis")}
+              </button>
+            )}
           </div>
 
           {/* closable messages */}

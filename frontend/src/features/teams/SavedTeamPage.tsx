@@ -3,7 +3,7 @@ import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
 import { endpoints } from "@/lib/api";
 import { useBuilderStore } from "../builder/builderStore";
-import type { TeamOut } from "@/types";
+import type { TeamOut, FullSavedAnalysisOut } from "@/types";
 import { pickName, pickFormName, useI18n, type Lang } from "@/i18n";
 import { monsterImageFallbackChain, typeIconUrl, magicItemImageUrl } from "@/lib/images";
 import { formatRowEffects } from "@/lib/personality";
@@ -96,6 +96,14 @@ export default function SavedTeamPage() {
     refetchOnWindowFocus: false,
   });
 
+  // Query for saved analysis
+  const savedAnalysisQuery = useQuery<FullSavedAnalysisOut>({
+    queryKey: ["savedAnalysis", teamId, lang],
+    queryFn: () => endpoints.getSavedAnalysis(teamId, lang).then(r => r.data),
+    enabled: Number.isFinite(teamId),
+    retry: false, // Don't retry if no saved analysis exists
+  });
+
   const del = useMutation({
     mutationFn: () => endpoints.deleteTeam(teamId).then(r => r.data),
     onMutate: async () => {
@@ -161,6 +169,20 @@ export default function SavedTeamPage() {
     }
     setServerErr(null);
     analyze.mutate();
+  };
+
+  const onViewSavedAnalysis = () => {
+    if (savedAnalysisQuery.data?.analysis_data) {
+      setAnalysis(savedAnalysisQuery.data.analysis_data);
+      nav("/build");
+      // Scroll to analysis section after navigation
+      setTimeout(() => {
+        const element = document.getElementById("analysis-results");
+        if (element) {
+          element.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+      }, 200);
+    }
   };
 
   if (q.isLoading) return <div className="flex items-center justify-center h-64">{t("common.loading")}</div>;
@@ -365,6 +387,16 @@ export default function SavedTeamPage() {
               t("teams.analyze")
             )}
           </button>
+
+          {/* View saved analysis button - only show if saved analysis exists */}
+          {savedAnalysisQuery.data?.analysis_data && (
+            <button
+              className="w-full h-10 border-2 border-emerald-600 rounded-lg text-emerald-700 hover:bg-emerald-50 cursor-pointer font-medium transition-colors"
+              onClick={onViewSavedAnalysis}
+            >
+              {t("teams.viewAnalysis")}
+            </button>
+          )}
 
           <div className="pt-3 border-t">
             <button
