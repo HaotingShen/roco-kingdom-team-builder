@@ -336,7 +336,19 @@ function byCategory(items: RecItem[]) {
 
 /* ---------------- main panel ---------------- */
 
-export default function AnalysisResults({ analysis }: { analysis: TeamAnalysisOut }) {
+export default function AnalysisResults({
+  analysis,
+  teamId,
+  onSaveAnalysis,
+  isSaving,
+  isAlreadySaved,
+}: {
+  analysis: TeamAnalysisOut;
+  teamId: number | null;
+  onSaveAnalysis?: () => void;
+  isSaving?: boolean;
+  isAlreadySaved?: boolean;
+}) {
   const { lang, t } = useI18n();
   const { byId } = useTypesById();
 
@@ -374,6 +386,52 @@ export default function AnalysisResults({ analysis }: { analysis: TeamAnalysisOu
           </span>
         </div>
       </div>
+
+      {/* Save Analysis Button - below header */}
+      {onSaveAnalysis && (
+        <div className="flex justify-center -mt-2 mb-4">
+          {!teamId ? (
+            <div className="px-6 py-3 rounded-lg bg-amber-50 border-2 border-amber-300 text-amber-700 text-sm font-medium">
+              💡 {t("builder.saveTeamFirst")}
+            </div>
+          ) : (
+            <button
+              onClick={onSaveAnalysis}
+              disabled={isSaving || isAlreadySaved}
+            className={`
+              px-6 py-3 rounded-lg font-semibold text-sm shadow-md
+              transition-all duration-200
+              ${isAlreadySaved
+                ? "bg-zinc-100 border-2 border-zinc-300 text-zinc-500 cursor-not-allowed"
+                : isSaving
+                ? "bg-emerald-400 text-white cursor-wait"
+                : "bg-emerald-600 text-white hover:bg-emerald-700 hover:shadow-lg cursor-pointer"
+              }
+            `}
+            title={isAlreadySaved ? t("builder.alreadySaved") : t("builder.saveThisAnalysis")}
+          >
+            {isSaving ? (
+              <span className="inline-flex items-center gap-2">
+                <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"/>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
+                </svg>
+                Saving...
+              </span>
+            ) : isAlreadySaved ? (
+              <span className="inline-flex items-center gap-2">
+                <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
+                </svg>
+                {t("builder.alreadySaved")}
+              </span>
+            ) : (
+              t("builder.saveAnalysis")
+            )}
+            </button>
+          )}
+        </div>
+      )}
 
       {/* 1) Team overview */}
       <section className="rounded-lg border-2 border-zinc-200 bg-gradient-to-br from-white via-zinc-50 to-white shadow-lg overflow-hidden">
@@ -498,9 +556,6 @@ export default function AnalysisResults({ analysis }: { analysis: TeamAnalysisOu
                       <span className="text-sm font-semibold text-zinc-800">
                         {t("analysis.teamWeakTo")}
                       </span>
-                      {isEnhanced && (
-                        <span className="text-xs text-zinc-500">{t("analysis.defensiveNote")}</span>
-                      )}
                     </div>
                     <div className="flex flex-wrap gap-2">
                       {teamWeakTo.length ? (
@@ -703,39 +758,151 @@ export default function AnalysisResults({ analysis }: { analysis: TeamAnalysisOu
           <div className="p-5">
 
           <div className="space-y-3">
-            {analysis.team_synergy.key_combos.length > 0 && (
+            {analysis.team_synergy.team_archetype && typeof analysis.team_synergy.team_archetype === 'object' && !Array.isArray(analysis.team_synergy.team_archetype) ? (
               <CollapsibleSection
-                title={t("analysis.keyCombos")}
-                icon="💥"
+                title={t("analysis.teamArchetype")}
+                icon="🎯"
+                defaultExpanded={true}
+              >
+                <div className="text-sm space-y-3">
+                  {analysis.team_synergy.team_archetype.tactical_type && (
+                    <div className="leading-relaxed text-zinc-800 pl-4 py-2 border-l-4 border-emerald-300 bg-gradient-to-r from-emerald-50/50 to-transparent rounded-r-md">
+                      {analysis.team_synergy.team_archetype.tactical_type}
+                    </div>
+                  )}
+                  {analysis.team_synergy.team_archetype.core_loop && (
+                    <div className="leading-relaxed text-zinc-800 pl-4 py-2 border-l-4 border-emerald-300 bg-gradient-to-r from-emerald-50/50 to-transparent rounded-r-md">
+                      {analysis.team_synergy.team_archetype.core_loop}
+                    </div>
+                  )}
+                  {analysis.team_synergy.team_archetype.battle_rhythm && (
+                    <div className="leading-relaxed text-zinc-800 pl-4 py-2 border-l-4 border-emerald-300 bg-gradient-to-r from-emerald-50/50 to-transparent rounded-r-md">
+                      {analysis.team_synergy.team_archetype.battle_rhythm}
+                    </div>
+                  )}
+                </div>
+              </CollapsibleSection>
+            ) : analysis.team_synergy.team_archetype && Array.isArray(analysis.team_synergy.team_archetype) && analysis.team_synergy.team_archetype.length > 0 && (
+              <CollapsibleSection
+                title={t("analysis.teamArchetype")}
+                icon="🎯"
                 defaultExpanded={true}
               >
                 <ul className="text-sm space-y-3">
-                  {analysis.team_synergy.key_combos.map((combo, i) => (
+                  {analysis.team_synergy.team_archetype.map((item, i) => (
                     <li key={i} className="leading-relaxed text-zinc-800 pl-4 py-2 border-l-4 border-emerald-300 bg-gradient-to-r from-emerald-50/50 to-transparent rounded-r-md transition-all hover:border-emerald-500 hover:from-emerald-50">
-                      <span className="font-medium">• {combo}</span>
+                      <span className="font-medium">• {item}</span>
                     </li>
                   ))}
                 </ul>
               </CollapsibleSection>
             )}
 
-            {analysis.team_synergy.turn_order_strategy.length > 0 && (
+            {analysis.team_synergy.action_priority && typeof analysis.team_synergy.action_priority === 'object' && !Array.isArray(analysis.team_synergy.action_priority) ? (
               <CollapsibleSection
-                title={t("analysis.turnOrderStrategy")}
-                icon="🎲"
+                title={t("analysis.actionPriority")}
+                icon="⚡"
+                defaultExpanded={false}
+              >
+                <div className="text-sm space-y-3">
+                  {analysis.team_synergy.action_priority.role_assignment && (
+                    <div className="leading-relaxed text-zinc-800 pl-4 py-2 border-l-4 border-blue-300 bg-gradient-to-r from-blue-50/50 to-transparent rounded-r-md">
+                      {analysis.team_synergy.action_priority.role_assignment}
+                    </div>
+                  )}
+                  {analysis.team_synergy.action_priority.counter_triangle && (
+                    <div className="leading-relaxed text-zinc-800 pl-4 py-2 border-l-4 border-blue-300 bg-gradient-to-r from-blue-50/50 to-transparent rounded-r-md">
+                      {analysis.team_synergy.action_priority.counter_triangle}
+                    </div>
+                  )}
+                  {analysis.team_synergy.action_priority.energy_economy && (
+                    <div className="leading-relaxed text-zinc-800 pl-4 py-2 border-l-4 border-blue-300 bg-gradient-to-r from-blue-50/50 to-transparent rounded-r-md">
+                      {analysis.team_synergy.action_priority.energy_economy}
+                    </div>
+                  )}
+                </div>
+              </CollapsibleSection>
+            ) : analysis.team_synergy.action_priority && Array.isArray(analysis.team_synergy.action_priority) && analysis.team_synergy.action_priority.length > 0 && (
+              <CollapsibleSection
+                title={t("analysis.actionPriority")}
+                icon="⚡"
                 defaultExpanded={false}
               >
                 <ul className="text-sm space-y-3">
-                  {analysis.team_synergy.turn_order_strategy.map((strategy, i) => (
+                  {analysis.team_synergy.action_priority.map((item, i) => (
                     <li key={i} className="leading-relaxed text-zinc-800 pl-4 py-2 border-l-4 border-blue-300 bg-gradient-to-r from-blue-50/50 to-transparent rounded-r-md transition-all hover:border-blue-500 hover:from-blue-50">
-                      <span className="font-medium">• {strategy}</span>
+                      <span className="font-medium">• {item}</span>
                     </li>
                   ))}
                 </ul>
               </CollapsibleSection>
             )}
 
-            {analysis.team_synergy.magic_item_usage.length > 0 && (
+            {analysis.team_synergy.switching_strategy && typeof analysis.team_synergy.switching_strategy === 'object' && !Array.isArray(analysis.team_synergy.switching_strategy) ? (
+              <CollapsibleSection
+                title={t("analysis.switchingStrategy")}
+                icon="🔄"
+                defaultExpanded={false}
+              >
+                <div className="text-sm space-y-3">
+                  {analysis.team_synergy.switching_strategy.pivot_points && (
+                    <div className="leading-relaxed text-zinc-800 pl-4 py-2 border-l-4 border-cyan-300 bg-gradient-to-r from-cyan-50/50 to-transparent rounded-r-md">
+                      {analysis.team_synergy.switching_strategy.pivot_points}
+                    </div>
+                  )}
+                  {analysis.team_synergy.switching_strategy.active_switch_scenarios && (
+                    <div className="leading-relaxed text-zinc-800 pl-4 py-2 border-l-4 border-cyan-300 bg-gradient-to-r from-cyan-50/50 to-transparent rounded-r-md">
+                      {analysis.team_synergy.switching_strategy.active_switch_scenarios}
+                    </div>
+                  )}
+                  {analysis.team_synergy.switching_strategy.quick_entry_synergy && (
+                    <div className="leading-relaxed text-zinc-800 pl-4 py-2 border-l-4 border-cyan-300 bg-gradient-to-r from-cyan-50/50 to-transparent rounded-r-md">
+                      {analysis.team_synergy.switching_strategy.quick_entry_synergy}
+                    </div>
+                  )}
+                </div>
+              </CollapsibleSection>
+            ) : analysis.team_synergy.switching_strategy && Array.isArray(analysis.team_synergy.switching_strategy) && analysis.team_synergy.switching_strategy.length > 0 && (
+              <CollapsibleSection
+                title={t("analysis.switchingStrategy")}
+                icon="🔄"
+                defaultExpanded={false}
+              >
+                <ul className="text-sm space-y-3">
+                  {analysis.team_synergy.switching_strategy.map((item, i) => (
+                    <li key={i} className="leading-relaxed text-zinc-800 pl-4 py-2 border-l-4 border-cyan-300 bg-gradient-to-r from-cyan-50/50 to-transparent rounded-r-md transition-all hover:border-cyan-500 hover:from-cyan-50">
+                      <span className="font-medium">• {item}</span>
+                    </li>
+                  ))}
+                </ul>
+              </CollapsibleSection>
+            )}
+
+            {analysis.team_synergy.magic_item_usage && typeof analysis.team_synergy.magic_item_usage === 'object' && !Array.isArray(analysis.team_synergy.magic_item_usage) ? (
+              <CollapsibleSection
+                title={t("analysis.magicItemUsage")}
+                icon="💎"
+                defaultExpanded={false}
+              >
+                <div className="text-sm space-y-3">
+                  {analysis.team_synergy.magic_item_usage.best_targets && (
+                    <div className="leading-relaxed text-zinc-800 pl-4 py-2 border-l-4 border-purple-300 bg-gradient-to-r from-purple-50/50 to-transparent rounded-r-md">
+                      {analysis.team_synergy.magic_item_usage.best_targets}
+                    </div>
+                  )}
+                  {analysis.team_synergy.magic_item_usage.timing && (
+                    <div className="leading-relaxed text-zinc-800 pl-4 py-2 border-l-4 border-purple-300 bg-gradient-to-r from-purple-50/50 to-transparent rounded-r-md">
+                      {analysis.team_synergy.magic_item_usage.timing}
+                    </div>
+                  )}
+                  {analysis.team_synergy.magic_item_usage.mismatch_analysis && (
+                    <div className="leading-relaxed text-zinc-800 pl-4 py-2 border-l-4 border-purple-300 bg-gradient-to-r from-purple-50/50 to-transparent rounded-r-md">
+                      {analysis.team_synergy.magic_item_usage.mismatch_analysis}
+                    </div>
+                  )}
+                </div>
+              </CollapsibleSection>
+            ) : analysis.team_synergy.magic_item_usage && Array.isArray(analysis.team_synergy.magic_item_usage) && analysis.team_synergy.magic_item_usage.length > 0 && (
               <CollapsibleSection
                 title={t("analysis.magicItemUsage")}
                 icon="💎"
@@ -751,16 +918,40 @@ export default function AnalysisResults({ analysis }: { analysis: TeamAnalysisOu
               </CollapsibleSection>
             )}
 
-            {analysis.team_synergy.general_strategy.length > 0 && (
+            {analysis.team_synergy.overall_strategy && typeof analysis.team_synergy.overall_strategy === 'object' && !Array.isArray(analysis.team_synergy.overall_strategy) ? (
               <CollapsibleSection
-                title={t("analysis.generalStrategy")}
-                icon="📋"
+                title={t("analysis.overallStrategy")}
+                icon="📊"
+                defaultExpanded={false}
+              >
+                <div className="text-sm space-y-3">
+                  {analysis.team_synergy.overall_strategy.win_conditions && (
+                    <div className="leading-relaxed text-zinc-800 pl-4 py-2 border-l-4 border-amber-300 bg-gradient-to-r from-amber-50/50 to-transparent rounded-r-md">
+                      {analysis.team_synergy.overall_strategy.win_conditions}
+                    </div>
+                  )}
+                  {analysis.team_synergy.overall_strategy.vulnerable_points && (
+                    <div className="leading-relaxed text-zinc-800 pl-4 py-2 border-l-4 border-amber-300 bg-gradient-to-r from-amber-50/50 to-transparent rounded-r-md">
+                      {analysis.team_synergy.overall_strategy.vulnerable_points}
+                    </div>
+                  )}
+                  {analysis.team_synergy.overall_strategy.adjustments && (
+                    <div className="leading-relaxed text-zinc-800 pl-4 py-2 border-l-4 border-amber-300 bg-gradient-to-r from-amber-50/50 to-transparent rounded-r-md">
+                      {analysis.team_synergy.overall_strategy.adjustments}
+                    </div>
+                  )}
+                </div>
+              </CollapsibleSection>
+            ) : analysis.team_synergy.overall_strategy && Array.isArray(analysis.team_synergy.overall_strategy) && analysis.team_synergy.overall_strategy.length > 0 && (
+              <CollapsibleSection
+                title={t("analysis.overallStrategy")}
+                icon="📊"
                 defaultExpanded={false}
               >
                 <ul className="text-sm space-y-3">
-                  {analysis.team_synergy.general_strategy.map((general, i) => (
-                    <li key={i} className="leading-relaxed text-zinc-800 pl-4 py-2 border-l-4 border-emerald-300 bg-gradient-to-r from-emerald-50/50 to-transparent rounded-r-md transition-all hover:border-emerald-500 hover:from-emerald-50">
-                      <span className="font-medium">• {general}</span>
+                  {analysis.team_synergy.overall_strategy.map((item, i) => (
+                    <li key={i} className="leading-relaxed text-zinc-800 pl-4 py-2 border-l-4 border-amber-300 bg-gradient-to-r from-amber-50/50 to-transparent rounded-r-md transition-all hover:border-amber-500 hover:from-amber-50">
+                      <span className="font-medium">• {item}</span>
                     </li>
                   ))}
                 </ul>

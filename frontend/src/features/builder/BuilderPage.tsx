@@ -4,7 +4,7 @@ import { useBuilderStore } from "./builderStore";
 import MonsterCard from "@/components/MonsterCard";
 import CustomSelect from "@/components/CustomSelect";
 import AnalysisResults from "@/components/AnalysisResults";
-import type { MagicItemOut, UserMonsterCreate, TeamCreate, TeamAnalysisOut, TeamOut, TeamUpdate } from "@/types";
+import type { MagicItemOut, UserMonsterCreate, TeamCreate, TeamAnalysisOut, TeamOut, TeamUpdate, FullSavedAnalysisOut } from "@/types";
 import { useMemo, useState, useEffect } from "react";
 import MonsterInspector from "./MonsterInspector";
 import { useI18n, pickName } from "@/i18n";
@@ -151,6 +151,96 @@ function DraggableSlot({
   );
 }
 
+/**
+ * Compares two TeamAnalysisOut objects to determine if they represent the same analysis.
+ * Checks both team configuration (monsters, moves, talents) AND LLM-generated content
+ * (trait synergies, team synergy recommendations).
+ */
+function analysesMatch(
+  current: TeamAnalysisOut | null,
+  saved: TeamAnalysisOut | null
+): boolean {
+  if (!current || !saved) return false;
+
+  // Magic item must match
+  if (current.team.magic_item.id !== saved.team.magic_item.id) return false;
+
+  // Must have same number of monsters
+  if (current.team.user_monsters.length !== saved.team.user_monsters.length) return false;
+
+  // Each monster in same slot must match exactly
+  for (let i = 0; i < current.team.user_monsters.length; i++) {
+    const currMon = current.team.user_monsters[i];
+    const savedMon = saved.team.user_monsters[i];
+
+    // If either monster is undefined, they don't match
+    if (!currMon || !savedMon) return false;
+
+    // Monster, personality, legacy type
+    if (currMon.monster?.id !== savedMon.monster?.id) return false;
+    if (currMon.personality?.id !== savedMon.personality?.id) return false;
+    if (currMon.legacy_type?.id !== savedMon.legacy_type?.id) return false;
+
+    // All 4 moves
+    if (currMon.move1?.id !== savedMon.move1?.id) return false;
+    if (currMon.move2?.id !== savedMon.move2?.id) return false;
+    if (currMon.move3?.id !== savedMon.move3?.id) return false;
+    if (currMon.move4?.id !== savedMon.move4?.id) return false;
+
+    // All 6 talents
+    if (currMon.talent?.hp_boost !== savedMon.talent?.hp_boost) return false;
+    if (currMon.talent?.phy_atk_boost !== savedMon.talent?.phy_atk_boost) return false;
+    if (currMon.talent?.mag_atk_boost !== savedMon.talent?.mag_atk_boost) return false;
+    if (currMon.talent?.phy_def_boost !== savedMon.talent?.phy_def_boost) return false;
+    if (currMon.talent?.mag_def_boost !== savedMon.talent?.mag_def_boost) return false;
+    if (currMon.talent?.spd_boost !== savedMon.talent?.spd_boost) return false;
+  }
+
+  // CRITICAL: Also compare actual analysis results (LLM-generated content)
+  // Team configuration matching is not enough - need to check if the analysis itself matches
+
+  // Compare team synergy recommendations (LLM-generated)
+  const currSynergy = current.team_synergy;
+  const savedSynergy = saved.team_synergy;
+
+  // If one has synergy and the other doesn't, they don't match
+  if ((currSynergy && !savedSynergy) || (!currSynergy && savedSynergy)) return false;
+
+  if (currSynergy && savedSynergy) {
+    // Compare team synergy recommendations (simple string comparison)
+    if (JSON.stringify(currSynergy.team_archetype) !== JSON.stringify(savedSynergy.team_archetype)) return false;
+    if (JSON.stringify(currSynergy.action_priority) !== JSON.stringify(savedSynergy.action_priority)) return false;
+    if (JSON.stringify(currSynergy.switching_strategy) !== JSON.stringify(savedSynergy.switching_strategy)) return false;
+  }
+
+  // Compare per-monster trait synergies (LLM-generated)
+  for (let i = 0; i < current.per_monster.length; i++) {
+    const currMonAnalysis = current.per_monster[i];
+    const savedMonAnalysis = saved.per_monster[i];
+
+    // If either analysis is undefined, they don't match
+    if (!currMonAnalysis || !savedMonAnalysis) return false;
+
+    // Compare trait synergy findings
+    if (!currMonAnalysis.trait_synergies || !savedMonAnalysis.trait_synergies) return false;
+    if (currMonAnalysis.trait_synergies.length !== savedMonAnalysis.trait_synergies.length) return false;
+
+    for (let j = 0; j < currMonAnalysis.trait_synergies.length; j++) {
+      const currSyn = currMonAnalysis.trait_synergies[j];
+      const savedSyn = savedMonAnalysis.trait_synergies[j];
+
+      // If either synergy is undefined, they don't match
+      if (!currSyn || !savedSyn) return false;
+
+      // Compare synergy moves and recommendations
+      if (JSON.stringify(currSyn.synergy_moves) !== JSON.stringify(savedSyn.synergy_moves)) return false;
+      if (JSON.stringify(currSyn.recommendation) !== JSON.stringify(savedSyn.recommendation)) return false;
+    }
+  }
+
+  return true;
+}
+
 export default function BuilderPage() {
   const {
     teamId,
@@ -217,6 +307,21 @@ export default function BuilderPage() {
   });
   const qc = useQueryClient();
 
+  // Query for saved analysis (only when teamId exists)
+  const savedAnalysisQuery = useQuery<FullSavedAnalysisOut>({
+    queryKey: ["savedAnalysis", teamId, lang],
+    queryFn: () => endpoints.getSavedAnalysis(teamId!, lang).then(r => r.data),
+    enabled: !!teamId && Number.isFinite(teamId),
+    retry: false, // 404 is expected when no saved analysis exists
+    staleTime: 30000, // Cache for 30 seconds
+  });
+
+  // Compute if current analysis matches saved analysis
+  const isAnalysisAlreadySaved = useMemo(() => {
+    if (!analysis || !savedAnalysisQuery.data?.analysis_data) return false;
+    return analysesMatch(analysis, savedAnalysisQuery.data.analysis_data);
+  }, [analysis, savedAnalysisQuery.data]);
+
   const allErrors = useMemo<VKey[][]>(() => slots.map(validateSlot), [slots]);
   const canAnalyze = allErrors.every((list) => list.length === 0) && !!magic_item_id;
 
@@ -261,6 +366,8 @@ export default function BuilderPage() {
     },
     onSuccess: () => {
       setServerOk(t("builder.analysisSaved"));
+      // Invalidate to refresh "Already Saved" state
+      qc.invalidateQueries({ queryKey: ["savedAnalysis", teamId, lang] });
     },
     onError: (err: any) => {
       setServerErr(err?.response?.data?.detail || t("builder.failedToSave"));
@@ -634,17 +741,6 @@ export default function BuilderPage() {
                 t("builder.analyze")
               )}
             </button>
-
-            {/* save analysis */}
-            {analysis && teamId && (
-              <button
-                onClick={() => saveAnalysis.mutate()}
-                disabled={saveAnalysis.isPending}
-                className="h-10 px-4 rounded-lg font-semibold text-sm bg-emerald-600 text-white hover:bg-emerald-700 transition-colors disabled:bg-zinc-300 disabled:text-zinc-500"
-              >
-                {saveAnalysis.isPending ? "Saving..." : t("builder.saveAnalysis")}
-              </button>
-            )}
           </div>
 
           {/* closable messages */}
@@ -687,7 +783,15 @@ export default function BuilderPage() {
         </div>
 
         {/* Row 2: Analysis Results (Full Width, Conditional) */}
-        {analysis && <AnalysisResults analysis={analysis} />}
+        {analysis && (
+          <AnalysisResults
+            analysis={analysis}
+            teamId={teamId}
+            onSaveAnalysis={() => saveAnalysis.mutate()}
+            isSaving={saveAnalysis.isPending}
+            isAlreadySaved={isAnalysisAlreadySaved}
+          />
+        )}
       </div>
 
     <DragOverlay>

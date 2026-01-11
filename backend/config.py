@@ -75,3 +75,10 @@ ANALYSIS_RATE_LIMIT = os.getenv("ANALYSIS_RATE_LIMIT", "1/2minutes")
 # Improves signal-to-noise ratio for better analysis quality
 # Default: false (safe rollout - enable after validation)
 ENABLE_REFERENCE_RESOLUTION = os.getenv("ENABLE_REFERENCE_RESOLUTION", "false").lower() == "true"
+
+# Redis Cache Configuration
+# Redis provides persistent cache across restarts and stampede protection
+REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+REDIS_CACHE_TTL = int(os.getenv("REDIS_CACHE_TTL", "3600"))  # 1 hour default
+REDIS_LOCK_TIMEOUT = int(os.getenv("REDIS_LOCK_TIMEOUT", "30"))  # 30 seconds for lock timeout
+REDIS_LOCK_BLOCKING_TIMEOUT = int(os.getenv("REDIS_LOCK_BLOCKING_TIMEOUT", "60"))  # 60 seconds to wait for lock

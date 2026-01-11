@@ -8,8 +8,18 @@ import { STAT_KEYS } from "@/types";
 import { typeIconUrl, monsterImageFallbackChain } from "@/lib/images";
 import { useMonsterNavigation } from "./useMonsterNavigation";
 import { QUERY_KEYS, LEGACY_TYPES_ORDER } from "@/lib/constants";
+import EvolutionTree from "./EvolutionTree";
 
 /* ---------- helpers ---------- */
+
+// Normalize backend category values to frontend enum keys
+function normalizeMoveCategory(category: string): string {
+  const upper = category.toUpperCase();
+  // Map backend enum values to frontend enum keys
+  if (upper === "PHYSICAL ATTACK") return "PHY_ATTACK";
+  if (upper === "MAGIC ATTACK") return "MAG_ATTACK";
+  return upper; // DEFENSE, STATUS already match
+}
 
 export function extractStats(m: MonsterOut): Record<StatKey, number> {
   return {
@@ -107,7 +117,6 @@ export default function MonsterDetailPage() {
   const title = showFormInTitle && fm ? `${nm} (${fm})` : nm;
 
   const trait = m?.trait || m?.ability || null;
-  const evo = m?.evolution_chain || []; // array of ids or {id, name, form}
 
   const baseStats = extractStats(m || {});
   const total = STAT_KEYS.reduce<number>((s, k) => s + (baseStats[k] ?? 0), 0);
@@ -391,26 +400,24 @@ export default function MonsterDetailPage() {
       </section>
 
       {/* Evolution chain */}
-      {Array.isArray(evo) && evo.length > 1 ? (
-        <section className="rounded border bg-white p-3">
-          <div className="font-medium mb-2">{t("dex.evolution")}</div>
-          <div className="flex items-center gap-2 overflow-x-auto">
-            {evo.map((n: any, i: number) => {
-              const mid = typeof n === "number" ? n : n.id;
-              const label = typeof n === "number" ? `#${n}` : pickName(n as any, lang) || n.name;
-              return (
-                <div key={`${mid}-${i}`} className="inline-flex items-center gap-2">
-                  <img
-                    src={monsterImageFallbackChain(typeof n === "number" ? { id: mid, name: label } : n, 180)[0] || "/monsters/placeholder.png"}
-                    onError={(e)=>{(e.currentTarget as HTMLImageElement).src="/monsters/placeholder.png"}}
-                    alt=""
-                    className="h-16 w-16 object-contain"
-                  />
-                  {i < evo.length - 1 ? <span className="opacity-60">→</span> : null}
-                </div>
-              );
-            })}
+      {m?.evolution_tree && m.evolution_tree.stages && m.evolution_tree.stages.length > 1 ? (
+        <section className="rounded-lg border border-zinc-200 bg-white shadow-sm p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="text-lg font-semibold text-zinc-800">
+              {t("dex.evolutionChain")}
+            </span>
+            {m.evolution_tree.total_unique_monsters > 1 && (
+              <span className="text-sm text-zinc-500">
+                ({m.evolution_tree.max_depth + 1} {t("dex.stages")})
+              </span>
+            )}
           </div>
+          <EvolutionTree
+            treeData={m.evolution_tree}
+            currentMonsterId={m.id}
+            fromTab={fromTab}
+            fromBuilder={fromBuilder}
+          />
         </section>
       ) : null}
 
@@ -515,11 +522,11 @@ function MovesList({ list }: { list: any[] }) {
         const tp = (m.move_type || m.type) as TypeOut | null;
         const cname = pickName(m as any, lang) || m.name;
         const desc = pickDesc(m as any, lang) || m.localized?.[lang]?.description || m.description || "";
-        const category = (m.move_category || m.category || "").toUpperCase();
+        const normalizedCategory = normalizeMoveCategory(m.move_category || m.category || "");
         const energy = (m.energy_cost ?? m.energy ?? null);
         const power = m.power ?? null;
-        const isDef = category === "DEFENSE";
-        const isSta = category === "STATUS";
+        const isDef = normalizedCategory === "DEFENSE";
+        const isSta = normalizedCategory === "STATUS";
 
         const moveNameZh = pickName(m as any, "zh") || cname;
         const moveImg = encodeURI(`/move-icons/${moveNameZh}.png`);
@@ -531,7 +538,7 @@ function MovesList({ list }: { list: any[] }) {
           DEFENSE: "defense",
           STATUS: "status",
         };
-        const catImg = `/move-sub-icons/${catToFile[category] ?? "physical-attack"}.png`;
+        const catImg = `/move-sub-icons/${catToFile[normalizedCategory] ?? "physical-attack"}.png`;
 
         // Get type color class, fallback to zinc if type not found
         // Convert type name to lowercase to match our mapping

@@ -1,5 +1,5 @@
 from pydantic import BaseModel, ConfigDict, model_validator, Field, field_serializer
-from typing import Optional, List, Dict, Any, ClassVar, Literal
+from typing import Optional, List, Dict, Any, ClassVar, Literal, Union
 from backend.models import MoveCategory, AttackStyle
 from datetime import datetime
 
@@ -109,6 +109,7 @@ class MonsterOut(MonsterLiteOut):
     move_pool: List[MoveOut]
     move_stones: List[MoveOut] = []
     legacy_moves: List[LegacyMoveOut]
+    evolution_tree: Optional[Dict] = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -299,12 +300,48 @@ class MonsterAnalysisOut(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
+class TeamArchetypeDetails(BaseModel):
+    """Nested details for team archetype section."""
+    tactical_type: str = ""
+    core_loop: str = ""
+    battle_rhythm: str = ""
+
+class ActionPriorityDetails(BaseModel):
+    """Nested details for action priority section."""
+    role_assignment: str = ""
+    counter_triangle: str = ""
+    energy_economy: str = ""
+
+class SwitchingStrategyDetails(BaseModel):
+    """Nested details for switching strategy section."""
+    pivot_points: str = ""
+    active_switch_scenarios: str = ""
+    quick_entry_synergy: str = ""
+
+class MagicItemUsageDetails(BaseModel):
+    """Nested details for magic item usage section."""
+    best_targets: str = ""
+    timing: str = ""
+    mismatch_analysis: str = ""
+
+class OverallStrategyDetails(BaseModel):
+    """Nested details for overall strategy section."""
+    win_conditions: str = ""
+    vulnerable_points: str = ""
+    adjustments: str = ""
+
 class TeamSynergyRecommendation(BaseModel):
-    """Team-wide synergy analysis and playing recommendations."""
-    key_combos: List[str] = Field(default_factory=list)
-    turn_order_strategy: List[str] = Field(default_factory=list)
-    magic_item_usage: List[str] = Field(default_factory=list)
-    general_strategy: List[str] = Field(default_factory=list)
+    """Team-wide synergy analysis and playing recommendations.
+
+    Supports both formats:
+    - Legacy: each field is List[str] (for cached analyses)
+    - New: each field is nested object with sub-fields
+    """
+    team_archetype: Union[List[str], TeamArchetypeDetails] = Field(default_factory=list)
+    action_priority: Union[List[str], ActionPriorityDetails] = Field(default_factory=list)
+    switching_strategy: Union[List[str], SwitchingStrategyDetails] = Field(default_factory=list)
+    magic_item_usage: Union[List[str], MagicItemUsageDetails] = Field(default_factory=list)
+    overall_strategy: Union[List[str], OverallStrategyDetails] = Field(default_factory=list)
 
 class TeamAnalysisOut(BaseModel):
     team: TeamOut

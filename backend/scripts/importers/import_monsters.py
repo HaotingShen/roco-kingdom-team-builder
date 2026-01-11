@@ -154,6 +154,12 @@ def load_monsters_two_pass():
                     # Fallback: try matching this form
                     parent_id = monster_by_name_and_form.get((evolves_from, this_form))
                 if parent_id is None:
+                    # Special case: Child form like "Chess Knight - White" evolves from parent form "White"
+                    # Extract suffix after " - " if it exists
+                    if " - " in this_form:
+                        form_suffix = this_form.split(" - ", 1)[1]
+                        parent_id = monster_by_name_and_form.get((evolves_from, form_suffix))
+                if parent_id is None:
                     print(f"Warning: evolves_from '{evolves_from}' (form 'default' or '{this_form}') not found for monster '{item['name']}' with form '{this_form}'")
                     continue
                 session.execute(

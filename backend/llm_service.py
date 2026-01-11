@@ -298,7 +298,7 @@ async def generate_analysis_json(
     Args:
         prompt: User prompt
         cache_key: Cache key for result storage
-        llm_cache: Cache instance
+        llm_cache: Cache instance (RedisCache or TimedCache)
         system_prompt: Optional system message
         temperature: Sampling temperature (uses ANALYSIS_TEMPERATURE if None)
         context: Optional context for logging (e.g., "trait_synergy", "team_synergy")
@@ -309,32 +309,77 @@ async def generate_analysis_json(
     Returns:
         Analysis result as dictionary
     """
-    # Check cache first
-    cached_result = llm_cache.get(cache_key)
-    cache_status = "HIT" if cached_result is not None else "MISS"
+    # Check if cache supports get_or_compute (RedisCache with stampede protection)
+    if hasattr(llm_cache, 'get_or_compute'):
+        # Use Redis cache with stampede protection
+        async def compute_fn():
+            """
+            Compute function for cache miss.
 
-    if cached_result is not None:
-        logger.info(f"Cache HIT for key: {cache_key[:50]}...")
+            NOTE: This function does NOT catch exceptions - they bubble up to the caller.
+            This ensures failed LLM calls are NOT cached, allowing retry on subsequent requests.
+            Error handling is done at the endpoint level (main.py).
+            """
+            start_time = time.time()
+            client = get_llm_client()
 
-        # Log cached prompt for review
-        save_prompt(
-            prompt=prompt,
-            system_prompt=system_prompt,
-            context=context,
-            team_hash=team_hash,
-            language=language,
-            monster_name=monster_name,
-            cache_status="HIT",
-        )
+            result, metadata = await client.generate_json(
+                prompt=prompt,
+                system_prompt=system_prompt,
+                temperature=temperature,
+            )
 
-        return cached_result
+            # Calculate response time
+            response_time_ms = int((time.time() - start_time) * 1000)
 
-    # Cache miss - call LLM
-    logger.info(f"Cache MISS for key: {cache_key[:50]}...")
+            # Log prompt with full metadata after API call
+            save_prompt(
+                prompt=prompt,
+                system_prompt=system_prompt,
+                context=context,
+                team_hash=team_hash,
+                language=language,
+                monster_name=monster_name,
+                cache_status="MISS",
+                prompt_tokens=metadata.get('prompt_tokens'),
+                output_tokens=metadata.get('output_tokens'),
+                thinking_tokens=metadata.get('thinking_tokens'),
+                total_tokens=metadata.get('total_tokens'),
+                cache_hit_tokens=metadata.get('cache_hit_tokens'),
+                cache_miss_tokens=metadata.get('cache_miss_tokens'),
+                response_time_ms=response_time_ms,
+                provider=metadata.get('provider'),
+                model=metadata.get('model'),
+                reasoning_content=metadata.get('reasoning_content'),
+                save_reasoning=False,
+            )
 
-    try:
+            return result
+
+        # Use get_or_compute with stampede protection
+        return await llm_cache.get_or_compute(cache_key, compute_fn)
+
+    else:
+        # Fallback to simple get/set pattern (TimedCache - no stampede protection)
+        cached_result = llm_cache.get(cache_key)
+
+        if cached_result is not None:
+            logger.info(f"Cache HIT for key: {cache_key[:50]}...")
+            save_prompt(
+                prompt=prompt,
+                system_prompt=system_prompt,
+                context=context,
+                team_hash=team_hash,
+                language=language,
+                monster_name=monster_name,
+                cache_status="HIT",
+            )
+            return cached_result
+
+        # Cache miss - call LLM (exceptions bubble up to caller - NOT cached)
+        logger.info(f"Cache MISS for key: {cache_key[:50]}...")
+
         start_time = time.time()
-
         client = get_llm_client()
 
         result, metadata = await client.generate_json(
@@ -343,10 +388,8 @@ async def generate_analysis_json(
             temperature=temperature,
         )
 
-        # Calculate response time
         response_time_ms = int((time.time() - start_time) * 1000)
 
-        # Log prompt with full metadata after API call
         save_prompt(
             prompt=prompt,
             system_prompt=system_prompt,
@@ -365,18 +408,10 @@ async def generate_analysis_json(
             provider=metadata.get('provider'),
             model=metadata.get('model'),
             reasoning_content=metadata.get('reasoning_content'),
-            save_reasoning=False,  # Set to True to save reasoning to log files (can be very long)
+            save_reasoning=False,
         )
 
-        # Cache the result
         llm_cache.set(cache_key, result)
         logger.info(f"Cached result for key: {cache_key[:50]}...")
 
         return result
-
-    except Exception as e:
-        logger.error(f"LLM error: {e}", exc_info=True)
-        return {
-            "synergy_moves": [],
-            "recommendation": [f"Error generating analysis: {str(e)}"]
-        }

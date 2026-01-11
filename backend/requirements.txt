@@ -64,3 +64,4 @@ watchfiles==1.0.5
 websockets==15.0.1
 slowapi==0.1.9
 openpyxl==3.1.2
+redis[hiredis]==5.2.1

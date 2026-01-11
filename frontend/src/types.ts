@@ -117,6 +117,37 @@ export interface MonsterOut {
   move_pool?: Array<number | { id: number } | { move_id: number }>;
   move_stones?: Array<number | { id: number } | { move_id: number }>;
   legacy_moves?: Array<number | { id: number } | { move_id: number }>;
+  evolution_tree?: EvolutionTreeData | null;
+}
+
+/* ---------- evolution tree models ---------- */
+
+export interface EvolutionStageMonster {
+  id: number;
+  name: string;
+  form: string;
+  localized?: Record<string, unknown>;
+  is_leader_form: boolean;
+  is_representative?: boolean;
+  representative_id?: number;
+  main_type: TypeOut;
+  sub_type?: TypeOut | null;
+  children_ids?: number[];
+  parent_ids?: number[];
+}
+
+export interface EvolutionStage {
+  depth: number;
+  is_leader_stage?: boolean;
+  monsters: EvolutionStageMonster[];
+}
+
+export interface EvolutionTreeData {
+  stages: EvolutionStage[];
+  max_depth: number;
+  total_unique_monsters: number;
+  species_id: number;
+  current_monster_id: number;
 }
 
 export interface MagicItemOut extends Named {
@@ -299,10 +330,11 @@ export interface MagicItemEvaluation {
 }
 
 export interface TeamSynergyRecommendation {
-  key_combos: string[];
-  turn_order_strategy: string[];
+  team_archetype: string[];
+  action_priority: string[];
+  switching_strategy: string[];
   magic_item_usage: string[];
-  general_strategy: string[];
+  overall_strategy: string[];
 }
 
 /** Final analysis response (matches backend) */

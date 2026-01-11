@@ -40,7 +40,7 @@ ENGLISH_BLACKLIST = {
 @dataclass
 class EntityReference:
     """Represents a single entity reference."""
-    entity_type: str  # "move", "game_term", "monster", "trait"
+    entity_type: str  # "move", "game_term", "monster", "trait", "magic_item"
     entity_id: int
     name: str  # English name or key
     name_zh: Optional[str] = None  # Chinese name (if available)
@@ -53,6 +53,7 @@ class ResolvedReferences:
     game_terms: Set[int] = field(default_factory=set)  # Set of game term IDs
     monsters: Set[int] = field(default_factory=set)  # Set of monster IDs
     traits: Set[int] = field(default_factory=set)  # Set of trait IDs
+    magic_items: Set[int] = field(default_factory=set)  # Set of magic item IDs
 
     def merge(self, other: 'ResolvedReferences') -> None:
         """Merge another ResolvedReferences into this one."""
@@ -60,6 +61,7 @@ class ResolvedReferences:
         self.game_terms.update(other.game_terms)
         self.monsters.update(other.monsters)
         self.traits.update(other.traits)
+        self.magic_items.update(other.magic_items)
 
 
 @dataclass
@@ -70,12 +72,14 @@ class LookupTables:
     game_term_keys_en: Dict[str, int]  # "Charge" -> game_term_id
     monster_names_en: Dict[str, int]  # "Chess Queen" -> monster_id
     trait_names_en: Dict[str, int]  # "Supercharge" -> trait_id
+    magic_item_names_en: Dict[str, int]  # "Willpower Enhancement" -> magic_item_id
 
     # Chinese lookups
     move_names_zh: Dict[str, int]  # "聚能" -> move_id
     game_term_names_zh: Dict[str, int]  # "蓄力" -> game_term_id
     monster_names_zh: Dict[str, int]  # "棋绮后" -> monster_id
     trait_names_zh: Dict[str, int]  # "超聚能" -> trait_id
+    magic_item_names_zh: Dict[str, int]  # "愿力强化" -> magic_item_id
 
     # Sorted lists for longest-match-first (Chinese brute-force)
     game_term_names_zh_sorted: List[Tuple[str, int]]  # [(name, id), ...] sorted by length desc
@@ -90,7 +94,7 @@ _entity_references_cache: Dict[str, ResolvedReferences] = {}
 # ==================== PUBLIC API ====================
 
 def resolve_references_for_prompt(
-    entities: List[Union[models.Trait, models.Move, models.GameTerm]],
+    entities: List[Union[models.Trait, models.Move, models.GameTerm, models.MagicItem]],
     language: str,
     db: Session
 ) -> ResolvedReferences:
@@ -120,7 +124,7 @@ def resolve_references_for_prompt(
         combined.merge(resolved)
 
     logger.debug(f"Total resolved: {len(combined.moves)} moves, {len(combined.game_terms)} terms, "
-                 f"{len(combined.monsters)} monsters, {len(combined.traits)} traits")
+                 f"{len(combined.magic_items)} magic items, {len(combined.monsters)} monsters, {len(combined.traits)} traits")
 
     return combined
 
@@ -149,6 +153,7 @@ def get_lookup_tables(db: Session) -> LookupTables:
     game_terms = db.query(models.GameTerm).all()
     monsters = db.query(models.Monster).all()
     traits = db.query(models.Trait).all()
+    magic_items = db.query(models.MagicItem).all()
 
     # Build English lookups
     move_names_en = {}
@@ -170,6 +175,11 @@ def get_lookup_tables(db: Session) -> LookupTables:
     for tr in traits:
         if tr.name:
             trait_names_en[tr.name] = tr.id
+
+    magic_item_names_en = {}
+    for mi in magic_items:
+        if mi.name:
+            magic_item_names_en[mi.name] = mi.id
 
     # Build Chinese lookups
     move_names_zh = {}
@@ -196,6 +206,12 @@ def get_lookup_tables(db: Session) -> LookupTables:
         if zh_name:
             trait_names_zh[zh_name] = tr.id
 
+    magic_item_names_zh = {}
+    for mi in magic_items:
+        zh_name = _get_zh_name(mi)
+        if zh_name:
+            magic_item_names_zh[zh_name] = mi.id
+
     # Build sorted lists for longest-match-first
     game_term_names_zh_sorted = sorted(
         game_term_names_zh.items(),
@@ -214,10 +230,12 @@ def get_lookup_tables(db: Session) -> LookupTables:
         game_term_keys_en=game_term_keys_en,
         monster_names_en=monster_names_en,
         trait_names_en=trait_names_en,
+        magic_item_names_en=magic_item_names_en,
         move_names_zh=move_names_zh,
         game_term_names_zh=game_term_names_zh,
         monster_names_zh=monster_names_zh,
         trait_names_zh=trait_names_zh,
+        magic_item_names_zh=magic_item_names_zh,
         game_term_names_zh_sorted=game_term_names_zh_sorted,
         monster_names_zh_sorted=monster_names_zh_sorted
     )
@@ -285,7 +303,7 @@ def detect_references_en(description: str, lookup: LookupTables) -> List[EntityR
 
     refs = []
 
-    # Pattern 1: Single quotes (priority cascade: moves -> game terms -> monsters)
+    # Pattern 1: Single quotes (priority cascade: moves -> game terms -> magic items -> monsters)
     # Use negative lookbehind to avoid matching possessive apostrophes like "opponent's"
     # Pattern: match quotes that are NOT preceded by alphanumeric (possessive/contraction)
     quoted_pattern = r"(?<![a-zA-Z0-9])'([^']+)'(?![a-zA-Z0-9])"
@@ -304,6 +322,13 @@ def detect_references_en(description: str, lookup: LookupTables) -> List[EntityR
             refs.append(EntityReference(
                 entity_type="game_term",
                 entity_id=lookup.game_term_keys_en[text],
+                name=text
+            ))
+        # Then magic item
+        elif text in lookup.magic_item_names_en:
+            refs.append(EntityReference(
+                entity_type="magic_item",
+                entity_id=lookup.magic_item_names_en[text],
                 name=text
             ))
         # Finally monster
@@ -391,7 +416,7 @@ def detect_references_zh(description: str, lookup: LookupTables) -> List[EntityR
     refs = []
     matched_spans = set()  # Track matched positions to avoid duplicates
 
-    # Pattern 1: Brackets【】(priority cascade: moves -> game terms -> monsters)
+    # Pattern 1: Brackets【】(priority cascade: moves -> game terms -> magic items -> monsters)
     bracket_pattern = r"【([^】]+)】"
     for match in re.finditer(bracket_pattern, description):
         text = match.group(1)
@@ -411,6 +436,14 @@ def detect_references_zh(description: str, lookup: LookupTables) -> List[EntityR
             refs.append(EntityReference(
                 entity_type="game_term",
                 entity_id=lookup.game_term_names_zh[text],
+                name=text,
+                name_zh=text
+            ))
+        # Then magic item
+        elif text in lookup.magic_item_names_zh:
+            refs.append(EntityReference(
+                entity_type="magic_item",
+                entity_id=lookup.magic_item_names_zh[text],
                 name=text,
                 name_zh=text
             ))
@@ -462,7 +495,7 @@ def detect_references_zh(description: str, lookup: LookupTables) -> List[EntityR
 # ==================== TRANSITIVE RESOLUTION ====================
 
 def resolve_references_transitive(
-    entity: Union[models.Trait, models.Move, models.GameTerm, models.Monster],
+    entity: Union[models.Trait, models.Move, models.GameTerm, models.Monster, models.MagicItem],
     language: str,
     db: Session,
     lookup: LookupTables
@@ -534,6 +567,12 @@ def resolve_references_transitive(
             elif ref.entity_type == "game_term":
                 result.game_terms.add(ref.entity_id)
                 queue.append(("GameTerm", ref.entity_id, depth + 1))
+            elif ref.entity_type == "magic_item":
+                # Collect magic items but DON'T traverse them transitively
+                # This prevents pulling in unrelated moves (e.g., Willpower Impact from Willpower Enhancement)
+                # Magic items are team-level resources, not per-monster concerns
+                result.magic_items.add(ref.entity_id)
+                # queue.append(("MagicItem", ref.entity_id, depth + 1))  # REMOVED
             elif ref.entity_type == "monster":
                 result.monsters.add(ref.entity_id)
                 queue.append(("Monster", ref.entity_id, depth + 1))
@@ -557,6 +596,8 @@ def _load_entity(entity_type: str, entity_id: int, db: Session) -> Optional[Any]
         return db.query(models.Monster).filter(models.Monster.id == entity_id).first()
     elif entity_type == "Trait":
         return db.query(models.Trait).filter(models.Trait.id == entity_id).first()
+    elif entity_type == "MagicItem":
+        return db.query(models.MagicItem).filter(models.MagicItem.id == entity_id).first()
     else:
         logger.error(f"Unknown entity type: {entity_type}")
         return None

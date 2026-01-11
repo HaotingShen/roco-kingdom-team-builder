@@ -144,8 +144,13 @@ export default function SavedTeamPage() {
       setServerErr(err?.response?.data?.detail || err?.message || t("builder.analysisFailed"));
       setIsAnalyzing(false);
     },
-    onSuccess: (res) => {
+    onSuccess: async (res) => {
       setServerErr(null);
+      // Load team into builder so teamId is set (required for "Save Analysis" button)
+      if (q.data) {
+        loadIntoBuilder(q.data);
+      }
+      // Then set the analysis
       setAnalysis(res);
       setIsAnalyzing(false);
       nav("/build");
@@ -171,8 +176,12 @@ export default function SavedTeamPage() {
     analyze.mutate();
   };
 
-  const onViewSavedAnalysis = () => {
+  const onViewSavedAnalysis = async () => {
     if (savedAnalysisQuery.data?.analysis_data) {
+      // Load team into builder so teamId is set
+      const fresh = await endpoints.getTeam(teamId).then(r => r.data);
+      loadIntoBuilder(fresh);
+      // Then set the analysis
       setAnalysis(savedAnalysisQuery.data.analysis_data);
       nav("/build");
       // Scroll to analysis section after navigation
@@ -394,7 +403,7 @@ export default function SavedTeamPage() {
               className="w-full h-10 border-2 border-emerald-600 rounded-lg text-emerald-700 hover:bg-emerald-50 cursor-pointer font-medium transition-colors"
               onClick={onViewSavedAnalysis}
             >
-              {t("teams.viewAnalysis")}
+              {t("teams.viewSavedAnalysis")}
             </button>
           )}
 

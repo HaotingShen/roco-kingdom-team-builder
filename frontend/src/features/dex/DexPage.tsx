@@ -332,6 +332,15 @@ type LocalMove = MoveOut & {
   localized?: any;
 };
 
+// Normalize backend category values to frontend enum keys
+function normalizeMoveCategory(category: string): string {
+  const upper = category.toUpperCase();
+  // Map backend enum values to frontend enum keys
+  if (upper === "PHYSICAL ATTACK") return "PHY_ATTACK";
+  if (upper === "MAGIC ATTACK") return "MAG_ATTACK";
+  return upper; // DEFENSE, STATUS already match
+}
+
 function MovesTab() {
   const { lang, t } = useI18n();
   const [sp, setSp] = useSearchParams();
@@ -417,13 +426,13 @@ function MovesTab() {
 
       // Category filtering with special handling for "Willpower Impact"
       if (cat) {
-        const catUpper = (m.move_category || m.category || "").toUpperCase();
+        const normalizedCat = normalizeMoveCategory(m.move_category || m.category || "");
         const isWillpower = isWillpowerImpact(m);
 
         // "Willpower Impact" should appear in BOTH Physical and Magical filters
         if (isWillpower && (cat === "PHY_ATTACK" || cat === "MAG_ATTACK")) {
           // Allow it through for both physical and magical categories
-        } else if (catUpper !== cat) {
+        } else if (normalizedCat !== cat) {
           return false;
         }
       }
@@ -566,11 +575,11 @@ function MovesTab() {
                     const tp = (m.move_type || m.type) as TypeOut | null;
                     const cname = pickName(m as any, lang) || m.name;
                     const desc = pickDesc(m as any, lang) || m.localized?.[lang]?.description || m.description || "";
-                    const category = (m.move_category || m.category || "").toUpperCase();
+                    const normalizedCategory = normalizeMoveCategory(m.move_category || m.category || "");
                     const energy = (m.energy_cost ?? m.energy ?? null);
                     const power = m.power ?? null;
-                    const isDef = category === "DEFENSE";
-                    const isSta = category === "STATUS";
+                    const isDef = normalizedCategory === "DEFENSE";
+                    const isSta = normalizedCategory === "STATUS";
 
                     // assets
                     const moveNameZh = pickName(m as any, "zh") || cname;
@@ -591,7 +600,7 @@ function MovesTab() {
                     };
                     const catImg = isWillpower
                       ? "/move-sub-icons/conditional-attack.png"
-                      : `/move-sub-icons/${catToFile[category] ?? "physical-attack"}.png`;
+                      : `/move-sub-icons/${catToFile[normalizedCategory] ?? "physical-attack"}.png`;
 
                     // Get type color class, fallback to zinc if type not found
                     const typeName = tp?.name?.toLowerCase() || "";

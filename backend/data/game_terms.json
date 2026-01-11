@@ -381,11 +381,11 @@
   },
   {
     "key": "Cooldown",
-    "description": "The number of turns that must pass before a move can be used again. Generally, all Defense-type moves have a cooldown of 1 turn, while moves of other types have no cooldown.",
+    "description": "The number of turns that must pass before a move or magic item can be used again. Unless otherwise specified, all Defense-type moves have a 1-turn cooldown, while moves of other categories have no cooldown. For magic items, Willpower Enhancement has a 3-turn cooldown, while other magic item effects are single-use per battle.",
     "localized": {
       "zh": {
         "name": "冷却",
-        "description": "技能在再次使用前必须经过的回合数。一般情况下，所有防御类技能的冷却为1回合，而其他类型的技能没有冷却。"
+        "description": "技能或血脉魔法在再次使用前必须经过的回合数。除非另有说明，所有防御类技能的冷却为1回合，而其他类别的技能通常没有冷却；血脉魔法中【愿力强化】的冷却为3回合，而其他血脉魔法为每场一次性使用。"
       }
     }
   },
