@@ -1,10 +1,81 @@
 import enum
+from datetime import datetime
+from typing import Optional
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from sqlalchemy import String, Integer, Float, Boolean, ForeignKey, Table, Column, Enum, Index, Text, UniqueConstraint, DateTime, text
 from sqlalchemy.dialects.postgresql import JSONB
 
 class Base(DeclarativeBase):
     pass
+
+
+# ========== USER MODEL (Authentication) ==========
+
+class User(Base):
+    """
+    User model for authentication.
+
+    Supports:
+    - Guest accounts (auto-created, device_id deduplication)
+    - Registered accounts (email/password)
+    - Token revocation (via token_version)
+    - Email verification (Phase 7A)
+    - Account lockout protection
+    - Future subscription tiers
+    """
+    __tablename__ = "users"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    username: Mapped[str] = mapped_column(String(32), unique=True, nullable=False, index=True)
+    email: Mapped[Optional[str]] = mapped_column(String(120), unique=True, nullable=True, index=True)
+    hashed_password: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+
+    # Account type flags
+    is_guest: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False, index=True)
+    is_system: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+
+    # 🔒 SECURITY: Token revocation support
+    # Increment this to invalidate all user's tokens (password change, security breach)
+    token_version: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+
+    # 🔒 SECURITY: Email verification (Phase 7A - MANDATORY)
+    email_verified: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    verification_token: Mapped[Optional[str]] = mapped_column(String(255), nullable=True, index=True)
+    verification_token_expires: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    # 🔒 SECURITY: Password reset (Phase 6)
+    password_reset_token: Mapped[Optional[str]] = mapped_column(String(255), nullable=True, index=True)
+    password_reset_expires: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    # 🔒 SECURITY: Email change (Phase 6)
+    pending_email: Mapped[Optional[str]] = mapped_column(String(120), nullable=True)
+    email_change_token: Mapped[Optional[str]] = mapped_column(String(255), nullable=True, index=True)
+    email_change_token_expires: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    # 🔒 SECURITY: Account lockout
+    failed_login_attempts: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    locked_until: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    # Future payment fields (prepared but unused)
+    subscription_tier: Mapped[str] = mapped_column(String(32), default="free", nullable=False)
+    subscription_expires_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    # Device tracking (for guest account linking)
+    device_id: Mapped[Optional[str]] = mapped_column(String(64), index=True, nullable=True)
+
+    # Audit timestamps
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=text("timezone('utc', now())"),
+        nullable=False
+    )
+    last_login_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    last_password_change: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    last_active_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    # Relationships
+    teams = relationship("Team", back_populates="owner", cascade="all, delete-orphan")
 
 # Association table for many-to-many Monster-Move relationship (including learnable moves and move stones)
 monster_moves = Table(
@@ -276,6 +347,15 @@ class Team(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     name: Mapped[str] = mapped_column(String(32), nullable=True)
     magic_item_id: Mapped[int] = mapped_column(Integer, ForeignKey("magic_items.id"), nullable=True)
+
+    # ✅ Owner foreign key (added for authentication)
+    owner_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey("users.id"),
+        nullable=False,
+        index=True
+    )
+
     created_at = Column(DateTime(timezone=True),
                         server_default=text("timezone('utc', now())"),
                         nullable=False)
@@ -285,6 +365,7 @@ class Team(Base):
                         nullable=False)
 
     # Relationships
+    owner = relationship("User", back_populates="teams")
     user_monsters = relationship("UserMonster", back_populates="team", cascade="all, delete-orphan", order_by="UserMonster.position")
     magic_item = relationship("MagicItem")
     analyses = relationship("TeamAnalysis", back_populates="team", cascade="all, delete-orphan")
@@ -306,3 +387,36 @@ class TeamAnalysis(Base):
     )
 
     team = relationship("Team", back_populates="analyses")
+
+
+# ========== DELETED EMAIL TRACKING (Anti-Abuse) ==========
+
+class DeletedEmail(Base):
+    """
+    Tracks deleted emails to prevent immediate re-registration.
+
+    Anti-abuse measure: Users cannot re-register with the same email
+    for COOLDOWN_DAYS after account deletion. This prevents:
+    - Resetting analysis quotas by delete/re-register
+    - Evading bans/locks
+    - Abuse of new-user promotions
+
+    Records are automatically cleaned up after cooldown period expires.
+    """
+    __tablename__ = "deleted_emails"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    email: Mapped[str] = mapped_column(String(120), nullable=False, index=True)
+    deleted_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=text("timezone('utc', now())"),
+        nullable=False
+    )
+    cooldown_until: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    original_user_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    reason: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    # Reason values: 'user_requested', 'admin_deleted', 'abuse'
+
+    __table_args__ = (
+        Index("ix_deleted_emails_cooldown_until", "cooldown_until"),
+    )

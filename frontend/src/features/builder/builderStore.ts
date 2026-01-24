@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { ID, UserMonsterCreate, TeamCreate, TalentUpsert, TeamAnalysisOut, TeamOut, UserMonsterUpsert, TeamUpdate } from "@/types";
+import type { ID, UserMonsterCreate, TeamCreate, TalentUpsert, TeamAnalysisOut, TeamOut, TeamUpdate } from "@/types";
 
 const emptyTalent: TalentUpsert = { hp_boost:0, phy_atk_boost:0, mag_atk_boost:0, phy_def_boost:0, mag_def_boost:0, spd_boost:0 };
 function emptySlot(): UserMonsterCreate & { id?: ID } {

@@ -329,12 +329,43 @@ export interface MagicItemEvaluation {
   reasoning?: string | null;
 }
 
+// Detail types for structured synergy recommendations
+export interface TeamArchetypeDetails {
+  tactical_type: string;
+  core_loop: string;
+  battle_rhythm: string;
+}
+
+export interface ActionPriorityDetails {
+  role_assignment: string;
+  counter_triangle: string;
+  energy_economy: string;
+}
+
+export interface SwitchingStrategyDetails {
+  pivot_points: string;
+  active_switch_scenarios: string;
+  quick_entry_synergy: string;
+}
+
+export interface MagicItemUsageDetails {
+  best_targets: string;
+  timing: string;
+  mismatch_analysis: string;
+}
+
+export interface OverallStrategyDetails {
+  win_conditions: string;
+  vulnerable_points: string;
+  adjustments: string;
+}
+
 export interface TeamSynergyRecommendation {
-  team_archetype: string[];
-  action_priority: string[];
-  switching_strategy: string[];
-  magic_item_usage: string[];
-  overall_strategy: string[];
+  team_archetype: string[] | TeamArchetypeDetails;
+  action_priority: string[] | ActionPriorityDetails;
+  switching_strategy: string[] | SwitchingStrategyDetails;
+  magic_item_usage: string[] | MagicItemUsageDetails;
+  overall_strategy: string[] | OverallStrategyDetails;
 }
 
 /** Final analysis response (matches backend) */

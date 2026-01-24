@@ -1,14 +1,17 @@
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, Link } from "react-router-dom";
 import { useI18n } from "@/i18n";
 import { useBuilderStore } from "@/features/builder/builderStore";
+import { useAuthStore } from "@/features/auth/authStore";
 import { useMutation } from "@tanstack/react-query";
 import { endpoints } from "@/lib/api";
 import type { TeamOut } from "@/types";
+import UserMenu from "./UserMenu";
 
 export default function Topbar() {
   const nav = useNavigate();
   const loc = useLocation();
   const { lang, setLang, t } = useI18n();
+  const { user } = useAuthStore();
 
   const resetBuilder = useBuilderStore(s => s.reset);
   const loadFromTeam = useBuilderStore(s => s.loadFromTeam);
@@ -117,6 +120,20 @@ export default function Topbar() {
           placeholder={t("topbar.search")}
           className="h-9 w-72 rounded border border-zinc-300 px-3"
         />
+
+        {/* Admin Link (visible to admins only) */}
+        {user?.is_admin && (
+          <Link
+            to="/admin"
+            className="h-9 px-3 rounded border border-purple-300 bg-purple-50 text-purple-700 hover:bg-purple-100 flex items-center cursor-pointer"
+            title={t("topbar.admin")}
+          >
+            {t("topbar.admin") ?? "Admin"}
+          </Link>
+        )}
+
+        {/* User Menu */}
+        <UserMenu />
       </div>
     </header>
   );

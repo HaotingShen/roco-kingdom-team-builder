@@ -70,7 +70,7 @@ function StatRow({
 function CollapsibleSection({
   title,
   icon,
-  count,
+  count: _count,
   defaultExpanded = false,
   children
 }: {
@@ -81,15 +81,6 @@ function CollapsibleSection({
   children: React.ReactNode;
 }) {
   const [expanded, setExpanded] = useState(defaultExpanded);
-
-  const iconColorMap: Record<string, { bg: string; border: string }> = {
-    "💥": { bg: "bg-yellow-100", border: "border-yellow-400" },
-    "🎲": { bg: "bg-blue-100", border: "border-blue-400" },
-    "💎": { bg: "bg-purple-100", border: "border-purple-400" },
-    "📋": { bg: "bg-emerald-100", border: "border-emerald-400" },
-  };
-
-  const colors = iconColorMap[icon] || { bg: "bg-zinc-100", border: "border-zinc-400" };
 
   return (
     <div className="rounded-lg border-2 border-zinc-200 bg-white shadow-sm overflow-hidden transition-all duration-200 hover:shadow-md">
@@ -365,12 +356,6 @@ export default function AnalysisResults({
       return um ? pickName(um.monster as any, lang) : `#${uid}`;
     });
 
-  // Build readable type lists
-  const typeNameList = (ids: number[]) =>
-    ids.map(id => byId.get(id))
-       .filter(Boolean)
-       .map(t => pickName(t as any, lang) || (t as TypeOut).name);
-
   const recGroups = useMemo(() => byCategory(analysis.recommendations_structured ?? []), [analysis]);
 
   return (
@@ -490,7 +475,7 @@ export default function AnalysisResults({
               effectiveTypes: ID[],
               resistedTypes: ID[],
               teamWeakTo: ID[],
-              isEnhanced = false
+              _isEnhanced = false
             ) => {
               return (
                 <div className="grid md:grid-cols-3 gap-4">

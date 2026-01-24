@@ -161,16 +161,41 @@ class RedisCache:
             return False
 
     async def clear(self) -> bool:
-        """Clear all keys in current database."""
+        """
+        Clear only LLM cache keys (not entire database).
+
+        🔒 SECURITY: Uses pattern-based deletion instead of FLUSHDB
+        to avoid wiping token revocations, rate limits, etc.
+
+        Namespace: "llm_cache:*"
+        """
         if not self._connected or not self._redis:
             return False
 
         try:
-            await self._redis.flushdb()
-            logger.info("Redis cache cleared")
+            pattern = "llm_cache:*"
+            cursor = 0
+            deleted = 0
+
+            # Use SCAN to iterate keys without blocking Redis
+            while True:
+                cursor, keys = await self._redis.scan(
+                    cursor,
+                    match=pattern,
+                    count=100  # Process 100 keys at a time
+                )
+
+                if keys:
+                    deleted += await self._redis.delete(*keys)
+
+                if cursor == 0:  # Scan complete
+                    break
+
+            logger.info(f"Cleared {deleted} LLM cache keys (pattern: {pattern})")
             return True
+
         except Exception as e:
-            logger.error(f"Redis FLUSHDB error: {e}")
+            logger.error(f"Redis cache clear error: {e}")
             return False
 
     async def get_or_compute(

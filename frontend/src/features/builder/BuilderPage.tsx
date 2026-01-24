@@ -4,6 +4,7 @@ import { useBuilderStore } from "./builderStore";
 import MonsterCard from "@/components/MonsterCard";
 import CustomSelect from "@/components/CustomSelect";
 import AnalysisResults from "@/components/AnalysisResults";
+import SaveTeamModal from "@/components/SaveTeamModal";
 import type { MagicItemOut, UserMonsterCreate, TeamCreate, TeamAnalysisOut, TeamOut, TeamUpdate, FullSavedAnalysisOut } from "@/types";
 import { useMemo, useState, useEffect } from "react";
 import MonsterInspector from "./MonsterInspector";
@@ -11,7 +12,8 @@ import { useI18n, pickName } from "@/i18n";
 import { extractErrorMessage } from "@/hooks/useTeamMutation";
 import { magicItemImageUrl } from "@/lib/images";
 import { QUERY_KEYS } from "@/lib/constants";
-import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent, DragOverlay, DragStartEvent } from '@dnd-kit/core';
+import { useAuthStore } from "@/features/auth/authStore";
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragOverlay, type DragEndEvent, type DragStartEvent } from '@dnd-kit/core';
 import { useDraggable, useDroppable } from '@dnd-kit/core';
 
 /* --- Animated dots component --- */
@@ -263,7 +265,9 @@ export default function BuilderPage() {
   const [serverErr, setServerErr] = useState<string | null>(null);
   const [serverOk, setServerOk] = useState<string | null>(null);
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
+  const [showSaveModal, setShowSaveModal] = useState(false);
   const { lang, t } = useI18n();
+  const { user } = useAuthStore();
 
   // Setup DnD sensors
   const sensors = useSensors(
@@ -401,9 +405,16 @@ export default function BuilderPage() {
   const createTeam = useMutation({
     mutationFn: (payload: TeamCreate) =>
       endpoints.createTeam(payload).then((r) => r.data as TeamOut),
-    onError: (err) => {
+    onError: (err: any) => {
       setServerOk(null);
-      setServerErr(extractErrorMessage(err));
+      // Check if it's a 401 error (user not authenticated)
+      if (err?.response?.status === 401) {
+        // Show the save modal instead of raw error message
+        setShowSaveModal(true);
+        setServerErr(null);  // Clear any existing error
+      } else {
+        setServerErr(extractErrorMessage(err));
+      }
     },
     onSuccess: (team) => {
       setServerErr(null);
@@ -430,6 +441,12 @@ export default function BuilderPage() {
   });
 
   const onSaveNew = async () => {
+    // If user is not logged in, show the save modal first
+    if (!user) {
+      setShowSaveModal(true);
+      return;
+    }
+
     // Validate team name
     const nameError = validateTeamName(name);
     if (nameError) {
@@ -461,7 +478,12 @@ export default function BuilderPage() {
 
       createTeam.mutate(toPayload());
     } catch (e: any) {
-      setServerErr(e?.message || t("builder.incompleteTeamMsg"));
+      // 401 errors from fetchQuery (listTeams) should show modal
+      if (e?.response?.status === 401) {
+        setShowSaveModal(true);
+      } else {
+        setServerErr(e?.message || t("builder.incompleteTeamMsg"));
+      }
     }
   };
 
@@ -806,6 +828,21 @@ export default function BuilderPage() {
         </div>
       ) : null}
     </DragOverlay>
+
+    {/* Save Team Modal - shown when anonymous user tries to save */}
+    <SaveTeamModal
+      isOpen={showSaveModal}
+      onClose={() => setShowSaveModal(false)}
+      onGuestCreated={() => {
+        // After guest account created, retry saving the team
+        // Small delay to ensure auth state is updated
+        setTimeout(() => {
+          if (canAnalyze && magic_item_id) {
+            createTeam.mutate(toPayload());
+          }
+        }, 100);
+      }}
+    />
   </DndContext>
   );
 }

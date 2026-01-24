@@ -1,7 +1,223 @@
-from pydantic import BaseModel, ConfigDict, model_validator, Field, field_serializer
+from pydantic import BaseModel, ConfigDict, model_validator, Field, field_serializer, field_validator
 from typing import Optional, List, Dict, Any, ClassVar, Literal, Union
 from backend.models import MoveCategory, AttackStyle
 from datetime import datetime
+
+
+# ========== AUTH SCHEMAS ==========
+
+class UserOut(BaseModel):
+    """User profile response."""
+    id: int
+    username: str
+    email: Optional[str] = None
+    is_guest: bool
+    email_verified: bool
+    subscription_tier: str
+    created_at: datetime
+    last_login_at: Optional[datetime] = None
+    is_admin: bool = False
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class UserRegister(BaseModel):
+    """User registration request."""
+    username: str = Field(
+        ...,
+        min_length=3,
+        max_length=32,
+        pattern=r'^[a-zA-Z0-9_]+$',
+        description="Alphanumeric and underscores only"
+    )
+    email: str = Field(..., max_length=120)
+    password: str = Field(..., min_length=8, max_length=128)
+    captcha_token: Optional[str] = Field(None, description="CAPTCHA response token (required if CAPTCHA enabled)")
+
+    @field_validator("username")
+    @classmethod
+    def validate_username(cls, v):
+        """
+        SECURITY: Block reserved usernames and attack patterns.
+
+        Forbidden:
+        - System usernames (admin, root, system, etc.)
+        - Guest prefix (guest_)
+        - SQL injection patterns (null, undefined)
+        """
+        forbidden = [
+            "admin", "root", "system", "api",
+            "null", "undefined", "guest"
+        ]
+        if v.lower() in forbidden or v.lower().startswith("guest_"):
+            raise ValueError("Username not allowed")
+        return v
+
+    @field_validator("password")
+    @classmethod
+    def validate_password_strength(cls, v):
+        """
+        SECURITY: Enforce strong password requirements.
+
+        Requirements:
+        - At least 8 characters (enforced by min_length)
+        - At least one uppercase letter
+        - At least one lowercase letter
+        - At least one digit
+
+        This validator is client-side friendly - provides specific error messages.
+        """
+        if not any(c.isupper() for c in v):
+            raise ValueError("Password must contain at least one uppercase letter")
+        if not any(c.islower() for c in v):
+            raise ValueError("Password must contain at least one lowercase letter")
+        if not any(c.isdigit() for c in v):
+            raise ValueError("Password must contain at least one number")
+        return v
+
+
+class UserLogin(BaseModel):
+    """User login request."""
+    email: str
+    password: str
+    captcha_token: Optional[str] = Field(None, description="CAPTCHA response token (required if CAPTCHA enabled)")
+
+
+class GuestCreateRequest(BaseModel):
+    """
+    Guest creation request with device_id for deduplication.
+
+    Frontend generates UUID and stores in localStorage.
+    Backend checks if guest with this device_id exists.
+    """
+    device_id: Optional[str] = None
+
+
+class AuthResponse(BaseModel):
+    """
+    Authentication response.
+
+    SECURITY: refresh_token NOT in response body.
+    It's set as httpOnly cookie by the server.
+
+    Frontend receives:
+    - access_token (store in memory, NOT localStorage)
+    - user (store in localStorage via Zustand persist)
+    - is_returning_guest (optional, for guest login flow)
+    """
+    access_token: str
+    token_type: str = "bearer"
+    user: UserOut
+    is_returning_guest: Optional[bool] = None  # True if existing guest, False if new guest, None for non-guest
+
+
+class TokenResponse(BaseModel):
+    """Token refresh response."""
+    access_token: str
+    token_type: str = "bearer"
+
+
+# ========== PASSWORD RESET SCHEMAS (Phase 6) ==========
+
+class ForgotPasswordRequest(BaseModel):
+    """Request password reset email."""
+    email: str = Field(..., max_length=120)
+    captcha_token: Optional[str] = Field(None, description="CAPTCHA response token (required if CAPTCHA enabled)")
+
+
+class PasswordResetRequest(BaseModel):
+    """Reset password with token from email."""
+    token: str = Field(..., min_length=32)
+    new_password: str = Field(..., min_length=8, max_length=128)
+
+    @field_validator("new_password")
+    @classmethod
+    def validate_password_strength(cls, v):
+        """Enforce strong password requirements."""
+        if not any(c.isupper() for c in v):
+            raise ValueError("Password must contain at least one uppercase letter")
+        if not any(c.islower() for c in v):
+            raise ValueError("Password must contain at least one lowercase letter")
+        if not any(c.isdigit() for c in v):
+            raise ValueError("Password must contain at least one number")
+        return v
+
+
+class PasswordChangeRequest(BaseModel):
+    """Change password (requires current password)."""
+    current_password: str
+    new_password: str = Field(..., min_length=8, max_length=128)
+
+    @field_validator("new_password")
+    @classmethod
+    def validate_password_strength(cls, v):
+        """Enforce strong password requirements."""
+        if not any(c.isupper() for c in v):
+            raise ValueError("Password must contain at least one uppercase letter")
+        if not any(c.islower() for c in v):
+            raise ValueError("Password must contain at least one lowercase letter")
+        if not any(c.isdigit() for c in v):
+            raise ValueError("Password must contain at least one number")
+        return v
+
+
+# ========== EMAIL CHANGE SCHEMAS (Phase 6) ==========
+
+class EmailChangeRequest(BaseModel):
+    """Request to change email address (requires password verification)."""
+    new_email: str = Field(..., max_length=120)
+    password: str = Field(..., description="Current password for verification")
+
+    @field_validator("new_email")
+    @classmethod
+    def validate_email_format(cls, v):
+        """Basic email format validation."""
+        if "@" not in v or "." not in v:
+            raise ValueError("Invalid email format")
+        return v.lower()  # Normalize to lowercase
+
+
+class EmailChangeConfirmRequest(BaseModel):
+    """Confirm email change with token from verification email."""
+    token: str = Field(..., min_length=32)
+
+
+# ========== ACCOUNT DELETION SCHEMAS (Phase 6) ==========
+
+class AccountDeleteRequest(BaseModel):
+    """
+    Request to permanently delete account.
+
+    SECURITY: Requires password confirmation to prevent accidental deletion.
+    """
+    password: str = Field(..., description="Current password for verification")
+    confirm_phrase: str = Field(
+        ...,
+        description="Must type 'DELETE MY ACCOUNT' to confirm"
+    )
+
+    @field_validator("confirm_phrase")
+    @classmethod
+    def validate_confirm_phrase(cls, v):
+        """Ensure user typed the confirmation phrase exactly."""
+        if v != "DELETE MY ACCOUNT":
+            raise ValueError("Please type 'DELETE MY ACCOUNT' to confirm deletion")
+        return v
+
+
+# ========== EMAIL VERIFICATION SCHEMAS (Phase 7A) ==========
+
+class EmailVerifyRequest(BaseModel):
+    """Verify email with token from verification email."""
+    token: str = Field(..., min_length=32)
+
+
+class ResendVerificationRequest(BaseModel):
+    """Request to resend verification email."""
+    pass  # No body needed, uses current authenticated user's email
+
+
+# ========== PAGINATION SCHEMAS ==========
 
 class PageMeta(BaseModel):
     total: int
@@ -209,6 +425,8 @@ class TeamCreate(BaseModel):
 class TeamOut(BaseModel):
     id: int
     name: Optional[str] = None
+    owner_id: Optional[int] = None  # Optional for inline analysis (unsaved teams)
+    owner: Optional[UserOut] = None  # Owner profile (optional for backward compatibility)
     user_monsters: List[UserMonsterOut]
     magic_item: MagicItemOut
     created_at: Optional[datetime] = None
@@ -406,3 +624,75 @@ class TeamUpdate(BaseModel):
             if len(self.name) > 16:
                 raise ValueError("Team name cannot exceed 16 characters")
         return self
+
+
+# ========== ADMIN SCHEMAS (Phase B) ==========
+
+class AdminUserOut(BaseModel):
+    """
+    Extended user information for admin view.
+    Includes all fields that admins need to manage users.
+    """
+    id: int
+    username: str
+    email: Optional[str] = None
+    is_guest: bool
+    is_system: bool
+    is_active: bool
+    email_verified: bool
+    subscription_tier: str
+    subscription_expires_at: Optional[datetime] = None
+    created_at: datetime
+    last_login_at: Optional[datetime] = None
+    last_active_at: Optional[datetime] = None
+    failed_login_attempts: int
+    locked_until: Optional[datetime] = None
+    device_id: Optional[str] = None
+    teams_count: int = 0
+    is_admin: bool = False
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class AdminUserListOut(BaseModel):
+    """Paginated list of users for admin."""
+    users: List[AdminUserOut]
+    total: int
+    page: int
+    page_size: int
+    total_pages: int
+
+
+class AdminChangeTierRequest(BaseModel):
+    """Request to change a user's subscription tier."""
+    tier: str = Field(..., pattern="^(anonymous|guest|free|premium|unlimited)$")
+
+
+class AdminLockUserRequest(BaseModel):
+    """Request to lock a user account."""
+    reason: Optional[str] = Field(None, max_length=255)
+    duration_hours: Optional[int] = Field(None, ge=1, le=8760)  # Max 1 year
+
+
+class AdminDeleteUserRequest(BaseModel):
+    """Request to delete a user (admin action)."""
+    reason: Optional[str] = Field(None, max_length=255)
+    add_to_cooldown: bool = Field(
+        default=True,
+        description="Add email to deletion cooldown (prevent re-registration)"
+    )
+
+
+class AdminStatsOut(BaseModel):
+    """System-wide statistics for admin dashboard."""
+    total_users: int
+    total_guests: int
+    total_registered: int
+    total_active: int  # Active in last 30 days
+    total_locked: int
+    total_teams: int
+    total_analyses: int
+    users_by_tier: dict
+    registrations_today: int
+    registrations_this_week: int
+    registrations_this_month: int

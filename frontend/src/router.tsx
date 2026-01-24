@@ -5,6 +5,11 @@ import DexPage from "./features/dex/DexPage";
 import MonsterDetailPage from "./features/dex/MonsterDetailPage";
 import SavedTeamPage from "./features/teams/SavedTeamPage";
 import TeamsListPage from "./features/teams/TeamsListPage";
+import LoginPage from "./features/auth/LoginPage";
+import RegisterPage from "./features/auth/RegisterPage";
+import ForgotPasswordPage from "./features/auth/ForgotPasswordPage";
+import ResetPasswordPage from "./features/auth/ResetPasswordPage";
+import AdminPage from "./features/admin/AdminPage";
 
 const router = createBrowserRouter([
   {
@@ -16,7 +21,12 @@ const router = createBrowserRouter([
       { path: "dex", element: <DexPage /> },
       { path: "dex/monsters/:id", element: <MonsterDetailPage /> },
       { path: "teams", element: <TeamsListPage /> },
-      { path: "teams/:id", element: <SavedTeamPage /> }
+      { path: "teams/:id", element: <SavedTeamPage /> },
+      { path: "auth/login", element: <LoginPage /> },
+      { path: "auth/register", element: <RegisterPage /> },
+      { path: "auth/forgot-password", element: <ForgotPasswordPage /> },
+      { path: "auth/reset-password", element: <ResetPasswordPage /> },
+      { path: "admin", element: <AdminPage /> }
     ]
   }
 ]);

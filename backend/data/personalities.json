@@ -1,157 +1,9 @@
 [
   {
-    "name": "Quiet",
-    "localized": {"zh": "沉默"},
-    "hp_mod_pct": 0.2,
-    "phy_atk_mod_pct": -0.1,
-    "mag_atk_mod_pct": 0.0,
-    "phy_def_mod_pct": 0.0,
-    "mag_def_mod_pct": 0.0,
-    "spd_mod_pct": 0.0
-  },
-  {
-    "name": "Peaceful",
-    "localized": {"zh": "平和"},
-    "hp_mod_pct": 0.2,
-    "phy_atk_mod_pct": 0.0,
-    "mag_atk_mod_pct": -0.1,
-    "phy_def_mod_pct": 0.0,
-    "mag_def_mod_pct": 0.0,
-    "spd_mod_pct": 0.0
-  },
-  {
-    "name": "Rational",
-    "localized": {"zh": "理智"},
-    "hp_mod_pct": 0.2,
-    "phy_atk_mod_pct": 0.0,
-    "mag_atk_mod_pct": 0.0,
-    "phy_def_mod_pct": -0.1,
-    "mag_def_mod_pct": 0.0,
-    "spd_mod_pct": 0.0
-  },
-  {
-    "name": "Melancholy",
-    "localized": {"zh": "忧郁"},
-    "hp_mod_pct": 0.2,
-    "phy_atk_mod_pct": 0.0,
-    "mag_atk_mod_pct": 0.0,
-    "phy_def_mod_pct": 0.0,
-    "mag_def_mod_pct": -0.1,
-    "spd_mod_pct": 0.0
-  },
-  {
-    "name": "Nervous",
-    "localized": {"zh": "紧张"},
-    "hp_mod_pct": 0.2,
-    "phy_atk_mod_pct": 0.0,
-    "mag_atk_mod_pct": 0.0,
-    "phy_def_mod_pct": 0.0,
-    "mag_def_mod_pct": 0.0,
-    "spd_mod_pct": -0.1
-  },
-  {
-    "name": "Modest",
-    "localized": {"zh": "保守"},
-    "hp_mod_pct": 0.0,
-    "phy_atk_mod_pct": -0.1,
-    "mag_atk_mod_pct": 0.2,
-    "phy_def_mod_pct": 0.0,
-    "mag_def_mod_pct": 0.0,
-    "spd_mod_pct": 0.0
-  },
-  {
-    "name": "Calm",
-    "localized": {"zh": "冷静"},
-    "hp_mod_pct": 0.0,
-    "phy_atk_mod_pct": 0.0,
-    "mag_atk_mod_pct": 0.2,
-    "phy_def_mod_pct": 0.0,
-    "mag_def_mod_pct": 0.0,
-    "spd_mod_pct": -0.1
-  },
-  {
-    "name": "Steady",
-    "localized": {"zh": "稳重"},
-    "hp_mod_pct": 0.0,
-    "phy_atk_mod_pct": 0.0,
-    "mag_atk_mod_pct": 0.2,
-    "phy_def_mod_pct": -0.1,
-    "mag_def_mod_pct": 0.0,
-    "spd_mod_pct": 0.0
-  },
-  {
-    "name": "Careless",
-    "localized": {"zh": "马虎"},
-    "hp_mod_pct": 0.0,
-    "phy_atk_mod_pct": 0.0,
-    "mag_atk_mod_pct": 0.2,
-    "phy_def_mod_pct": 0.0,
-    "mag_def_mod_pct": -0.1,
-    "spd_mod_pct": 0.0
-  },
-  {
-    "name": "Serious",
-    "localized": {"zh": "认真"},
-    "hp_mod_pct": -0.1,
-    "phy_atk_mod_pct": 0.0,
-    "mag_atk_mod_pct": 0.2,
-    "phy_def_mod_pct": 0.0,
-    "mag_def_mod_pct": 0.0,
-    "spd_mod_pct": 0.0
-  },
-  {
-    "name": "Composed",
-    "localized": {"zh": "沉着"},
-    "hp_mod_pct": 0.0,
-    "phy_atk_mod_pct": -0.1,
-    "mag_atk_mod_pct": 0.0,
-    "phy_def_mod_pct": 0.0,
-    "mag_def_mod_pct": 0.2,
-    "spd_mod_pct": 0.0
-  },
-  {
-    "name": "Careful",
-    "localized": {"zh": "慎重"},
-    "hp_mod_pct": 0.0,
-    "phy_atk_mod_pct": 0.0,
-    "mag_atk_mod_pct": -0.1,
-    "phy_def_mod_pct": 0.0,
-    "mag_def_mod_pct": 0.2,
-    "spd_mod_pct": 0.0
-  },
-  {
-    "name": "Mild",
-    "localized": {"zh": "温顺"},
-    "hp_mod_pct": 0.0,
-    "phy_atk_mod_pct": 0.0,
-    "mag_atk_mod_pct": 0.0,
-    "phy_def_mod_pct": -0.1,
-    "mag_def_mod_pct": 0.2,
-    "spd_mod_pct": 0.0
-  },
-  {
-    "name": "Reckless",
-    "localized": {"zh": "狂妄"},
-    "hp_mod_pct": 0.0,
-    "phy_atk_mod_pct": 0.0,
-    "mag_atk_mod_pct": 0.0,
-    "phy_def_mod_pct": 0.0,
-    "mag_def_mod_pct": 0.2,
-    "spd_mod_pct": -0.1
-  },
-  {
-    "name": "Practical",
-    "localized": {"zh": "实干"},
-    "hp_mod_pct": -0.1,
-    "phy_atk_mod_pct": 0.0,
-    "mag_atk_mod_pct": 0.0,
-    "phy_def_mod_pct": 0.0,
-    "mag_def_mod_pct": 0.2,
-    "spd_mod_pct": 0.0
-  },
-  {
     "name": "Timid",
-    "localized": {"zh": "胆小"},
+    "localized": {
+      "zh": "胆小"
+    },
     "hp_mod_pct": 0.0,
     "phy_atk_mod_pct": -0.1,
     "mag_atk_mod_pct": 0.0,
@@ -161,7 +13,9 @@
   },
   {
     "name": "Cheerful",
-    "localized": {"zh": "开朗"},
+    "localized": {
+      "zh": "开朗"
+    },
     "hp_mod_pct": 0.0,
     "phy_atk_mod_pct": 0.0,
     "mag_atk_mod_pct": -0.1,
@@ -171,7 +25,9 @@
   },
   {
     "name": "Impatient",
-    "localized": {"zh": "急躁"},
+    "localized": {
+      "zh": "急躁"
+    },
     "hp_mod_pct": 0.0,
     "phy_atk_mod_pct": 0.0,
     "mag_atk_mod_pct": 0.0,
@@ -181,7 +37,9 @@
   },
   {
     "name": "Naive",
-    "localized": {"zh": "天真"},
+    "localized": {
+      "zh": "天真"
+    },
     "hp_mod_pct": 0.0,
     "phy_atk_mod_pct": 0.0,
     "mag_atk_mod_pct": 0.0,
@@ -191,7 +49,9 @@
   },
   {
     "name": "Restless",
-    "localized": {"zh": "浮躁"},
+    "localized": {
+      "zh": "浮躁"
+    },
     "hp_mod_pct": -0.1,
     "phy_atk_mod_pct": 0.0,
     "mag_atk_mod_pct": 0.0,
@@ -201,7 +61,9 @@
   },
   {
     "name": "Stubborn",
-    "localized": {"zh": "固执"},
+    "localized": {
+      "zh": "固执"
+    },
     "hp_mod_pct": 0.0,
     "phy_atk_mod_pct": 0.2,
     "mag_atk_mod_pct": -0.1,
@@ -210,28 +72,10 @@
     "spd_mod_pct": 0.0
   },
   {
-    "name": "Brave",
-    "localized": {"zh": "勇敢"},
-    "hp_mod_pct": 0.0,
-    "phy_atk_mod_pct": 0.2,
-    "mag_atk_mod_pct": 0.0,
-    "phy_def_mod_pct": 0.0,
-    "mag_def_mod_pct": 0.0,
-    "spd_mod_pct": -0.1
-  },
-  {
-    "name": "Lonely",
-    "localized": {"zh": "孤僻"},
-    "hp_mod_pct": 0.0,
-    "phy_atk_mod_pct": 0.2,
-    "mag_atk_mod_pct": 0.0,
-    "phy_def_mod_pct": -0.1,
-    "mag_def_mod_pct": 0.0,
-    "spd_mod_pct": 0.0
-  },
-  {
     "name": "Naughty",
-    "localized": {"zh": "调皮"},
+    "localized": {
+      "zh": "调皮"
+    },
     "hp_mod_pct": 0.0,
     "phy_atk_mod_pct": 0.2,
     "mag_atk_mod_pct": 0.0,
@@ -240,8 +84,22 @@
     "spd_mod_pct": 0.0
   },
   {
+    "name": "Lonely",
+    "localized": {
+      "zh": "孤僻"
+    },
+    "hp_mod_pct": 0.0,
+    "phy_atk_mod_pct": 0.2,
+    "mag_atk_mod_pct": 0.0,
+    "phy_def_mod_pct": -0.1,
+    "mag_def_mod_pct": 0.0,
+    "spd_mod_pct": 0.0
+  },
+  {
     "name": "Frank",
-    "localized": {"zh": "坦率"},
+    "localized": {
+      "zh": "坦率"
+    },
     "hp_mod_pct": -0.1,
     "phy_atk_mod_pct": 0.2,
     "mag_atk_mod_pct": 0.0,
@@ -250,8 +108,82 @@
     "spd_mod_pct": 0.0
   },
   {
+    "name": "Brave",
+    "localized": {
+      "zh": "勇敢"
+    },
+    "hp_mod_pct": 0.0,
+    "phy_atk_mod_pct": 0.2,
+    "mag_atk_mod_pct": 0.0,
+    "phy_def_mod_pct": 0.0,
+    "mag_def_mod_pct": 0.0,
+    "spd_mod_pct": -0.1
+  },
+  {
+    "name": "Modest",
+    "localized": {
+      "zh": "保守"
+    },
+    "hp_mod_pct": 0.0,
+    "phy_atk_mod_pct": -0.1,
+    "mag_atk_mod_pct": 0.2,
+    "phy_def_mod_pct": 0.0,
+    "mag_def_mod_pct": 0.0,
+    "spd_mod_pct": 0.0
+  },
+  {
+    "name": "Steady",
+    "localized": {
+      "zh": "稳重"
+    },
+    "hp_mod_pct": 0.0,
+    "phy_atk_mod_pct": 0.0,
+    "mag_atk_mod_pct": 0.2,
+    "phy_def_mod_pct": -0.1,
+    "mag_def_mod_pct": 0.0,
+    "spd_mod_pct": 0.0
+  },
+  {
+    "name": "Careless",
+    "localized": {
+      "zh": "马虎"
+    },
+    "hp_mod_pct": 0.0,
+    "phy_atk_mod_pct": 0.0,
+    "mag_atk_mod_pct": 0.2,
+    "phy_def_mod_pct": 0.0,
+    "mag_def_mod_pct": -0.1,
+    "spd_mod_pct": 0.0
+  },
+  {
+    "name": "Serious",
+    "localized": {
+      "zh": "认真"
+    },
+    "hp_mod_pct": -0.1,
+    "phy_atk_mod_pct": 0.0,
+    "mag_atk_mod_pct": 0.2,
+    "phy_def_mod_pct": 0.0,
+    "mag_def_mod_pct": 0.0,
+    "spd_mod_pct": 0.0
+  },
+  {
+    "name": "Calm",
+    "localized": {
+      "zh": "冷静"
+    },
+    "hp_mod_pct": 0.0,
+    "phy_atk_mod_pct": 0.0,
+    "mag_atk_mod_pct": 0.2,
+    "phy_def_mod_pct": 0.0,
+    "mag_def_mod_pct": 0.0,
+    "spd_mod_pct": -0.1
+  },
+  {
     "name": "Bold",
-    "localized": {"zh": "大胆"},
+    "localized": {
+      "zh": "大胆"
+    },
     "hp_mod_pct": 0.0,
     "phy_atk_mod_pct": -0.1,
     "mag_atk_mod_pct": 0.0,
@@ -261,7 +193,9 @@
   },
   {
     "name": "Impish",
-    "localized": {"zh": "淘气"},
+    "localized": {
+      "zh": "淘气"
+    },
     "hp_mod_pct": 0.0,
     "phy_atk_mod_pct": 0.0,
     "mag_atk_mod_pct": -0.1,
@@ -271,7 +205,9 @@
   },
   {
     "name": "Lazy",
-    "localized": {"zh": "懒散"},
+    "localized": {
+      "zh": "懒散"
+    },
     "hp_mod_pct": 0.0,
     "phy_atk_mod_pct": 0.0,
     "mag_atk_mod_pct": 0.0,
@@ -280,8 +216,22 @@
     "spd_mod_pct": 0.0
   },
   {
+    "name": "Shy",
+    "localized": {
+      "zh": "害羞"
+    },
+    "hp_mod_pct": -0.1,
+    "phy_atk_mod_pct": 0.0,
+    "mag_atk_mod_pct": 0.0,
+    "phy_def_mod_pct": 0.2,
+    "mag_def_mod_pct": 0.0,
+    "spd_mod_pct": 0.0
+  },
+  {
     "name": "Relaxed",
-    "localized": {"zh": "悠闲"},
+    "localized": {
+      "zh": "悠闲"
+    },
     "hp_mod_pct": 0.0,
     "phy_atk_mod_pct": 0.0,
     "mag_atk_mod_pct": 0.0,
@@ -290,13 +240,123 @@
     "spd_mod_pct": -0.1
   },
   {
-    "name": "Shy",
-    "localized": {"zh": "害羞"},
+    "name": "Composed",
+    "localized": {
+      "zh": "沉着"
+    },
+    "hp_mod_pct": 0.0,
+    "phy_atk_mod_pct": -0.1,
+    "mag_atk_mod_pct": 0.0,
+    "phy_def_mod_pct": 0.0,
+    "mag_def_mod_pct": 0.2,
+    "spd_mod_pct": 0.0
+  },
+  {
+    "name": "Careful",
+    "localized": {
+      "zh": "慎重"
+    },
+    "hp_mod_pct": 0.0,
+    "phy_atk_mod_pct": 0.0,
+    "mag_atk_mod_pct": -0.1,
+    "phy_def_mod_pct": 0.0,
+    "mag_def_mod_pct": 0.2,
+    "spd_mod_pct": 0.0
+  },
+  {
+    "name": "Mild",
+    "localized": {
+      "zh": "温顺"
+    },
+    "hp_mod_pct": 0.0,
+    "phy_atk_mod_pct": 0.0,
+    "mag_atk_mod_pct": 0.0,
+    "phy_def_mod_pct": -0.1,
+    "mag_def_mod_pct": 0.2,
+    "spd_mod_pct": 0.0
+  },
+  {
+    "name": "Practical",
+    "localized": {
+      "zh": "实干"
+    },
     "hp_mod_pct": -0.1,
     "phy_atk_mod_pct": 0.0,
     "mag_atk_mod_pct": 0.0,
-    "phy_def_mod_pct": 0.2,
+    "phy_def_mod_pct": 0.0,
+    "mag_def_mod_pct": 0.2,
+    "spd_mod_pct": 0.0
+  },
+  {
+    "name": "Reckless",
+    "localized": {
+      "zh": "狂妄"
+    },
+    "hp_mod_pct": 0.0,
+    "phy_atk_mod_pct": 0.0,
+    "mag_atk_mod_pct": 0.0,
+    "phy_def_mod_pct": 0.0,
+    "mag_def_mod_pct": 0.2,
+    "spd_mod_pct": -0.1
+  },
+  {
+    "name": "Quiet",
+    "localized": {
+      "zh": "沉默"
+    },
+    "hp_mod_pct": 0.2,
+    "phy_atk_mod_pct": -0.1,
+    "mag_atk_mod_pct": 0.0,
+    "phy_def_mod_pct": 0.0,
     "mag_def_mod_pct": 0.0,
     "spd_mod_pct": 0.0
+  },
+  {
+    "name": "Peaceful",
+    "localized": {
+      "zh": "平和"
+    },
+    "hp_mod_pct": 0.2,
+    "phy_atk_mod_pct": 0.0,
+    "mag_atk_mod_pct": -0.1,
+    "phy_def_mod_pct": 0.0,
+    "mag_def_mod_pct": 0.0,
+    "spd_mod_pct": 0.0
+  },
+  {
+    "name": "Rational",
+    "localized": {
+      "zh": "理智"
+    },
+    "hp_mod_pct": 0.2,
+    "phy_atk_mod_pct": 0.0,
+    "mag_atk_mod_pct": 0.0,
+    "phy_def_mod_pct": -0.1,
+    "mag_def_mod_pct": 0.0,
+    "spd_mod_pct": 0.0
+  },
+  {
+    "name": "Melancholy",
+    "localized": {
+      "zh": "忧郁"
+    },
+    "hp_mod_pct": 0.2,
+    "phy_atk_mod_pct": 0.0,
+    "mag_atk_mod_pct": 0.0,
+    "phy_def_mod_pct": 0.0,
+    "mag_def_mod_pct": -0.1,
+    "spd_mod_pct": 0.0
+  },
+  {
+    "name": "Nervous",
+    "localized": {
+      "zh": "紧张"
+    },
+    "hp_mod_pct": 0.2,
+    "phy_atk_mod_pct": 0.0,
+    "mag_atk_mod_pct": 0.0,
+    "phy_def_mod_pct": 0.0,
+    "mag_def_mod_pct": 0.0,
+    "spd_mod_pct": -0.1
   }
 ]

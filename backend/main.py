@@ -1,9 +1,11 @@
-from fastapi import FastAPI, Depends, Query, HTTPException, status, Request
+from fastapi import FastAPI, Depends, Query, HTTPException, status, Request, Response, Cookie, Body
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.responses import RedirectResponse
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.middleware import SlowAPIMiddleware
 from sqlalchemy.orm import Session, sessionmaker, joinedload
-from sqlalchemy import create_engine, or_, cast, String, func
+from sqlalchemy import create_engine, or_, cast, String, func, text
 from backend.config import (
     DATABASE_URL,
     LLM_PROVIDER,
@@ -12,13 +14,18 @@ from backend.config import (
     DB_POOL_SIZE,
     DB_MAX_OVERFLOW,
     ENABLE_REFERENCE_RESOLUTION,
+    ENVIRONMENT,
     REDIS_URL,
     REDIS_CACHE_TTL,
     REDIS_LOCK_TIMEOUT,
     REDIS_LOCK_BLOCKING_TIMEOUT,
+    COOKIE_DOMAIN,
+    COOKIE_SAMESITE,
+    COOKIE_SECURE,
+    REFRESH_TOKEN_EXPIRE_DAYS,
 )
 from typing import Optional, List, Literal
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal, ROUND_HALF_UP
 from backend import models, schemas
 from backend.cache import llm_cache, RedisCache
@@ -26,10 +33,11 @@ from backend.rate_limiter import (
     limiter,
     analysis_rate_limit,
     rate_limit_exceeded_handler,
-    check_analysis_rate_limit,
-    check_global_ip_rate_limit,
-    record_analysis,
+    check_analysis_rate_limit_async,
+    check_global_ip_rate_limit_async,
+    record_analysis_async,
     get_rate_limit_message,
+    get_real_client_ip,
 )
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
@@ -40,8 +48,47 @@ import json
 import time
 import logging
 import hashlib
+import jwt
+from email_validator import validate_email, EmailNotValidError
 from backend.llm_service import generate_analysis_json
 from backend import reference_resolver
+from backend.auth import (
+    hash_password,
+    verify_password,
+    create_access_token,
+    create_refresh_token,
+    decode_token,
+    generate_guest_username,
+    generate_verification_token,
+)
+from backend.dependencies import (
+    get_current_user,
+    get_optional_user,
+    require_registered_user,
+    require_admin,
+    is_admin_user,
+    get_user_team,
+    get_user_or_anonymous,
+    get_device_id,
+)
+from backend.token_revocation import revocation_service
+from backend.captcha import verify_captcha, get_captcha_config
+from backend.tier_limits import (
+    check_analysis_limit,
+    record_analysis_usage,
+    check_teams_limit,
+    get_usage_stats,
+    get_anonymous_usage_stats,
+    check_anonymous_analysis_limit,
+    record_anonymous_analysis,
+    check_guest_creation_limit,
+    record_guest_creation,
+)
+from backend.email_service import (
+    send_verification_email,
+    send_password_reset_email,
+    send_email_change_verification,
+)
 
 # Setup logger
 logging.basicConfig(level=getattr(logging, LOG_LEVEL.upper(), logging.INFO))
@@ -94,6 +141,31 @@ When performing monster and team analysis, assume battle resolution follows the 
 
 app = FastAPI()
 
+
+# CRITICAL: Trailing slash normalization middleware
+class StripTrailingSlashMiddleware(BaseHTTPMiddleware):
+    """
+    Redirect trailing slashes to non-trailing for consistency.
+
+    Examples:
+    - /auth/register/ → /auth/register (307 redirect)
+    - /teams/ → /teams (307 redirect)
+    - / → / (root unchanged)
+
+    This prevents duplicate endpoint issues and ensures
+    frontend and backend routing is consistent.
+    """
+    async def dispatch(self, request: Request, call_next):
+        if request.url.path != "/" and request.url.path.endswith("/"):
+            # Remove trailing slash
+            url = request.url.replace(path=request.url.path.rstrip("/"))
+            return RedirectResponse(url=str(url), status_code=307)
+        return await call_next(request)
+
+
+app.add_middleware(StripTrailingSlashMiddleware)
+
+
 # Log LLM provider on startup
 logger.info(f"Using LLM provider: {LLM_PROVIDER}")
 
@@ -108,16 +180,18 @@ redis_cache = RedisCache(
 
 @app.on_event("startup")
 async def startup_event():
-    """Connect to Redis on application startup."""
+    """Initialize services on application startup."""
     logger.info("Application startup: connecting to Redis...")
     await redis_cache.connect()
+    await revocation_service.connect()
 
 
 @app.on_event("shutdown")
 async def shutdown_event():
-    """Disconnect from Redis on application shutdown."""
+    """Cleanup on application shutdown."""
     logger.info("Application shutdown: disconnecting from Redis...")
     await redis_cache.disconnect()
+    await revocation_service.disconnect()
 
 # Add rate limiter to app state
 app.state.limiter = limiter
@@ -149,6 +223,25 @@ def get_db():
         db.close()
 
 # === TOP-LEVEL HELPER FUNCTIONS ===
+
+def user_to_user_out(user: models.User) -> schemas.UserOut:
+    """
+    Convert a User model to UserOut schema with computed is_admin field.
+
+    is_admin is computed from ADMIN_EMAILS env var, not stored in database.
+    """
+    return schemas.UserOut(
+        id=user.id,
+        username=user.username,
+        email=user.email,
+        is_guest=user.is_guest,
+        email_verified=user.email_verified,
+        subscription_tier=user.subscription_tier,
+        created_at=user.created_at,
+        last_login_at=user.last_login_at,
+        is_admin=is_admin_user(user)
+    )
+
 # Compute effective stats with base, talent, and personality multipliers
 def round_half_up(n):
     return int(Decimal(n).to_integral_value(rounding=ROUND_HALF_UP))
@@ -1533,6 +1626,1104 @@ def generate_recommendations(per_monster_analysis, type_coverage, magic_item_eva
     return recs
 
 
+# ========== AUTH HELPER FUNCTIONS ==========
+
+def set_refresh_token_cookie(response: Response, refresh_token: str):
+    """
+    Set refresh token as httpOnly cookie with security flags.
+
+    SECURITY CONFIGURATION (based on deployment topology):
+
+    SAME-SITE (recommended):
+    - SameSite=Lax (CSRF protection built-in)
+    - Domain=.yourdomain.com (shares across subdomains)
+    - No CSRF tokens needed
+
+    CROSS-SITE:
+    - SameSite=None; Secure (requires CSRF tokens)
+    - Domain=None (no shared domain)
+    - Must validate CSRF token in requests
+    """
+    response.set_cookie(
+        key="refresh_token",
+        value=refresh_token,
+        httponly=True,           # JavaScript cannot access (XSS protection)
+        secure=COOKIE_SECURE,    # HTTPS only in production
+        samesite=COOKIE_SAMESITE,  # "lax" (same-site) or "none" (cross-site)
+        max_age=REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60,  # 7 days
+        path="/",                # Available to entire app
+        domain=COOKIE_DOMAIN,    # ".yourdomain.com" or None
+    )
+
+
+def clear_refresh_token_cookie(response: Response):
+    """Clear refresh token cookie on logout."""
+    response.delete_cookie(
+        key="refresh_token",
+        path="/",
+        domain=COOKIE_DOMAIN,
+        secure=COOKIE_SECURE,
+        httponly=True,
+        samesite=COOKIE_SAMESITE,
+    )
+
+
+# ========== AUTH ENDPOINTS ==========
+
+@app.post("/auth/guest", response_model=schemas.AuthResponse, tags=["Authentication"])
+async def create_guest_user(
+    request: Request,
+    response: Response,
+    request_data: Optional[schemas.GuestCreateRequest] = Body(default=None),
+    db: Session = Depends(get_db)
+):
+    """
+    Create or retrieve guest user by device ID.
+
+    SECURITY:
+    - Prevents guest explosion from multiple tabs/refreshes (device_id deduplication)
+    - Rate limited: 1 NEW guest per day per IP (prevents Clear Guest Data abuse)
+    - Returning existing guest by device_id is NOT rate limited
+
+    Flow:
+    1. Frontend explicitly calls this when user clicks "Continue as Guest"
+    2. Backend checks if guest with this device_id exists
+    3. If yes: Return existing guest (deduplication, NOT rate limited)
+    4. If no: Check rate limit, then create new guest
+
+    Note: This is only called when user explicitly chooses to be a guest.
+    Anonymous users (no account) don't call this endpoint.
+    """
+    device_id = request_data.device_id if request_data else None
+    client_ip = get_real_client_ip(request)
+
+    # Try to find existing guest by device_id
+    if device_id:
+        username = f"guest_{device_id[:12]}"
+        existing_guest = db.query(models.User).filter(
+            models.User.username == username,
+            models.User.is_guest == True
+        ).first()
+
+        if existing_guest:
+            # Return existing guest (deduplication) - NOT rate limited
+            # Update last_active_at for guest expiry tracking
+            existing_guest.last_active_at = datetime.now(timezone.utc)
+            db.commit()
+
+            access_token = create_access_token(
+                existing_guest.id,
+                existing_guest.username,
+                True,
+                existing_guest.token_version
+            )
+            refresh_token = create_refresh_token(
+                existing_guest.id,
+                existing_guest.token_version
+            )
+            set_refresh_token_cookie(response, refresh_token)
+
+            logger.info(f"Returned existing guest: {existing_guest.username} (ID={existing_guest.id})")
+
+            return schemas.AuthResponse(
+                access_token=access_token,
+                token_type="bearer",
+                user=user_to_user_out(existing_guest),
+                is_returning_guest=True
+            )
+
+    # Creating NEW guest - check rate limit (1/day per IP)
+    await check_guest_creation_limit(client_ip)
+
+    # Create new guest with "guest" tier (not "free")
+    username = f"guest_{device_id[:12]}" if device_id else generate_guest_username()
+
+    guest = models.User(
+        username=username,
+        email=None,
+        hashed_password=None,
+        is_guest=True,
+        is_active=True,
+        token_version=0,
+        subscription_tier="guest",  # Guest tier: 3/day analyses, 3 teams max
+        device_id=device_id,  # Store device_id for tracking
+        last_active_at=datetime.now(timezone.utc),  # For guest expiry
+    )
+
+    db.add(guest)
+    db.commit()
+    db.refresh(guest)
+
+    # Record guest creation for rate limiting
+    await record_guest_creation(client_ip)
+
+    # Generate tokens
+    access_token = create_access_token(guest.id, guest.username, True, guest.token_version)
+    refresh_token = create_refresh_token(guest.id, guest.token_version)
+    set_refresh_token_cookie(response, refresh_token)
+
+    logger.info(f"Created new guest: {guest.username} (ID={guest.id}) from IP {client_ip}")
+
+    return schemas.AuthResponse(
+        access_token=access_token,
+        token_type="bearer",
+        user=user_to_user_out(guest),
+        is_returning_guest=False
+    )
+
+
+@app.post("/auth/register", tags=["Authentication"])
+@limiter.limit("3/hour")  # SECURITY: Prevent bot signups
+async def register_user(
+    request: Request,
+    response: Response,
+    user_data: schemas.UserRegister,
+    current_user: Optional[models.User] = Depends(get_optional_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Register a new user OR convert guest to registered user.
+
+    SECURITY:
+    - Rate limited (3 registrations per hour per IP)
+    - CAPTCHA verification (if enabled)
+    - Validates email format and DNS deliverability
+    - Enforces strong password requirements (Pydantic validator)
+    - Prevents account enumeration (uniform error messages)
+    - Generates email verification token (Phase 7A)
+    - Converts guest accounts (preserves teams)
+    """
+    # CAPTCHA verification (Phase 7A)
+    await verify_captcha(user_data.captcha_token, get_real_client_ip(request))
+
+    # Validate email format and DNS
+    try:
+        email_info = validate_email(user_data.email, check_deliverability=True)
+        normalized_email = email_info.normalized
+    except EmailNotValidError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid email address",
+        )
+
+    # ANTI-ABUSE: Check if email is in deletion cooldown
+    deleted = db.query(models.DeletedEmail).filter(
+        models.DeletedEmail.email == normalized_email,
+        models.DeletedEmail.cooldown_until > datetime.now(timezone.utc)
+    ).first()
+
+    if deleted:
+        days_remaining = (deleted.cooldown_until - datetime.now(timezone.utc)).days + 1
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"This email was recently used on a deleted account. "
+                   f"You can register with it again in {days_remaining} days."
+        )
+
+    # SECURITY: Check if email exists (uniform error message)
+    existing_user = db.query(models.User).filter(
+        models.User.email == normalized_email
+    ).first()
+
+    if existing_user:
+        # Don't reveal if email exists (account enumeration prevention)
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Registration failed. Please try a different email address.",
+        )
+
+    # Check if username exists
+    existing_username = db.query(models.User).filter(
+        models.User.username == user_data.username
+    ).first()
+
+    if existing_username:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Username already taken",
+        )
+
+    # Hash password (bcrypt with auto-generated salt)
+    hashed_pwd = hash_password(user_data.password)
+
+    # Generate email verification token (Phase 7A)
+    verification_token = generate_verification_token()
+    verification_expires = datetime.now(timezone.utc) + timedelta(hours=24)
+
+    # Case 1: Guest promotion (convert existing guest to registered)
+    if current_user and current_user.is_guest:
+        logger.info(f"Converting guest {current_user.username} to registered user {user_data.username}")
+
+        # Re-query user from current session to ensure proper tracking
+        user = db.query(models.User).filter(models.User.id == current_user.id).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        user.username = user_data.username
+        user.email = normalized_email
+        user.hashed_password = hashed_pwd
+        user.is_guest = False
+        user.subscription_tier = "free"  # Upgrade from "guest" to "free" tier
+        user.email_verified = False  # Phase 7A: Require verification
+        user.verification_token = verification_token
+        user.verification_token_expires = verification_expires
+        user.last_password_change = datetime.now(timezone.utc)
+
+        db.commit()
+        db.refresh(user)
+
+    # Case 2: New registration (no guest account)
+    else:
+        user = models.User(
+            username=user_data.username,
+            email=normalized_email,
+            hashed_password=hashed_pwd,
+            is_guest=False,
+            is_active=True,
+            token_version=0,
+            email_verified=False,  # Phase 7A: Require verification
+            verification_token=verification_token,
+            verification_token_expires=verification_expires,
+            last_password_change=datetime.now(timezone.utc),
+        )
+
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+
+    # Send verification email
+    email_sent = await send_verification_email(user.email, verification_token)
+    logger.info(
+        f"User registered: {user.username} (ID={user.id}), "
+        f"email_sent={email_sent}"
+    )
+
+    # Generate tokens
+    access_token = create_access_token(user.id, user.username, False, user.token_version)
+    refresh_token = create_refresh_token(user.id, user.token_version)
+    set_refresh_token_cookie(response, refresh_token)
+
+    # Build response
+    response_data = {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "user": user_to_user_out(user)
+    }
+
+    # DEV ONLY: Include verification token for testing (if SMTP not configured)
+    if ENVIRONMENT == "development" and not email_sent:
+        response_data["debug_verification_token"] = verification_token
+
+    return response_data
+
+
+@app.post("/auth/login", response_model=schemas.AuthResponse, tags=["Authentication"])
+@limiter.limit("5/15minutes")  # SECURITY: Prevent brute force
+async def login_user(
+    request: Request,
+    response: Response,
+    credentials: schemas.UserLogin,
+    db: Session = Depends(get_db)
+):
+    """
+    Login with email and password.
+
+    SECURITY:
+    - Rate limited (5 attempts per 15 minutes per IP)
+    - CAPTCHA verification (if enabled)
+    - Account lockout after 10 failed attempts (30 min)
+    - Uniform error messages (prevent account enumeration)
+    - Updates last_login_at timestamp
+    - Resets failed attempts counter on success
+    """
+    # CAPTCHA verification (Phase 7A)
+    await verify_captcha(credentials.captcha_token, get_real_client_ip(request))
+
+    # Fetch user by email
+    user = db.query(models.User).filter(
+        models.User.email == credentials.email.lower()
+    ).first()
+
+    # SECURITY: Check account lockout
+    if user and user.locked_until:
+        if user.locked_until > datetime.now(timezone.utc):
+            minutes_left = (user.locked_until - datetime.now(timezone.utc)).seconds // 60
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Account locked due to too many failed login attempts. "
+                       f"Try again in {minutes_left} minutes.",
+            )
+        else:
+            # Unlock account (lockout period expired)
+            user.locked_until = None
+            user.failed_login_attempts = 0
+            db.commit()
+
+    # SECURITY: Verify password (constant-time comparison via bcrypt)
+    if not user or not user.hashed_password or not verify_password(credentials.password, user.hashed_password):
+        # Failed login - increment counter
+        if user:
+            user.failed_login_attempts += 1
+
+            # Lock account after 10 failed attempts
+            if user.failed_login_attempts >= 10:
+                user.locked_until = datetime.now(timezone.utc) + timedelta(minutes=30)
+                logger.warning(f"Account locked: {user.email} (ID={user.id})")
+
+            db.commit()
+
+        # SECURITY: Uniform error message (don't reveal if email exists)
+        client_ip = get_real_client_ip(request)
+        logger.warning(f"Failed login attempt for {credentials.email} from {client_ip}")
+
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid email or password",
+        )
+
+    # Successful login - reset failed attempts counter
+    user.failed_login_attempts = 0
+    user.locked_until = None
+    user.last_login_at = datetime.now(timezone.utc)
+    db.commit()
+    db.refresh(user)
+
+    # Generate tokens
+    access_token = create_access_token(user.id, user.username, user.is_guest, user.token_version)
+    refresh_token = create_refresh_token(user.id, user.token_version)
+    set_refresh_token_cookie(response, refresh_token)
+
+    logger.info(f"User logged in: {user.username} (ID={user.id})")
+
+    return schemas.AuthResponse(
+        access_token=access_token,
+        token_type="bearer",
+        user=user_to_user_out(user)
+    )
+
+
+@app.post("/auth/refresh", response_model=schemas.TokenResponse, tags=["Authentication"])
+async def refresh_access_token(
+    request: Request,
+    response: Response,
+    refresh_token: Optional[str] = Cookie(None, alias="refresh_token"),
+    db: Session = Depends(get_db)
+):
+    """
+    Refresh access token using refresh token from httpOnly cookie.
+
+    SECURITY:
+    - Refresh token ONLY from cookie (never from request body)
+    - Validates token type is 'refresh' (not 'access')
+    - Checks token version (revocation)
+    - Checks Redis blacklist (logout revocation)
+    - Issues new access token (refresh token remains same)
+    """
+    if not refresh_token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Refresh token not found. Please login again.",
+        )
+
+    try:
+        payload = decode_token(refresh_token)
+
+        # Verify token type
+        if payload.get("type") != "refresh":
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid token type",
+            )
+
+        user_id = int(payload.get("sub"))
+        token_version = payload.get("token_version", 0)
+        jti = payload.get("jti")
+
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Refresh token has expired. Please login again.",
+        )
+    except (jwt.InvalidTokenError, ValueError):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid refresh token",
+        )
+
+    # SECURITY: Check if token has been revoked (logout blacklist)
+    if await revocation_service.is_token_revoked(jti):
+        logger.warning(f"Attempted use of revoked refresh token: {jti}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Refresh token has been revoked. Please login again.",
+        )
+
+    # Fetch user
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+
+    if not user or not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="User not found or inactive",
+        )
+
+    # SECURITY: Check token version (revocation via version bump)
+    if token_version != user.token_version:
+        logger.warning(
+            f"Token version mismatch for user {user.id}: "
+            f"token={token_version}, user={user.token_version}"
+        )
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Refresh token has been revoked. Please login again.",
+        )
+
+    # Issue new access token
+    new_access_token = create_access_token(
+        user.id,
+        user.username,
+        user.is_guest,
+        user.token_version
+    )
+
+    logger.info(f"Refreshed access token for user {user.id}")
+
+    return schemas.TokenResponse(
+        access_token=new_access_token,
+        token_type="bearer"
+    )
+
+
+@app.get("/auth/me", response_model=schemas.UserOut, tags=["Authentication"])
+async def get_current_user_profile(
+    current_user: models.User = Depends(get_current_user)
+):
+    """
+    Get current user's profile.
+
+    Requires valid access token in Authorization header.
+    """
+    return user_to_user_out(current_user)
+
+
+@app.post("/auth/logout", tags=["Authentication"])
+async def logout_user(
+    response: Response,
+    refresh_token: Optional[str] = Cookie(None, alias="refresh_token"),
+    current_user: models.User = Depends(get_current_user)
+):
+    """
+    Logout current user (server-side token revocation).
+
+    SECURITY:
+    - Revokes refresh token by adding to Redis blacklist
+    - Clears refresh token cookie
+    - Frontend should clear access token from memory
+
+    Note: Access tokens remain valid until expiry (15 minutes).
+    For immediate revocation, use /auth/logout-all (bumps token_version).
+    """
+    # Revoke refresh token if present
+    if refresh_token:
+        try:
+            payload = decode_token(refresh_token)
+            jti = payload.get("jti")
+            if jti:
+                await revocation_service.revoke_token(jti, "refresh")
+                logger.info(f"Revoked refresh token for user {current_user.id}")
+        except:
+            # Invalid token, ignore
+            pass
+
+    # Clear refresh token cookie
+    clear_refresh_token_cookie(response)
+
+    logger.info(f"User logged out: {current_user.username} (ID={current_user.id})")
+
+    return {"message": "Logged out successfully"}
+
+
+@app.post("/auth/logout-all", tags=["Authentication"])
+async def logout_all_devices(
+    response: Response,
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Logout from all devices (invalidate ALL tokens immediately).
+
+    SECURITY: Increments user.token_version to invalidate ALL tokens.
+
+    Use this for:
+    - Password change
+    - Suspected account compromise
+    - User requested "logout everywhere"
+    """
+    # Increment token version (invalidates all existing tokens)
+    current_user.token_version += 1
+    db.commit()
+
+    # Clear refresh token cookie
+    clear_refresh_token_cookie(response)
+
+    logger.info(
+        f"Logged out all devices for user {current_user.id} "
+        f"(token_version={current_user.token_version})"
+    )
+
+    return {"message": "Logged out from all devices"}
+
+
+# ========== PASSWORD RESET (Phase 6) ==========
+
+@app.post("/auth/forgot-password", tags=["Authentication"])
+@limiter.limit("3/hour")  # Prevent email spam
+async def forgot_password(
+    request: Request,
+    email_data: schemas.ForgotPasswordRequest,
+    db: Session = Depends(get_db)
+):
+    """
+    Request password reset email.
+
+    🔒 SECURITY:
+    - CAPTCHA verification (if enabled)
+    - Always returns success to prevent user enumeration
+    - If email exists, generates reset token and logs it (email sending not implemented)
+    """
+    import secrets
+
+    # CAPTCHA verification (Phase 7A)
+    await verify_captcha(email_data.captcha_token, get_real_client_ip(request))
+
+    # Find user by email
+    user = db.query(models.User).filter(models.User.email == email_data.email).first()
+
+    if user and not user.is_guest:
+        # Generate reset token (valid for 1 hour)
+        reset_token = secrets.token_urlsafe(32)
+        user.password_reset_token = reset_token
+        user.password_reset_expires = datetime.now(timezone.utc) + timedelta(hours=1)
+        db.commit()
+
+        # Send password reset email
+        email_sent = await send_password_reset_email(user.email, reset_token)
+        logger.info(
+            f"Password reset requested for {user.email}, email_sent={email_sent}"
+        )
+
+    # ✅ ALWAYS return success (prevent user enumeration)
+    return {
+        "message": "If an account exists with that email, a password reset link has been sent."
+    }
+
+
+@app.post("/auth/reset-password", tags=["Authentication"])
+@limiter.limit("5/hour")
+async def reset_password(
+    request: Request,
+    reset_data: schemas.PasswordResetRequest,
+    db: Session = Depends(get_db)
+):
+    """
+    Reset password using token from email.
+
+    🔒 SECURITY:
+    - Token is single-use (cleared after successful reset)
+    - Token expires after 1 hour
+    - Increments token_version (invalidates all existing sessions)
+    """
+    # Find user by reset token
+    user = db.query(models.User).filter(
+        models.User.password_reset_token == reset_data.token
+    ).first()
+
+    if not user:
+        raise HTTPException(status_code=400, detail="Invalid or expired reset token")
+
+    # Check token expiry
+    if not user.password_reset_expires or datetime.now(timezone.utc) > user.password_reset_expires:
+        raise HTTPException(status_code=400, detail="Reset token has expired")
+
+    # Reset password
+    user.hashed_password = hash_password(reset_data.new_password)
+    user.password_reset_token = None
+    user.password_reset_expires = None
+    user.last_password_change = datetime.now(timezone.utc)
+
+    # ✅ SECURITY: Increment token_version to invalidate all existing sessions
+    user.token_version += 1
+
+    db.commit()
+
+    logger.info(f"Password reset successful for user {user.id}")
+
+    return {"message": "Password reset successful. Please log in with your new password."}
+
+
+@app.post("/auth/change-password", tags=["Authentication"])
+async def change_password(
+    password_data: schemas.PasswordChangeRequest,
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Change password (requires current password).
+
+    Different from reset: user must be logged in and know current password.
+    """
+    if current_user.is_guest:
+        raise HTTPException(
+            status_code=403,
+            detail="Guest users cannot change password. Register an account first."
+        )
+
+    # Verify current password
+    if not verify_password(password_data.current_password, current_user.hashed_password):
+        raise HTTPException(status_code=400, detail="Current password is incorrect")
+
+    # Re-query user to ensure proper session tracking for updates
+    user = db.query(models.User).filter(models.User.id == current_user.id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # Update password
+    user.hashed_password = hash_password(password_data.new_password)
+    user.last_password_change = datetime.now(timezone.utc)
+
+    # ✅ SECURITY: Increment token_version to invalidate all existing sessions
+    user.token_version += 1
+
+    db.commit()
+
+    logger.info(f"Password changed for user {user.id}")
+
+    return {"message": "Password changed successfully. Please log in again."}
+
+
+# ========== EMAIL CHANGE (Phase 6) ==========
+
+@app.post("/auth/change-email", tags=["Authentication"])
+@limiter.limit("3/hour")
+async def request_email_change(
+    request: Request,
+    email_data: schemas.EmailChangeRequest,
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Request email change (requires password verification).
+
+    Flow:
+    1. User submits new email + current password
+    2. Server verifies password
+    3. Server generates token and stores in pending_email fields
+    4. In production: Send verification email to NEW address
+    5. User clicks link to confirm
+
+    SECURITY:
+    - Requires password verification to prevent unauthorized changes
+    - Token sent to NEW email (prevents hijacking)
+    - Existing email remains until new one is verified
+    """
+    if current_user.is_guest:
+        raise HTTPException(
+            status_code=403,
+            detail="Guest users cannot change email. Register an account first."
+        )
+
+    # Re-query user for session tracking
+    user = db.query(models.User).filter(models.User.id == current_user.id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # Verify password
+    if not verify_password(email_data.password, user.hashed_password):
+        raise HTTPException(status_code=400, detail="Password is incorrect")
+
+    # Check if new email is same as current
+    if user.email and user.email.lower() == email_data.new_email.lower():
+        raise HTTPException(status_code=400, detail="New email is the same as current email")
+
+    # Check if new email is already taken
+    existing = db.query(models.User).filter(
+        models.User.email == email_data.new_email.lower(),
+        models.User.id != user.id
+    ).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="Email address is already in use")
+
+    # Generate verification token
+    token = secrets.token_urlsafe(32)
+    expires = datetime.now(timezone.utc) + timedelta(hours=24)  # 24 hour expiry
+
+    # Store pending email change
+    user.pending_email = email_data.new_email.lower()
+    user.email_change_token = token
+    user.email_change_token_expires = expires
+
+    db.commit()
+
+    # Send verification email to new address
+    email_sent = await send_email_change_verification(user.pending_email, token)
+    logger.info(
+        f"Email change requested for user {user.id}: {user.email} -> {user.pending_email}, "
+        f"email_sent={email_sent}"
+    )
+
+    # Build response
+    response_data = {
+        "message": "Verification email sent to new address. Please check your inbox."
+    }
+
+    # DEV ONLY: Include token for testing (if SMTP not configured)
+    if ENVIRONMENT == "development" and not email_sent:
+        response_data["debug_token"] = token
+
+    return response_data
+
+
+@app.post("/auth/confirm-email-change", tags=["Authentication"])
+@limiter.limit("5/hour")
+async def confirm_email_change(
+    request: Request,
+    confirm_data: schemas.EmailChangeConfirmRequest,
+    db: Session = Depends(get_db)
+):
+    """
+    Confirm email change with token from verification email.
+
+    SECURITY:
+    - Token must be valid and not expired
+    - Old email is replaced with new email
+    - email_verified is reset to False (requires re-verification in Phase 7A)
+    - All sessions are invalidated
+    """
+    # Find user with this token
+    user = db.query(models.User).filter(
+        models.User.email_change_token == confirm_data.token
+    ).first()
+
+    if not user:
+        raise HTTPException(status_code=400, detail="Invalid or expired token")
+
+    # Check expiry (handle None case - treat missing expiry as expired)
+    if not user.email_change_token_expires or user.email_change_token_expires < datetime.now(timezone.utc):
+        # Clear expired token
+        user.email_change_token = None
+        user.email_change_token_expires = None
+        user.pending_email = None
+        db.commit()
+        raise HTTPException(status_code=400, detail="Token has expired. Please request a new email change.")
+
+    # Check for pending email
+    if not user.pending_email:
+        raise HTTPException(status_code=400, detail="No pending email change found")
+
+    # Final check: ensure pending email isn't taken (race condition protection)
+    existing = db.query(models.User).filter(
+        models.User.email == user.pending_email,
+        models.User.id != user.id
+    ).first()
+    if existing:
+        user.email_change_token = None
+        user.email_change_token_expires = None
+        user.pending_email = None
+        db.commit()
+        raise HTTPException(status_code=400, detail="Email address is already in use")
+
+    old_email = user.email
+    new_email = user.pending_email
+
+    # Update email
+    user.email = new_email
+    user.pending_email = None
+    user.email_change_token = None
+    user.email_change_token_expires = None
+
+    # Reset email verification status (Phase 7A)
+    user.email_verified = False
+
+    # Invalidate all sessions for security
+    user.token_version += 1
+
+    db.commit()
+
+    logger.info(f"Email changed for user {user.id}: {old_email} -> {new_email}")
+
+    return {"message": "Email changed successfully. Please log in with your new email."}
+
+
+# ========== ACCOUNT DELETION (Phase 6) ==========
+
+@app.delete("/auth/account", tags=["Authentication"])
+async def delete_account(
+    response: Response,
+    delete_data: schemas.AccountDeleteRequest,
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Permanently delete user account and all associated data.
+
+    SECURITY:
+    - Requires password verification
+    - Requires typing confirmation phrase
+    - Cannot delete system user
+    - Deletes all teams and associated data (cascade)
+    - Clears auth cookies
+
+    WARNING: This action is IRREVERSIBLE.
+    """
+    if current_user.is_guest:
+        raise HTTPException(
+            status_code=403,
+            detail="Guest accounts are automatically cleaned up. Register to create a permanent account."
+        )
+
+    if current_user.is_system:
+        raise HTTPException(
+            status_code=403,
+            detail="System accounts cannot be deleted"
+        )
+
+    # Re-query user for proper session tracking
+    user = db.query(models.User).filter(models.User.id == current_user.id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # Verify password
+    if not verify_password(delete_data.password, user.hashed_password):
+        raise HTTPException(status_code=400, detail="Password is incorrect")
+
+    # Log deletion (before deleting)
+    logger.warning(
+        f"ACCOUNT DELETION: User {user.id} ({user.username}, {user.email}) "
+        f"requested account deletion"
+    )
+
+    # Store info for response
+    username = user.username
+    user_email = user.email
+    team_count = len(user.teams) if user.teams else 0
+
+    # Record email in deleted_emails table BEFORE deletion (anti-abuse)
+    # Prevents immediate re-registration with the same email
+    EMAIL_COOLDOWN_DAYS = 30
+    if user_email:
+        deleted_email = models.DeletedEmail(
+            email=user_email.lower(),
+            cooldown_until=datetime.now(timezone.utc) + timedelta(days=EMAIL_COOLDOWN_DAYS),
+            original_user_id=user.id,
+            reason="user_requested"
+        )
+        db.add(deleted_email)
+
+    # Delete user (cascades to teams, user_monsters, talents, analyses)
+    db.delete(user)
+    db.commit()
+
+    # Clear auth cookies
+    response.delete_cookie(
+        key="refresh_token",
+        path="/",
+        httponly=True,
+        secure=COOKIE_SECURE,
+        samesite=COOKIE_SAMESITE
+    )
+
+    logger.info(f"Account deleted: {username} (ID: {current_user.id}, Teams: {team_count})")
+
+    return {
+        "message": f"Account '{username}' has been permanently deleted.",
+        "deleted_teams": team_count
+    }
+
+
+# ========== EMAIL VERIFICATION (Phase 7A) ==========
+
+@app.post("/auth/verify-email", tags=["Authentication"])
+@limiter.limit("10/hour")
+async def verify_email(
+    request: Request,
+    verify_data: schemas.EmailVerifyRequest,
+    db: Session = Depends(get_db)
+):
+    """
+    Verify email address with token from verification email.
+
+    SECURITY:
+    - Token must be valid and not expired
+    - Sets email_verified to True
+    - Clears verification token after use
+    """
+    # Find user with this token
+    user = db.query(models.User).filter(
+        models.User.verification_token == verify_data.token
+    ).first()
+
+    if not user:
+        raise HTTPException(status_code=400, detail="Invalid or expired verification token")
+
+    # Check expiry
+    if user.verification_token_expires and user.verification_token_expires < datetime.now(timezone.utc):
+        raise HTTPException(
+            status_code=400,
+            detail="Verification token has expired. Please request a new one."
+        )
+
+    # Already verified?
+    if user.email_verified:
+        return {"message": "Email is already verified"}
+
+    # Verify email
+    user.email_verified = True
+    user.verification_token = None
+    user.verification_token_expires = None
+
+    db.commit()
+
+    logger.info(f"Email verified for user {user.id} ({user.email})")
+
+    return {"message": "Email verified successfully. You now have full access to all features."}
+
+
+@app.post("/auth/resend-verification", tags=["Authentication"])
+@limiter.limit("3/hour")
+async def resend_verification(
+    request: Request,
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Resend verification email to current user.
+
+    SECURITY:
+    - Requires authentication
+    - Rate limited to prevent spam
+    - Generates new token (invalidates old one)
+    """
+    if current_user.is_guest:
+        raise HTTPException(
+            status_code=403,
+            detail="Guest accounts don't have email to verify. Please register first."
+        )
+
+    if current_user.email_verified:
+        return {"message": "Email is already verified"}
+
+    # Re-query for session tracking
+    user = db.query(models.User).filter(models.User.id == current_user.id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # Generate new verification token
+    verification_token = generate_verification_token()
+    verification_expires = datetime.now(timezone.utc) + timedelta(hours=24)
+
+    user.verification_token = verification_token
+    user.verification_token_expires = verification_expires
+
+    db.commit()
+
+    # Send verification email
+    email_sent = await send_verification_email(user.email, verification_token)
+    logger.info(f"Verification email resent for user {user.id} ({user.email}), email_sent={email_sent}")
+
+    # Build response
+    response_data = {
+        "message": "Verification email sent. Please check your inbox."
+    }
+
+    # DEV ONLY: Include token for testing (if SMTP not configured)
+    if ENVIRONMENT == "development" and not email_sent:
+        response_data["debug_token"] = verification_token
+
+    return response_data
+
+
+# ========== HEALTH CHECK ==========
+
+@app.get("/health", tags=["System"])
+def health_check():
+    """Health check endpoint for monitoring."""
+    return {"status": "healthy"}
+
+
+@app.get("/config/captcha", tags=["System"])
+def get_captcha_settings():
+    """Get CAPTCHA configuration for frontend."""
+    return get_captcha_config()
+
+
+@app.get("/auth/usage", tags=["Authentication"])
+async def get_user_usage(
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Get current user's usage statistics and tier limits.
+
+    Returns:
+    - Current subscription tier
+    - Daily/monthly analysis usage and limits
+    - Team count and limit
+    """
+    stats = await get_usage_stats(current_user)
+
+    # Add team count
+    team_count = db.query(models.Team).filter(
+        models.Team.owner_id == current_user.id
+    ).count()
+    stats["teams_used"] = team_count
+
+    return stats
+
+
+@app.get("/auth/quota", tags=["Authentication"])
+async def get_quota(
+    request: Request,
+    user_or_anon: tuple = Depends(get_user_or_anonymous),
+    db: Session = Depends(get_db)
+):
+    """
+    Get quota/usage statistics for any user (anonymous, guest, or registered).
+
+    Works for ALL tiers:
+    - Anonymous: Tracked by device_id + IP (returns anonymous tier limits)
+    - Guest: Tracked by user.id (returns guest tier limits)
+    - Registered: Tracked by user.id (returns free/premium tier limits)
+
+    Returns:
+    - tier: Current tier name
+    - daily_used/daily_limit: Daily analysis quota
+    - monthly_used/monthly_limit: Monthly analysis quota
+    - teams_used/teams_limit: Team count quota
+    - is_anonymous: True if user is not authenticated
+    """
+    user, device_id, client_ip = user_or_anon
+
+    if user is None:
+        # Anonymous user - track by device_id and IP
+        stats = await get_anonymous_usage_stats(device_id, client_ip)
+        stats["is_anonymous"] = True
+        stats["teams_used"] = 0
+        return stats
+    else:
+        # Authenticated user (guest or registered)
+        stats = await get_usage_stats(user)
+
+        # Add team count
+        team_count = db.query(models.Team).filter(
+            models.Team.owner_id == user.id
+        ).count()
+        stats["teams_used"] = team_count
+        stats["is_anonymous"] = False
+        stats["is_guest"] = user.is_guest
+
+        return stats
+
+
 # === GET Endpoints ===
 
 @app.get("/")
@@ -1548,11 +2739,41 @@ def get_cache_stats():
     }
 
 @app.post("/cache/clear")
-def clear_cache():
-    """Clear all LLM cache entries and reference resolver cache (admin endpoint)."""
+async def clear_cache():
+    """
+    Clear all LLM cache entries and reference resolver cache (admin endpoint).
+
+    🔒 SECURITY: Disabled in production until auth is implemented.
+    Anyone can DOS the app by clearing cache repeatedly, causing:
+    - Increased LLM costs (cache misses)
+    - Slower response times
+    - Service degradation
+
+    TODO: After implementing auth (see auth-implementation-complete.md),
+    change to: async def clear_cache(current_user: User = Depends(require_admin))
+    """
+    # ⚠️ SECURITY: Disable in production until auth is implemented
+    if ENVIRONMENT == "production":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="This endpoint is disabled in production. Enable authentication first."
+        )
+
+    # Clear in-memory cache
     llm_cache.clear()
+
+    # Clear Redis cache (namespace-based, safe for auth tokens)
+    if redis_cache and redis_cache._connected:
+        await redis_cache.clear()
+
+    # Clear reference resolver cache
     reference_resolver.invalidate_reference_cache()
-    return {"message": "Cache cleared successfully", "cache_size": len(llm_cache._cache)}
+
+    return {
+        "message": "Cache cleared successfully",
+        "in_memory_cache_size": len(llm_cache._cache),
+        "redis_cache": "cleared" if redis_cache and redis_cache._connected else "not available"
+    }
 
 @app.get("/monsters", response_model=List[schemas.MonsterLiteOut])
 def get_monsters(
@@ -1837,11 +3058,21 @@ def get_species(db: Session = Depends(get_db)):
     return db.query(models.MonsterSpecies).order_by(models.MonsterSpecies.id).all()
 
 
-@app.get("/teams", response_model=List[schemas.TeamOut])
-def list_teams(db: Session = Depends(get_db)):
+@app.get("/teams", response_model=List[schemas.TeamOut], tags=["Teams"])
+def list_teams(
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    List teams owned by current user.
+
+    SECURITY: Users can only see their own teams.
+    """
     return (
         db.query(models.Team)
+        .filter(models.Team.owner_id == current_user.id)  # Filter by owner
         .options(
+            joinedload(models.Team.owner),  # Include owner info
             joinedload(models.Team.user_monsters)
                 .joinedload(models.UserMonster.monster)
                 .joinedload(models.Monster.main_type),
@@ -1871,11 +3102,21 @@ def list_teams(db: Session = Depends(get_db)):
         .all()
     )
 
-@app.get("/teams/{team_id}", response_model=schemas.TeamOut)
-def get_team(team_id: int, db: Session = Depends(get_db)):
+@app.get("/teams/{team_id}", response_model=schemas.TeamOut, tags=["Teams"])
+def get_team(
+    team_id: int,
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Get a team by ID.
+
+    SECURITY: Only owner can view.
+    """
     db_team = (
         db.query(models.Team)
         .options(
+            joinedload(models.Team.owner),  # Include owner info
             joinedload(models.Team.user_monsters)
                 .joinedload(models.UserMonster.monster)
                 .joinedload(models.Monster.main_type),
@@ -1906,23 +3147,51 @@ def get_team(team_id: int, db: Session = Depends(get_db)):
     )
     if not db_team:
         raise HTTPException(status_code=404, detail="Team not found")
+
+    # SECURITY: Check ownership
+    if db_team.owner_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You do not have permission to access this team"
+        )
+
     return db_team
 
 
 # -------- POST Endpoints --------
 
-@app.post("/teams", response_model=schemas.TeamOut)
-def create_team(team: schemas.TeamCreate, db: Session = Depends(get_db)):
-    # Check for duplicate team name (case-sensitive)
-    existing = db.query(models.Team).filter(models.Team.name == team.name).first()
+@app.post("/teams", response_model=schemas.TeamOut, tags=["Teams"])
+async def create_team(
+    team: schemas.TeamCreate,
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Create a new team.
+
+    SECURITY: Team automatically assigned to current user.
+    Tier-based limits apply (Phase 7A).
+    """
+    # Check tier-based team limit (Phase 7A)
+    await check_teams_limit(current_user, db)
+
+    # Check for duplicate team name for this user (case-sensitive)
+    existing = db.query(models.Team).filter(
+        models.Team.name == team.name,
+        models.Team.owner_id == current_user.id
+    ).first()
     if existing:
         raise HTTPException(
             status_code=400,
-            detail=f"A team with the name '{team.name}' already exists"
+            detail=f"You already have a team with the name '{team.name}'"
         )
 
     # Persist the team and its monsters to DB
-    db_team = models.Team(name=team.name, magic_item_id=team.magic_item_id)
+    db_team = models.Team(
+        name=team.name,
+        magic_item_id=team.magic_item_id,
+        owner_id=current_user.id  # Set owner
+    )
     db.add(db_team)
     db.flush()
 
@@ -1957,12 +3226,20 @@ def create_team(team: schemas.TeamCreate, db: Session = Depends(get_db)):
 
     # Re-fetch with relationships for output schema
     db.refresh(db_team)
+
+    logger.info(f"Created team {db_team.id} for user {current_user.id}")
+
     return db_team
 
 # -------- Cache Key Generation --------
 
 def generate_monster_cache_key(monster_id: int, move_ids: tuple, language: str) -> str:
-    """Generate a unique cache key for a monster's trait synergy analysis."""
+    """
+    Generate a unique cache key for a monster's trait synergy analysis.
+
+    Uses "llm_cache:" namespace for safe cache clearing without affecting
+    token revocations, rate limits, etc.
+    """
     # Create a stable string representation of the monster configuration
     key_parts = [
         f"m:{monster_id}",
@@ -1971,10 +3248,15 @@ def generate_monster_cache_key(monster_id: int, move_ids: tuple, language: str) 
     ]
     key_str = "|".join(key_parts)
     # Hash to keep key size manageable
-    return f"monster_trait:{hashlib.md5(key_str.encode()).hexdigest()}"
+    return f"llm_cache:monster_trait:{hashlib.md5(key_str.encode()).hexdigest()}"
 
 def generate_team_cache_key(team_data: schemas.TeamCreate, language: str) -> str:
-    """Generate a unique cache key for team-wide synergy analysis."""
+    """
+    Generate a unique cache key for team-wide synergy analysis.
+
+    Uses "llm_cache:" namespace for safe cache clearing without affecting
+    token revocations, rate limits, etc.
+    """
     # Include magic item in the key (different magic item = different team)
     key_parts = [f"magic:{team_data.magic_item_id}"]
 
@@ -2002,7 +3284,7 @@ def generate_team_cache_key(team_data: schemas.TeamCreate, language: str) -> str
     key_parts.append(f"legacy:{'-'.join(map(str, sorted_legacy_types))}")
 
     key_str = "|".join(key_parts)
-    return f"team_synergy:{hashlib.md5(key_str.encode()).hexdigest()}"
+    return f"llm_cache:team_synergy:{hashlib.md5(key_str.encode()).hexdigest()}"
 
 
 def generate_team_composition_hash(team_data: schemas.TeamCreate) -> str:
@@ -2602,21 +3884,39 @@ async def _apply_rate_limit_check(request: Request):
 async def analyze_team(
     req: schemas.TeamAnalyzeInlineRequest,
     request: Request,
+    user_or_anon: tuple = Depends(get_user_or_anonymous),
     db: Session = Depends(get_db)
 ):
-    """Analyze a team configuration (inline data from request)."""
+    """Analyze a team configuration (inline data from request).
+
+    Three-tier rate limiting:
+    - Anonymous: 1/day via device_id + IP tracking
+    - Guest: 3/day via user.id tracking
+    - Registered: 5/day (free) or more (premium) via user.id tracking
+    - IP-based rate limit also applies (prevents rapid requests)
+    - Cached analyses bypass ALL rate limits
+    """
+    user, device_id, client_ip = user_or_anon
+
     # Generate language-independent team composition hash
     team_hash = generate_team_composition_hash(req.team)
 
-    # Check if fully cached
+    # Check if fully cached - cached analyses bypass all rate limits
     is_fully_cached = await check_if_all_cached(req.team, req.language)
 
     if not is_fully_cached:
-        # Not cached - check rate limit
-        client_ip = get_remote_address(request)
+        # Not cached - check tier-based rate limits
 
-        # First check: Global IP-based rate limit (prevents analyzing different teams rapidly)
-        if not check_global_ip_rate_limit(client_ip):
+        # Tier-based limit check based on user type
+        if user is None:
+            # Anonymous user - check anonymous limits (1/day)
+            await check_anonymous_analysis_limit(device_id, client_ip)
+        else:
+            # Authenticated user (guest or registered) - check user limits
+            await check_analysis_limit(user, db)
+
+        # IP-based rate limit (prevents analyzing different teams rapidly)
+        if not await check_global_ip_rate_limit_async(client_ip):
             logger.warning(
                 f"Global rate limit exceeded for {client_ip} analyzing team {team_hash} in {req.language}"
             )
@@ -2625,8 +3925,8 @@ async def analyze_team(
                 detail=get_rate_limit_message(req.language)
             )
 
-        # Second check: Per-team rate limit (prevents language-switching exploits)
-        if not check_analysis_rate_limit(client_ip, team_hash):
+        # Per-team rate limit (prevents language-switching exploits)
+        if not await check_analysis_rate_limit_async(client_ip, team_hash):
             logger.warning(
                 f"Per-team rate limit exceeded for {client_ip} analyzing team {team_hash} in {req.language}"
             )
@@ -2637,7 +3937,15 @@ async def analyze_team(
 
         # Record this analysis
         logger.info(f"Recording analysis for {client_ip}:{team_hash}")
-        record_analysis(client_ip, team_hash)
+        await record_analysis_async(client_ip, team_hash)
+
+        # Record tier usage
+        if user is None:
+            # Anonymous user
+            await record_anonymous_analysis(device_id, client_ip)
+        else:
+            # Authenticated user (guest or registered)
+            await record_analysis_usage(user)
 
     return await _perform_team_analysis(req.team, req.language, db)
 
@@ -2648,9 +3956,19 @@ async def analyze_team(
 async def analyze_team_by_id(
     req: schemas.TeamAnalyzeByIdRequest,
     request: Request,
+    user_or_anon: tuple = Depends(get_user_or_anonymous),
     db: Session = Depends(get_db)
 ):
-    """Analyze a saved team by its ID."""
+    """Analyze a saved team by its ID.
+
+    Three-tier rate limiting (same as /team/analyze):
+    - Anonymous: 1/day via device_id + IP tracking
+    - Guest: 3/day via user.id tracking
+    - Registered: 5/day (free) or more (premium) via user.id tracking
+    - Cached analyses bypass ALL rate limits
+    """
+    user, device_id, client_ip = user_or_anon
+
     # Load the Team, its UserMonsters, Talents, etc. from the DB
     db_team = db.query(models.Team).filter(models.Team.id == req.team_id).first()
     if not db_team:
@@ -2688,15 +4006,22 @@ async def analyze_team_by_id(
     # Generate language-independent team composition hash
     team_hash = generate_team_composition_hash(team_data)
 
-    # Check if fully cached
+    # Check if fully cached - cached analyses bypass all rate limits
     is_fully_cached = await check_if_all_cached(team_data, req.language)
 
     if not is_fully_cached:
-        # Not cached - check rate limit
-        client_ip = get_remote_address(request)
+        # Not cached - check tier-based rate limits
 
-        # First check: Global IP-based rate limit (prevents analyzing different teams rapidly)
-        if not check_global_ip_rate_limit(client_ip):
+        # Tier-based limit check based on user type
+        if user is None:
+            # Anonymous user - check anonymous limits (1/day)
+            await check_anonymous_analysis_limit(device_id, client_ip)
+        else:
+            # Authenticated user (guest or registered) - check user limits
+            await check_analysis_limit(user, db)
+
+        # IP-based rate limit (prevents analyzing different teams rapidly)
+        if not await check_global_ip_rate_limit_async(client_ip):
             logger.warning(
                 f"Global rate limit exceeded for {client_ip} analyzing team {team_hash} (ID: {req.team_id}) in {req.language}"
             )
@@ -2705,8 +4030,8 @@ async def analyze_team_by_id(
                 detail=get_rate_limit_message(req.language)
             )
 
-        # Second check: Per-team rate limit (prevents language-switching exploits)
-        if not check_analysis_rate_limit(client_ip, team_hash):
+        # Per-team rate limit (prevents language-switching exploits)
+        if not await check_analysis_rate_limit_async(client_ip, team_hash):
             logger.warning(
                 f"Per-team rate limit exceeded for {client_ip} analyzing team {team_hash} (ID: {req.team_id}) in {req.language}"
             )
@@ -2717,32 +4042,54 @@ async def analyze_team_by_id(
 
         # Record this analysis
         logger.info(f"Recording analysis for {client_ip}:{team_hash}")
-        record_analysis(client_ip, team_hash)
+        await record_analysis_async(client_ip, team_hash)
+
+        # Record tier usage
+        if user is None:
+            # Anonymous user
+            await record_anonymous_analysis(device_id, client_ip)
+        else:
+            # Authenticated user (guest or registered)
+            await record_analysis_usage(user)
 
     return await _perform_team_analysis(team_data, req.language, db)
 
 # -------- PUT Team (Update) --------
 
-@app.put("/teams/{team_id}", response_model=schemas.TeamOut)
+@app.put("/teams/{team_id}", response_model=schemas.TeamOut, tags=["Teams"])
 def update_team(
     team_id: int,
     team_update: schemas.TeamUpdate,
+    current_user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
+    """
+    Update a team.
+
+    SECURITY: Only owner can modify.
+    """
     db_team = db.query(models.Team).filter(models.Team.id == team_id).first()
     if not db_team:
         raise HTTPException(status_code=404, detail="Team not found")
 
-    # Check for duplicate team name (case-sensitive), excluding current team
+    # SECURITY: Check ownership
+    if db_team.owner_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You do not have permission to modify this team"
+        )
+
+    # Check for duplicate team name for this user (case-sensitive), excluding current team
     if team_update.name is not None:
         existing = db.query(models.Team).filter(
             models.Team.name == team_update.name,
-            models.Team.id != team_id
+            models.Team.id != team_id,
+            models.Team.owner_id == current_user.id  # Check within user's teams only
         ).first()
         if existing:
             raise HTTPException(
                 status_code=400,
-                detail=f"A team with the name '{team_update.name}' already exists"
+                detail=f"You already have another team with the name '{team_update.name}'"
             )
 
     # Update team fields if provided
@@ -2824,11 +4171,30 @@ def update_team(
 
 # -------- DELETE Team --------
 
-@app.delete("/teams/{team_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_team(team_id: int, db: Session = Depends(get_db)):
+@app.delete("/teams/{team_id}", status_code=status.HTTP_204_NO_CONTENT, tags=["Teams"])
+def delete_team(
+    team_id: int,
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Delete a team.
+
+    SECURITY: Only owner can delete.
+    """
     db_team = db.query(models.Team).filter(models.Team.id == team_id).first()
     if not db_team:
         raise HTTPException(status_code=404, detail="Team not found")
+
+    # SECURITY: Check ownership
+    if db_team.owner_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You do not have permission to delete this team"
+        )
+
+    logger.info(f"Deleted team {team_id} for user {current_user.id}")
+
     db.delete(db_team)
     db.commit()
     return
@@ -2872,15 +4238,27 @@ def save_or_update_analysis(
 
 # -------- Saved Analysis Endpoints --------
 
-@app.post("/analysis/save", response_model=schemas.SavedAnalysisOut)
+@app.post("/analysis/save", response_model=schemas.SavedAnalysisOut, tags=["Analysis"])
 def save_analysis(
     req: schemas.SaveAnalysisRequest,
+    current_user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Save an analysis result for a team. Replaces existing if present."""
+    """
+    Save an analysis result for a team. Replaces existing if present.
+
+    SECURITY: Only owner can save analysis for their team.
+    """
     team = db.query(models.Team).filter(models.Team.id == req.team_id).first()
     if not team:
         raise HTTPException(status_code=404, detail="Team not found")
+
+    # SECURITY: Check ownership
+    if team.owner_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You do not have permission to save analysis for this team"
+        )
 
     saved = save_or_update_analysis(
         team_id=req.team_id,
@@ -2892,13 +4270,30 @@ def save_analysis(
 
     return saved
 
-@app.get("/teams/{team_id}/analysis", response_model=schemas.FullSavedAnalysisOut)
+@app.get("/teams/{team_id}/analysis", response_model=schemas.FullSavedAnalysisOut, tags=["Analysis"])
 def get_saved_analysis(
     team_id: int,
     language: Literal["en", "zh"] = "en",
+    current_user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Retrieve saved analysis for a team."""
+    """
+    Retrieve saved analysis for a team.
+
+    SECURITY: Only owner can view team's analysis.
+    """
+    # Check team ownership first
+    team = db.query(models.Team).filter(models.Team.id == team_id).first()
+    if not team:
+        raise HTTPException(status_code=404, detail="Team not found")
+
+    # SECURITY: Check ownership
+    if team.owner_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You do not have permission to view this team's analysis"
+        )
+
     saved = (
         db.query(models.TeamAnalysis)
         .filter(
@@ -2913,13 +4308,30 @@ def get_saved_analysis(
 
     return saved
 
-@app.delete("/teams/{team_id}/analysis", status_code=status.HTTP_204_NO_CONTENT)
+@app.delete("/teams/{team_id}/analysis", status_code=status.HTTP_204_NO_CONTENT, tags=["Analysis"])
 def delete_saved_analysis(
     team_id: int,
     language: Literal["en", "zh"] = "en",
+    current_user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Delete saved analysis for a team."""
+    """
+    Delete saved analysis for a team.
+
+    SECURITY: Only owner can delete team's analysis.
+    """
+    # Check team ownership first
+    team = db.query(models.Team).filter(models.Team.id == team_id).first()
+    if not team:
+        raise HTTPException(status_code=404, detail="Team not found")
+
+    # SECURITY: Check ownership
+    if team.owner_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You do not have permission to delete this team's analysis"
+        )
+
     saved = (
         db.query(models.TeamAnalysis)
         .filter(
@@ -2935,3 +4347,481 @@ def delete_saved_analysis(
     db.delete(saved)
     db.commit()
     return
+
+
+# ========== ADMIN ENDPOINTS (Phase B) ==========
+#
+# All admin endpoints require admin privileges.
+# Admins are identified by email address via ADMIN_EMAILS env var.
+
+
+@app.get("/admin/users", response_model=schemas.AdminUserListOut, tags=["Admin"])
+async def admin_list_users(
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+    search: Optional[str] = Query(None, max_length=100),
+    tier: Optional[str] = Query(None),
+    is_guest: Optional[bool] = Query(None),
+    is_active: Optional[bool] = Query(None),
+    admin_user: models.User = Depends(require_admin),
+    db: Session = Depends(get_db)
+):
+    """
+    List all users with pagination and filtering.
+
+    ADMIN ONLY: Requires admin privileges.
+
+    Query parameters:
+    - page: Page number (default: 1)
+    - page_size: Items per page (default: 20, max: 100)
+    - search: Search by username or email
+    - tier: Filter by subscription tier
+    - is_guest: Filter by guest status
+    - is_active: Filter by active status
+    """
+    query = db.query(models.User)
+
+    # Apply filters
+    if search:
+        search_pattern = f"%{search}%"
+        query = query.filter(
+            (models.User.username.ilike(search_pattern)) |
+            (models.User.email.ilike(search_pattern))
+        )
+
+    if tier:
+        query = query.filter(models.User.subscription_tier == tier)
+
+    if is_guest is not None:
+        query = query.filter(models.User.is_guest == is_guest)
+
+    if is_active is not None:
+        query = query.filter(models.User.is_active == is_active)
+
+    # Get total count
+    total = query.count()
+
+    # Apply pagination
+    offset = (page - 1) * page_size
+    users = query.order_by(models.User.created_at.desc()).offset(offset).limit(page_size).all()
+
+    # Build response with additional info
+    user_list = []
+    for user in users:
+        teams_count = db.query(models.Team).filter(models.Team.owner_id == user.id).count()
+        user_data = schemas.AdminUserOut(
+            id=user.id,
+            username=user.username,
+            email=user.email,
+            is_guest=user.is_guest,
+            is_system=user.is_system,
+            is_active=user.is_active,
+            email_verified=user.email_verified,
+            subscription_tier=user.subscription_tier,
+            subscription_expires_at=user.subscription_expires_at,
+            created_at=user.created_at,
+            last_login_at=user.last_login_at,
+            last_active_at=user.last_active_at,
+            failed_login_attempts=user.failed_login_attempts,
+            locked_until=user.locked_until,
+            device_id=user.device_id,
+            teams_count=teams_count,
+            is_admin=is_admin_user(user)
+        )
+        user_list.append(user_data)
+
+    total_pages = (total + page_size - 1) // page_size
+
+    return schemas.AdminUserListOut(
+        users=user_list,
+        total=total,
+        page=page,
+        page_size=page_size,
+        total_pages=total_pages
+    )
+
+
+@app.get("/admin/users/{user_id}", response_model=schemas.AdminUserOut, tags=["Admin"])
+async def admin_get_user(
+    user_id: int,
+    admin_user: models.User = Depends(require_admin),
+    db: Session = Depends(get_db)
+):
+    """
+    Get detailed information about a specific user.
+
+    ADMIN ONLY: Requires admin privileges.
+    """
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    teams_count = db.query(models.Team).filter(models.Team.owner_id == user.id).count()
+
+    return schemas.AdminUserOut(
+        id=user.id,
+        username=user.username,
+        email=user.email,
+        is_guest=user.is_guest,
+        is_system=user.is_system,
+        is_active=user.is_active,
+        email_verified=user.email_verified,
+        subscription_tier=user.subscription_tier,
+        subscription_expires_at=user.subscription_expires_at,
+        created_at=user.created_at,
+        last_login_at=user.last_login_at,
+        last_active_at=user.last_active_at,
+        failed_login_attempts=user.failed_login_attempts,
+        locked_until=user.locked_until,
+        device_id=user.device_id,
+        teams_count=teams_count,
+        is_admin=is_admin_user(user)
+    )
+
+
+@app.put("/admin/users/{user_id}/tier", tags=["Admin"])
+async def admin_change_tier(
+    user_id: int,
+    tier_data: schemas.AdminChangeTierRequest,
+    admin_user: models.User = Depends(require_admin),
+    db: Session = Depends(get_db)
+):
+    """
+    Change a user's subscription tier.
+
+    ADMIN ONLY: Requires admin privileges.
+
+    Valid tiers: anonymous, guest, free, premium, unlimited
+    """
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    if user.is_system:
+        raise HTTPException(status_code=400, detail="Cannot modify system user")
+
+    old_tier = user.subscription_tier
+    user.subscription_tier = tier_data.tier
+    db.commit()
+
+    logger.info(
+        f"ADMIN ACTION: User {admin_user.id} ({admin_user.email}) "
+        f"changed tier for user {user.id} ({user.username}): {old_tier} -> {tier_data.tier}"
+    )
+
+    return {
+        "message": f"User tier changed from {old_tier} to {tier_data.tier}",
+        "user_id": user.id,
+        "old_tier": old_tier,
+        "new_tier": tier_data.tier
+    }
+
+
+@app.post("/admin/users/{user_id}/lock", tags=["Admin"])
+async def admin_lock_user(
+    user_id: int,
+    lock_data: schemas.AdminLockUserRequest = None,
+    admin_user: models.User = Depends(require_admin),
+    db: Session = Depends(get_db)
+):
+    """
+    Lock a user account (disable access).
+
+    ADMIN ONLY: Requires admin privileges.
+
+    Options:
+    - duration_hours: Lock for specific duration (optional, default: indefinite)
+    - reason: Reason for locking (logged)
+    """
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    if user.is_system:
+        raise HTTPException(status_code=400, detail="Cannot lock system user")
+
+    if user.id == admin_user.id:
+        raise HTTPException(status_code=400, detail="Cannot lock yourself")
+
+    if is_admin_user(user):
+        raise HTTPException(status_code=400, detail="Cannot lock another admin")
+
+    # Set lock
+    user.is_active = False
+
+    if lock_data and lock_data.duration_hours:
+        user.locked_until = datetime.now(timezone.utc) + timedelta(hours=lock_data.duration_hours)
+    else:
+        user.locked_until = None  # Indefinite lock
+
+    # Increment token version to invalidate all sessions
+    user.token_version += 1
+
+    db.commit()
+
+    reason = lock_data.reason if lock_data else "No reason provided"
+    duration = f"{lock_data.duration_hours} hours" if lock_data and lock_data.duration_hours else "indefinite"
+
+    logger.warning(
+        f"ADMIN ACTION: User {admin_user.id} ({admin_user.email}) "
+        f"locked user {user.id} ({user.username}). Duration: {duration}. Reason: {reason}"
+    )
+
+    return {
+        "message": f"User {user.username} has been locked",
+        "user_id": user.id,
+        "duration": duration,
+        "locked_until": user.locked_until
+    }
+
+
+@app.post("/admin/users/{user_id}/unlock", tags=["Admin"])
+async def admin_unlock_user(
+    user_id: int,
+    admin_user: models.User = Depends(require_admin),
+    db: Session = Depends(get_db)
+):
+    """
+    Unlock a user account (restore access).
+
+    ADMIN ONLY: Requires admin privileges.
+    """
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    if user.is_active and not user.locked_until:
+        return {"message": "User is not locked", "user_id": user.id}
+
+    user.is_active = True
+    user.locked_until = None
+    user.failed_login_attempts = 0  # Reset failed attempts
+
+    db.commit()
+
+    logger.info(
+        f"ADMIN ACTION: User {admin_user.id} ({admin_user.email}) "
+        f"unlocked user {user.id} ({user.username})"
+    )
+
+    return {
+        "message": f"User {user.username} has been unlocked",
+        "user_id": user.id
+    }
+
+
+@app.delete("/admin/users/{user_id}", tags=["Admin"])
+async def admin_delete_user(
+    user_id: int,
+    delete_data: schemas.AdminDeleteUserRequest = None,
+    admin_user: models.User = Depends(require_admin),
+    db: Session = Depends(get_db)
+):
+    """
+    Permanently delete a user account.
+
+    ADMIN ONLY: Requires admin privileges.
+
+    Options:
+    - reason: Reason for deletion (logged)
+    - add_to_cooldown: Add email to deletion cooldown (default: True)
+
+    WARNING: This action is irreversible. All user data will be deleted.
+    """
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    if user.is_system:
+        raise HTTPException(status_code=400, detail="Cannot delete system user")
+
+    if user.id == admin_user.id:
+        raise HTTPException(status_code=400, detail="Cannot delete yourself via admin endpoint")
+
+    if is_admin_user(user):
+        raise HTTPException(status_code=400, detail="Cannot delete another admin")
+
+    # Store info for logging
+    username = user.username
+    email = user.email
+    teams_count = db.query(models.Team).filter(models.Team.owner_id == user.id).count()
+
+    # Add to deletion cooldown if requested and user has email
+    add_cooldown = delete_data.add_to_cooldown if delete_data else True
+    if add_cooldown and email:
+        EMAIL_COOLDOWN_DAYS = 30
+        deleted_email = models.DeletedEmail(
+            email=email.lower(),
+            cooldown_until=datetime.now(timezone.utc) + timedelta(days=EMAIL_COOLDOWN_DAYS),
+            original_user_id=user.id,
+            reason="admin_deleted"
+        )
+        db.add(deleted_email)
+
+    # Delete user (cascades to teams, user_monsters, talents, analyses)
+    db.delete(user)
+    db.commit()
+
+    reason = delete_data.reason if delete_data else "No reason provided"
+
+    logger.warning(
+        f"ADMIN ACTION: User {admin_user.id} ({admin_user.email}) "
+        f"deleted user {user_id} ({username}, {email}). "
+        f"Teams deleted: {teams_count}. Reason: {reason}"
+    )
+
+    return {
+        "message": f"User {username} has been permanently deleted",
+        "user_id": user_id,
+        "teams_deleted": teams_count,
+        "email_cooldown_added": add_cooldown and email is not None
+    }
+
+
+@app.get("/admin/stats", response_model=schemas.AdminStatsOut, tags=["Admin"])
+async def admin_get_stats(
+    admin_user: models.User = Depends(require_admin),
+    db: Session = Depends(get_db)
+):
+    """
+    Get system-wide statistics.
+
+    ADMIN ONLY: Requires admin privileges.
+
+    Returns counts for users, teams, analyses, and registration trends.
+    """
+    now = datetime.now(timezone.utc)
+    today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    week_start = today_start - timedelta(days=today_start.weekday())
+    month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    thirty_days_ago = now - timedelta(days=30)
+
+    # User counts
+    total_users = db.query(models.User).count()
+    total_guests = db.query(models.User).filter(models.User.is_guest == True).count()
+    total_registered = db.query(models.User).filter(
+        models.User.is_guest == False,
+        models.User.is_system == False
+    ).count()
+    total_active = db.query(models.User).filter(
+        models.User.last_active_at >= thirty_days_ago
+    ).count()
+    total_locked = db.query(models.User).filter(models.User.is_active == False).count()
+
+    # Team and analysis counts
+    total_teams = db.query(models.Team).count()
+    total_analyses = db.query(models.TeamAnalysis).count()
+
+    # Users by tier
+    tier_counts = db.query(
+        models.User.subscription_tier,
+        func.count(models.User.id)
+    ).group_by(models.User.subscription_tier).all()
+    users_by_tier = {tier: count for tier, count in tier_counts}
+
+    # Registration trends
+    registrations_today = db.query(models.User).filter(
+        models.User.created_at >= today_start,
+        models.User.is_guest == False,
+        models.User.is_system == False
+    ).count()
+
+    registrations_this_week = db.query(models.User).filter(
+        models.User.created_at >= week_start,
+        models.User.is_guest == False,
+        models.User.is_system == False
+    ).count()
+
+    registrations_this_month = db.query(models.User).filter(
+        models.User.created_at >= month_start,
+        models.User.is_guest == False,
+        models.User.is_system == False
+    ).count()
+
+    return schemas.AdminStatsOut(
+        total_users=total_users,
+        total_guests=total_guests,
+        total_registered=total_registered,
+        total_active=total_active,
+        total_locked=total_locked,
+        total_teams=total_teams,
+        total_analyses=total_analyses,
+        users_by_tier=users_by_tier,
+        registrations_today=registrations_today,
+        registrations_this_week=registrations_this_week,
+        registrations_this_month=registrations_this_month
+    )
+
+
+@app.post("/admin/database/reset-users", tags=["Admin"])
+async def admin_reset_users(
+    admin_user: models.User = Depends(require_admin),
+    db: Session = Depends(get_db)
+):
+    """
+    DEV ONLY: Delete all non-admin, non-system users.
+
+    ADMIN ONLY: Requires admin privileges.
+
+    WARNING: This is a destructive operation for testing purposes.
+    Only available when ENVIRONMENT != 'production'.
+
+    This will:
+    - Delete all guest users
+    - Delete all registered users (except admins)
+    - Delete all teams owned by deleted users
+    - Clear deleted_emails table
+    - NOT delete admin users or system user
+    """
+    if ENVIRONMENT == "production":
+        raise HTTPException(
+            status_code=403,
+            detail="This endpoint is disabled in production"
+        )
+
+    from backend.config import ADMIN_EMAILS
+
+    # Find users to delete (not system, not admin)
+    users_to_delete = db.query(models.User).filter(
+        models.User.is_system == False,
+        ~models.User.email.in_(ADMIN_EMAILS) if ADMIN_EMAILS else True
+    ).all()
+
+    deleted_count = 0
+    teams_deleted = 0
+
+    for user in users_to_delete:
+        # Skip if user is admin
+        if is_admin_user(user):
+            continue
+
+        # Count teams
+        user_teams = db.query(models.Team).filter(models.Team.owner_id == user.id).count()
+        teams_deleted += user_teams
+
+        db.delete(user)
+        deleted_count += 1
+
+    # Clear deleted_emails
+    cooldowns_cleared = db.query(models.DeletedEmail).delete()
+
+    db.commit()
+
+    # Reset sequence if all non-system users deleted
+    remaining = db.query(models.User).filter(models.User.is_system == False).count()
+    if remaining == 0:
+        db.execute(text("SELECT setval('users_id_seq', 1, false)"))
+        db.commit()
+
+    logger.warning(
+        f"ADMIN ACTION: User {admin_user.id} ({admin_user.email}) "
+        f"reset users database. Deleted: {deleted_count} users, {teams_deleted} teams, "
+        f"{cooldowns_cleared} email cooldowns"
+    )
+
+    return {
+        "message": "User database reset complete",
+        "users_deleted": deleted_count,
+        "teams_deleted": teams_deleted,
+        "email_cooldowns_cleared": cooldowns_cleared
+    }

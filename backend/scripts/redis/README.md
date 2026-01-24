@@ -2,6 +2,23 @@
 
 Collection of utility scripts for managing Redis cache during development and testing.
 
+## Redis Key Namespaces
+
+The application uses Redis for multiple purposes, organized by namespace:
+
+| Namespace | Purpose | TTL | Example Key |
+|-----------|---------|-----|-------------|
+| `llm_cache:monster_trait:` | Monster trait analyses | 1 hour | `llm_cache:monster_trait:a1b2c3...` |
+| `llm_cache:team_synergy:` | Team synergy analyses | 1 hour | `llm_cache:team_synergy:d4e5f6...` |
+| `lock:` | Stampede protection locks | 30 sec | `lock:llm_cache:monster_trait:...` |
+| `ratelimit:analysis:` | Per-team analysis rate limit | 2 min | `ratelimit:analysis:192.168.1.1:abc123` |
+| `ratelimit:global_ip:` | Global IP rate limit | 2 min | `ratelimit:global_ip:192.168.1.1` |
+| `tier:user:` | User analysis quotas | 24h/30d | `tier:user:123:daily:2024-01-15` |
+| `tier:anon:device:` | Anonymous device quotas | 24h | `tier:anon:device:xyz:daily:2024-01-15` |
+| `tier:anon:ip:` | Anonymous IP quotas | 24h | `tier:anon:ip:192.168.1.1:daily:...` |
+| `tier:guest_create:` | Guest creation rate limit | 24h | `tier:guest_create:ip:192.168.1.1:...` |
+| `revoked_token:` | Revoked JWT tokens | Token exp | `revoked_token:jti-abc123...` |
+
 ## Prerequisites
 
 - Redis server installed and running
@@ -30,83 +47,99 @@ Use this first to verify Redis is running and properly configured.
 
 Shows:
 - Connection status
-- Key counts by type
+- Key counts by namespace (LLM cache, rate limits, tier quotas, tokens)
 - Memory usage
 - Cache hit rate
 - Keyspace information
 - Server uptime
 
-Use this to monitor cache performance and size.
-
 ---
 
 ### 3. `clear_cache.sh`
-**Clear all analysis cache**
+**Clear Redis cache with selective options**
 
 ```bash
+# Interactive menu
 ./clear_cache.sh
+
+# Clear specific namespace
+./clear_cache.sh llm       # LLM cache only
+./clear_cache.sh rate      # Rate limits only
+./clear_cache.sh tier      # Tier quotas only
+./clear_cache.sh tokens    # Revoked tokens only
+./clear_cache.sh all       # Everything (with confirmation)
 ```
 
-Removes:
-- All monster trait analyses
-- All team synergies
-- All active locks
-
-⚠️ **Use when:**
-- Changed analysis prompts
-- Modified LLM logic
-- Updated game data
-- Testing cache behavior
+**When to clear:**
+- `llm`: Changed analysis prompts, modified LLM logic, updated game data
+- `rate`: Testing rate limiting, user reported stuck rate limit
+- `tier`: Reset user quotas for testing
+- `tokens`: Clear expired token revocations (usually not needed)
+- `all`: Full reset for clean testing
 
 ---
 
 ### 4. `inspect_latest.sh`
-**View the most recent cached analysis**
+**Inspect Redis keys with detailed information**
 
 ```bash
+# Show latest LLM cache entry
 ./inspect_latest.sh
+
+# Show specific namespace
+./inspect_latest.sh llm       # LLM cache summary
+./inspect_latest.sh rate      # Rate limit keys
+./inspect_latest.sh tier      # Tier quota keys
+./inspect_latest.sh tokens    # Revoked tokens
+
+# Inspect specific key
+./inspect_latest.sh key "llm_cache:monster_trait:abc123"
 ```
 
 Displays:
-- Cache key
-- Time to live (TTL)
-- Full JSON value (formatted)
-- Summary of all cached items
-
-Useful for verifying cache content and debugging.
+- Key name and type
+- TTL remaining
+- Formatted value (JSON prettified)
+- Summary counts
 
 ---
 
 ### 5. `monitor_locks.sh`
-**Watch active locks in real-time**
+**Watch locks and rate limits in real-time**
 
 ```bash
+# Monitor everything
 ./monitor_locks.sh
+
+# Monitor specific type
+./monitor_locks.sh locks    # Locks only
+./monitor_locks.sh rate     # Rate limits only
 ```
 
-Live monitoring of distributed locks (stampede protection).
-
-**What to look for:**
-- Locks should appear briefly (< 30 seconds)
-- Multiple concurrent requests should show same lock
-- Lock should disappear after analysis completes
+Live monitoring useful for:
+- Debugging stampede protection
+- Verifying rate limit enforcement
+- Testing concurrent requests
 
 Press `Ctrl+C` to stop.
 
 ---
 
 ### 6. `export_keys.sh`
-**Export all Redis keys to a file**
+**Export Redis keys to a file**
 
 ```bash
-# Export to default filename (timestamped)
+# Export keys only (timestamped filename)
 ./export_keys.sh
 
 # Export to specific file
-./export_keys.sh my_keys.txt
+./export_keys.sh backup.txt
+
+# Export with values (JSON format)
+./export_keys.sh --values backup.json
 ```
 
-Creates a text file with all cache keys for backup or inspection.
+Creates a file with all cache keys, with breakdown by namespace.
 
 ---
 
@@ -128,7 +161,7 @@ Creates a text file with all cache keys for backup or inspection.
 ./monitor_locks.sh
 
 # 6. Clear cache before testing new prompt
-./clear_cache.sh
+./clear_cache.sh llm
 ```
 
 ## Common Workflows
@@ -136,11 +169,11 @@ Creates a text file with all cache keys for backup or inspection.
 ### Workflow 1: Testing New Analysis Prompt
 
 ```bash
-# Clear old cache
-./clear_cache.sh
+# Clear old LLM cache
+./clear_cache.sh llm
 
-# Start server
-# (in another terminal: uvicorn backend.main:app --reload)
+# Start server (in another terminal)
+# uvicorn backend.main:app --reload --env-file backend/.env
 
 # Run analysis via frontend
 
@@ -148,40 +181,58 @@ Creates a text file with all cache keys for backup or inspection.
 ./inspect_latest.sh
 ```
 
-### Workflow 2: Debugging Stampede Protection
+### Workflow 2: Debugging Rate Limiting
+
+```bash
+# Terminal 1: Monitor rate limits
+./monitor_locks.sh rate
+
+# Terminal 2: Make API requests
+# You should see rate limit keys appear with TTL
+
+# Clear rate limits if stuck
+./clear_cache.sh rate
+```
+
+### Workflow 3: Debugging Stampede Protection
 
 ```bash
 # Terminal 1: Monitor locks
-./monitor_locks.sh
+./monitor_locks.sh locks
 
 # Terminal 2: Send multiple concurrent requests
 # You should see locks appear/disappear
+
+# What to look for:
+# - Locks should appear briefly (< 30 seconds)
+# - Multiple concurrent requests should share same lock
+# - Lock should disappear after analysis completes
 ```
 
-### Workflow 3: Performance Monitoring
+### Workflow 4: Testing User Quotas
+
+```bash
+# Check current tier quotas
+./inspect_latest.sh tier
+
+# Clear quotas for fresh testing
+./clear_cache.sh tier
+
+# Run analyses and check quota keys
+./stats.sh
+```
+
+### Workflow 5: Performance Monitoring
 
 ```bash
 # Clear cache for clean test
-./clear_cache.sh
+./clear_cache.sh all
 
 # Run test suite / load test
 
 # Check performance
 ./stats.sh
 # Look at "Cache Performance" section for hit rate
-```
-
-### Workflow 4: Daily Development
-
-```bash
-# Morning: Check Redis status
-./check_connection.sh
-
-# Check what's cached
-./stats.sh
-
-# Clear if needed
-./clear_cache.sh
 ```
 
 ## Making Scripts Executable
@@ -227,29 +278,42 @@ docker start redis
 All scripts use `redis-cli` internally. You can run commands directly:
 
 ```bash
-# Get all monster analyses
-redis-cli KEYS "monster_trait:*"
+# Get all LLM cache keys
+redis-cli --scan --pattern "llm_cache:*"
 
-# Count team synergies
-redis-cli KEYS "team_synergy:*" | wc -l
+# Count rate limit keys
+redis-cli --scan --pattern "ratelimit:*" | wc -l
 
-# Clear specific key
-redis-cli DEL "monster_trait:abc123..."
+# Check specific key TTL
+redis-cli TTL "ratelimit:global_ip:192.168.1.1"
 
-# Monitor all commands
+# Delete specific key
+redis-cli DEL "tier:user:123:daily:2024-01-15"
+
+# Monitor all commands (real-time)
 redis-cli MONITOR
 ```
 
-### Integration with Development
-
-Add to your `package.json` or development scripts:
+### Key Patterns Reference
 
 ```bash
-# Before running tests
-npm run test:prepare && ./backend/scripts/redis/clear_cache.sh
+# LLM Cache
+redis-cli --scan --pattern "llm_cache:monster_trait:*"
+redis-cli --scan --pattern "llm_cache:team_synergy:*"
+redis-cli --scan --pattern "lock:*"
 
-# After deployment
-./backend/scripts/redis/export_keys.sh backup_$(date +%Y%m%d).txt
+# Rate Limiting
+redis-cli --scan --pattern "ratelimit:analysis:*"
+redis-cli --scan --pattern "ratelimit:global_ip:*"
+
+# Tier Quotas
+redis-cli --scan --pattern "tier:user:*"
+redis-cli --scan --pattern "tier:anon:device:*"
+redis-cli --scan --pattern "tier:anon:ip:*"
+redis-cli --scan --pattern "tier:guest_create:*"
+
+# Token Revocation
+redis-cli --scan --pattern "revoked_token:*"
 ```
 
 ## Environment Variables
@@ -263,19 +327,34 @@ To use different Redis instance:
 export REDIS_CLI_URL="redis://custom-host:6380"
 
 # Or modify scripts to use -h and -p flags
-redis-cli -h custom-host -p 6380 KEYS "*"
+redis-cli -h custom-host -p 6380 --scan --pattern "*"
 ```
 
 ## Safety Notes
 
-⚠️ **Production Usage:**
-- Never use `KEYS *` in production (blocks server)
-- Use `SCAN` instead for large datasets
-- Be careful with `FLUSHDB` / `clear_cache.sh`
-- Test scripts in development first
+**Production Usage:**
+- Never use `KEYS *` in production (blocks server) - scripts use `SCAN` instead
+- Be careful with `clear_cache.sh all` - clears everything
+- `tier` clearing resets user quotas
+- `tokens` clearing invalidates token revocations (security implications)
 
-✅ **Development Usage:**
+**Development Usage:**
 - Safe to use all scripts
-- Clear cache frequently when testing
+- Clear LLM cache frequently when testing prompts
 - Monitor locks to verify stampede protection
 - Export keys before major changes
+
+## Integration
+
+Add to your development scripts:
+
+```bash
+# Before running tests
+./backend/scripts/redis/clear_cache.sh llm
+
+# After deployment (backup)
+./backend/scripts/redis/export_keys.sh backup_$(date +%Y%m%d).txt
+
+# CI/CD pre-test step
+./backend/scripts/redis/check_connection.sh || exit 1
+```

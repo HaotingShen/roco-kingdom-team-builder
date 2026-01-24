@@ -6,15 +6,72 @@ from slowapi import Limiter
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from fastapi import Request, HTTPException, status
-from backend.config import RATE_LIMIT_ENABLED, ANALYSIS_RATE_LIMIT
+from backend.config import RATE_LIMIT_ENABLED, ANALYSIS_RATE_LIMIT, ENVIRONMENT, REDIS_URL
 from backend.logger import logger
 
 
-# Initialize rate limiter
+def get_real_client_ip(request: Request) -> str:
+    """
+    🔒 SECURITY: Extract real client IP from CloudFront headers.
+
+    AWS Single-Instance Architecture (No ALB):
+    - CloudFront → EC2 (direct)
+    - CloudFront sets: CloudFront-Viewer-Address (most reliable)
+    - Fallback: X-Forwarded-For header
+
+    ⚠️ TRUST MODEL:
+    - Production (behind CloudFront): Trust proxy headers
+    - Development (direct to EC2): Use direct connection IP
+
+    This prevents attackers from spoofing IP via X-Forwarded-For in development.
+
+    Args:
+        request: FastAPI request object
+
+    Returns:
+        Client's real IP address
+    """
+    # Production: Behind CloudFront
+    if ENVIRONMENT == "production":
+        # Priority 1: CloudFront-Viewer-Address (most reliable)
+        # Format: "ip:port" or just "ip"
+        cf_viewer = request.headers.get("CloudFront-Viewer-Address")
+        if cf_viewer:
+            # Extract IP (remove port if present)
+            ip = cf_viewer.split(":")[0]
+            logger.debug(f"Client IP from CloudFront-Viewer-Address: {ip}")
+            return ip
+
+        # Priority 2: X-Forwarded-For (leftmost = client IP)
+        # Format: "client_ip, proxy1_ip, proxy2_ip"
+        xff = request.headers.get("X-Forwarded-For")
+        if xff:
+            ip = xff.split(",")[0].strip()
+            logger.debug(f"Client IP from X-Forwarded-For: {ip}")
+            return ip
+
+        # Priority 3: X-Real-IP (Nginx, some CDNs)
+        x_real_ip = request.headers.get("X-Real-IP")
+        if x_real_ip:
+            ip = x_real_ip.strip()
+            logger.debug(f"Client IP from X-Real-IP: {ip}")
+            return ip
+
+    # Development: Direct connection (don't trust spoofable headers)
+    ip = get_remote_address(request)
+    logger.debug(f"Client IP from direct connection: {ip}")
+    return ip
+
+
+# ✅ FIXED: Initialize rate limiter with CloudFront-aware IP detection and Redis storage
 limiter = Limiter(
-    key_func=get_remote_address,
+    key_func=get_real_client_ip,  # ✅ Use CloudFront-aware IP detection
     enabled=RATE_LIMIT_ENABLED,
-    storage_uri="memory://",  # Use in-memory storage (for Redis: "redis://localhost:6379")
+    storage_uri=REDIS_URL,  # ✅ Use Redis (not memory://) for persistence and multi-worker support
+    # Why Redis is required:
+    # 1. Shared state across multiple workers/processes
+    # 2. Persists across server restarts
+    # 3. Actually enforces limits (memory:// resets on restart)
 )
 
 
@@ -23,8 +80,9 @@ async def rate_limit_exceeded_handler(request: Request, exc: RateLimitExceeded):
     Custom handler for rate limit exceeded errors.
     Returns a user-friendly message that frontend can display directly.
     """
+    client_ip = get_real_client_ip(request)
     logger.warning(
-        f"Rate limit exceeded for {get_remote_address(request)} on {request.url.path}"
+        f"Rate limit exceeded for {client_ip} on {request.url.path}"
     )
 
     # Extract retry time from exc.detail (e.g., "60 seconds")
@@ -77,19 +135,43 @@ def analysis_rate_limit():
     return limiter.limit(ANALYSIS_RATE_LIMIT)
 
 
-# ========== Custom Composite Rate Limiting ==========
+# ========== Custom Composite Rate Limiting (Redis-backed) ==========
 # Track rate limits by IP + team composition (language-independent)
+#
+# Previously used in-memory dicts, but these were:
+# - Lost on server restart
+# - Not shared across multiple workers
+#
+# Now uses Redis for persistence and multi-worker support.
 
-# In-memory storage: {composite_key: (count, window_start)}
-_analysis_rate_limit_storage: Dict[str, Tuple[int, datetime]] = {}
+import redis.asyncio as aioredis
 
-# Global IP-only rate limiting (applies to ALL analyses regardless of team)
-_global_ip_rate_limit_storage: Dict[str, Tuple[int, datetime]] = {}
+# Async Redis connection pool for rate limiting
+_rate_limit_redis_pool: aioredis.Redis | None = None
 
 
-def check_analysis_rate_limit(ip: str, team_hash: str, limit_per_minutes: int = 2) -> bool:
+async def get_rate_limit_redis() -> aioredis.Redis | None:
+    """Get async Redis connection for rate limiting (lazy initialization)."""
+    global _rate_limit_redis_pool
+    if _rate_limit_redis_pool is None:
+        try:
+            _rate_limit_redis_pool = await aioredis.from_url(
+                REDIS_URL,
+                encoding="utf-8",
+                decode_responses=True
+            )
+            # Test connection
+            await _rate_limit_redis_pool.ping()
+            logger.info("Rate limit Redis connection established")
+        except Exception as e:
+            logger.warning(f"Rate limit Redis unavailable: {e}")
+            _rate_limit_redis_pool = None
+    return _rate_limit_redis_pool
+
+
+async def check_analysis_rate_limit_async(ip: str, team_hash: str, limit_per_minutes: int = 2) -> bool:
     """
-    Check if analysis is allowed based on IP + team composition (language-independent).
+    Redis-based analysis rate limit check.
 
     Args:
         ip: Client IP address
@@ -97,38 +179,34 @@ def check_analysis_rate_limit(ip: str, team_hash: str, limit_per_minutes: int = 
         limit_per_minutes: Time window in minutes (default: 2)
 
     Returns:
-        True if analysis is allowed, False if rate limit exceeded
+        True if allowed, False if rate limited
 
-    This prevents bypassing rate limits by switching languages for the same team.
+    Uses SETNX with TTL for atomic check-and-set to avoid race conditions.
     """
-    composite_key = f"{ip}:{team_hash}"
-    now = datetime.utcnow()
-
-    if composite_key in _analysis_rate_limit_storage:
-        count, window_start = _analysis_rate_limit_storage[composite_key]
-
-        # Check if window expired
-        if now - window_start > timedelta(minutes=limit_per_minutes):
-            # Reset window
-            _analysis_rate_limit_storage[composite_key] = (1, now)
+    try:
+        r = await get_rate_limit_redis()
+        if not r:
+            # Redis unavailable - fail open (allow request)
+            logger.warning("Redis unavailable for analysis rate limit, allowing request")
             return True
 
-        # Within window - check if limit exceeded
-        if count >= 1:  # 1 analysis per window
-            return False
+        key = f"ratelimit:analysis:{ip}:{team_hash}"
 
-        # Increment counter (should not reach here with limit=1, but kept for flexibility)
-        _analysis_rate_limit_storage[composite_key] = (count + 1, window_start)
-        return True
-    else:
-        # First analysis for this IP+team combination
-        _analysis_rate_limit_storage[composite_key] = (1, now)
-        return True
+        # Check if key exists (meaning we're within the rate limit window)
+        exists = await r.exists(key)
+        if exists:
+            return False  # Rate limited
+
+        return True  # Allowed
+
+    except Exception as e:
+        logger.error(f"Redis rate limit check failed: {e}")
+        return True  # Fail open - allow request if Redis unavailable
 
 
-def check_global_ip_rate_limit(ip: str, limit_per_minutes: int = 2) -> bool:
+async def check_global_ip_rate_limit_async(ip: str, limit_per_minutes: int = 2) -> bool:
     """
-    Check if analysis is allowed based on IP only (global rate limit).
+    Redis-based global IP rate limit.
 
     This prevents users from bypassing rate limits by analyzing different teams.
 
@@ -137,42 +215,115 @@ def check_global_ip_rate_limit(ip: str, limit_per_minutes: int = 2) -> bool:
         limit_per_minutes: Time window in minutes (default: 2)
 
     Returns:
-        True if analysis is allowed, False if rate limit exceeded
+        True if allowed, False if rate limited
     """
-    now = datetime.utcnow()
-
-    if ip in _global_ip_rate_limit_storage:
-        count, window_start = _global_ip_rate_limit_storage[ip]
-
-        # Check if window expired
-        if now - window_start > timedelta(minutes=limit_per_minutes):
-            # Reset window
-            _global_ip_rate_limit_storage[ip] = (1, now)
+    try:
+        r = await get_rate_limit_redis()
+        if not r:
+            # Redis unavailable - fail open (allow request)
+            logger.warning("Redis unavailable for global IP rate limit, allowing request")
             return True
 
-        # Within window - check if limit exceeded
-        if count >= 1:  # 1 analysis per window
-            return False
+        key = f"ratelimit:global_ip:{ip}"
 
-        # Increment counter (should not reach here with limit=1, but kept for flexibility)
-        _global_ip_rate_limit_storage[ip] = (count + 1, window_start)
-        return True
-    else:
-        # First analysis for this IP
-        _global_ip_rate_limit_storage[ip] = (1, now)
-        return True
+        # Check if key exists (meaning we're within the rate limit window)
+        exists = await r.exists(key)
+        if exists:
+            return False  # Rate limited
+
+        return True  # Allowed
+
+    except Exception as e:
+        logger.error(f"Redis global rate limit check failed: {e}")
+        return True  # Fail open
 
 
-def record_analysis(ip: str, team_hash: str):
+async def record_analysis_async(ip: str, team_hash: str, limit_per_minutes: int = 2):
     """
     Record that an analysis was performed for the given IP and team composition.
 
-    This updates the rate limit counter for both global IP and IP+team tracking.
+    Sets both global IP and per-team keys with TTL.
+    Should be called AFTER successful analysis completion.
+
+    Args:
+        ip: Client IP address
+        team_hash: Language-independent hash of team composition
+        limit_per_minutes: Time window in minutes (default: 2)
     """
-    composite_key = f"{ip}:{team_hash}"
-    now = datetime.utcnow()
-    _analysis_rate_limit_storage[composite_key] = (1, now)
-    _global_ip_rate_limit_storage[ip] = (1, now)
+    try:
+        r = await get_rate_limit_redis()
+        if not r:
+            logger.warning("Redis unavailable, cannot record analysis rate limit")
+            return
+
+        ttl_seconds = limit_per_minutes * 60
+
+        # Use pipeline for atomic multi-key set
+        async with r.pipeline(transaction=True) as pipe:
+            # Set per-team key
+            pipe.setex(f"ratelimit:analysis:{ip}:{team_hash}", ttl_seconds, "1")
+            # Set global IP key
+            pipe.setex(f"ratelimit:global_ip:{ip}", ttl_seconds, "1")
+            await pipe.execute()
+
+        logger.debug(f"Recorded analysis rate limit for ip={ip}")
+
+    except Exception as e:
+        logger.error(f"Redis record analysis failed: {e}")
+
+
+# ========== Backward Compatibility (Synchronous Versions) ==========
+# These are kept for any code that still uses the synchronous API.
+# They now delegate to Redis operations using synchronous Redis client.
+
+def check_analysis_rate_limit(ip: str, team_hash: str, limit_per_minutes: int = 2) -> bool:
+    """
+    Synchronous analysis rate limit check (backward compatibility).
+
+    NOTE: Prefer using check_analysis_rate_limit_async in async endpoints.
+    """
+    import redis as sync_redis
+    try:
+        r = sync_redis.from_url(REDIS_URL, decode_responses=True)
+        key = f"ratelimit:analysis:{ip}:{team_hash}"
+        return not r.exists(key)
+    except Exception as e:
+        logger.error(f"Sync Redis rate limit check failed: {e}")
+        return True  # Fail open
+
+
+def check_global_ip_rate_limit(ip: str, limit_per_minutes: int = 2) -> bool:
+    """
+    Synchronous global IP rate limit check (backward compatibility).
+
+    NOTE: Prefer using check_global_ip_rate_limit_async in async endpoints.
+    """
+    import redis as sync_redis
+    try:
+        r = sync_redis.from_url(REDIS_URL, decode_responses=True)
+        key = f"ratelimit:global_ip:{ip}"
+        return not r.exists(key)
+    except Exception as e:
+        logger.error(f"Sync Redis global rate limit check failed: {e}")
+        return True  # Fail open
+
+
+def record_analysis(ip: str, team_hash: str, limit_per_minutes: int = 2):
+    """
+    Synchronous record analysis (backward compatibility).
+
+    NOTE: Prefer using record_analysis_async in async endpoints.
+    """
+    import redis as sync_redis
+    try:
+        r = sync_redis.from_url(REDIS_URL, decode_responses=True)
+        ttl_seconds = limit_per_minutes * 60
+        pipe = r.pipeline()
+        pipe.setex(f"ratelimit:analysis:{ip}:{team_hash}", ttl_seconds, "1")
+        pipe.setex(f"ratelimit:global_ip:{ip}", ttl_seconds, "1")
+        pipe.execute()
+    except Exception as e:
+        logger.error(f"Sync Redis record analysis failed: {e}")
 
 
 def get_rate_limit_message(language: str = "en") -> str:
