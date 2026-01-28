@@ -23,6 +23,7 @@ from backend.config import (
     COOKIE_SAMESITE,
     COOKIE_SECURE,
     REFRESH_TOKEN_EXPIRE_DAYS,
+    DEVICE_ID_COOKIE_MAX_AGE,
 )
 from typing import Optional, List, Literal
 from datetime import datetime, timedelta, timezone
@@ -48,6 +49,7 @@ import json
 import time
 import logging
 import hashlib
+import uuid
 import jwt
 from email_validator import validate_email, EmailNotValidError
 from backend.llm_service import generate_analysis_json
@@ -59,6 +61,7 @@ from backend.auth import (
     create_refresh_token,
     decode_token,
     generate_guest_username,
+    generate_guest_display_id,
     generate_verification_token,
 )
 from backend.dependencies import (
@@ -83,12 +86,16 @@ from backend.tier_limits import (
     record_anonymous_analysis,
     check_guest_creation_limit,
     record_guest_creation,
+    check_device_daily_cap,
+    check_ip_daily_cap,
+    record_device_and_ip_usage,
 )
 from backend.email_service import (
     send_verification_email,
     send_password_reset_email,
     send_email_change_verification,
 )
+from backend.username_validator import get_canonical_username, trim_username
 
 # Setup logger
 logging.basicConfig(level=getattr(logging, LOG_LEVEL.upper(), logging.INFO))
@@ -166,6 +173,59 @@ class StripTrailingSlashMiddleware(BaseHTTPMiddleware):
 app.add_middleware(StripTrailingSlashMiddleware)
 
 
+# Device ID Cookie Middleware
+DEVICE_ID_COOKIE_NAME = "device_id"
+
+class DeviceIDMiddleware(BaseHTTPMiddleware):
+    """
+    Middleware to set/read device_id via httpOnly cookie.
+
+    Why cookie over localStorage:
+    - httpOnly: JavaScript cannot read/modify (XSS protection)
+    - Server-controlled: Cannot be faked by client
+    - Automatic: Sent with every request (no custom header needed)
+    - Persistent: Survives until expiry (harder to clear selectively)
+
+    Flow:
+    1. Check for existing device_id cookie
+    2. If missing, generate new UUID and set cookie
+    3. Store device_id in request.state for endpoint access
+    """
+    async def dispatch(self, request: Request, call_next):
+        device_id = request.cookies.get(DEVICE_ID_COOKIE_NAME)
+        needs_cookie = False
+
+        if not device_id:
+            # Generate new device_id
+            device_id = str(uuid.uuid4())
+            needs_cookie = True
+            logger.debug(f"Generated new device_id: {device_id[:12]}...")
+
+        # Store in request state for access in endpoints
+        request.state.device_id = device_id
+
+        # Process request
+        response = await call_next(request)
+
+        # Set cookie if new device_id was generated
+        if needs_cookie:
+            response.set_cookie(
+                key=DEVICE_ID_COOKIE_NAME,
+                value=device_id,
+                max_age=DEVICE_ID_COOKIE_MAX_AGE,
+                httponly=True,
+                samesite=COOKIE_SAMESITE,
+                secure=COOKIE_SECURE,
+                domain=COOKIE_DOMAIN,
+                path="/",
+            )
+
+        return response
+
+
+app.add_middleware(DeviceIDMiddleware)
+
+
 # Log LLM provider on startup
 logger.info(f"Using LLM provider: {LLM_PROVIDER}")
 
@@ -239,7 +299,8 @@ def user_to_user_out(user: models.User) -> schemas.UserOut:
         subscription_tier=user.subscription_tier,
         created_at=user.created_at,
         last_login_at=user.last_login_at,
-        is_admin=is_admin_user(user)
+        is_admin=is_admin_user(user),
+        guest_display_id=user.guest_display_id
     )
 
 # Compute effective stats with base, talent, and personality multipliers
@@ -1674,27 +1735,28 @@ def clear_refresh_token_cookie(response: Response):
 async def create_guest_user(
     request: Request,
     response: Response,
-    request_data: Optional[schemas.GuestCreateRequest] = Body(default=None),
     db: Session = Depends(get_db)
 ):
     """
     Create or retrieve guest user by device ID.
 
     SECURITY:
+    - Device ID obtained from httpOnly cookie (set by middleware)
     - Prevents guest explosion from multiple tabs/refreshes (device_id deduplication)
     - Rate limited: 1 NEW guest per day per IP (prevents Clear Guest Data abuse)
     - Returning existing guest by device_id is NOT rate limited
 
     Flow:
     1. Frontend explicitly calls this when user clicks "Continue as Guest"
-    2. Backend checks if guest with this device_id exists
-    3. If yes: Return existing guest (deduplication, NOT rate limited)
+    2. Backend gets device_id from httpOnly cookie
+    3. If guest with this device_id exists: Return existing guest
     4. If no: Check rate limit, then create new guest
 
     Note: This is only called when user explicitly chooses to be a guest.
     Anonymous users (no account) don't call this endpoint.
     """
-    device_id = request_data.device_id if request_data else None
+    # Get device_id from httpOnly cookie (set by DeviceIDMiddleware)
+    device_id = getattr(request.state, 'device_id', None)
     client_ip = get_real_client_ip(request)
 
     # Try to find existing guest by device_id
@@ -1738,8 +1800,29 @@ async def create_guest_user(
     # Create new guest with "guest" tier (not "free")
     username = f"guest_{device_id[:12]}" if device_id else generate_guest_username()
 
+    # Generate unique display ID (retry on collision)
+    max_attempts = 10
+    display_id = None
+    for _ in range(max_attempts):
+        candidate = generate_guest_display_id()
+        existing = db.query(models.User).filter(
+            models.User.guest_display_id == candidate
+        ).first()
+        if not existing:
+            display_id = candidate
+            break
+
+    if not display_id:
+        logger.error("Failed to generate unique guest display ID after max attempts")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to create guest account. Please try again."
+        )
+
     guest = models.User(
         username=username,
+        canonical_username=username.lower(),  # Guest usernames are already safe
+        guest_display_id=display_id,  # Unique 4-char ID for display (e.g., "A2B3")
         email=None,
         hashed_password=None,
         is_guest=True,
@@ -1832,15 +1915,31 @@ async def register_user(
             detail="Registration failed. Please try a different email address.",
         )
 
-    # Check if username exists
+    # Trim and normalize username
+    trimmed_username = trim_username(user_data.username)
+    canonical = get_canonical_username(trimmed_username)
+
+    # Check if username exists (exact match)
     existing_username = db.query(models.User).filter(
-        models.User.username == user_data.username
+        models.User.username == trimmed_username
     ).first()
 
     if existing_username:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Username already taken",
+        )
+
+    # SECURITY: Check canonical username (blocks confusable look-alikes)
+    # e.g., "аdmin" (Cyrillic а) is blocked if "admin" exists
+    existing_canonical = db.query(models.User).filter(
+        models.User.canonical_username == canonical
+    ).first()
+
+    if existing_canonical:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Username too similar to an existing username",
         )
 
     # Hash password (bcrypt with auto-generated salt)
@@ -1859,7 +1958,8 @@ async def register_user(
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
 
-        user.username = user_data.username
+        user.username = trimmed_username
+        user.canonical_username = canonical
         user.email = normalized_email
         user.hashed_password = hashed_pwd
         user.is_guest = False
@@ -1875,7 +1975,8 @@ async def register_user(
     # Case 2: New registration (no guest account)
     else:
         user = models.User(
-            username=user_data.username,
+            username=trimmed_username,
+            canonical_username=canonical,
             email=normalized_email,
             hashed_password=hashed_pwd,
             is_guest=False,
@@ -1918,7 +2019,7 @@ async def register_user(
 
 
 @app.post("/auth/login", response_model=schemas.AuthResponse, tags=["Authentication"])
-@limiter.limit("5/15minutes")  # SECURITY: Prevent brute force
+@limiter.limit("10/5minutes")  # SECURITY: Prevent brute force (account lock after 10 failed attempts provides additional protection)
 async def login_user(
     request: Request,
     response: Response,
@@ -1929,7 +2030,7 @@ async def login_user(
     Login with email and password.
 
     SECURITY:
-    - Rate limited (5 attempts per 15 minutes per IP)
+    - Rate limited (10 attempts per 5 minutes per IP)
     - CAPTCHA verification (if enabled)
     - Account lockout after 10 failed attempts (30 min)
     - Uniform error messages (prevent account enumeration)
@@ -1947,11 +2048,16 @@ async def login_user(
     # SECURITY: Check account lockout
     if user and user.locked_until:
         if user.locked_until > datetime.now(timezone.utc):
-            minutes_left = (user.locked_until - datetime.now(timezone.utc)).seconds // 60
+            minutes_left = max(1, (user.locked_until - datetime.now(timezone.utc)).seconds // 60)
+            # Get language from request body for localized message
+            language = getattr(credentials, "language", "en") or "en"
+            if language == "zh":
+                message = f"由于多次登录失败，账户已被锁定。请在 {minutes_left} 分钟后再试。"
+            else:
+                message = f"Account locked due to too many failed login attempts. Try again in {minutes_left} minutes."
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail=f"Account locked due to too many failed login attempts. "
-                       f"Try again in {minutes_left} minutes.",
+                detail=message,
             )
         else:
             # Unlock account (lockout period expired)
@@ -1962,12 +2068,14 @@ async def login_user(
     # SECURITY: Verify password (constant-time comparison via bcrypt)
     if not user or not user.hashed_password or not verify_password(credentials.password, user.hashed_password):
         # Failed login - increment counter
+        account_just_locked = False
         if user:
             user.failed_login_attempts += 1
 
             # Lock account after 10 failed attempts
             if user.failed_login_attempts >= 10:
                 user.locked_until = datetime.now(timezone.utc) + timedelta(minutes=30)
+                account_just_locked = True
                 logger.warning(f"Account locked: {user.email} (ID={user.id})")
 
             db.commit()
@@ -1975,6 +2083,18 @@ async def login_user(
         # SECURITY: Uniform error message (don't reveal if email exists)
         client_ip = get_real_client_ip(request)
         logger.warning(f"Failed login attempt for {credentials.email} from {client_ip}")
+
+        # If account was just locked, show specific message (user already knows email exists after 10 attempts)
+        if account_just_locked:
+            language = getattr(credentials, "language", "en") or "en"
+            if language == "zh":
+                message = "由于多次登录失败，账户已被锁定。请在 30 分钟后再试。"
+            else:
+                message = "Account locked due to too many failed login attempts. Try again in 30 minutes."
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=message,
+            )
 
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -2172,6 +2292,44 @@ async def logout_all_devices(
     )
 
     return {"message": "Logged out from all devices"}
+
+
+@app.post("/auth/reset-device-id", tags=["Authentication"])
+async def reset_device_id(
+    request: Request,
+    response: Response,
+):
+    """
+    Reset device ID cookie to a new value.
+
+    Used for "Clear Guest Data" functionality:
+    - Generates a new device_id
+    - Old guest account becomes inaccessible (orphaned)
+    - User can create a fresh guest account
+
+    This endpoint:
+    - Does NOT require authentication
+    - Sets a new httpOnly device_id cookie
+    - Resets cross-account daily caps for the new device
+    """
+    # Generate new device_id
+    new_device_id = str(uuid.uuid4())
+
+    # Set new cookie
+    response.set_cookie(
+        key=DEVICE_ID_COOKIE_NAME,
+        value=new_device_id,
+        max_age=DEVICE_ID_COOKIE_MAX_AGE,
+        httponly=True,
+        samesite=COOKIE_SAMESITE,
+        secure=COOKIE_SECURE,
+        domain=COOKIE_DOMAIN,
+        path="/",
+    )
+
+    logger.info(f"Reset device_id to {new_device_id[:12]}...")
+
+    return {"message": "Device ID reset successfully", "device_id": new_device_id[:8] + "..."}
 
 
 # ========== PASSWORD RESET (Phase 6) ==========
@@ -3163,6 +3321,7 @@ def get_team(
 @app.post("/teams", response_model=schemas.TeamOut, tags=["Teams"])
 async def create_team(
     team: schemas.TeamCreate,
+    lang: str = Query("en", description="Language for error messages (en/zh)"),
     current_user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
@@ -3173,7 +3332,7 @@ async def create_team(
     Tier-based limits apply (Phase 7A).
     """
     # Check tier-based team limit (Phase 7A)
-    await check_teams_limit(current_user, db)
+    await check_teams_limit(current_user, db, lang)
 
     # Check for duplicate team name for this user (case-sensitive)
     existing = db.query(models.Team).filter(
@@ -3907,15 +4066,23 @@ async def analyze_team(
     if not is_fully_cached:
         # Not cached - check tier-based rate limits
 
-        # Tier-based limit check based on user type
+        # 1. Per-user quota check based on user type
         if user is None:
             # Anonymous user - check anonymous limits (1/day)
-            await check_anonymous_analysis_limit(device_id, client_ip)
+            await check_anonymous_analysis_limit(device_id, client_ip, req.language)
         else:
             # Authenticated user (guest or registered) - check user limits
-            await check_analysis_limit(user, db)
+            await check_analysis_limit(user, db, req.language)
 
-        # IP-based rate limit (prevents analyzing different teams rapidly)
+        # 2. Cross-account device daily cap (prevents multi-account abuse)
+        # Premium/unlimited users are exempt
+        await check_device_daily_cap(device_id, user)
+
+        # 3. IP daily cap (fallback when device_id missing, also abuse signal)
+        if device_id == "unknown-device":
+            await check_ip_daily_cap(client_ip, user)
+
+        # 4. IP-based rate limit (prevents analyzing different teams rapidly)
         if not await check_global_ip_rate_limit_async(client_ip):
             logger.warning(
                 f"Global rate limit exceeded for {client_ip} analyzing team {team_hash} in {req.language}"
@@ -3925,7 +4092,7 @@ async def analyze_team(
                 detail=get_rate_limit_message(req.language)
             )
 
-        # Per-team rate limit (prevents language-switching exploits)
+        # 5. Per-team rate limit (prevents language-switching exploits)
         if not await check_analysis_rate_limit_async(client_ip, team_hash):
             logger.warning(
                 f"Per-team rate limit exceeded for {client_ip} analyzing team {team_hash} in {req.language}"
@@ -3946,6 +4113,9 @@ async def analyze_team(
         else:
             # Authenticated user (guest or registered)
             await record_analysis_usage(user)
+
+        # Record device/IP usage for cross-account caps
+        await record_device_and_ip_usage(device_id, client_ip)
 
     return await _perform_team_analysis(req.team, req.language, db)
 
@@ -4012,15 +4182,23 @@ async def analyze_team_by_id(
     if not is_fully_cached:
         # Not cached - check tier-based rate limits
 
-        # Tier-based limit check based on user type
+        # 1. Per-user quota check based on user type
         if user is None:
             # Anonymous user - check anonymous limits (1/day)
-            await check_anonymous_analysis_limit(device_id, client_ip)
+            await check_anonymous_analysis_limit(device_id, client_ip, req.language)
         else:
             # Authenticated user (guest or registered) - check user limits
-            await check_analysis_limit(user, db)
+            await check_analysis_limit(user, db, req.language)
 
-        # IP-based rate limit (prevents analyzing different teams rapidly)
+        # 2. Cross-account device daily cap (prevents multi-account abuse)
+        # Premium/unlimited users are exempt
+        await check_device_daily_cap(device_id, user)
+
+        # 3. IP daily cap (fallback when device_id missing, also abuse signal)
+        if device_id == "unknown-device":
+            await check_ip_daily_cap(client_ip, user)
+
+        # 4. IP-based rate limit (prevents analyzing different teams rapidly)
         if not await check_global_ip_rate_limit_async(client_ip):
             logger.warning(
                 f"Global rate limit exceeded for {client_ip} analyzing team {team_hash} (ID: {req.team_id}) in {req.language}"
@@ -4030,7 +4208,7 @@ async def analyze_team_by_id(
                 detail=get_rate_limit_message(req.language)
             )
 
-        # Per-team rate limit (prevents language-switching exploits)
+        # 5. Per-team rate limit (prevents language-switching exploits)
         if not await check_analysis_rate_limit_async(client_ip, team_hash):
             logger.warning(
                 f"Per-team rate limit exceeded for {client_ip} analyzing team {team_hash} (ID: {req.team_id}) in {req.language}"
@@ -4051,6 +4229,9 @@ async def analyze_team_by_id(
         else:
             # Authenticated user (guest or registered)
             await record_analysis_usage(user)
+
+        # Record device/IP usage for cross-account caps
+        await record_device_and_ip_usage(device_id, client_ip)
 
     return await _perform_team_analysis(team_data, req.language, db)
 

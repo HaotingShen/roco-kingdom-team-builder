@@ -103,7 +103,7 @@ async def send_verification_email(to_email: str, token: str) -> bool:
     """
     verify_url = f"{FRONTEND_URL}/auth/verify?token={token}"
 
-    subject = "Verify your email - Roco Kingdom Team Builder"
+    subject = "Verify your email - RK Team Builder"
     html_body = f"""
     <!DOCTYPE html>
     <html>
@@ -150,7 +150,7 @@ async def send_password_reset_email(to_email: str, token: str) -> bool:
     """
     reset_url = f"{FRONTEND_URL}/auth/reset-password?token={token}"
 
-    subject = "Reset your password - Roco Kingdom Team Builder"
+    subject = "Reset your password - RK Team Builder"
     html_body = f"""
     <!DOCTYPE html>
     <html>
@@ -198,7 +198,7 @@ async def send_email_change_verification(to_email: str, token: str) -> bool:
     """
     verify_url = f"{FRONTEND_URL}/auth/confirm-email?token={token}"
 
-    subject = "Confirm your new email - Roco Kingdom Team Builder"
+    subject = "Confirm your new email - RK Team Builder"
     html_body = f"""
     <!DOCTYPE html>
     <html>

@@ -10,19 +10,21 @@ const AuthContext = createContext<AuthContextType>({ isLoading: true });
 
 export const useAuth = () => useContext(AuthContext);
 
+/**
+ * @deprecated Device ID is now managed via httpOnly cookie by the backend.
+ * This constant is kept for backward compatibility but is no longer used.
+ */
 export const DEVICE_ID_KEY = 'rktb-device-id';
 
 /**
- * Get or create device ID (exported for use in other components).
- * This is persistent across sessions via localStorage.
+ * @deprecated Device ID is now managed via httpOnly cookie by the backend.
+ * The cookie is set automatically by DeviceIDMiddleware on first request.
+ * This function is kept for backward compatibility but does nothing useful.
  */
 export function getOrCreateDeviceId(): string {
-  let deviceId = localStorage.getItem(DEVICE_ID_KEY);
-  if (!deviceId) {
-    deviceId = generateDeviceId();
-    localStorage.setItem(DEVICE_ID_KEY, deviceId);
-  }
-  return deviceId;
+  // Device ID is now handled by backend httpOnly cookie
+  // This function is deprecated - return empty string
+  return '';
 }
 
 /**
@@ -56,8 +58,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let isCancelled = false;
 
     const initAuth = async () => {
-      // Ensure device_id exists (for anonymous tracking)
-      getOrCreateDeviceId();
+      // NOTE: Device ID is now handled by backend httpOnly cookie.
+      // No need to manage it in frontend anymore.
 
       // Case 1: User profile exists, try to refresh access token
       if (user) {
@@ -96,8 +98,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  // Render app immediately - don't block on auth initialization
-  // Components can use useAuth().isLoading to show their own loading states if needed
+  // The HTML loading screen (index.html) stays visible until auth is ready
+  // We hide it by calling window.hideAppLoading() after setIsLoading(false)
+  // This prevents any blank screen flash during initialization
   return (
     <AuthContext.Provider value={{ isLoading }}>
       {children}
@@ -106,17 +109,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 }
 
 /**
- * Generate a unique device identifier.
- *
- * Uses crypto.randomUUID() if available (modern browsers),
- * otherwise falls back to timestamp + random string.
- *
- * Stored in localStorage to persist across sessions.
+ * @deprecated Device ID is now managed via httpOnly cookie by the backend.
+ * This function is kept for backward compatibility but is no longer used.
  */
 function generateDeviceId(): string {
-  if (crypto.randomUUID) {
-    return crypto.randomUUID();
-  }
-  // Fallback for older browsers
-  return `${Date.now()}-${Math.random().toString(36).substring(2)}`;
+  // No longer used - backend handles device ID via cookie
+  return '';
 }

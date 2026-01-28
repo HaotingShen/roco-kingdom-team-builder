@@ -105,6 +105,14 @@ export default function UserTable() {
     return new Date(dateStr).toLocaleDateString();
   };
 
+  // Format guest display name using the unique guest_display_id
+  const formatUsername = (user: { username: string; is_guest: boolean; guest_display_id: string | null }) => {
+    if (user.is_guest && user.guest_display_id) {
+      return `Guest#${user.guest_display_id}`;
+    }
+    return user.username;
+  };
+
   return (
     <div className="space-y-4">
       {/* Filters */}
@@ -234,7 +242,9 @@ export default function UserTable() {
                   >
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
-                        <span className="font-medium">{user.username}</span>
+                        <span className="font-medium">
+                          {formatUsername(user)}
+                        </span>
                         {user.is_admin && (
                           <span className="px-1.5 py-0.5 bg-purple-100 text-purple-700 text-xs rounded">
                             Admin

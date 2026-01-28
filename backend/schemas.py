@@ -17,6 +17,7 @@ class UserOut(BaseModel):
     created_at: datetime
     last_login_at: Optional[datetime] = None
     is_admin: bool = False
+    guest_display_id: Optional[str] = None  # Unique 4-char ID for guest display (e.g., "A2B3")
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -25,10 +26,9 @@ class UserRegister(BaseModel):
     """User registration request."""
     username: str = Field(
         ...,
-        min_length=3,
-        max_length=32,
-        pattern=r'^[a-zA-Z0-9_]+$',
-        description="Alphanumeric and underscores only"
+        min_length=2,
+        max_length=64,  # Byte limit; grapheme limit (2-16) enforced by validator
+        description="Letters, numbers, Chinese characters, underscores, hyphens (2-16 characters)"
     )
     email: str = Field(..., max_length=120)
     password: str = Field(..., min_length=8, max_length=128)
@@ -38,19 +38,27 @@ class UserRegister(BaseModel):
     @classmethod
     def validate_username(cls, v):
         """
-        SECURITY: Block reserved usernames and attack patterns.
+        Validate username with support for Chinese characters.
 
-        Forbidden:
-        - System usernames (admin, root, system, etc.)
-        - Guest prefix (guest_)
-        - SQL injection patterns (null, undefined)
+        Allowed:
+        - Latin letters (A-Z a-z)
+        - Digits (0-9)
+        - Chinese Han characters (CJK Unified Ideographs)
+        - Underscore (_) and hyphen (-)
+
+        Disallowed:
+        - Spaces (including full-width)
+        - Emoji and symbols
+        - Punctuation (except _/-)
+        - Control chars / zero-width chars
+
+        Length: 2-16 graphemes (user-perceived characters)
+        Security: Blocks confusable/look-alike characters
         """
-        forbidden = [
-            "admin", "root", "system", "api",
-            "null", "undefined", "guest"
-        ]
-        if v.lower() in forbidden or v.lower().startswith("guest_"):
-            raise ValueError("Username not allowed")
+        from backend.username_validator import validate_username
+        is_valid, error = validate_username(v)
+        if not is_valid:
+            raise ValueError(error)
         return v
 
     @field_validator("password")
@@ -81,6 +89,7 @@ class UserLogin(BaseModel):
     email: str
     password: str
     captcha_token: Optional[str] = Field(None, description="CAPTCHA response token (required if CAPTCHA enabled)")
+    language: Optional[str] = Field("en", description="Language for error messages (en or zh)")
 
 
 class GuestCreateRequest(BaseModel):
@@ -648,6 +657,7 @@ class AdminUserOut(BaseModel):
     failed_login_attempts: int
     locked_until: Optional[datetime] = None
     device_id: Optional[str] = None
+    guest_display_id: Optional[str] = None  # Unique 4-char ID for guest display
     teams_count: int = 0
     is_admin: bool = False
 

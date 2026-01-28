@@ -170,7 +170,7 @@ SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
 SMTP_USER = os.getenv("SMTP_USER", "")
 SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "")
 SMTP_FROM_EMAIL = os.getenv("SMTP_FROM_EMAIL", "noreply@example.com")
-SMTP_FROM_NAME = os.getenv("SMTP_FROM_NAME", "Roco Kingdom Team Builder")
+SMTP_FROM_NAME = os.getenv("SMTP_FROM_NAME", "RK Team Builder")
 SMTP_USE_TLS = os.getenv("SMTP_USE_TLS", "true").lower() == "true"  # STARTTLS on port 587
 
 
@@ -235,6 +235,22 @@ TIER_LIMITS = {
 # Default tier for new users
 DEFAULT_TIER = os.getenv("DEFAULT_TIER", "free")
 
+# ========== Cross-Account Daily Caps ==========
+#
+# Prevents multi-account abuse on the same device/IP.
+# Even if a user creates multiple accounts, they share a combined daily budget.
+#
+# Device cap: Primary tracking via httpOnly cookie (hard to tamper)
+# IP cap: Fallback when device_id cookie is missing, also catches VPN abuse
+#
+# Premium/unlimited users are EXEMPT from these caps.
+
+DEVICE_DAILY_ANALYSIS_CAP = int(os.getenv("DEVICE_DAILY_ANALYSIS_CAP", "5"))
+IP_DAILY_ANALYSIS_CAP = int(os.getenv("IP_DAILY_ANALYSIS_CAP", "15"))
+
+# Device ID cookie settings
+DEVICE_ID_COOKIE_MAX_AGE = int(os.getenv("DEVICE_ID_COOKIE_MAX_AGE", str(365 * 24 * 60 * 60)))  # 1 year
+
 
 # ========== Redis Namespace Strategy ==========
 #
@@ -257,6 +273,18 @@ DEFAULT_TIER = os.getenv("DEFAULT_TIER", "free")
 #    - Format: "rate_limit:{ip}:{endpoint}"
 #    - TTL: Varies by limit window (e.g., 120 seconds for 1/2min)
 #    - Purpose: Track request counts for rate limiting
+#
+# 4. Device Daily Cap (tier_limits.py):
+#    - Prefix: "tier:device:"
+#    - Format: "tier:device:{device_id}:daily:{YYYY-MM-DD}"
+#    - TTL: Until midnight UTC
+#    - Purpose: Cross-account daily cap per device (prevents multi-account abuse)
+#
+# 5. IP Daily Cap (tier_limits.py):
+#    - Prefix: "tier:ip:"
+#    - Format: "tier:ip:{ip}:daily:{YYYY-MM-DD}"
+#    - TTL: Until midnight UTC
+#    - Purpose: Fallback cap when device_id missing, also abuse signal
 #
 # ⚠️ CRITICAL: All keys MUST have TTL to prevent memory growth!
 # Never use SET without SETEX/EXPIRE.

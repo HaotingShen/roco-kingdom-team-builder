@@ -333,12 +333,14 @@ export default function AnalysisResults({
   onSaveAnalysis,
   isSaving,
   isAlreadySaved,
+  isLoggedIn = true,
 }: {
   analysis: TeamAnalysisOut;
   teamId: number | null;
   onSaveAnalysis?: () => void;
   isSaving?: boolean;
   isAlreadySaved?: boolean;
+  isLoggedIn?: boolean;
 }) {
   const { lang, t } = useI18n();
   const { byId } = useTypesById();
@@ -375,10 +377,23 @@ export default function AnalysisResults({
       {/* Save Analysis Button - below header */}
       {onSaveAnalysis && (
         <div className="flex justify-center -mt-2 mb-4">
-          {!teamId ? (
-            <div className="px-6 py-3 rounded-lg bg-amber-50 border-2 border-amber-300 text-amber-700 text-sm font-medium">
-              💡 {t("builder.saveTeamFirst")}
-            </div>
+          {!teamId || !isLoggedIn ? (
+            <button
+              onClick={() => {
+                // Scroll to and briefly highlight the Create button
+                const createBtn = document.querySelector('[data-testid="create-team-btn"]');
+                if (createBtn) {
+                  createBtn.scrollIntoView({ behavior: "smooth", block: "center" });
+                  createBtn.classList.add("ring-4", "ring-amber-400", "ring-offset-2");
+                  setTimeout(() => {
+                    createBtn.classList.remove("ring-4", "ring-amber-400", "ring-offset-2");
+                  }, 2000);
+                }
+              }}
+              className="px-6 py-3 rounded-lg bg-amber-50 border-2 border-amber-300 text-amber-700 text-sm font-medium hover:bg-amber-100 hover:border-amber-400 transition-colors cursor-pointer"
+            >
+              💡 {t("builder.saveTeamFirst")} <span className="underline">{t("builder.clickToCreate")}</span>
+            </button>
           ) : (
             <button
               onClick={onSaveAnalysis}
@@ -401,7 +416,7 @@ export default function AnalysisResults({
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"/>
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
                 </svg>
-                Saving...
+                {t("common.saving")}
               </span>
             ) : isAlreadySaved ? (
               <span className="inline-flex items-center gap-2">

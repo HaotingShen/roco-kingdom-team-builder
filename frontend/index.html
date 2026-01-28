@@ -6,7 +6,7 @@
       name="viewport"
       content="width=device-width, initial-scale=1, viewport-fit=cover"
     />
-    <title>Roco Team Builder</title>
+    <title>RK Team Builder</title>
     <style>
       /* Loading screen - shown while JavaScript loads */
       #app-loading {
@@ -60,7 +60,7 @@
     <div id="app-loading">
       <div class="loading-content">
         <div class="spinner"></div>
-        <div class="loading-text" id="loading-text">Loading Roco Team Builder</div>
+        <div class="loading-text" id="loading-text">Loading RK Team Builder</div>
         <div class="loading-subtext" id="loading-subtext">Initializing application...</div>
       </div>
     </div>
@@ -72,7 +72,7 @@
 
         const translations = {
           en: {
-            title: 'Loading Roco Team Builder',
+            title: 'Loading RK Team Builder',
             subtitle: 'Initializing application...'
           },
           zh: {
@@ -87,18 +87,14 @@
         document.getElementById('loading-subtext').textContent = text.subtitle;
 
         // Also update page title
-        document.title = lang === 'zh' ? '洛手配队器' : 'Roco Team Builder';
+        document.title = lang === 'zh' ? '洛手配队器' : 'RK Team Builder';
       })();
 
-      // Remove loading screen when React renders
-      const observer = new MutationObserver(() => {
-        const root = document.getElementById('root');
-        if (root && root.children.length > 0) {
-          document.body.classList.add('app-ready');
-          observer.disconnect();
-        }
-      });
-      observer.observe(document.getElementById('root'), { childList: true });
+      // Loading screen is now controlled by AuthProvider
+      // It will call window.hideAppLoading() when auth is ready
+      window.hideAppLoading = function() {
+        document.body.classList.add('app-ready');
+      };
 
       // Fallback: Remove after 30 seconds
       setTimeout(() => {

@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { authEndpoints } from "@/lib/api";
 import { useAuthStore } from "./authStore";
 import { useI18n } from "@/i18n";
+import { validateUsername } from "@/lib/usernameValidator";
 import EmailVerificationModal from "./EmailVerificationModal";
 
 export default function RegisterPage() {
@@ -25,9 +26,10 @@ export default function RegisterPage() {
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
-    // Username validation: 3-32 chars, letters/numbers/underscores
-    if (!/^[a-zA-Z0-9_]{3,32}$/.test(username)) {
-      newErrors.username = t("auth.usernameRequirements");
+    // Username validation: 2-16 graphemes, letters/numbers/Chinese/underscores/hyphens
+    const usernameError = validateUsername(username, t);
+    if (usernameError) {
+      newErrors.username = usernameError;
     }
 
     // Email validation
@@ -69,6 +71,8 @@ export default function RegisterPage() {
       if (typeof detail === "string") {
         if (detail.toLowerCase().includes("email")) {
           setErrors({ email: t("auth.emailTaken") });
+        } else if (detail.toLowerCase().includes("similar")) {
+          setErrors({ username: t("auth.usernameTooSimilar") });
         } else if (detail.toLowerCase().includes("username")) {
           setErrors({ username: t("auth.usernameTaken") });
         } else {
@@ -89,8 +93,20 @@ export default function RegisterPage() {
 
   return (
     <div className="min-h-[calc(100vh-3.5rem)] flex items-center justify-center bg-zinc-50 px-4">
-      <div className="w-full max-w-md bg-white rounded-lg shadow-sm border border-zinc-200 p-8">
-        <h1 className="text-2xl font-semibold text-zinc-900 mb-2 text-center">
+      <div className="w-full max-w-md bg-white rounded-lg shadow-sm border border-zinc-200 p-8 relative">
+        {/* Back button */}
+        <button
+          onClick={() => navigate(-1)}
+          className="absolute top-4 left-4 flex items-center gap-1 text-sm text-zinc-500 hover:text-zinc-700 transition-colors"
+          title={t("auth.backToPrevious")}
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
+          {t("auth.back")}
+        </button>
+
+        <h1 className="text-2xl font-semibold text-zinc-900 mb-2 text-center mt-4">
           {t("auth.registerTitle")}
         </h1>
 
@@ -115,9 +131,9 @@ export default function RegisterPage() {
                 errors.username ? "border-red-500" : "border-zinc-300"
               }`}
             />
-            {errors.username && (
-              <p className="text-xs text-red-500 mt-1">{errors.username}</p>
-            )}
+            <p className={`text-xs mt-1 ${errors.username ? "text-red-500" : "text-zinc-500"}`}>
+              {errors.username || t("auth.usernameHint")}
+            </p>
           </div>
 
           <div>

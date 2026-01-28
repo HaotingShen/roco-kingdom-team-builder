@@ -75,18 +75,69 @@ limiter = Limiter(
 )
 
 
+def _parse_retry_time(detail: str, language: str) -> str:
+    """
+    Parse slowapi's rate limit detail string and return a localized time string.
+
+    Input formats from slowapi:
+    - "10 per 5 minute" -> "5 minutes" / "5 分钟"
+    - "1 per 2 minutes" -> "2 minutes" / "2 分钟"
+    - "5 per 1 hour" -> "1 hour" / "1 小时"
+    - "3 per hour" -> "1 hour" / "1 小时" (no number = 1)
+
+    Args:
+        detail: The exc.detail string from slowapi
+        language: "en" or "zh"
+
+    Returns:
+        Localized time string for display
+    """
+    import re
+
+    # Try to extract time from "X per Y unit" format (with number)
+    match = re.search(r'per\s+(\d+)\s*(second|minute|hour|day)s?', detail, re.IGNORECASE)
+    if match:
+        amount = int(match.group(1))
+        unit = match.group(2).lower()
+    else:
+        # Try without number: "per hour", "per minute" (implies 1)
+        match = re.search(r'per\s+(second|minute|hour|day)s?', detail, re.IGNORECASE)
+        if match:
+            amount = 1
+            unit = match.group(1).lower()
+        else:
+            # Fallback
+            if language == "zh":
+                return "几分钟"
+            return "a few minutes"
+
+    if language == "zh":
+        unit_map = {
+            "second": "秒",
+            "minute": "分钟",
+            "hour": "小时",
+            "day": "天"
+        }
+        return f"{amount} {unit_map.get(unit, '分钟')}"
+    else:
+        # Pluralize for English
+        if amount == 1:
+            return f"{amount} {unit}"
+        else:
+            return f"{amount} {unit}s"
+
+
 async def rate_limit_exceeded_handler(request: Request, exc: RateLimitExceeded):
     """
     Custom handler for rate limit exceeded errors.
     Returns a user-friendly message that frontend can display directly.
+    Context-aware: different messages for login, analysis, etc.
     """
     client_ip = get_real_client_ip(request)
+    path = request.url.path
     logger.warning(
-        f"Rate limit exceeded for {client_ip} on {request.url.path}"
+        f"Rate limit exceeded for {client_ip} on {path}"
     )
-
-    # Extract retry time from exc.detail (e.g., "60 seconds")
-    retry_info = exc.detail if exc.detail else "in a moment"
 
     # Try to extract language from request body
     language = "en"
@@ -100,11 +151,36 @@ async def rate_limit_exceeded_handler(request: Request, exc: RateLimitExceeded):
         # If we can't parse the body, default to English
         pass
 
-    # Localized error messages
-    if language == "zh":
-        message = f"请求过于频繁，请等待 {retry_info} 后再试。\n提示：重新分析相同队伍会使用缓存，无需等待！"
+    # Parse the retry time from slowapi's detail string
+    retry_time = _parse_retry_time(exc.detail if exc.detail else "", language)
+
+    # Context-aware localized error messages
+    if "/auth/login" in path:
+        if language == "zh":
+            message = f"登录尝试过于频繁，请等待 {retry_time} 后再试。"
+        else:
+            message = f"Too many login attempts. Please wait {retry_time} before trying again."
+    elif "/auth/forgot-password" in path:
+        if language == "zh":
+            message = f"密码重置请求过于频繁，请等待 {retry_time} 后再试。"
+        else:
+            message = f"Too many password reset requests. Please wait {retry_time} before trying again."
+    elif "/auth/register" in path:
+        if language == "zh":
+            message = f"注册请求过于频繁，请等待 {retry_time} 后再试。"
+        else:
+            message = f"Too many registration attempts. Please wait {retry_time} before trying again."
+    elif "/team/analyze" in path:
+        if language == "zh":
+            message = f"请求过于频繁，请等待 {retry_time} 后再试。\n提示：重新分析相同队伍会使用缓存，无需等待！"
+        else:
+            message = f"Too many requests. Please wait {retry_time} before analyzing again.\nTip: Analyzing the same team again uses cache and is instant!"
     else:
-        message = f"Too many requests. Please wait {retry_info} before analyzing again.\nTip: Analyzing the same team again uses cache and is instant!"
+        # Generic message for other endpoints
+        if language == "zh":
+            message = f"请求过于频繁，请等待 {retry_time} 后再试。"
+        else:
+            message = f"Too many requests. Please wait {retry_time} before trying again."
 
     raise HTTPException(
         status_code=status.HTTP_429_TOO_MANY_REQUESTS,
@@ -326,16 +402,17 @@ def record_analysis(ip: str, team_hash: str, limit_per_minutes: int = 2):
         logger.error(f"Sync Redis record analysis failed: {e}")
 
 
-def get_rate_limit_message(language: str = "en") -> str:
+def get_rate_limit_message(language: str = "en", minutes: int = 2) -> str:
     """
-    Get localized rate limit error message.
+    Get localized rate limit error message for analysis endpoints.
 
     Args:
         language: "en" or "zh"
+        minutes: Time window in minutes (default: 2)
 
     Returns:
         Localized error message string
     """
     if language == "zh":
-        return "请求过于频繁，请等待后再试。提示：重新分析相同队伍会使用缓存，无需等待！"
-    return "Too many requests. Please wait before analyzing again. Tip: Analyzing the same team again uses cache and is instant!"
+        return f"请求过于频繁，请等待 {minutes} 分钟后再试。提示：重新分析相同队伍会使用缓存，无需等待！"
+    return f"Too many requests. Please wait {minutes} minutes before analyzing again. Tip: Analyzing the same team again uses cache and is instant!"

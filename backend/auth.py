@@ -142,6 +142,23 @@ def generate_guest_username() -> str:
     return f"guest_{uuid.uuid4().hex[:12]}"
 
 
+# Characters for guest display ID (excluding confusables: 0/O, 1/I/L)
+GUEST_DISPLAY_ID_CHARS = '23456789ABCDEFGHJKMNPQRSTUVWXYZ'
+
+
+def generate_guest_display_id() -> str:
+    """
+    Generate a random 4-character display ID for guests.
+
+    Format: 4 alphanumeric chars (excluding confusables)
+    Example: "A2B3", "X9Y8", "KMNP"
+
+    Character set excludes 0/O, 1/I/L to avoid confusion.
+    Total combinations: 30^4 = 810,000
+    """
+    return ''.join(secrets.choice(GUEST_DISPLAY_ID_CHARS) for _ in range(4))
+
+
 def generate_verification_token() -> str:
     """
     Generate a secure email verification token.

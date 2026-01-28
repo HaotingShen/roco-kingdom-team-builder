@@ -226,14 +226,32 @@ def get_user_team(
 
 def get_device_id(request: Request) -> str:
     """
-    Extract device ID from request header.
+    Extract device ID from httpOnly cookie (set by DeviceIDMiddleware).
 
-    Frontend sends this via X-Device-ID header (generated from localStorage).
+    Priority:
+    1. request.state.device_id (set by middleware from cookie)
+    2. X-Device-ID header (legacy fallback, deprecated)
+    3. Default device ID
+
+    The cookie-based approach is preferred because:
+    - httpOnly: Cannot be read/modified by JavaScript (XSS protection)
+    - Server-controlled: Cannot be faked by client
+    - Automatic: Sent with every request
 
     Returns:
-        Device ID string, or default if not provided
+        Device ID string (UUID format)
     """
-    return request.headers.get(DEVICE_ID_HEADER) or DEFAULT_DEVICE_ID
+    # Primary: Cookie-based (set by DeviceIDMiddleware)
+    if hasattr(request.state, 'device_id') and request.state.device_id:
+        return request.state.device_id
+
+    # Legacy fallback: Header-based (deprecated, for migration)
+    header_device_id = request.headers.get(DEVICE_ID_HEADER)
+    if header_device_id:
+        logger.debug(f"Using legacy X-Device-ID header (deprecated): {header_device_id[:12]}...")
+        return header_device_id
+
+    return DEFAULT_DEVICE_ID
 
 
 async def get_user_or_anonymous(
@@ -252,8 +270,8 @@ async def get_user_or_anonymous(
     Returns:
         Tuple of (user, device_id, client_ip):
         - user: User object if authenticated, None for anonymous
-        - device_id: From X-Device-ID header (for anonymous tracking)
-        - client_ip: Client IP address (for anonymous tracking)
+        - device_id: From httpOnly cookie (for tracking and daily caps)
+        - client_ip: Client IP address (for tracking and fallback caps)
     """
     from backend.rate_limiter import get_real_client_ip
 

@@ -1,11 +1,14 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '@/features/auth/authStore';
 import { authEndpoints } from '@/lib/api';
 import { useI18n } from '@/i18n';
 import { useAuth } from '@/features/auth/AuthProvider';
+import { useBuilderStore } from '@/features/builder/builderStore';
 import DeleteAccountModal from '@/features/auth/DeleteAccountModal';
 import EmailVerificationModal from '@/features/auth/EmailVerificationModal';
+import ClearGuestDataModal from '@/features/auth/ClearGuestDataModal';
 
 /**
  * User menu dropdown component for THREE-TIER system.
@@ -16,7 +19,7 @@ import EmailVerificationModal from '@/features/auth/EmailVerificationModal';
  *    - Shows "Log In" button (no dropdown)
  *
  * 2. GUEST (user.is_guest = true):
- *    - Avatar + "Guest" badge
+ *    - Avatar + "Guest" display name
  *    - Create Account
  *    - Log In
  *    - Log Out (becomes anonymous)
@@ -32,11 +35,15 @@ export default function UserMenu() {
   const [isOpen, setIsOpen] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showVerifyModal, setShowVerifyModal] = useState(false);
+  const [showClearGuestModal, setShowClearGuestModal] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const { user, isGuest, clearAuth } = useAuthStore();
   const { isLoading } = useAuth();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { t } = useI18n();
+  const clearTeamId = useBuilderStore(s => s.clearTeamId);
+  const setAnalysis = useBuilderStore(s => s.setAnalysis);
 
   // Check if email needs verification (registered user with unverified email)
   const needsEmailVerification = !isGuest && user?.email && !user.email_verified;
@@ -73,6 +80,11 @@ export default function UserMenu() {
 
     // Clear local auth state AFTER logout API call
     clearAuth();
+    // Clear cached data (teams, etc.) so next user doesn't see old data
+    queryClient.clear();
+    // Clear teamId and analysis (keep local draft: slots, name, magic item)
+    clearTeamId();
+    setAnalysis(null);
 
     // User is now anonymous - do NOT create guest
     navigate('/build');
@@ -98,6 +110,11 @@ export default function UserMenu() {
 
     // Clear local auth state AFTER logout API call
     clearAuth();
+    // Clear cached data (teams, etc.) so next user doesn't see old data
+    queryClient.clear();
+    // Clear teamId and analysis (keep local draft: slots, name, magic item)
+    clearTeamId();
+    setAnalysis(null);
 
     // User is now anonymous - guest account persists for later reclaim
     navigate('/build');
@@ -105,13 +122,11 @@ export default function UserMenu() {
 
   /**
    * Handle "Clear Guest Data" for guest users.
-   * - Generates a NEW device_id, making old guest inaccessible
+   * - Resets device_id cookie via backend endpoint
    * - User becomes anonymous with fresh device_id
    * - Old guest data remains in DB but cannot be reclaimed
    */
   const handleClearGuestData = async () => {
-    setIsOpen(false);
-
     try {
       // IMPORTANT: Call logout BEFORE clearing auth state
       await authEndpoints.logout();
@@ -120,12 +135,22 @@ export default function UserMenu() {
       console.error('Logout API failed (continuing anyway):', error);
     }
 
+    try {
+      // Reset device_id cookie via backend endpoint
+      // This generates a new device_id, making old guest inaccessible
+      await authEndpoints.resetDeviceId();
+    } catch (error) {
+      // Continue even if reset fails
+      console.error('Reset device ID failed (continuing anyway):', error);
+    }
+
     // Clear local auth state AFTER logout API call
     clearAuth();
-
-    // Generate NEW device_id - old guest becomes orphaned
-    const newDeviceId = crypto.randomUUID();
-    localStorage.setItem('rktb-device-id', newDeviceId);
+    // Clear cached data (teams, etc.) so next user doesn't see old data
+    queryClient.clear();
+    // Clear teamId and analysis (keep local draft: slots, name, magic item)
+    clearTeamId();
+    setAnalysis(null);
 
     // User is now anonymous with new device_id
     // Do NOT auto-create guest - user must explicitly choose
@@ -153,9 +178,9 @@ export default function UserMenu() {
     );
   }
 
-  // Display username (show "Guest" if username starts with "guest_")
-  const displayName = user.username.startsWith('guest_')
-    ? t('userMenu.guest') || 'Guest'
+  // Display username (show "Guest#XXXX" for guests using the unique display ID)
+  const displayName = user.is_guest && user.guest_display_id
+    ? `${t('userMenu.guest') || 'Guest'}#${user.guest_display_id}`
     : user.username;
 
   // First letter of display name for avatar
@@ -189,13 +214,6 @@ export default function UserMenu() {
         <span className="text-sm text-zinc-700 max-w-[100px] truncate">
           {displayName}
         </span>
-
-        {/* Guest badge */}
-        {isGuest && (
-          <span className="text-xs bg-zinc-200 text-zinc-600 px-1.5 py-0.5 rounded">
-            {t('userMenu.guestBadge') || 'Guest'}
-          </span>
-        )}
 
         {/* Dropdown arrow */}
         <svg className="w-4 h-4 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -245,7 +263,10 @@ export default function UserMenu() {
               </button>
 
               <button
-                onClick={handleClearGuestData}
+                onClick={() => {
+                  setIsOpen(false);
+                  setShowClearGuestModal(true);
+                }}
                 className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-zinc-50"
               >
                 {t('userMenu.clearGuestData') || 'Clear Guest Data'}
@@ -334,6 +355,13 @@ export default function UserMenu() {
       <EmailVerificationModal
         isOpen={showVerifyModal}
         onClose={() => setShowVerifyModal(false)}
+      />
+
+      {/* Clear Guest Data Modal */}
+      <ClearGuestDataModal
+        isOpen={showClearGuestModal}
+        onClose={() => setShowClearGuestModal(false)}
+        onConfirm={handleClearGuestData}
       />
     </div>
   );

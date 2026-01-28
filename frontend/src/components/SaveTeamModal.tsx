@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { useI18n } from '@/i18n';
 import { authEndpoints } from '@/lib/api';
-import { useAuthStore } from '@/features/auth/authStore';
+import { useAuthStore, hasDeviceRegistered } from '@/features/auth/authStore';
 import { toast } from 'sonner';
 import { useState } from 'react';
 
@@ -25,6 +25,9 @@ export default function SaveTeamModal({ isOpen, onClose, onGuestCreated }: SaveT
   const { setAuth } = useAuthStore();
   const [isCreatingGuest, setIsCreatingGuest] = useState(false);
 
+  // Hide "Continue as Guest" if device has a registered account
+  const showGuestOption = !hasDeviceRegistered();
+
   if (!isOpen) return null;
 
   const handleCreateAccount = () => {
@@ -41,8 +44,8 @@ export default function SaveTeamModal({ isOpen, onClose, onGuestCreated }: SaveT
     setIsCreatingGuest(true);
 
     try {
-      const deviceId = localStorage.getItem('rktb-device-id') || '';
-      const response = await authEndpoints.createGuest({ device_id: deviceId });
+      // Device ID is obtained from httpOnly cookie (set by backend middleware)
+      const response = await authEndpoints.createGuest();
       setAuth(response.data.user, response.data.access_token);
 
       // Show appropriate message based on whether this is a new or returning guest
@@ -101,8 +104,11 @@ export default function SaveTeamModal({ isOpen, onClose, onGuestCreated }: SaveT
 
         {/* Description */}
         <p className="text-sm text-zinc-600 mb-6">
-          {t('saveModal.description') ||
-            'Create an account to sync across devices, or continue as guest (saved on this device only).'}
+          {showGuestOption
+            ? (t('saveModal.description') ||
+               'Create an account to sync across devices, or continue as guest (saved on this device only).')
+            : (t('saveModal.descriptionNoGuest') ||
+               'Create an account or log in to save your team.')}
         </p>
 
         {/* Primary: Create Account */}
@@ -113,21 +119,25 @@ export default function SaveTeamModal({ isOpen, onClose, onGuestCreated }: SaveT
           {t('saveModal.createAccount') || 'Create Account'}
         </button>
 
-        {/* Secondary: Continue as Guest */}
-        <button
-          onClick={handleContinueAsGuest}
-          disabled={isCreatingGuest}
-          className="w-full h-11 bg-zinc-100 text-zinc-700 font-medium rounded-lg hover:bg-zinc-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed mb-2"
-        >
-          {isCreatingGuest
-            ? (t('saveModal.creatingGuest') || 'Creating...')
-            : (t('saveModal.continueAsGuest') || 'Continue as Guest')}
-        </button>
+        {/* Secondary: Continue as Guest - hidden if device has registered account */}
+        {showGuestOption && (
+          <>
+            <button
+              onClick={handleContinueAsGuest}
+              disabled={isCreatingGuest}
+              className="w-full h-11 bg-zinc-100 text-zinc-700 font-medium rounded-lg hover:bg-zinc-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed mb-2"
+            >
+              {isCreatingGuest
+                ? (t('saveModal.creatingGuest') || 'Creating...')
+                : (t('saveModal.continueAsGuest') || 'Continue as Guest')}
+            </button>
 
-        {/* Guest disclaimer */}
-        <p className="text-xs text-zinc-500 text-center mb-4">
-          {t('saveModal.guestDisclaimer') || 'Guest teams expire after 90 days of inactivity.'}
-        </p>
+            {/* Guest disclaimer */}
+            <p className="text-xs text-zinc-500 text-center mb-4">
+              {t('saveModal.guestDisclaimer') || 'Guest teams expire after 90 days of inactivity.'}
+            </p>
+          </>
+        )}
 
         {/* Divider */}
         <div className="border-t border-zinc-200 my-4" />

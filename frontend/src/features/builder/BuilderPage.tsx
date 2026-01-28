@@ -404,7 +404,7 @@ export default function BuilderPage() {
   /* ---------- save (create new) / update (modify existing) ---------- */
   const createTeam = useMutation({
     mutationFn: (payload: TeamCreate) =>
-      endpoints.createTeam(payload).then((r) => r.data as TeamOut),
+      endpoints.createTeam(payload, lang).then((r) => r.data as TeamOut),
     onError: (err: any) => {
       setServerOk(null);
       // Check if it's a 401 error (user not authenticated)
@@ -530,6 +530,18 @@ export default function BuilderPage() {
     }
   };
 
+  // Check if user has any work in progress
+  const hasWorkInProgress = useMemo(() => {
+    const anyFilledSlot = slots.some(um =>
+      um.monster_id ||
+      um.personality_id ||
+      um.legacy_type_id ||
+      um.move1_id || um.move2_id || um.move3_id || um.move4_id ||
+      Object.values(um.talent || {}).some(v => (v ?? 0) > 0)
+    );
+    return anyFilledSlot || !!magic_item_id || !!(name?.trim());
+  }, [slots, magic_item_id, name]);
+
   return (
     <DndContext
       sensors={sensors}
@@ -538,6 +550,29 @@ export default function BuilderPage() {
       onDragEnd={handleDragEnd}
     >
       <div className="space-y-4">
+        {/* Anonymous user warning banner */}
+        {!user && hasWorkInProgress && (
+          <div className="rounded-lg border-2 border-amber-300 bg-gradient-to-r from-amber-50 to-amber-100 p-4 flex items-center gap-3 shadow-sm">
+            <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-amber-500 text-white text-sm font-bold shrink-0">
+              !
+            </span>
+            <div className="flex-1">
+              <p className="text-sm font-medium text-amber-800">
+                {t("builder.unsavedWorkWarning")}
+              </p>
+              <p className="text-xs text-amber-700 mt-0.5">
+                {t("builder.unsavedWorkHint")}
+              </p>
+            </div>
+            <button
+              onClick={() => setShowSaveModal(true)}
+              className="h-9 px-4 bg-amber-600 text-white text-sm font-medium rounded-lg hover:bg-amber-700 transition-colors shrink-0"
+            >
+              {t("userMenu.login")}
+            </button>
+          </div>
+        )}
+
         {/* Row 1: Team Builder + Team Settings + Inspector Grid */}
         <div className="grid gap-4 grid-cols-1 lg:grid-cols-[1fr_380px] xl:grid-cols-[1fr_420px]">
           {/* Left: Monster Slots + Team Settings */}
@@ -695,6 +730,7 @@ export default function BuilderPage() {
             <button
               onClick={onSaveNew}
               disabled={!canAnalyze || createTeam.isPending}
+              data-testid="create-team-btn"
               className={`
                 h-10 px-5 rounded-lg font-medium text-sm
                 transition-all duration-200
@@ -812,6 +848,7 @@ export default function BuilderPage() {
             onSaveAnalysis={() => saveAnalysis.mutate()}
             isSaving={saveAnalysis.isPending}
             isAlreadySaved={isAnalysisAlreadySaved}
+            isLoggedIn={!!user}
           />
         )}
       </div>

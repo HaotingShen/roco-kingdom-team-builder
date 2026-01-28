@@ -3,7 +3,7 @@ import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { authEndpoints } from "@/lib/api";
-import { useAuthStore } from "./authStore";
+import { useAuthStore, clearDeviceRegistered } from "./authStore";
 import { useI18n } from "@/i18n";
 
 interface DeleteAccountModalProps {
@@ -35,19 +35,33 @@ export default function DeleteAccountModal({
 
   const deleteMutation = useMutation({
     mutationFn: async () => {
-      const response = await authEndpoints.deleteAccount({ password });
+      const response = await authEndpoints.deleteAccount({
+        password,
+        confirm_phrase: confirmPhrase,
+      });
       return response.data;
     },
     onSuccess: () => {
-      // Clear auth state
+      // Clear auth state and allow guest creation again
       clearAuth();
+      clearDeviceRegistered();
       toast.success(t("auth.accountDeleted") || "Your account has been permanently deleted.");
       onClose();
       navigate("/");
     },
     onError: (error: any) => {
       const detail = error.response?.data?.detail;
-      toast.error(detail || t("auth.deleteFailed") || "Failed to delete account.");
+      // Handle Pydantic validation errors (array of objects) vs simple string errors
+      let errorMessage: string;
+      if (Array.isArray(detail)) {
+        // Extract first validation error message
+        errorMessage = detail[0]?.msg || t("auth.deleteFailed") || "Failed to delete account.";
+      } else if (typeof detail === "string") {
+        errorMessage = detail;
+      } else {
+        errorMessage = t("auth.deleteFailed") || "Failed to delete account.";
+      }
+      toast.error(errorMessage);
     },
   });
 

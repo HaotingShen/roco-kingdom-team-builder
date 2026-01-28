@@ -26,7 +26,10 @@ class User(Base):
     __tablename__ = "users"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    username: Mapped[str] = mapped_column(String(32), unique=True, nullable=False, index=True)
+    username: Mapped[str] = mapped_column(String(64), unique=True, nullable=False, index=True)
+    # Canonical username for uniqueness check (blocks confusable look-alikes)
+    # e.g., "аdmin" (Cyrillic) normalizes to "admin" - blocked if "admin" exists
+    canonical_username: Mapped[str] = mapped_column(String(64), unique=True, nullable=False, index=True)
     email: Mapped[Optional[str]] = mapped_column(String(120), unique=True, nullable=True, index=True)
     hashed_password: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
 
@@ -63,6 +66,10 @@ class User(Base):
 
     # Device tracking (for guest account linking)
     device_id: Mapped[Optional[str]] = mapped_column(String(64), index=True, nullable=True)
+
+    # Guest display ID - unique 4-char alphanumeric for display (e.g., "Guest#A1B2")
+    # Only set for guest accounts, nullable for registered users
+    guest_display_id: Mapped[Optional[str]] = mapped_column(String(8), unique=True, nullable=True, index=True)
 
     # Audit timestamps
     created_at: Mapped[datetime] = mapped_column(

@@ -79,6 +79,11 @@ export default function UserModal({ user, onClose }: UserModalProps) {
     return new Date(dateStr).toLocaleString();
   };
 
+  // Format display name using the unique guest_display_id
+  const displayName = user.is_guest && user.guest_display_id
+    ? `Guest#${user.guest_display_id}`
+    : user.username;
+
   const canModify = !user.is_system && !user.is_admin;
 
   return (
@@ -90,7 +95,7 @@ export default function UserModal({ user, onClose }: UserModalProps) {
             <h2 className="text-lg font-semibold text-zinc-900">
               {t("admin.userDetails") || "User Details"}
             </h2>
-            <p className="text-sm text-zinc-500">{user.username}</p>
+            <p className="text-sm text-zinc-500">{displayName}</p>
           </div>
           <button
             onClick={onClose}
@@ -136,7 +141,7 @@ export default function UserModal({ user, onClose }: UserModalProps) {
           {/* Info Grid */}
           <div className="grid grid-cols-2 gap-4 text-sm">
             <InfoRow label={t("admin.userId") || "User ID"} value={user.id} />
-            <InfoRow label={t("admin.username") || "Username"} value={user.username} />
+            <InfoRow label={t("admin.username") || "Username"} value={displayName} />
             <InfoRow label={t("admin.email") || "Email"} value={user.email || "-"} />
             <InfoRow
               label={t("admin.tier") || "Subscription Tier"}
@@ -169,7 +174,7 @@ export default function UserModal({ user, onClose }: UserModalProps) {
             {user.device_id && (
               <InfoRow
                 label={t("admin.deviceId") || "Device ID"}
-                value={`${user.device_id.substring(0, 12)}...`}
+                value={user.device_id}
               />
             )}
           </div>

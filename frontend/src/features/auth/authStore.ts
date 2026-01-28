@@ -1,6 +1,25 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
+// Track if device has ever had a registered account
+const HAS_REGISTERED_KEY = 'rktb-has-registered';
+
+export function hasDeviceRegistered(): boolean {
+  return localStorage.getItem(HAS_REGISTERED_KEY) === 'true';
+}
+
+function markDeviceAsRegistered(): void {
+  localStorage.setItem(HAS_REGISTERED_KEY, 'true');
+}
+
+/**
+ * Clear the "has registered" flag.
+ * Called when user deletes their account, allowing them to create a guest again.
+ */
+export function clearDeviceRegistered(): void {
+  localStorage.removeItem(HAS_REGISTERED_KEY);
+}
+
 export interface User {
   id: number;
   username: string;
@@ -11,6 +30,7 @@ export interface User {
   created_at: string;
   last_login_at: string | null;
   is_admin?: boolean;
+  guest_display_id?: string | null;  // Unique 4-char ID for guest display (e.g., "A2B3")
 }
 
 export interface QuotaInfo {
@@ -69,13 +89,19 @@ export const useAuthStore = create<AuthState>()(
       isAnonymous: true,  // Start as anonymous
       quota: null,
 
-      setAuth: (user, accessToken) => set({
-        user,
-        accessToken,
-        isAuthenticated: true,
-        isGuest: user.is_guest,
-        isAnonymous: false,
-      }),
+      setAuth: (user, accessToken) => {
+        // Mark device as having registered if this is a registered user
+        if (!user.is_guest) {
+          markDeviceAsRegistered();
+        }
+        set({
+          user,
+          accessToken,
+          isAuthenticated: true,
+          isGuest: user.is_guest,
+          isAnonymous: false,
+        });
+      },
 
       clearAuth: () => set({
         user: null,

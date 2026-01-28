@@ -8,6 +8,7 @@ import { queryClient } from "./lib/queryClient";
 import { I18nProvider } from "./i18n";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { AuthProvider } from "./features/auth/AuthProvider";
+import { AppReadyProvider } from "./components/AppReadyProvider";
 import "./index.css";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
@@ -16,8 +17,10 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
       <I18nProvider>
         <QueryClientProvider client={queryClient}>
           <AuthProvider>
-            <Toaster position="top-right" richColors closeButton />
-            <RouterProvider router={router} />
+            <AppReadyProvider>
+              <Toaster position="top-right" richColors closeButton />
+              <RouterProvider router={router} />
+            </AppReadyProvider>
           </AuthProvider>
         </QueryClientProvider>
       </I18nProvider>
