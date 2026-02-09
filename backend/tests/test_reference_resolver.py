@@ -37,10 +37,12 @@ def mock_lookup_tables():
         game_term_keys_en={"Charge": 10, "Charge Extension": 11, "Attack Mark": 12, "Poison": 13},
         monster_names_en={"Chess Queen": 20, "Dimo": 21},
         trait_names_en={"Supercharge": 30},
+        magic_item_names_en={"Willpower Enhancement": 40},
         move_names_zh={"聚能": 1, "龙爪": 2, "火焰爆炸": 3},
         game_term_names_zh={"蓄力": 10, "积蓄": 11, "攻击印记": 12, "中毒": 13},
         monster_names_zh={"棋绮后": 20, "迪莫": 21},
         trait_names_zh={"超聚能": 30},
+        magic_item_names_zh={"愿力强化": 40},
         game_term_names_zh_sorted=[("积蓄", 11), ("蓄力", 10), ("攻击印记", 12), ("中毒", 13)],
         monster_names_zh_sorted=[("棋绮后", 20), ("迪莫", 21)]
     )

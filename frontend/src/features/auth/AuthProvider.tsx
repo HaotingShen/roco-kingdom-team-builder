@@ -108,11 +108,3 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 }
 
-/**
- * @deprecated Device ID is now managed via httpOnly cookie by the backend.
- * This function is kept for backward compatibility but is no longer used.
- */
-function generateDeviceId(): string {
-  // No longer used - backend handles device ID via cookie
-  return '';
-}

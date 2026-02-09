@@ -1,12 +1,14 @@
 import pytest
 import json
+from pathlib import Path
 from sqlalchemy import create_engine, text, select
 from sqlalchemy.orm import Session
 from backend.models import Monster
 from backend.config import DATABASE_URL
 
-MONSTERS_JSON_PATH = "backend/data/monsters.json"
-MONSTER_MOVES_JSON_PATH = "backend/data/monster_moves.json"
+BACKEND_DIR = Path(__file__).resolve().parent.parent
+MONSTERS_JSON_PATH = BACKEND_DIR / "data" / "monsters.json"
+MONSTER_MOVES_JSON_PATH = BACKEND_DIR / "data" / "monster_moves.json"
 
 @pytest.fixture(scope="module")
 def db_session():
@@ -65,9 +67,10 @@ def test_all_monster_move_association(db_session):
         ])
 
         # Get all move_ids from the moves table for names in expected_moves
+        # JSON uses Chinese move names; look up via localized JSONB column
         move_ids_expected = set([
             row[0] for row in db_session.execute(
-                text("SELECT id FROM moves WHERE name = ANY(:names)"),
+                text("SELECT id FROM moves WHERE localized->'zh'->>'name' = ANY(:names)"),
                 {"names": list(expected_moves)}
             ).fetchall()
         ])
@@ -77,20 +80,20 @@ def test_all_monster_move_association(db_session):
             missing = move_ids_expected - move_ids_db
             extra = move_ids_db - move_ids_expected
 
-            # Look up move names for readability
+            # Look up move names for readability (show both EN and ZH)
             missing_names = []
             extra_names = []
             if missing:
                 missing_names = [
-                    row[0] for row in db_session.execute(
-                        text("SELECT name FROM moves WHERE id = ANY(:ids)"),
+                    f"{row[0]} ({row[1]})" for row in db_session.execute(
+                        text("SELECT name, localized->'zh'->>'name' FROM moves WHERE id = ANY(:ids)"),
                         {"ids": list(missing)}
                     ).fetchall()
                 ]
             if extra:
                 extra_names = [
-                    row[0] for row in db_session.execute(
-                        text("SELECT name FROM moves WHERE id = ANY(:ids)"),
+                    f"{row[0]} ({row[1]})" for row in db_session.execute(
+                        text("SELECT name, localized->'zh'->>'name' FROM moves WHERE id = ANY(:ids)"),
                         {"ids": list(extra)}
                     ).fetchall()
                 ]

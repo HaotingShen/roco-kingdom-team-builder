@@ -20,6 +20,7 @@ from backend.config import (
     GEMINI_THINKING_BUDGET,
     DEEPSEEK_API_KEY,
     DEEPSEEK_MODEL,
+    DEEPSEEK_TIMEOUT,
     ANALYSIS_TEMPERATURE,
     ANALYSIS_MAX_TOKENS,
 )
@@ -52,7 +53,7 @@ class LLMClient:
             self._client = AsyncOpenAI(
                 base_url="https://api.deepseek.com",
                 api_key=DEEPSEEK_API_KEY,
-                timeout=60.0,
+                timeout=DEEPSEEK_TIMEOUT,
             )
             logger.info(f"Initialized DeepSeek client (model: {DEEPSEEK_MODEL})")
 

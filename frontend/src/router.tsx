@@ -10,6 +10,7 @@ import RegisterPage from "./features/auth/RegisterPage";
 import ForgotPasswordPage from "./features/auth/ForgotPasswordPage";
 import ResetPasswordPage from "./features/auth/ResetPasswordPage";
 import AdminPage from "./features/admin/AdminPage";
+import SettingsPage from "./features/auth/SettingsPage";
 
 const router = createBrowserRouter([
   {
@@ -26,6 +27,7 @@ const router = createBrowserRouter([
       { path: "auth/register", element: <RegisterPage /> },
       { path: "auth/forgot-password", element: <ForgotPasswordPage /> },
       { path: "auth/reset-password", element: <ResetPasswordPage /> },
+      { path: "settings", element: <SettingsPage /> },
       { path: "admin", element: <AdminPage /> }
     ]
   }

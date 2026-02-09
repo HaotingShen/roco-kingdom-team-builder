@@ -264,12 +264,24 @@ class RedisCache:
 
         except asyncio.TimeoutError:
             logger.warning(f"Lock acquisition timeout for {key[:50]}")
-            return await compute_fn()
+            result = await compute_fn()
+            try:
+                await self.set(key, result, ttl)
+                logger.info(f"Cached result (after lock timeout): {key[:50]}...")
+            except Exception as cache_err:
+                logger.warning(f"Failed to cache result for {key[:50]}: {cache_err}")
+            return result
 
         except Exception as e:
             logger.error(f"Error in get_or_compute for {key[:50]}: {e}")
-            # Fallback: compute without cache
-            return await compute_fn()
+            # Retry compute and cache the result if retry succeeds
+            result = await compute_fn()
+            try:
+                await self.set(key, result, ttl)
+                logger.info(f"Cached retry result: {key[:50]}...")
+            except Exception as cache_err:
+                logger.warning(f"Failed to cache retry result for {key[:50]}: {cache_err}")
+            return result
 
         finally:
             # Always release lock

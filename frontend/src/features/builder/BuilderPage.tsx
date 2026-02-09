@@ -13,6 +13,7 @@ import { extractErrorMessage } from "@/hooks/useTeamMutation";
 import { magicItemImageUrl } from "@/lib/images";
 import { QUERY_KEYS } from "@/lib/constants";
 import { useAuthStore } from "@/features/auth/authStore";
+import { useQuota } from "@/hooks/useQuota";
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragOverlay, type DragEndEvent, type DragStartEvent } from '@dnd-kit/core';
 import { useDraggable, useDroppable } from '@dnd-kit/core';
 
@@ -268,6 +269,15 @@ export default function BuilderPage() {
   const [showSaveModal, setShowSaveModal] = useState(false);
   const { lang, t } = useI18n();
   const { user } = useAuthStore();
+  const { quota } = useQuota();
+
+  const isAtTeamLimit = quota
+    ? quota.teams_limit !== -1 && quota.teams_used >= quota.teams_limit
+    : false;
+
+  const isAtAnalysisLimit = quota
+    ? quota.daily_limit !== -1 && quota.daily_used >= quota.daily_limit
+    : false;
 
   // Setup DnD sensors
   const sensors = useSensors(
@@ -344,6 +354,7 @@ export default function BuilderPage() {
       setServerErr(null);
       setAnalysis(data);
       setIsAnalyzing(false);
+      qc.invalidateQueries({ queryKey: QUERY_KEYS.QUOTA });
       // Scroll to analysis section
       setTimeout(() => {
         const element = document.getElementById("analysis-results");
@@ -422,6 +433,7 @@ export default function BuilderPage() {
       useBuilderStore.setState({ teamId: team.id }); // keep id for future updates
       qc.invalidateQueries({ queryKey: QUERY_KEYS.TEAMS });
       qc.invalidateQueries({ queryKey: QUERY_KEYS.TEAM_DETAIL(team.id) });
+      qc.invalidateQueries({ queryKey: QUERY_KEYS.QUOTA });
     },
   });
 
@@ -456,6 +468,12 @@ export default function BuilderPage() {
 
     if (!magic_item_id || !canAnalyze) {
       setServerErr(t("builder.incompleteTeamMsg"));
+      return;
+    }
+
+    // Check team limit before attempting save
+    if (isAtTeamLimit) {
+      setServerErr(t("quota.teamLimitReached", { limit: quota?.teams_limit ?? 0 }));
       return;
     }
 
@@ -739,7 +757,11 @@ export default function BuilderPage() {
                   : "bg-zinc-200 text-zinc-500 cursor-not-allowed border-2 border-zinc-300"
                 }
               `}
-              title={!canAnalyze ? t("builder.incompleteTeamMsg") : ""}
+              title={
+                !canAnalyze
+                  ? t("builder.incompleteTeamMsg")
+                  : ""
+              }
             >
               {createTeam.isPending ? (
                 <span className="inline-flex items-center justify-center">
@@ -780,7 +802,17 @@ export default function BuilderPage() {
             <button
               onClick={onAnalyze}
               disabled={!canAnalyze || analyze.isPending || isAnalyzing}
-              title={!canAnalyze ? t("builder.incompleteTeamMsg") : ""}
+              title={
+                analysis?.has_partial_errors
+                  ? t("builder.reanalyzeFree")
+                  : isAtAnalysisLimit && !analysis
+                    ? t("quota.analysisLimitReached")
+                    : isAtAnalysisLimit && analysis
+                      ? t("builder.reanalyzeFree")
+                      : !canAnalyze
+                        ? t("builder.incompleteTeamMsg")
+                        : ""
+              }
               className={`
                 h-10 px-6 rounded-lg font-semibold text-sm
                 transition-all duration-200
@@ -796,7 +828,14 @@ export default function BuilderPage() {
                   <AnimatedDots />
                 </span>
               ) : (
-                t("builder.analyze")
+                <span className="inline-flex items-center gap-1.5">
+                  {analysis?.has_partial_errors ? t("builder.retryFree") : t("builder.analyze")}
+                  {quota && quota.daily_limit !== -1 && !analysis && (
+                    <span className={`text-xs opacity-70 ${isAtAnalysisLimit ? "text-red-300" : ""}`}>
+                      ({quota.daily_used}/{quota.daily_limit})
+                    </span>
+                  )}
+                </span>
               )}
             </button>
           </div>

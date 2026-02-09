@@ -578,6 +578,7 @@ class TeamAnalysisOut(BaseModel):
     recommendations: List[str] = Field(default_factory=list)
     recommendations_structured: List[RecItem] = Field(default_factory=list)
     team_synergy: Optional[TeamSynergyRecommendation] = None
+    has_partial_errors: bool = False
 
     model_config = ConfigDict(from_attributes=True)
 

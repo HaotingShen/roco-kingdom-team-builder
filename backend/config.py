@@ -28,6 +28,7 @@ GEMINI_THINKING_BUDGET = int(os.getenv("GEMINI_THINKING_BUDGET", "24576"))
 DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY", "")
 # Models: deepseek-chat (非思考模式), deepseek-reasoner (思考模式)
 DEEPSEEK_MODEL = os.getenv("DEEPSEEK_MODEL", "deepseek-reasoner")
+DEEPSEEK_TIMEOUT = float(os.getenv("DEEPSEEK_TIMEOUT", "60.0"))
 
 # LLM Response Configuration
 ANALYSIS_TEMPERATURE = float(os.getenv("ANALYSIS_TEMPERATURE", "0.7"))
@@ -201,31 +202,31 @@ ADMIN_EMAILS: List[str] = [
 
 TIER_LIMITS = {
     "anonymous": {
-        "daily_analyses": 1,         # 1 analysis per day
-        "monthly_analyses": 5,       # 5 analyses per month
-        "teams_limit": 0,            # Cannot save teams (must sign up)
+        "daily_analyses": int(os.getenv("TIER_ANONYMOUS_DAILY_ANALYSES", "1")),
+        "monthly_analyses": int(os.getenv("TIER_ANONYMOUS_MONTHLY_ANALYSES", "5")),
+        "teams_limit": int(os.getenv("TIER_ANONYMOUS_TEAMS_LIMIT", "0")),
         "priority": 0,
     },
     "guest": {
-        "daily_analyses": 3,         # 3 analyses per day
-        "monthly_analyses": 30,      # 30 analyses per month
-        "teams_limit": 3,            # Max 3 saved teams
+        "daily_analyses": int(os.getenv("TIER_GUEST_DAILY_ANALYSES", "3")),
+        "monthly_analyses": int(os.getenv("TIER_GUEST_MONTHLY_ANALYSES", "30")),
+        "teams_limit": int(os.getenv("TIER_GUEST_TEAMS_LIMIT", "3")),
         "priority": 0,
     },
     "free": {
-        "daily_analyses": 5,         # 5 analyses per day
-        "monthly_analyses": 100,     # 100 analyses per month
-        "teams_limit": 100,          # Max 100 saved teams
+        "daily_analyses": int(os.getenv("TIER_FREE_DAILY_ANALYSES", "5")),
+        "monthly_analyses": int(os.getenv("TIER_FREE_MONTHLY_ANALYSES", "100")),
+        "teams_limit": int(os.getenv("TIER_FREE_TEAMS_LIMIT", "100")),
         "priority": 0,
     },
     "premium": {
-        "daily_analyses": 20,
-        "monthly_analyses": 500,
-        "teams_limit": 500,
+        "daily_analyses": int(os.getenv("TIER_PREMIUM_DAILY_ANALYSES", "20")),
+        "monthly_analyses": int(os.getenv("TIER_PREMIUM_MONTHLY_ANALYSES", "500")),
+        "teams_limit": int(os.getenv("TIER_PREMIUM_TEAMS_LIMIT", "500")),
         "priority": 1,
     },
     "unlimited": {
-        "daily_analyses": -1,        # -1 = unlimited
+        "daily_analyses": -1,        # -1 = unlimited (not configurable)
         "monthly_analyses": -1,
         "teams_limit": -1,
         "priority": 2,
@@ -248,8 +249,17 @@ DEFAULT_TIER = os.getenv("DEFAULT_TIER", "free")
 DEVICE_DAILY_ANALYSIS_CAP = int(os.getenv("DEVICE_DAILY_ANALYSIS_CAP", "5"))
 IP_DAILY_ANALYSIS_CAP = int(os.getenv("IP_DAILY_ANALYSIS_CAP", "15"))
 
+# Guest creation rate limit (per IP per day)
+GUEST_CREATION_LIMIT_PER_DAY = int(os.getenv("GUEST_CREATION_LIMIT_PER_DAY", "2"))
+
 # Device ID cookie settings
 DEVICE_ID_COOKIE_MAX_AGE = int(os.getenv("DEVICE_ID_COOKIE_MAX_AGE", str(365 * 24 * 60 * 60)))  # 1 year
+
+# Retry Grace Configuration
+# When analysis partially fails (e.g., 6/7 LLM calls succeed), quota is charged
+# immediately. A grace window allows the user to retry for free.
+RETRY_GRACE_TTL = int(os.getenv("RETRY_GRACE_TTL", "900"))  # 15 minutes
+RETRY_GRACE_MAX_RETRIES = int(os.getenv("RETRY_GRACE_MAX_RETRIES", "3"))  # max free retries per grace window
 
 
 # ========== Redis Namespace Strategy ==========
@@ -285,6 +295,13 @@ DEVICE_ID_COOKIE_MAX_AGE = int(os.getenv("DEVICE_ID_COOKIE_MAX_AGE", str(365 * 2
 #    - Format: "tier:ip:{ip}:daily:{YYYY-MM-DD}"
 #    - TTL: Until midnight UTC
 #    - Purpose: Fallback cap when device_id missing, also abuse signal
+#
+# 6. Retry Grace (tier_limits.py):
+#    - Prefix: "retry_grace:"
+#    - Format: "retry_grace:{user|device|ip}:{id}:{team_hash}:{language}"
+#    - TTL: RETRY_GRACE_TTL seconds (default 900 = 15 minutes)
+#    - Value: Integer counter (starts at RETRY_GRACE_MAX_RETRIES, decremented on each retry)
+#    - Purpose: Allow free retry after partial analysis failure (quota already charged)
 #
 # ⚠️ CRITICAL: All keys MUST have TTL to prevent memory growth!
 # Never use SET without SETEX/EXPIRE.

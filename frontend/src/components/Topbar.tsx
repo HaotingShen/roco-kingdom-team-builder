@@ -116,11 +116,6 @@ export default function Topbar() {
           {lang === "en" ? t("topbar.lang_en_zh") : t("topbar.lang_zh_en")}
         </button>
 
-        <input
-          placeholder={t("topbar.search")}
-          className="h-9 w-72 rounded border border-zinc-300 px-3"
-        />
-
         {/* Admin Link (visible to admins only) */}
         {user?.is_admin && (
           <Link

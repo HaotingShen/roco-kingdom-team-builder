@@ -374,6 +374,14 @@ export default function AnalysisResults({
         </div>
       </div>
 
+      {/* Partial error warning banner */}
+      {analysis.has_partial_errors && (
+        <div className="rounded-lg border-2 border-amber-300 bg-gradient-to-r from-amber-50 to-amber-100 text-amber-800 p-4 text-sm flex items-start gap-3 shadow-md">
+          <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-amber-500 text-white text-xs font-bold shrink-0 mt-[1px]">!</span>
+          <div>{t("analysis.partialErrorBanner")}</div>
+        </div>
+      )}
+
       {/* Save Analysis Button - below header */}
       {onSaveAnalysis && (
         <div className="flex justify-center -mt-2 mb-4">

@@ -37,6 +37,9 @@ from backend.config import (
     REDIS_URL,
     DEVICE_DAILY_ANALYSIS_CAP,
     IP_DAILY_ANALYSIS_CAP,
+    GUEST_CREATION_LIMIT_PER_DAY,
+    RETRY_GRACE_TTL,
+    RETRY_GRACE_MAX_RETRIES,
 )
 from backend.logger import logger
 from backend import models
@@ -62,7 +65,7 @@ RATE_LIMIT_MESSAGES = {
         "device_cap": "已达到分析上限。检测到此设备有多个账号。",
         "ip_cap": "已达到分析上限。请明天再试。",
         "teams_limit_guest": "已达到队伍数量上限（访客最多 {limit} 支队伍）。创建账号可保存更多队伍。",
-        "teams_limit_user": "已达到队伍数量上限（{tier} 等级最多 {limit} 支队伍）。删除部分队伍或升级以获得更多。",
+        "teams_limit_user": "已达到队伍数量上限（{tier} 等级最多 {limit} 支队伍）。删除部分队伍或升级订阅以获得更多。",
     },
 }
 
@@ -342,6 +345,56 @@ async def check_teams_limit(user: models.User, db: Session, lang: str = "en") ->
         )
 
 
+# ========== Device Owner Lookup ==========
+#
+# When an anonymous user's device_id maps to an existing guest or registered
+# account, we use that account's quota instead of granting fresh anonymous quota.
+# This prevents "double-dipping" by logging out to get extra analyses.
+
+
+def find_device_owner(device_id: str, db: Session) -> Optional[models.User]:
+    """Look up the account that owns this device_id.
+
+    When a user logs out but their device_id cookie persists, we can find
+    their account and apply its quota to anonymous requests from the same device.
+
+    Priority: registered users over guests (guest may have been promoted).
+    If multiple users share a device_id, the most recently active is returned.
+
+    Args:
+        device_id: Device identifier from httpOnly cookie
+        db: Database session
+
+    Returns:
+        User model if found, None otherwise
+    """
+    if not device_id or device_id == "unknown-device":
+        return None
+
+    try:
+        user = (
+            db.query(models.User)
+            .filter(
+                models.User.device_id == device_id,
+                models.User.is_active == True,
+            )
+            .order_by(
+                models.User.is_guest.asc(),  # registered first
+                models.User.last_active_at.desc().nullslast(),
+            )
+            .first()
+        )
+        if user:
+            logger.debug(
+                f"Device {device_id[:12]}... owned by user {user.id} "
+                f"({user.subscription_tier} tier, guest={user.is_guest})"
+            )
+        return user
+    except Exception as e:
+        logger.error(f"Failed to look up device owner for {device_id[:12]}...: {e}")
+        return None
+
+
 # ========== Anonymous User Tracking ==========
 #
 # Tracks anonymous users via dual-key approach:
@@ -578,7 +631,7 @@ async def record_anonymous_analysis(device_id: str, ip: str) -> None:
 # ========== Guest Creation Rate Limiting ==========
 #
 # Prevents "Clear Guest Data" abuse (creating new device_id repeatedly)
-# Limit: 2 guest creations per day per IP
+# Limit: GUEST_CREATION_LIMIT_PER_DAY per IP (default 2)
 #   - 1st: Initial guest creation
 #   - 2nd: One accidental reset/recreate allowed
 #   - 3rd+: Blocked
@@ -619,7 +672,7 @@ async def check_guest_creation_limit(ip: str) -> None:
         key = _get_guest_creation_key(ip)
         count = int(redis_client.get(key) or 0)
 
-        if count >= 2:
+        if count >= GUEST_CREATION_LIMIT_PER_DAY:
             raise HTTPException(
                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,
                 detail="You have reached the daily guest account limit. "
@@ -844,3 +897,219 @@ async def record_device_and_ip_usage(device_id: str, ip: str) -> None:
 
     except Exception as e:
         logger.error(f"Failed to record device/IP usage: {e}")
+
+
+# ========== Retry Grace (partial analysis failure) ==========
+#
+# When an analysis partially succeeds (some LLM calls fail), quota is charged
+# immediately. A grace window allows free retries so "Retry (Free)" is truthful.
+#
+# Grace key format: retry_grace:{user|device|ip}:{id}:{team_hash}:{language}
+# Grace value: integer counter (starts at RETRY_GRACE_MAX_RETRIES, decremented on use)
+
+
+def _get_retry_grace_key(
+    identity_type: str,
+    identity_value: str,
+    team_hash: str,
+    language: str,
+) -> str:
+    """Generate Redis key for retry grace marker.
+
+    Args:
+        identity_type: "user", "device", or "ip"
+        identity_value: user ID, device ID, or IP address
+        team_hash: Language-independent team composition hash
+        language: Analysis language (included to prevent cross-language exploits)
+
+    Returns:
+        Redis key like "retry_grace:user:42:abc123:zh"
+    """
+    return f"retry_grace:{identity_type}:{identity_value}:{team_hash}:{language}"
+
+
+def _resolve_grace_identity(
+    effective_user: Optional[models.User],
+    device_id: str,
+    client_ip: str,
+) -> tuple[str, str]:
+    """Resolve the most-specific identity for grace key.
+
+    Uses hierarchy: authenticated user > known device > IP (last resort).
+    Only one identity is used to prevent shared-IP exploits.
+
+    Returns:
+        Tuple of (identity_type, identity_value)
+    """
+    if effective_user is not None:
+        return ("user", str(effective_user.id))
+    if device_id and device_id != "unknown-device":
+        return ("device", device_id)
+    return ("ip", client_ip)
+
+
+async def set_retry_grace(
+    effective_user: Optional[models.User],
+    device_id: str,
+    client_ip: str,
+    team_hash: str,
+    language: str,
+) -> None:
+    """Set retry grace marker after partial analysis success + quota charge.
+
+    Called when: successful_calls > 0 AND NOT all_succeeded.
+    Sets a counter-based grace marker for the most-specific identity.
+
+    Args:
+        effective_user: Authenticated user (or None for anonymous)
+        device_id: Device identifier from cookie
+        client_ip: Client IP address
+        team_hash: Language-independent team composition hash
+        language: Analysis language
+    """
+    redis_client = get_redis()
+    if not redis_client:
+        logger.warning("Redis unavailable, cannot set retry grace")
+        return
+
+    try:
+        identity_type, identity_value = _resolve_grace_identity(
+            effective_user, device_id, client_ip
+        )
+        key = _get_retry_grace_key(identity_type, identity_value, team_hash, language)
+        redis_client.setex(key, RETRY_GRACE_TTL, RETRY_GRACE_MAX_RETRIES)
+        logger.info(
+            f"Set retry grace: {identity_type}={identity_value[:12]}... "
+            f"team={team_hash[:12]}... lang={language} retries={RETRY_GRACE_MAX_RETRIES}"
+        )
+    except Exception as e:
+        logger.error(f"Failed to set retry grace: {e}")
+
+
+async def check_retry_grace(
+    effective_user: Optional[models.User],
+    device_id: str,
+    client_ip: str,
+    team_hash: str,
+    language: str,
+) -> bool:
+    """Check if a retry grace marker exists for this analysis.
+
+    Returns True if the most-specific identity has an active grace marker
+    with remaining retries > 0. Returns False if Redis is unavailable
+    (fail closed — no grace means normal quota checks apply).
+
+    Args:
+        effective_user: Authenticated user (or None for anonymous)
+        device_id: Device identifier from cookie
+        client_ip: Client IP address
+        team_hash: Language-independent team composition hash
+        language: Analysis language
+
+    Returns:
+        True if grace is active with retries remaining
+    """
+    redis_client = get_redis()
+    if not redis_client:
+        return False
+
+    try:
+        identity_type, identity_value = _resolve_grace_identity(
+            effective_user, device_id, client_ip
+        )
+        key = _get_retry_grace_key(identity_type, identity_value, team_hash, language)
+        value = redis_client.get(key)
+        if value is not None and int(value) > 0:
+            logger.info(f"Retry grace found: {key} (retries remaining: {value})")
+            return True
+        return False
+    except Exception as e:
+        logger.error(f"Failed to check retry grace: {e}")
+        return False
+
+
+async def consume_retry_grace(
+    effective_user: Optional[models.User],
+    device_id: str,
+    client_ip: str,
+    team_hash: str,
+    language: str,
+) -> bool:
+    """Consume one retry from the grace counter.
+
+    Atomically decrements the counter. Returns True if retry is allowed
+    (counter was > 0 before decrement). If counter reaches 0, deletes the key.
+
+    Args:
+        effective_user: Authenticated user (or None for anonymous)
+        device_id: Device identifier from cookie
+        client_ip: Client IP address
+        team_hash: Language-independent team composition hash
+        language: Analysis language
+
+    Returns:
+        True if retry is allowed (counter was positive), False if exhausted
+    """
+    redis_client = get_redis()
+    if not redis_client:
+        return False
+
+    try:
+        identity_type, identity_value = _resolve_grace_identity(
+            effective_user, device_id, client_ip
+        )
+        key = _get_retry_grace_key(identity_type, identity_value, team_hash, language)
+        new_value = redis_client.decr(key)
+
+        if new_value <= 0:
+            # Grace exhausted — clean up
+            redis_client.delete(key)
+            logger.info(
+                f"Retry grace exhausted: {identity_type}={identity_value[:12]}... "
+                f"team={team_hash[:12]}... lang={language}"
+            )
+            return False
+
+        logger.info(
+            f"Retry grace consumed: {identity_type}={identity_value[:12]}... "
+            f"team={team_hash[:12]}... lang={language} retries_remaining={new_value}"
+        )
+        return True
+    except Exception as e:
+        logger.error(f"Failed to consume retry grace: {e}")
+        return False
+
+
+async def clear_retry_grace(
+    effective_user: Optional[models.User],
+    device_id: str,
+    client_ip: str,
+    team_hash: str,
+    language: str,
+) -> None:
+    """Clear retry grace marker (called on full success or from cached path).
+
+    Args:
+        effective_user: Authenticated user (or None for anonymous)
+        device_id: Device identifier from cookie
+        client_ip: Client IP address
+        team_hash: Language-independent team composition hash
+        language: Analysis language
+    """
+    redis_client = get_redis()
+    if not redis_client:
+        return
+
+    try:
+        identity_type, identity_value = _resolve_grace_identity(
+            effective_user, device_id, client_ip
+        )
+        key = _get_retry_grace_key(identity_type, identity_value, team_hash, language)
+        deleted = redis_client.delete(key)
+        if deleted:
+            logger.info(
+                f"Cleared retry grace: {identity_type}={identity_value[:12]}... "
+                f"team={team_hash[:12]}... lang={language}"
+            )
+    except Exception as e:
+        logger.error(f"Failed to clear retry grace: {e}")

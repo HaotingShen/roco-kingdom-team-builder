@@ -9,6 +9,8 @@ import { useBuilderStore } from '@/features/builder/builderStore';
 import DeleteAccountModal from '@/features/auth/DeleteAccountModal';
 import EmailVerificationModal from '@/features/auth/EmailVerificationModal';
 import ClearGuestDataModal from '@/features/auth/ClearGuestDataModal';
+import { useQuota } from '@/hooks/useQuota';
+import QuotaDisplay from '@/components/QuotaDisplay';
 
 /**
  * User menu dropdown component for THREE-TIER system.
@@ -44,6 +46,7 @@ export default function UserMenu() {
   const { t } = useI18n();
   const clearTeamId = useBuilderStore(s => s.clearTeamId);
   const setAnalysis = useBuilderStore(s => s.setAnalysis);
+  const { quota } = useQuota();
 
   // Check if email needs verification (registered user with unverified email)
   const needsEmailVerification = !isGuest && user?.email && !user.email_verified;
@@ -233,6 +236,8 @@ export default function UserMenu() {
                 </p>
               </div>
 
+              <QuotaDisplay quota={quota} variant="menu" />
+
               <button
                 onClick={() => {
                   setIsOpen(false);
@@ -300,6 +305,8 @@ export default function UserMenu() {
                 </div>
               )}
 
+              <QuotaDisplay quota={quota} variant="menu" />
+
               <button
                 onClick={() => {
                   setIsOpen(false);
@@ -314,8 +321,7 @@ export default function UserMenu() {
               <button
                 onClick={() => {
                   setIsOpen(false);
-                  // TODO: Navigate to settings page when implemented
-                  // navigate('/settings');
+                  navigate('/settings');
                 }}
                 className="w-full text-left px-3 py-2 text-sm text-zinc-700 hover:bg-zinc-50"
               >

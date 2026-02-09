@@ -6,6 +6,10 @@ import type { TeamOut } from "@/types";
 import { useI18n, pickName } from "@/i18n";
 import { useState, useEffect } from "react";
 import { monsterImageFallbackChain, magicItemImageUrl } from "@/lib/images";
+import { QUERY_KEYS } from "@/lib/constants";
+import { useQuota } from "@/hooks/useQuota";
+import QuotaDisplay from "@/components/QuotaDisplay";
+import { useAuthStore } from "@/features/auth/authStore";
 
 /** Component for displaying circular monster images with fallback */
 function MonsterAvatar({ monster, size = 60 }: { monster: any; size?: number }) {
@@ -44,6 +48,8 @@ function MonsterAvatar({ monster, size = 60 }: { monster: any; size?: number }) 
 export default function TeamsListPage() {
   const { t, lang } = useI18n();
   const qc = useQueryClient();
+  const { quota } = useQuota();
+  const user = useAuthStore(s => s.user);
   const [renameModalOpen, setRenameModalOpen] = useState(false);
   const [renamingTeam, setRenamingTeam] = useState<TeamOut | null>(null);
   const [newTeamName, setNewTeamName] = useState("");
@@ -51,6 +57,7 @@ export default function TeamsListPage() {
   const teams = useQuery<TeamOut[]>({
     queryKey: ["teams"],
     queryFn: () => endpoints.listTeams().then(r => r.data),
+    enabled: !!user,  // Don't fetch when anonymous (no user)
     refetchOnMount: "always",
     refetchOnWindowFocus: true,
     staleTime: 0,
@@ -71,6 +78,7 @@ export default function TeamsListPage() {
     },
     onSettled: () => {
       qc.invalidateQueries({ queryKey: ["teams"] });
+      qc.invalidateQueries({ queryKey: QUERY_KEYS.QUOTA });
     },
   });
 
@@ -162,7 +170,10 @@ export default function TeamsListPage() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="font-medium text-lg">{t("teams.manageTeams")}</h2>
+        <div className="flex items-center gap-3">
+          <h2 className="font-medium text-lg">{t("teams.manageTeams")}</h2>
+          <QuotaDisplay quota={quota} variant="inline" />
+        </div>
       </div>
 
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">

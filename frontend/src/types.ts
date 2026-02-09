@@ -377,6 +377,7 @@ export interface TeamAnalysisOut {
   recommendations: string[];
   recommendations_structured: RecItem[];
   team_synergy?: TeamSynergyRecommendation | null;
+  has_partial_errors?: boolean;
 }
 /** Saved analysis types */
 export interface SavedAnalysisOut {

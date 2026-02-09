@@ -2,6 +2,7 @@ import { Link, useParams, useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
 import { endpoints } from "@/lib/api";
+import { QUERY_KEYS } from "@/lib/constants";
 import { useBuilderStore } from "../builder/builderStore";
 import type { TeamOut, FullSavedAnalysisOut } from "@/types";
 import { pickName, pickFormName, useI18n, type Lang } from "@/i18n";
@@ -153,6 +154,7 @@ export default function SavedTeamPage() {
       // Then set the analysis
       setAnalysis(res);
       setIsAnalyzing(false);
+      qc.invalidateQueries({ queryKey: QUERY_KEYS.QUOTA });
       nav("/build");
       // Scroll to analysis section after navigation
       setTimeout(() => {

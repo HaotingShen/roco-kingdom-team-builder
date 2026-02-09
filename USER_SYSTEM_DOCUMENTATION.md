@@ -1,7 +1,7 @@
 # User System Documentation
 
-> **Last Updated:** 2026-01-27
-> **Status:** Phase 7E Complete (Device Tracking via httpOnly Cookie + Cross-Account Daily Caps)
+> **Last Updated:** 2026-01-31
+> **Status:** Phase 7F Complete (Retry Grace — Charge on Partial Success + Free Retry)
 
 ---
 
@@ -10,14 +10,15 @@
 1. [Three-Tier System Overview](#three-tier-system-overview)
 2. [Tier Limits & Quotas](#tier-limits--quotas)
 3. [Device Tracking & Cross-Account Caps](#device-tracking--cross-account-caps)
-4. [Authentication Features](#authentication-features)
+4. [Analysis Retry Grace](#analysis-retry-grace)
+5. [Authentication Features](#authentication-features)
    - [Username Validation](#username-validation)
-5. [Backend Endpoints Reference](#backend-endpoints-reference)
-6. [Frontend Components](#frontend-components)
-7. [Security Features](#security-features)
-8. [Known Limitations & Bugs](#known-limitations--bugs)
-9. [Missing Frontend UI](#missing-frontend-ui)
-10. [Redis Keys Reference](#redis-keys-reference)
+6. [Backend Endpoints Reference](#backend-endpoints-reference)
+7. [Frontend Components](#frontend-components)
+8. [Security Features](#security-features)
+9. [Known Limitations & Bugs](#known-limitations--bugs)
+10. [Missing Frontend UI](#missing-frontend-ui)
+11. [Redis Keys Reference](#redis-keys-reference)
 
 ---
 
@@ -162,6 +163,133 @@ DEVICE_ID_COOKIE_MAX_AGE=31536000  # 1 year
 
 ---
 
+## Analysis Retry Grace
+
+### Problem (Phase 7F)
+
+When a team analysis partially fails (e.g., 6/7 LLM calls succeed, 1 gets Gemini 503):
+
+| Behavior | Before 7F | After 7F |
+|----------|-----------|----------|
+| Quota charged on partial success | No | **Yes** |
+| Retry cost | Charged (misleading) | **Free** (via grace window) |
+| "Retry (Free)" button label | Inaccurate | **Accurate** |
+| Total failure (0/7 succeed) | No charge | No charge (unchanged) |
+
+### How It Works
+
+When an analysis has at least one successful LLM call but not all succeed:
+
+1. **Quota is charged immediately** (the work was done)
+2. **A grace marker is set in Redis** with a retry counter (default: 3 retries)
+3. On retry, the grace marker is **checked** → **quota checks are bypassed**
+4. Rate limits are checked (may reject with 429 — grace counter is **not** consumed)
+5. After all pre-flight checks pass, grace counter is **consumed** (decremented) right before analysis starts
+6. On successful retry → grace marker is **cleared**
+7. If all retries exhausted → grace marker deleted → next attempt treated as fresh (quota checked)
+
+```
+Partial Failure (e.g., 6/7 succeed)
+      │
+      ▼
+┌─────────────────────────────┐
+│ Charge quota immediately    │
+│ Set retry_grace counter = 3 │
+└─────────────────────────────┘
+      │
+      ▼
+  User clicks "Retry (Free)"
+      │
+      ▼
+┌─────────────────────────────┐
+│ Grace found (check only)    │
+│ Skip quota checks           │
+└─────────────────────────────┘
+      │
+      ▼
+┌─────────────────────────────┐
+│ Rate limits checked         │──── 429? Grace NOT consumed.
+└─────────────────────────────┘     User can retry later.
+      │ pass
+      ▼
+┌─────────────────────────────┐
+│ Consume grace (counter -= 1)│  ← "point of no return"
+│ Run analysis                │
+└─────────────────────────────┘
+      │
+      ├── All 7 succeed → Clear grace ✅
+      │
+      └── Still partial → Counter already decremented
+            │                (can retry again)
+            └── Counter = 0 → Grace exhausted
+                              Next attempt = fresh
+```
+
+### Identity Resolution
+
+Grace markers use the **most-specific identity only** to prevent shared-IP (NAT/cafe) exploits:
+
+| Priority | Identity Type | When Used | Redis Key Example |
+|----------|--------------|-----------|-------------------|
+| 1 (highest) | `user:{id}` | Authenticated user | `retry_grace:user:42:teamhash:zh` |
+| 2 | `device:{id}` | Anonymous with known device | `retry_grace:device:dev-001:teamhash:en` |
+| 3 (lowest) | `ip:{ip}` | Anonymous, unknown device | `retry_grace:ip:1.2.3.4:teamhash:zh` |
+
+Only **one key** is set per grace event. An authenticated user's grace key is `user:42`, never `device:` or `ip:`.
+
+### Key Isolation
+
+Grace keys include both `team_hash` and `language`, so:
+
+- **Different team composition** → different key → no grace match → fresh attempt
+- **Different language** → different key → no grace match → fresh attempt (correct: all cache misses = effectively a new analysis)
+
+### Rate Limits During Grace
+
+Rate limits are **always enforced**, even during grace retries. This protects the Gemini API from abuse. Users may need to wait for the 2-minute rate limit window before retrying. A rate-limited 429 does **not** consume a grace retry — the counter is only decremented after all pre-flight checks pass and the analysis is about to start.
+
+### Fully-Cached Path
+
+When all 7 LLM responses are cached (`is_fully_cached=True`):
+- Analysis is instant and free (no quota charge)
+- Any lingering grace markers are proactively cleaned up to prevent exploitation if cache entries later expire
+
+### Configuration
+
+```bash
+# Retry grace settings (in .env)
+RETRY_GRACE_TTL=900              # Grace window duration (seconds, default: 15 minutes)
+RETRY_GRACE_MAX_RETRIES=3        # Max free retries per grace window
+```
+
+### Backend Implementation
+
+| File | Purpose |
+|------|---------|
+| `tier_limits.py` | `set_retry_grace()`, `check_retry_grace()`, `consume_retry_grace()`, `clear_retry_grace()` |
+| `tier_limits.py` | `_get_retry_grace_key()`, `_resolve_grace_identity()` (internal helpers) |
+| `main.py` | Grace-aware logic in `/team/analyze` and `/team/analyze_by_id` endpoints |
+| `config.py` | `RETRY_GRACE_TTL`, `RETRY_GRACE_MAX_RETRIES` |
+
+### Frontend Impact
+
+**No frontend changes required.** The grace mechanism is fully transparent to the frontend:
+- The analyze button's `disabled` attribute does not check quota
+- The backend returns success/error responses as before
+- The "Retry (Free)" button label and messaging are now truthful
+
+### Edge Cases
+
+| Scenario | Behavior |
+|----------|----------|
+| Daily limit = 1, partial failure | Quota goes to 1/1. Grace allows retry without being blocked by limit check. |
+| Grace expires before retry (>15 min) | Treated as fresh attempt, charged normally |
+| User at max retries, still failing | Grace exhausted → next attempt is fresh (quota checked) |
+| Redis unavailable | `check_retry_grace()` returns `False` (fail closed) — treated as fresh attempt |
+| Shared NAT/IP, different users | Only most-specific identity gets grace. User A's grace does not help User B. |
+
+---
+
 ## Authentication Features
 
 ### Implemented Features
@@ -183,7 +311,7 @@ DEVICE_ID_COOKIE_MAX_AGE=31536000  # 1 year
 | Delete Account | ✅ | ✅ | Working |
 | Guest → Registered Conversion | ✅ | ✅ | Working |
 | Admin User Management | ✅ | ✅ | Working |
-| Usage/Quota Tracking | ✅ | ❌ | Backend only |
+| Usage/Quota Tracking | ✅ | ✅ | Working |
 
 ### Guest Account Behavior
 
@@ -512,11 +640,11 @@ Shows different UI based on user state:
 
 ### Functional Limitations
 
-3. **No Change Password UI**
+3. **No Change Password UI** (FIXED)
    - Backend endpoint exists (`/auth/change-password`)
    - No settings page to access it
 
-4. **No Change Email UI**
+4. **No Change Email UI** (FIXED)
    - Backend endpoints exist (`/auth/change-email`, `/auth/confirm-email-change`)
    - No settings page to access them
 
@@ -524,29 +652,30 @@ Shows different UI based on user state:
    - Backend endpoint exists (`/auth/logout-all`)
    - No button in UserMenu to trigger it
 
-6. **No Usage/Quota/Limit Display**
-   - Backend endpoints exist (`/auth/usage`, `/auth/quota`)
-   - No UI showing remaining analysis quota
-   - Backend enforces team limits per tier
-   - Frontend doesn't show remaining slots or prevent saves when at limit
+6. **No Usage/Quota/Limit Display** (FIXED)
+   - Quota display added to UserMenu dropdown (tier badge, analysis usage, team count)
+   - Inline team count shown on TeamsListPage heading
+   - Save button disabled and shows warning when at team limit
+   - Analyze button shows remaining daily count (e.g., "2/5")
+   - Quota auto-refreshes after save, delete, and analyze actions
 
 7. **Profile Page Not Implemented**
    - "Profile" button in UserMenu does nothing (TODO comment)
 
-8. **Settings Page Not Implemented**
+8. **Settings Page Not Implemented** (FIXED)
    - "Settings" button in UserMenu does nothing (TODO comment)
 
 ### UX Issues
 
-9. **Guest Returning Message Incorrect** (FIXED in this session)
+9. **Guest Returning Message Incorrect** (FIXED)
     - Previously always showed "Guest account created" even for returning guests
     - Now shows "Welcome back!" for returning guests
 
-10. **401 Error on Save Team** (FIXED in this session)
+10. **401 Error on Save Team** (FIXED)
     - Previously showed raw "Request failed with status code 401"
     - Now shows SaveTeamModal prompting login/guest creation
 
-11. **Logout Didn't Clear Refresh Token** (FIXED in this session)
+11. **Logout Didn't Clear Refresh Token** (FIXED)
     - `clearAuth()` was called before logout API
     - Now logout API is called first to properly revoke token
 
@@ -580,21 +709,15 @@ Shows different UI based on user state:
     - `backend/scripts/cleanup_expired_guests.py` exists
     - No cron job or scheduled task configured
 
-19. **In-Memory Rate Limiting** (FIXED)
-    - ~~Some rate limiters use SlowAPI with in-memory storage~~
-    - ~~Resets on server restart~~
-    - Now uses Redis for persistence via `storage_uri=REDIS_URL` in `rate_limiter.py`
-    - All rate limits (SlowAPI decorator-based and custom Redis-based) persist across restarts
-
 ---
 
 ## Missing Frontend UI
 
 ### High Priority
 
-| Feature | Backend Endpoint | Priority | Effort |
+| Feature | Backend Endpoint | Priority | Status |
 |---------|------------------|----------|--------|
-| Usage/Quota/Limit Display | `/auth/quota` | High | Low |
+| ~~Usage/Quota/Limit Display~~ | `/auth/quota` | High | Done |
 
 ### Medium Priority
 
@@ -633,6 +756,19 @@ tier:ip:{ip}:daily:{YYYY-MM-DD}              # IP daily cap (15/day fallback)
 ```
 
 **Note:** These caps apply ACROSS ALL accounts on the same device/IP, preventing multi-account abuse. Premium/unlimited users are exempt.
+
+### Retry Grace (Phase 7F)
+
+```
+retry_grace:user:{user_id}:{team_hash}:{language}      # Authenticated user grace
+retry_grace:device:{device_id}:{team_hash}:{language}   # Anonymous device grace
+retry_grace:ip:{ip}:{team_hash}:{language}              # Anonymous IP grace (last resort)
+```
+
+**Value:** Integer counter (starts at `RETRY_GRACE_MAX_RETRIES`, decremented on each retry)
+**TTL:** `RETRY_GRACE_TTL` seconds (default 900 = 15 minutes)
+
+**Note:** Only ONE key is set per grace event using the most-specific identity (user > device > IP).
 
 ### Rate Limiting
 
@@ -686,8 +822,12 @@ DEVICE_DAILY_ANALYSIS_CAP=5      # Max analyses per device per day
 IP_DAILY_ANALYSIS_CAP=15         # Max analyses per IP per day (fallback)
 DEVICE_ID_COOKIE_MAX_AGE=31536000  # 1 year in seconds
 
+# Retry grace (Phase 7F)
+RETRY_GRACE_TTL=900              # Grace window duration in seconds (default: 15 min)
+RETRY_GRACE_MAX_RETRIES=3        # Max free retries per grace window
+
 # Email (AWS SES)
-AWS_SES_REGION=us-east-1
+AWS_SES_REGION=ap-southeast-1
 AWS_ACCESS_KEY_ID=your-key
 AWS_SECRET_ACCESS_KEY=your-secret
 EMAIL_FROM=noreply@yourdomain.com
@@ -752,7 +892,7 @@ TURNSTILE_SECRET_KEY=your-secret
 
 ### Immediate (Next Sprint)
 
-1. Add quota display component (show remaining analyses)
+1. ~~Add quota display component (show remaining analyses)~~ Done
 2. Configure email service (AWS SES or alternative)
 3. Add scheduled job for guest cleanup
 

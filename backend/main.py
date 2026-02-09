@@ -89,6 +89,11 @@ from backend.tier_limits import (
     check_device_daily_cap,
     check_ip_daily_cap,
     record_device_and_ip_usage,
+    find_device_owner,
+    set_retry_grace,
+    check_retry_grace,
+    consume_retry_grace,
+    clear_retry_grace,
 )
 from backend.email_service import (
     send_verification_email,
@@ -2862,11 +2867,30 @@ async def get_quota(
     user, device_id, client_ip = user_or_anon
 
     if user is None:
-        # Anonymous user - track by device_id and IP
-        stats = await get_anonymous_usage_stats(device_id, client_ip)
-        stats["is_anonymous"] = True
-        stats["teams_used"] = 0
-        return stats
+        # Anonymous user - check if device belongs to an existing account
+        # This prevents "double-dipping" by logging out for fresh anonymous quota
+        device_owner = find_device_owner(device_id, db)
+        if device_owner:
+            # Device has an account - show that account's quota
+            # (prevents double-dipping by logging out for fresh anonymous quota)
+            #
+            # SECURITY: Redact fields that would leak account details to
+            # an unauthenticated caller.  The frontend already hides the
+            # teams section when is_anonymous=True, but we must not send
+            # the real count over the wire either.  is_guest is also
+            # unnecessary for the anonymous quota display.
+            stats = await get_usage_stats(device_owner)
+            stats["teams_used"] = 0          # redacted — login to see real count
+            stats["teams_limit"] = 0         # redacted — consistent with teams_used
+            stats["is_anonymous"] = True
+            # NOTE: is_guest intentionally omitted to avoid revealing account type
+            return stats
+        else:
+            # Truly anonymous - no account on this device
+            stats = await get_anonymous_usage_stats(device_id, client_ip)
+            stats["is_anonymous"] = True
+            stats["teams_used"] = 0
+            return stats
     else:
         # Authenticated user (guest or registered)
         stats = await get_usage_stats(user)
@@ -3517,10 +3541,15 @@ async def _perform_team_analysis(
     team_data: schemas.TeamCreate,
     language: str,
     db: Session
-) -> schemas.TeamAnalysisOut:
+) -> tuple[schemas.TeamAnalysisOut, bool, int]:
     """
     Core team analysis logic shared by both endpoints.
     This function does NOT have rate limiting - that's applied at the endpoint level.
+
+    Returns:
+        Tuple of (analysis result, all_succeeded, successful_calls) where:
+        - all_succeeded is True only if all 7 LLM calls completed without errors
+        - successful_calls is the count of LLM calls that completed successfully
     """
     start_time = time.time()
 
@@ -3841,6 +3870,7 @@ async def _perform_team_analysis(
     # For TRANSIENT errors (server issues, rate limits, etc.), allow partial success
     # Replace failed results with error marker dicts so they can be retried later
     total_errors = len(server_errors) + len(rate_limit_errors) + len(other_errors) + len(quota_errors)
+    all_succeeded = (total_errors == 0)
 
     if total_errors > 0:
         # Log warning about partial failure
@@ -4017,12 +4047,13 @@ async def _perform_team_analysis(
         recommendations=[r.message for r in recs_struct],
         recommendations_structured=recs_struct,
         team_synergy=team_synergy,
+        has_partial_errors=not all_succeeded,
     )
 
     logger.debug("Finish team-level analysis!")
     elapsed = time.time() - start_time
     logger.info(f"Team analysis took {elapsed:.3f} seconds")
-    return result
+    return result, all_succeeded, successful_calls
 
 
 # -------- Helper to apply rate limiting --------
@@ -4054,35 +4085,63 @@ async def analyze_team(
     - Registered: 5/day (free) or more (premium) via user.id tracking
     - IP-based rate limit also applies (prevents rapid requests)
     - Cached analyses bypass ALL rate limits
+    - Anonymous users whose device_id maps to an existing account
+      use that account's quota (prevents double-dipping on logout)
     """
     user, device_id, client_ip = user_or_anon
+
+    # If anonymous but device has an account, use that account's quota
+    # This prevents users from logging out to get fresh anonymous quota
+    effective_user = user
+    if user is None:
+        device_owner = find_device_owner(device_id, db)
+        if device_owner:
+            effective_user = device_owner
 
     # Generate language-independent team composition hash
     team_hash = generate_team_composition_hash(req.team)
 
     # Check if fully cached - cached analyses bypass all rate limits
     is_fully_cached = await check_if_all_cached(req.team, req.language)
+    has_grace = False
 
-    if not is_fully_cached:
-        # Not cached - check tier-based rate limits
+    if is_fully_cached:
+        # Fast path: all cached. Also clean up any lingering grace markers
+        # from a previous partial failure (prevents stale grace exploitation).
+        if await check_retry_grace(effective_user, device_id, client_ip, team_hash, req.language):
+            await clear_retry_grace(effective_user, device_id, client_ip, team_hash, req.language)
+    else:
+        # Not cached - check retry grace before quota checks
+        has_grace = await check_retry_grace(
+            effective_user, device_id, client_ip, team_hash, req.language
+        )
 
-        # 1. Per-user quota check based on user type
-        if user is None:
-            # Anonymous user - check anonymous limits (1/day)
-            await check_anonymous_analysis_limit(device_id, client_ip, req.language)
+        if not has_grace:
+            # Normal flow: apply all quota checks
+
+            # 1. Per-user quota check based on user type
+            if effective_user is None:
+                # Truly anonymous user (no account on device) - check anonymous limits
+                await check_anonymous_analysis_limit(device_id, client_ip, req.language)
+            else:
+                # Authenticated user OR anonymous with device-linked account
+                await check_analysis_limit(effective_user, db, req.language)
+
+            # 2. Cross-account device daily cap (prevents multi-account abuse)
+            # Premium/unlimited users are exempt
+            await check_device_daily_cap(device_id, effective_user)
+
+            # 3. IP daily cap (fallback when device_id missing, also abuse signal)
+            if device_id == "unknown-device":
+                await check_ip_daily_cap(client_ip, effective_user)
         else:
-            # Authenticated user (guest or registered) - check user limits
-            await check_analysis_limit(user, db, req.language)
-
-        # 2. Cross-account device daily cap (prevents multi-account abuse)
-        # Premium/unlimited users are exempt
-        await check_device_daily_cap(device_id, user)
-
-        # 3. IP daily cap (fallback when device_id missing, also abuse signal)
-        if device_id == "unknown-device":
-            await check_ip_daily_cap(client_ip, user)
+            logger.info(
+                f"Retry grace active for {client_ip}:{team_hash}:{req.language} — "
+                f"bypassing quota checks"
+            )
 
         # 4. IP-based rate limit (prevents analyzing different teams rapidly)
+        # Rate limits ALWAYS apply, even during grace (protects Gemini API)
         if not await check_global_ip_rate_limit_async(client_ip):
             logger.warning(
                 f"Global rate limit exceeded for {client_ip} analyzing team {team_hash} in {req.language}"
@@ -4102,22 +4161,52 @@ async def analyze_team(
                 detail=get_rate_limit_message(req.language)
             )
 
-        # Record this analysis
+        # Record rate limit BEFORE analysis (prevents concurrent bypass)
         logger.info(f"Recording analysis for {client_ip}:{team_hash}")
         await record_analysis_async(client_ip, team_hash)
 
-        # Record tier usage
-        if user is None:
-            # Anonymous user
-            await record_anonymous_analysis(device_id, client_ip)
+        # Consume grace AFTER all pre-flight checks pass, BEFORE analysis starts.
+        # This is the "point of no return" — rate limits didn't reject us, so we're
+        # committed to running the analysis. Consuming here means:
+        # - Rate-limited 429s don't waste grace retries
+        # - Concurrent requests can't both bypass quota then both run LLM calls
+        # - Crashes mid-analysis don't leak infinite free retries
+        if has_grace:
+            await consume_retry_grace(
+                effective_user, device_id, client_ip, team_hash, req.language
+            )
+
+    result, all_succeeded, successful_calls = await _perform_team_analysis(req.team, req.language, db)
+
+    # Post-analysis: quota recording and grace management
+    if not is_fully_cached:
+        if has_grace:
+            # This was a retry under grace — don't charge quota again
+            if all_succeeded:
+                await clear_retry_grace(
+                    effective_user, device_id, client_ip, team_hash, req.language
+                )
+            # If retry also partially failed, grace counter was already decremented.
+            # If counter hit 0, key is deleted — next attempt will be a fresh one.
         else:
-            # Authenticated user (guest or registered)
-            await record_analysis_usage(user)
+            # First attempt — charge quota if any calls succeeded
+            if successful_calls > 0:
+                if effective_user is None:
+                    # Truly anonymous user
+                    await record_anonymous_analysis(device_id, client_ip)
+                else:
+                    # Authenticated user OR anonymous with device-linked account
+                    await record_analysis_usage(effective_user)
+                # Record device/IP usage for cross-account caps
+                await record_device_and_ip_usage(device_id, client_ip)
 
-        # Record device/IP usage for cross-account caps
-        await record_device_and_ip_usage(device_id, client_ip)
+                if not all_succeeded:
+                    # Partial success: grant grace for free retry
+                    await set_retry_grace(
+                        effective_user, device_id, client_ip, team_hash, req.language
+                    )
 
-    return await _perform_team_analysis(req.team, req.language, db)
+    return result
 
 
 # -------- Analyze Team by ID --------
@@ -4136,8 +4225,17 @@ async def analyze_team_by_id(
     - Guest: 3/day via user.id tracking
     - Registered: 5/day (free) or more (premium) via user.id tracking
     - Cached analyses bypass ALL rate limits
+    - Anonymous users whose device_id maps to an existing account
+      use that account's quota (prevents double-dipping on logout)
     """
     user, device_id, client_ip = user_or_anon
+
+    # If anonymous but device has an account, use that account's quota
+    effective_user = user
+    if user is None:
+        device_owner = find_device_owner(device_id, db)
+        if device_owner:
+            effective_user = device_owner
 
     # Load the Team, its UserMonsters, Talents, etc. from the DB
     db_team = db.query(models.Team).filter(models.Team.id == req.team_id).first()
@@ -4178,27 +4276,45 @@ async def analyze_team_by_id(
 
     # Check if fully cached - cached analyses bypass all rate limits
     is_fully_cached = await check_if_all_cached(team_data, req.language)
+    has_grace = False
 
-    if not is_fully_cached:
-        # Not cached - check tier-based rate limits
+    if is_fully_cached:
+        # Fast path: all cached. Also clean up any lingering grace markers
+        # from a previous partial failure (prevents stale grace exploitation).
+        if await check_retry_grace(effective_user, device_id, client_ip, team_hash, req.language):
+            await clear_retry_grace(effective_user, device_id, client_ip, team_hash, req.language)
+    else:
+        # Not cached - check retry grace before quota checks
+        has_grace = await check_retry_grace(
+            effective_user, device_id, client_ip, team_hash, req.language
+        )
 
-        # 1. Per-user quota check based on user type
-        if user is None:
-            # Anonymous user - check anonymous limits (1/day)
-            await check_anonymous_analysis_limit(device_id, client_ip, req.language)
+        if not has_grace:
+            # Normal flow: apply all quota checks
+
+            # 1. Per-user quota check based on user type
+            if effective_user is None:
+                # Truly anonymous user (no account on device) - check anonymous limits
+                await check_anonymous_analysis_limit(device_id, client_ip, req.language)
+            else:
+                # Authenticated user OR anonymous with device-linked account
+                await check_analysis_limit(effective_user, db, req.language)
+
+            # 2. Cross-account device daily cap (prevents multi-account abuse)
+            # Premium/unlimited users are exempt
+            await check_device_daily_cap(device_id, effective_user)
+
+            # 3. IP daily cap (fallback when device_id missing, also abuse signal)
+            if device_id == "unknown-device":
+                await check_ip_daily_cap(client_ip, effective_user)
         else:
-            # Authenticated user (guest or registered) - check user limits
-            await check_analysis_limit(user, db, req.language)
-
-        # 2. Cross-account device daily cap (prevents multi-account abuse)
-        # Premium/unlimited users are exempt
-        await check_device_daily_cap(device_id, user)
-
-        # 3. IP daily cap (fallback when device_id missing, also abuse signal)
-        if device_id == "unknown-device":
-            await check_ip_daily_cap(client_ip, user)
+            logger.info(
+                f"Retry grace active for {client_ip}:{team_hash}:{req.language} — "
+                f"bypassing quota checks"
+            )
 
         # 4. IP-based rate limit (prevents analyzing different teams rapidly)
+        # Rate limits ALWAYS apply, even during grace (protects Gemini API)
         if not await check_global_ip_rate_limit_async(client_ip):
             logger.warning(
                 f"Global rate limit exceeded for {client_ip} analyzing team {team_hash} (ID: {req.team_id}) in {req.language}"
@@ -4218,22 +4334,52 @@ async def analyze_team_by_id(
                 detail=get_rate_limit_message(req.language)
             )
 
-        # Record this analysis
+        # Record rate limit BEFORE analysis (prevents concurrent bypass)
         logger.info(f"Recording analysis for {client_ip}:{team_hash}")
         await record_analysis_async(client_ip, team_hash)
 
-        # Record tier usage
-        if user is None:
-            # Anonymous user
-            await record_anonymous_analysis(device_id, client_ip)
+        # Consume grace AFTER all pre-flight checks pass, BEFORE analysis starts.
+        # This is the "point of no return" — rate limits didn't reject us, so we're
+        # committed to running the analysis. Consuming here means:
+        # - Rate-limited 429s don't waste grace retries
+        # - Concurrent requests can't both bypass quota then both run LLM calls
+        # - Crashes mid-analysis don't leak infinite free retries
+        if has_grace:
+            await consume_retry_grace(
+                effective_user, device_id, client_ip, team_hash, req.language
+            )
+
+    result, all_succeeded, successful_calls = await _perform_team_analysis(team_data, req.language, db)
+
+    # Post-analysis: quota recording and grace management
+    if not is_fully_cached:
+        if has_grace:
+            # This was a retry under grace — don't charge quota again
+            if all_succeeded:
+                await clear_retry_grace(
+                    effective_user, device_id, client_ip, team_hash, req.language
+                )
+            # If retry also partially failed, grace counter was already decremented.
+            # If counter hit 0, key is deleted — next attempt will be a fresh one.
         else:
-            # Authenticated user (guest or registered)
-            await record_analysis_usage(user)
+            # First attempt — charge quota if any calls succeeded
+            if successful_calls > 0:
+                if effective_user is None:
+                    # Truly anonymous user
+                    await record_anonymous_analysis(device_id, client_ip)
+                else:
+                    # Authenticated user OR anonymous with device-linked account
+                    await record_analysis_usage(effective_user)
+                # Record device/IP usage for cross-account caps
+                await record_device_and_ip_usage(device_id, client_ip)
 
-        # Record device/IP usage for cross-account caps
-        await record_device_and_ip_usage(device_id, client_ip)
+                if not all_succeeded:
+                    # Partial success: grant grace for free retry
+                    await set_retry_grace(
+                        effective_user, device_id, client_ip, team_hash, req.language
+                    )
 
-    return await _perform_team_analysis(team_data, req.language, db)
+    return result
 
 # -------- PUT Team (Update) --------
 
@@ -4606,6 +4752,7 @@ async def admin_list_users(
             failed_login_attempts=user.failed_login_attempts,
             locked_until=user.locked_until,
             device_id=user.device_id,
+            guest_display_id=user.guest_display_id,
             teams_count=teams_count,
             is_admin=is_admin_user(user)
         )
@@ -4655,6 +4802,7 @@ async def admin_get_user(
         failed_login_attempts=user.failed_login_attempts,
         locked_until=user.locked_until,
         device_id=user.device_id,
+        guest_display_id=user.guest_display_id,
         teams_count=teams_count,
         is_admin=is_admin_user(user)
     )

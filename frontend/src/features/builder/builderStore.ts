@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { persist } from "zustand/middleware";
 import type { ID, UserMonsterCreate, TeamCreate, TalentUpsert, TeamAnalysisOut, TeamOut, TeamUpdate } from "@/types";
 
 const emptyTalent: TalentUpsert = { hp_boost:0, phy_atk_boost:0, mag_atk_boost:0, phy_def_boost:0, mag_def_boost:0, spd_boost:0 };
@@ -44,96 +45,112 @@ type BuilderState = {
   reset: () => void;
 };
 
-export const useBuilderStore = create<BuilderState>((set, get) => ({
-  teamId: null,
-  name: "",
-  magic_item_id: null,
-  slots: Array.from({ length: 6 }, emptySlot),
+export const useBuilderStore = create<BuilderState>()(
+  persist(
+    (set, get) => ({
+      teamId: null,
+      name: "",
+      magic_item_id: null,
+      slots: Array.from({ length: 6 }, emptySlot),
 
-  setName: (name) => set({ name }),
-  setMagicItem: (magic_item_id) => set({ magic_item_id }),
-  setSlot: (idx, patch) => set((s) => {
-    const slots = s.slots.slice();
-    const current = slots[idx] ?? emptySlot();
-    slots[idx] = mergeWithoutUndef<typeof current>(current, patch);
-    return { slots };
-  }),
-  moveSlot: (fromIdx, toIdx) => set((s) => {
-    if (fromIdx === toIdx || fromIdx < 0 || fromIdx >= 6 || toIdx < 0 || toIdx >= 6) return s;
-    const slots = s.slots.slice();
-    // Swap the slots
-    const temp = slots[fromIdx]!;
-    slots[fromIdx] = slots[toIdx]!;
-    slots[toIdx] = temp;
-    return { slots };
-  }),
+      setName: (name) => set({ name }),
+      setMagicItem: (magic_item_id) => set({ magic_item_id }),
+      setSlot: (idx, patch) => set((s) => {
+        const slots = s.slots.slice();
+        const current = slots[idx] ?? emptySlot();
+        slots[idx] = mergeWithoutUndef<typeof current>(current, patch);
+        return { slots };
+      }),
+      moveSlot: (fromIdx, toIdx) => set((s) => {
+        if (fromIdx === toIdx || fromIdx < 0 || fromIdx >= 6 || toIdx < 0 || toIdx >= 6) return s;
+        const slots = s.slots.slice();
+        // Swap the slots
+        const temp = slots[fromIdx]!;
+        slots[fromIdx] = slots[toIdx]!;
+        slots[toIdx] = temp;
+        return { slots };
+      }),
 
-  toPayload: () => {
-    const s = get();
-    if (!s.magic_item_id) throw new Error("Pick a magic item before saving.");
+      toPayload: () => {
+        const s = get();
+        if (!s.magic_item_id) throw new Error("Pick a magic item before saving.");
 
-    const trimmedName = s.name?.trim() || "";
-    if (!trimmedName) throw new Error("Team name cannot be empty.");
+        const trimmedName = s.name?.trim() || "";
+        if (!trimmedName) throw new Error("Team name cannot be empty.");
 
-    return {
-      name: trimmedName,
-      magic_item_id: s.magic_item_id,
-      user_monsters: s.slots.map(({ id: _omit, ...um }, index) => ({ ...um, position: index })),
-    };
-  },
+        return {
+          name: trimmedName,
+          magic_item_id: s.magic_item_id,
+          user_monsters: s.slots.map(({ id: _omit, ...um }, index) => ({ ...um, position: index })),
+        };
+      },
 
-  toUpdatePayload: () => {
-    const s = get();
-    if (!s.teamId) return null;
+      toUpdatePayload: () => {
+        const s = get();
+        if (!s.teamId) return null;
 
-    const trimmedName = s.name?.trim() || "";
-    if (!trimmedName) return null;
+        const trimmedName = s.name?.trim() || "";
+        if (!trimmedName) return null;
 
-    return {
-      name: trimmedName,
-      magic_item_id: s.magic_item_id,
-      user_monsters: s.slots.map((um, index) => ({
-        id: um.id,
-        monster_id: um.monster_id,
-        personality_id: um.personality_id,
-        legacy_type_id: um.legacy_type_id,
-        move1_id: um.move1_id, move2_id: um.move2_id, move3_id: um.move3_id, move4_id: um.move4_id,
-        talent: { ...um.talent },
-        position: index,
-      })),
-    };
-  },
+        return {
+          name: trimmedName,
+          magic_item_id: s.magic_item_id,
+          user_monsters: s.slots.map((um, index) => ({
+            id: um.id,
+            monster_id: um.monster_id,
+            personality_id: um.personality_id,
+            legacy_type_id: um.legacy_type_id,
+            move1_id: um.move1_id, move2_id: um.move2_id, move3_id: um.move3_id, move4_id: um.move4_id,
+            talent: { ...um.talent },
+            position: index,
+          })),
+        };
+      },
 
-  loadFromTeam: (team) => set(() => {
-    const slots: (UserMonsterCreate & { id?: ID })[] = (team.user_monsters ?? []).slice(0, 6).map((um): (UserMonsterCreate & { id?: ID }) => ({
-      id: um.id,
-      monster_id: um.monster.id,
-      personality_id: um.personality.id,
-      legacy_type_id: um.legacy_type.id,
-      move1_id: um.move1.id, move2_id: um.move2.id, move3_id: um.move3.id, move4_id: um.move4.id,
-      talent: {
-        hp_boost: um.talent.hp_boost, phy_atk_boost: um.talent.phy_atk_boost, mag_atk_boost: um.talent.mag_atk_boost,
-        phy_def_boost: um.talent.phy_def_boost, mag_def_boost: um.talent.mag_def_boost, spd_boost: um.talent.spd_boost,
-      }
-    }));
-    while (slots.length < 6) slots.push(emptySlot());
-    return { teamId: team.id, name: team.name ?? "My Team", magic_item_id: team.magic_item?.id ?? null, slots };
-  }),
+      loadFromTeam: (team) => set(() => {
+        const slots: (UserMonsterCreate & { id?: ID })[] = (team.user_monsters ?? []).slice(0, 6).map((um): (UserMonsterCreate & { id?: ID }) => ({
+          id: um.id,
+          monster_id: um.monster.id,
+          personality_id: um.personality.id,
+          legacy_type_id: um.legacy_type.id,
+          move1_id: um.move1.id, move2_id: um.move2.id, move3_id: um.move3.id, move4_id: um.move4.id,
+          talent: {
+            hp_boost: um.talent.hp_boost, phy_atk_boost: um.talent.phy_atk_boost, mag_atk_boost: um.talent.mag_atk_boost,
+            phy_def_boost: um.talent.phy_def_boost, mag_def_boost: um.talent.mag_def_boost, spd_boost: um.talent.spd_boost,
+          }
+        }));
+        while (slots.length < 6) slots.push(emptySlot());
+        return { teamId: team.id, name: team.name ?? "My Team", magic_item_id: team.magic_item?.id ?? null, slots, analysis: null };
+      }),
 
-  clearTeamId: () => set({ teamId: null }),
+      clearTeamId: () => set({ teamId: null }),
 
-  analysis: null,
-  setAnalysis: (a) => set({ analysis: a }),
+      analysis: null,
+      setAnalysis: (a) => set({ analysis: a }),
 
-  isAnalyzing: false,
-  setIsAnalyzing: (v) => set({ isAnalyzing: v }),
+      isAnalyzing: false,
+      setIsAnalyzing: (v) => set({ isAnalyzing: v }),
 
-  reset: () => set({
-    teamId: null,
-    name: "",
-    magic_item_id: null,
-    slots: Array.from({ length: 6 }, emptySlot),
-    analysis: null,
-    isAnalyzing: false,
-  }),
-}));
+      reset: () => set({
+        teamId: null,
+        name: "",
+        magic_item_id: null,
+        slots: Array.from({ length: 6 }, emptySlot),
+        analysis: null,
+        isAnalyzing: false,
+      }),
+    }),
+    {
+      name: "builder-draft",
+      version: 1,
+      // Only persist team-building data (game entity IDs + team name).
+      // Exclude: teamId (DB record link), slot .id (UserMonster record IDs),
+      //          analysis (user-specific), isAnalyzing (transient UI state).
+      partialize: (state) => ({
+        name: state.name,
+        magic_item_id: state.magic_item_id,
+        slots: state.slots.map(({ id: _strip, ...rest }) => rest),
+      }),
+    },
+  ),
+);

@@ -9,10 +9,18 @@ from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
+from sqlalchemy.ext.compiler import compiles
+from sqlalchemy.dialects.postgresql import JSONB
 
 from backend.main import app
 from backend.models import Base
 from backend.database import get_db
+
+
+# Teach SQLite how to handle PostgreSQL JSONB columns
+@compiles(JSONB, "sqlite")
+def _compile_jsonb_sqlite(type_, compiler, **kw):
+    return "JSON"
 
 
 # Use in-memory SQLite for tests (faster than PostgreSQL)
