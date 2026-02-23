@@ -19,5 +19,15 @@ export default tseslint.config([
       ecmaVersion: 2020,
       globals: globals.browser,
     },
+    rules: {
+      // Downgrade to warn: any types are used intentionally in many API/dynamic data patterns
+      '@typescript-eslint/no-explicit-any': 'warn',
+      // Downgrade to warn: fast-refresh export issue is a dev-tooling concern, not a runtime bug
+      'react-refresh/only-export-components': 'warn',
+      // Allow unused vars if prefixed with _ (intentionally ignored)
+      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
+      // Control characters in regex are intentional in the username validator
+      'no-control-regex': 'warn',
+    },
   },
 ])

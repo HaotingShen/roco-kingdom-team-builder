@@ -48,7 +48,7 @@ api.interceptors.request.use(
             config.headers['X-CSRF-Token'] = payload.csrf_token;
           }
         }
-      } catch (e) {
+      } catch (_e) {
         // Ignore JWT parse errors
       }
     }
