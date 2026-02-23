@@ -41,7 +41,7 @@ GitHub Actions (CI/CD runner)
 Users → https://rkteambuilder.com
               │
               ▼
-     ┌─────────────────────────────────────────────┐
+     ┌───────────────────────────────────────────────┐
      │           CloudFront CDN                      │
      │  • HTTPS termination (ACM certificate)        │
      │  • Security headers                           │
@@ -61,7 +61,7 @@ Users → https://rkteambuilder.com
   ┌─────────────────────┐    ┌───────────────┐
   │  EC2 t3.small       │    │   S3 Bucket   │
   │  ap-southeast-1     │    │  (React SPA)  │
-  │                     │    │  rktb-frontend │
+  │                     │    │ rktb-frontend │
   │  ┌───────────────┐  │    └───────────────┘
   │  │ Nginx :80     │  │
   │  │ (reverse      │  │
@@ -125,25 +125,207 @@ With your $200 credit, that covers roughly the first 8-12 months (depending on w
 
 ## Phase 1: AWS Console & CLI Setup (One-Time)
 
+```
+  What Phase 1 builds — every AWS resource and how they connect:
+
+  ┌────────────────────────────────────────────────────────────────────┐
+  │  VPC  vpc-0953d095418f1950f   10.0.0.0/16  (1.4)                   │
+  │  Your private, isolated network in AWS. Nothing gets in or out     │
+  │  unless you explicitly allow it.                                   │
+  │                                                                    │
+  │  ┌───────────────────────────────────┐  ┌───────────────────────┐  │
+  │  │  Public Subnet  10.0.1.0/24  (1a) │  │ Private Subnet  (1a)  │  │
+  │  │  Routes to Internet Gateway       │  │ Private Subnet  (1b)  │  │
+  │  │                                   │  │ No internet route     │  │
+  │  │  ┌─────────────────────────────┐  │  │                       │  │
+  │  │  │  EC2  t3.micro  (1.8)       │  │  │  ┌─────────────────┐  │  │
+  │  │  │  13.228.63.192 (Elastic IP) │  │  │  │ RDS PostgreSQL  │  │  │
+  │  │  │  IAM role: rktb-ec2-role    │  │  │  │ db.t3.micro(1.6)│  │  │
+  │  │  │  SG: rktb-ec2-sg            │  │  │  │ SG: rktb-rds-sg │  │  │
+  │  │  └─────────────────────────────┘  │  │  └─────────────────┘  │  │
+  │  └───────────────────────────────────┘  └───────────────────────┘  │
+  └────────────────────────────────────────────────────────────────────┘
+
+  Outside the VPC (global AWS services):
+  ┌───────────────┐  ┌───────────────┐  ┌──────────────────────────────┐
+  │  S3  (1.9)    │  │  ECR  (1.9)   │  │  Parameter Store  (1.11)     │
+  │  rktb-frontend│  │  rktb-backend │  │  /rktb/prod/DATABASE_URL     │
+  │  (React SPA)  │  │  (Docker imgs)│  │  /rktb/prod/SECRET_KEY       │
+  └───────────────┘  └───────────────┘  │  /rktb/prod/DEEPSEEK_API_KEY │
+                                        │  /rktb/prod/REDIS_PASSWORD   │
+  ┌───────────────┐  ┌───────────────┐  │  /rktb/prod/ORIGIN_SECRET    │
+  │  ACM Cert     │  │  IAM Role     │  │  /rktb/prod/S3_REFERER_SECRET│
+  │  us-east-1    │  │  rktb-ec2-role│  │  /rktb/prod/FRONTEND_URL     │
+  │  (1.3)        │  │  (1.7)        │  │  /rktb/prod/ADMIN_EMAILS     │
+  └───────────────┘  └───────────────┘  └──────────────────────────────┘
+
+  ──────────────────────────────────────────────────────────────────────
+
+  1.3 — ACM Certificate: why us-east-1?
+
+  CloudFront is a GLOBAL service. It only reads SSL certificates from
+  us-east-1 (its "home" region), regardless of where your app lives.
+  Your app is in ap-southeast-1, but the certificate MUST be in us-east-1.
+
+  Certificate covers:
+  ├── rkteambuilder.com        (root domain)
+  └── *.rkteambuilder.com      (wildcard — covers origin-api, www, etc.)
+
+  Validation: ACM gives you a CNAME record to prove you own the domain.
+  You add it to Cloudflare DNS → ACM verifies → certificate "Issued".
+
+  ──────────────────────────────────────────────────────────────────────
+
+  1.4 — VPC Networking: why public vs private subnets?
+
+  Internet
+      │
+      ▼
+  Internet Gateway (attached to VPC)
+      │
+      ▼
+  Route Table → 0.0.0.0/0 → IGW (only public subnet uses this)
+      │
+      ▼
+  Public Subnet 10.0.1.0/24  ← EC2 lives here
+      │ can reach internet (pull Docker images, call AWS APIs)
+      │ internet can reach EC2 (on allowed ports only via SG)
+
+  Private Subnets 10.0.10.0/24 + 10.0.11.0/24  ← RDS lives here
+      │ NO route to internet gateway
+      │ RDS can only be reached from within the VPC
+      │ Even if someone guesses the RDS endpoint, they can't connect
+
+  Why 2 private subnets?  RDS requires a "subnet group" spanning 2
+  availability zones (1a + 1b) for high-availability readiness, even
+  if Multi-AZ is not enabled yet.
+
+  ──────────────────────────────────────────────────────────────────────
+
+  1.5 — Security Groups: two firewalls, layered
+
+  Internet
+      │
+      ├── Port 22  (SSH):  YOUR IP only → EC2
+      ├── Port 80  (HTTP): CloudFront IPs only → EC2  (via managed prefix list)
+      ├── Port 443: BLOCKED  (CloudFront→EC2 is HTTP, CloudFront handles TLS)
+      ├── Port 8000: BLOCKED (FastAPI only reachable via Nginx internally)
+      │
+      ▼
+  EC2  (rktb-ec2-sg: sg-0c2dc3e4f20452ddb)
+      │
+      │ Port 5432: only EC2 security group → RDS
+      │ (RDS SG checks source SG, not IP — handles dynamic IPs)
+      ▼
+  RDS  (rktb-rds-sg: sg-0eedc536da3a8f6fa)
+
+  Note: CloudFront prefix list alone doesn't prove it's YOUR CloudFront.
+  Anyone can create a CloudFront distribution. That's why Nginx ALSO
+  checks the X-Origin-Verify secret (Phase 3.2) — two independent layers.
+
+  ──────────────────────────────────────────────────────────────────────
+
+  1.7 — IAM Role: EC2's permission badge
+
+  EC2 uses a role (not a stored username/password) to access AWS services.
+  The role is attached at launch time. AWS rotates credentials automatically.
+
+  rktb-ec2-role grants:
+  ┌──────────────────────┬──────────────────────────────────────────────┐
+  │ Permission           │ Why needed                                   │
+  ├──────────────────────┼──────────────────────────────────────────────┤
+  │ ssm:GetParameter     │ Read secrets from Parameter Store (deploy.sh)│
+  │ kms:Decrypt          │ Decrypt SecureString parameters              │
+  │ ecr:GetAuthToken     │ Log in to ECR to pull Docker images          │
+  │ ecr:BatchGetImage    │ Pull Docker image layers from ECR            │
+  │ ecr:GetDownload...   │ Download image layers from ECR               │
+  │ logs:PutLogEvents    │ Send container logs to CloudWatch            │
+  │ ssm:UpdateInstance.. │ SSM Agent heartbeat (lets SSM find this EC2) │
+  │ ssmmessages:*        │ SSM session channel (for remote commands)    │
+  │ s3:GetObject         │ Download docker-compose from S3 during deploy│
+  └──────────────────────┴──────────────────────────────────────────────┘
+
+  ──────────────────────────────────────────────────────────────────────
+
+  1.8 — EC2: why Elastic IP?
+
+  By default, EC2 gets a NEW public IP every time it restarts.
+  Cloudflare DNS record "origin-api.rkteambuilder.com → 13.228.63.192"
+  would break every time EC2 rebooted.
+
+  Elastic IP = permanent IP address reserved to your account.
+  Cost: FREE while attached to a running instance. ~$4/mo if unattached.
+
+  ──────────────────────────────────────────────────────────────────────
+
+  1.9 — S3: website hosting mode vs OAC
+
+  Website hosting mode chosen because:
+  ├── Built-in 404 → index.html at S3 level (needed for React Router SPA)
+  └── Simple to configure
+
+  If we used OAC (CloudFront Origin Access Control):
+  ├── CloudFront custom error responses (403/404 → index.html) would be
+  │   distribution-wide → API 404 errors would also return index.html
+  └── Would break the frontend when API returns 404
+
+  Protection: S3 bucket policy requires Referer: <S3_REFERER_SECRET>
+  CloudFront sends this header automatically. Direct browser access blocked.
+
+  ECR = private Docker image registry (like Docker Hub but in your AWS account)
+  └── Images tagged with git commit SHA (e.g. :abc1234) for rollbacks
+      and also :latest for convenience
+
+  ──────────────────────────────────────────────────────────────────────
+
+  1.10 — Cloudflare DNS records added in Phase 1
+
+  ┌────────────┬────────────────┬───────────────────────────────┬───────┐
+  │ Type       │ Name           │ Content                       │ Proxy │
+  ├────────────┼────────────────┼───────────────────────────────┼───────┤
+  │ CNAME      │ _acm-validate  │ (ACM validation value)        │ grey  │
+  │ A          │ origin-api     │ 13.228.63.192                 │ grey  │
+  └────────────┴────────────────┴───────────────────────────────┴───────┘
+  (rkteambuilder.com → CloudFront CNAME added in Phase 4.4)
+
+  Both MUST be grey cloud (DNS only). If proxied through Cloudflare,
+  origin-api would hide EC2's real IP from CloudFront, breaking the
+  connection. ACM validation would also fail if proxied.
+
+  ──────────────────────────────────────────────────────────────────────
+
+  1.11 — Parameter Store: why not just use .env files on EC2?
+
+  .env files on disk:                Parameter Store:
+  ├── Must be manually managed       ├── Centrally managed in AWS
+  ├── Risk of being committed to git ├── Encrypted at rest (KMS)
+  ├── Hard to rotate secrets         ├── Audit log of every read
+  ├── No audit trail                 ├── Rotatable without SSH
+  └── Anyone with SSH can read them  └── Only accessible via IAM role
+
+  deploy.sh reads secrets at deploy time and injects them as env vars
+  into Docker containers. Secrets never touch disk on EC2.
+
+```
+
 ### 1.1 Install & Configure AWS CLI
 
 ```bash
 # Install AWS CLI v2 (on your WSL2)
+# TIP: Run from /tmp to avoid cluttering your project directory
+cd /tmp
 curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
 unzip awscliv2.zip
 sudo ./aws/install
 
-# Configure with your IAM user credentials
-# SECURITY OPTIONS (choose one):
-#   1. BEST: Use AWS IAM Identity Center (SSO) → `aws configure sso`
-#   2. GOOD: Create IAM user with scoped policy (see below), delete keys after setup
-#   3. ACCEPTABLE: Create IAM user with AdministratorAccess, delete keys after setup
-#
-# For option 2, create a policy with only these services:
-#   EC2, RDS, S3, CloudFront, ECR, IAM, SSM, ACM, SES, CloudWatch, SNS, WAF
-#   (see AWS docs for specific actions needed)
-#
-# After initial setup, you can delete the access keys and use SSO/role assumption.
+# Create an IAM user in AWS Console:
+#   1. Go to IAM → Users → Create user
+#   2. Attach the "AdministratorAccess" policy directly
+#   3. Go to the user → Security credentials → Create access key
+#   4. Choose "Command Line Interface (CLI)" as the use case
+#   5. Copy the Access Key ID and Secret Access Key
+
+# Configure the CLI with your IAM credentials
 aws configure
 # AWS Access Key ID: your-key
 # AWS Secret Access Key: your-secret
@@ -269,6 +451,8 @@ echo "Private subnets: $PRIV_SUBNET_A, $PRIV_SUBNET_B"
 
 ### 1.5 Create Security Groups
 
+> See overview diagram above (section 1.5) for how ports and rules connect.
+
 ```bash
 # EC2 Security Group
 EC2_SG=$(aws ec2 create-security-group --group-name rktb-ec2-sg \
@@ -342,24 +526,23 @@ echo "DB Password (save this!): $DB_PASSWORD"
 
 # Create RDS instance (free tier eligible: db.t3.micro)
 aws rds create-db-instance \
-  --db-instance-identifier rktb-postgres \
-  --db-instance-class db.t3.micro \
-  --engine postgres \
-  --engine-version 16 \
-  --master-username rktb_admin \
-  --master-user-password "$DB_PASSWORD" \
-  --allocated-storage 20 \
-  --db-name roco_kingdom \
-  --vpc-security-group-ids $RDS_SG \
-  --db-subnet-group-name rktb-db-subnets \
-  --no-publicly-accessible \
-  --backup-retention-period 7 \
-  --storage-encrypted \
-  --deletion-protection \
-  --region ap-southeast-1
+    --db-instance-identifier rktb-postgres \
+    --db-instance-class db.t3.micro \
+    --engine postgres \
+    --engine-version 16 \
+    --master-username rktb_admin \
+    --master-user-password "$DB_PASSWORD" \
+    --allocated-storage 20 \
+    --db-name roco_kingdom \
+    --vpc-security-group-ids $RDS_SG \
+    --db-subnet-group-name rktb-db-subnets \
+    --no-publicly-accessible \
+    --storage-encrypted \
+    --deletion-protection \
+    --region ap-southeast-1
 
 # NOTE on RDS options:
-# - backup-retention-period 7: Automated daily backups kept for 7 days (recoverable to any point-in-time)
+# - backup-retention-period is 1 by defualt at free tier: Automated daily backups kept for 1 days
 # - deletion-protection: Prevents accidental deletion (must disable in console before dropping DB)
 # - Multi-AZ NOT enabled: Adds ~$15/mo but provides automatic failover. Enable if uptime is critical.
 #   To enable later: aws rds modify-db-instance --db-instance-identifier rktb-postgres --multi-az
@@ -610,6 +793,9 @@ aws ssm put-parameter --name /rktb/prod/SECRET_KEY \
 aws ssm put-parameter --name /rktb/prod/GEMINI_API_KEY \
   --value "YOUR_GEMINI_KEY_HERE" --type SecureString --region ap-southeast-1
 
+aws ssm put-parameter --name /rktb/prod/DEEPSEEK_API_KEY \
+    --value "YOUR_DEEPSEEK_KEY_HERE" --type SecureString --region ap-southeast-1
+
 aws ssm put-parameter --name /rktb/prod/REDIS_PASSWORD \
   --value "$REDIS_PASSWORD" --type SecureString --region ap-southeast-1
 
@@ -627,9 +813,153 @@ aws ssm put-parameter --name /rktb/prod/ADMIN_EMAILS \
   --value "your-admin@email.com" --type String --region ap-southeast-1
 ```
 
+---------------------------------------------------------------
+Everything checks out for Phase 1:
+
+  === VPC ===
+  vpc-0953d095418f1950f      available
+
+  === Subnets ===
+  rktb-private-1a    subnet-0d45a0f978e9960e2        available
+  rktb-private-1b    subnet-02b203de9836c46f6        available
+  rktb-public-1a     subnet-0a9dc3d622aff9cf7        available
+
+  === Security Groups ===
+  rktb-rds-sg        sg-0eedc536da3a8f6fa
+  rktb-ec2-sg        sg-0c2dc3e4f20452ddb
+
+  === RDS ===
+  available  rktb-postgres.cnwseow4y66l.ap-southeast-1.rds.amazonaws.com
+  sg-0eedc536da3a8f6fa
+
+  === EC2 ===
+  i-08477110ddb42c54d        running 13.228.63.192   arn:aws:iam::273130558025:instance-profile/rktb-ec2-role
+
+  === IAM Role ===
+  rktb-ec2-role
+
+  === ACM Certificate ===
+  ISSUED
+
+  === S3 Bucket ===
+  {
+      "BucketArn": "arn:aws:s3:::rktb-frontend",
+      "BucketRegion": "ap-southeast-1",
+      "AccessPointAlias": false
+  }
+  rktb-frontend exists
+
+  === ECR ===
+  273130558025.dkr.ecr.ap-southeast-1.amazonaws.com/rktb-backend
+
+  === Parameter Store ===
+  Status: All 9 secrets stored 
+  /rktb/prod/ADMIN_EMAILS, /rktb/prod/DATABASE_URL, /rktb/prod/DEEPSEEK_API_KEY, 
+  /rktb/prod/FRONTEND_URL, /rktb/prod/GEMINI_API_KEY, /rktb/prod/ORIGIN_SECRET, 
+  /rktb/prod/REDIS_PASSWORD, /rktb/prod/S3_REFERER_SECRET, /rktb/prod/SECRET_KEY
+  
+  === Cloudflare DNS ===
+  Status: origin-api.rkteambuilder.com → EC2 IP (configured manually)
+  
+  === Cloudflare DNS ===
+  Status: ACM validation CNAME (configured manually)
+
+
 ---
 
 ## Phase 2: Docker Configuration (Files to Create in Repo)
+
+```
+  Phase 2 creates 4 files in your repo. No AWS resources are created here —
+  these files are used later by Phase 3 (EC2 setup) and Phase 5 (CI/CD).
+
+  ┌─────────────────────────────────────────────────────────────────────┐
+  │  Your Git Repository                                                │
+  │                                                                     │
+  │  backend/Dockerfile          .dockerignore                          │
+  │  ─────────────────────       ────────────                           │
+  │  Recipe for building the     Tells Docker what to SKIP              │
+  │  Docker image:               when building the image:               │
+  │                              ├── .git/                              │
+  │  FROM python:3.10-slim       ├── .github/                           │
+  │  RUN apt-get install gcc     ├── frontend/      (not needed)        │
+  │      libpq-dev               ├── *.md           (not needed)        │
+  │  COPY requirements.txt       ├── .env / .env.*  (secrets!)          │
+  │  RUN pip install -r ...      ├── backend/tests/ (not needed)        │
+  │  COPY backend/ backend/      └── venv/ / .venv/ (reinstalled fresh) │
+  │  EXPOSE 8000                                                        │
+  │  CMD uvicorn backend.main    Keeps image small, no secrets baked in │
+  │      --host 0.0.0.0          ─────────────────────────────────────  │
+  │      --port 8000             Why 0.0.0.0 in CMD?                    │
+  │      --workers 2             Inside Docker, binding to 127.0.0.1    │
+  │                              would only be reachable from within    │
+  │                              the container. 0.0.0.0 lets Docker     │
+  │                              forward traffic in from the host.      │
+  │                              docker-compose.prod.yml then maps it   │
+  │                              to 127.0.0.1:8000 on EC2 (Nginx only)  │
+  │                                                                     │
+  │  docker-compose.prod.yml              docker-compose.yml            │
+  │  ───────────────────────              ──────────────────            │
+  │  Used on EC2 by deploy.sh             Local dev only.               │
+  │  Defines two containers:             Mirrors prod structure but     │
+  │                                       uses local .env file.         │
+  │  backend:                            Not used in production at all. │
+  │    image: <ECR>:${IMAGE_TAG}                                        │
+  │    ports: 127.0.0.1:8000:8000                                       │
+  │    env: DATABASE_URL, SECRET_KEY                                    │
+  │         DEEPSEEK_API_KEY, ...                                       │
+  │         (injected by deploy.sh                                      │
+  │          from Parameter Store)                                      │
+  │    depends_on: redis                                                │
+  │                                                                     │
+  │  redis:                                                             │
+  │    image: redis:7-alpine                                            │
+  │    command: redis-server                                            │
+  │             --requirepass ${REDIS_PASSWORD}                         │
+  │    ports: 127.0.0.1:6379:6379 (not exposed externally)              │
+  └─────────────────────────────────────────────────────────────────────┘
+
+  ──────────────────────────────────────────────────────────────────────
+
+  How Phase 2 files connect to other phases:
+
+  Dockerfile  ──────────────────────────────────► Phase 5 (GitHub Actions)
+                                                   docker build -f backend/Dockerfile
+                                                   docker push → ECR (Phase 1.9)
+                                                        │
+                                                        ▼
+  .dockerignore ──────────────────────────────────► (read automatically during
+                                                    docker build — keeps image
+                                                    lean, no secrets included)
+                                                        │
+                                                        ▼
+  docker-compose.prod.yml ──────────────────────► Phase 3 (deploy.sh on EC2)
+                                                   GitHub Actions copies it to S3
+                                                   deploy.sh downloads it from S3
+                                                   docker compose -f docker-compose.prod.yml up
+                                                        │
+                                                        ▼
+                                                   Containers run with secrets
+                                                   from Parameter Store (Phase 1.11)
+
+  docker-compose.yml ────────────────────────────► Local development only
+                                                   (npm run dev / local testing)
+
+  ──────────────────────────────────────────────────────────────────────
+
+  Why does docker-compose.prod.yml come from S3 during deploy?
+
+  GitHub Actions SSM command can only send a short shell command to EC2.
+  The docker-compose.prod.yml file is too large to embed in a command.
+
+  Solution:
+  ① GitHub Actions uploads docker-compose.prod.yml → S3 (rktb-frontend/deploy/)
+  ② SSM command tells EC2: "download it from S3, then run deploy.sh"
+  ③ EC2 IAM role (1.7) has s3:GetObject on rktb-frontend/deploy/* — so it can
+
+  This means EC2 always runs the LATEST docker-compose.prod.yml from the repo,
+  not a stale version that was manually copied there earlier.
+```
 
 ### 2.1 Backend Dockerfile
 
@@ -695,7 +1025,8 @@ services:
       - ENVIRONMENT=production
       - DATABASE_URL=${DATABASE_URL}
       - SECRET_KEY=${SECRET_KEY}
-      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - LLM_PROVIDER=deepseek
+      - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY}
       - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
       # Cookie settings for path-based routing (same domain for frontend + API)
       # COOKIE_DOMAIN not set = defaults to exact origin (rkteambuilder.com), correct for same-site
@@ -783,10 +1114,173 @@ volumes:
 
 ## Phase 3: EC2 Server Setup
 
+```
+  What Phase 3 builds — software stack inside EC2:
+
+  ┌────────────────────────────────────────────────────────────┐
+  │  EC2 t3.micro  (13.228.63.192)                             │
+  │                                                            │
+  │  ┌─────────────────────────────────────────────────────┐   │
+  │  │ Nginx  (port 80)                          [3.2]     │   │
+  │  │ • reverse proxy to FastAPI                          │   │
+  │  │ • verifies X-Origin-Verify header                   │   │
+  │  │ • passes real client IP via CloudFront-Viewer-      │   │
+  │  │   Address header to FastAPI for rate limiting       │   │
+  │  └───────────────────────┬─────────────────────────────┘   │
+  │                          │ proxy_pass 127.0.0.1:8000       │
+  │  ┌───────────────────────▼─────────────────────────────┐   │
+  │  │ Docker Compose                            [3.3]     │   │
+  │  │                                                     │   │
+  │  │  ┌──────────────────────┐  ┌───────────────────┐    │   │
+  │  │  │ FastAPI :8000        │  │ Redis :6379       │    │   │
+  │  │  │ (rktb-backend image  │  │ (redis:7-alpine   │    │   │
+  │  │  │  from ECR)           │  │  password-        │    │   │
+  │  │  │                      │  │  protected)       │    │   │
+  │  │  │ reads env vars from  │  │                   │    │   │
+  │  │  │ deploy.sh (secrets   │  │ used for LLM      │    │   │
+  │  │  │ from Parameter Store)│  │ response cache    │    │   │
+  │  │  └──────────────────────┘  └───────────────────┘    │   │
+  │  └─────────────────────────────────────────────────────┘   │
+  │                                                            │
+  │  ┌─────────────────────────────────────────────────────┐   │
+  │  │ SSM Agent                                 [3.1]     │   │
+  │  │ • receives deploy commands from GitHub Actions      │   │
+  │  │ • no SSH or open port needed                        │   │
+  │  │ • uses EC2 IAM role (1.7) to authenticate to AWS    │   │
+  │  └─────────────────────────────────────────────────────┘   │
+  │                                                            │
+  │  ┌─────────────────────────────────────────────────────┐   │
+  │  │ AWS CLI + deploy.sh                       [3.3]     │   │
+  │  │ • fetches secrets from Parameter Store (1.11)       │   │
+  │  │ • logs into ECR (1.9) to pull Docker images         │   │
+  │  │ • runs Alembic migrations against RDS (1.6)         │   │
+  │  │ • starts containers via docker-compose.prod.yml     │   │
+  │  └─────────────────────────────────────────────────────┘   │
+  └────────────────────────────────────────────────────────────┘
+
+  ──────────────────────────────────────────────────────────────
+
+  3.1 — What each installed piece does and connects to:
+
+  ┌──────────────┬────────────────────────────────────────────────┐
+  │ Software     │ Connects to / Why                              │
+  ├──────────────┼────────────────────────────────────────────────┤
+  │ Docker       │ Pulls images from ECR (1.9) via IAM role (1.7) │
+  │              │ Runs FastAPI + Redis as isolated containers    │
+  ├──────────────┼────────────────────────────────────────────────┤
+  │ Nginx        │ Port 80 open to CloudFront IPs (EC2 SG, 1.5)   │
+  │              │ Checks ORIGIN_SECRET from Parameter Store(1.11)│
+  │              │ Proxies valid requests to FastAPI :8000        │
+  ├──────────────┼────────────────────────────────────────────────┤
+  │ SSM Agent    │ EC2 IAM role (1.7) has AmazonSSMManagedInstance│
+  │              │ CorePolicy → AWS SSM can send shell commands   │
+  │              │ to this EC2 without any open SSH port          │
+  ├──────────────┼────────────────────────────────────────────────┤
+  │ AWS CLI      │ Uses EC2 IAM role (1.7) automatically — no     │
+  │              │ credentials stored on disk. Can read Parameter │
+  │              │ Store, push/pull ECR, call STS                 │
+  └──────────────┴────────────────────────────────────────────────┘
+
+  ──────────────────────────────────────────────────────────────
+
+  3.2 — Nginx: two-layer security for the EC2 origin
+
+  Incoming request to port 80:
+
+  Layer 1 — Security Group (1.5):
+  ┌──────────────────────────────────────────────────────────┐
+  │ Only AWS CloudFront IP ranges are allowed on port 80     │
+  │ Direct browser/attacker → EC2:80  =  DROPPED at network  │
+  └────────────────────────────┬─────────────────────────────┘
+                               │ (only CloudFront gets through)
+                               ▼
+  Layer 2 — Nginx origin secret check:
+  ┌──────────────────────────────────────────────────────────┐
+  │ CloudFront adds header: X-Origin-Verify: <ORIGIN_SECRET> │
+  │                                                          │
+  │ Nginx checks: does $http_x_origin_verify match?          │
+  │   No  → return 403 (attacker spoofing CloudFront IPs)    │
+  │   Yes → proxy_pass to 127.0.0.1:8000                     │
+  └────────────────────────────┬─────────────────────────────┘
+                               │ only YOUR CloudFront can pass both layers
+                               ▼
+  FastAPI receives the request with these headers:
+  ├── Host                       (original domain)
+  ├── X-Forwarded-Proto: https   (so FastAPI knows it's HTTPS)
+  ├── X-Real-IP / X-Forwarded-For (CloudFront's IP — not useful)
+  └── CloudFront-Viewer-Address   (REAL user IP — used for rate limiting)
+
+  Why CloudFront-Viewer-Address matters:
+    Without it, all requests look like they come from CloudFront's IP.
+    Your rate limiter would see ONE IP for ALL users → rate limiting breaks.
+    CloudFront-Viewer-Address carries the actual end-user IP through.
+
+  ──────────────────────────────────────────────────────────────
+
+  3.3 — deploy.sh: what runs every time you deploy
+
+  GitHub Actions SSM command → EC2 runs deploy.sh <git-sha>
+       │
+       ▼
+  ① Fetch secrets from Parameter Store (using IAM role — no creds on disk)
+       ├── DATABASE_URL, SECRET_KEY, DEEPSEEK_API_KEY
+       ├── REDIS_PASSWORD, FRONTEND_URL, ADMIN_EMAILS
+       └── SMTP_* (optional, skipped if not set yet)
+       │
+       ▼
+  ② ECR login (using IAM role)
+       aws ecr get-login-password | docker login
+       │
+       ▼
+  ③ Pull new Docker image from ECR
+       docker pull <ECR_URI>:<git-sha>
+       │
+       ▼
+  ④ Start Redis first (other containers depend on it)
+       docker compose up -d redis
+       sleep 3
+       │
+       ▼
+  ⑤ Run Alembic migrations (schema changes before new code starts)
+       docker run --rm --network host \
+         -e DATABASE_URL \
+         <image> python -m alembic upgrade head
+       │
+       ▼
+  ⑥ Start/restart all containers with new image
+       docker compose up -d --remove-orphans
+       │
+       ▼
+  ⑦ Health check
+       docker compose ps  (shows running containers)
+
+  Resources used by deploy.sh:
+  ├── Parameter Store (1.11) → secrets injected as env vars
+  ├── ECR (1.9)              → Docker image source
+  ├── RDS (1.6)              → migrations target (private subnet)
+  ├── docker-compose.prod.yml (Phase 2) → container config
+  └── IAM role (1.7)         → permission to do all of the above
+
+  ──────────────────────────────────────────────────────────────
+
+  Big picture after Phase 3:
+
+  EC2 is now a fully configured server:
+  ├── Nginx        running, origin-verified, proxying to :8000
+  ├── Docker       installed, authenticated to ECR
+  ├── SSM Agent    running, ready for remote deploy commands
+  ├── AWS CLI      working via IAM role (no stored credentials)
+  └── deploy.sh    ready at /home/ubuntu/rktb/deploy.sh
+
+  But no containers are running yet — FastAPI and Redis start
+  in Phase 7 (first deployment) when deploy.sh runs for the
+  first time via GitHub Actions (Phase 5).
+```
+
 ### 3.1 SSH In and Install Docker + Nginx
 
 ```bash
-ssh -i ~/.ssh/rktb-key.pem ubuntu@$EC2_IP
+ssh -i ~/.ssh/rktb-key.pem ubuntu@13.228.63.192
 
 # Update system
 sudo apt update && sudo apt upgrade -y
@@ -824,7 +1318,7 @@ systemctl status amazon-ssm-agent 2>/dev/null || systemctl status snap.amazon-ss
 
 # IMPORTANT: Log out and back in for docker group to take effect
 exit
-ssh -i ~/.ssh/rktb-key.pem ubuntu@$EC2_IP
+ssh -i ~/.ssh/rktb-key.pem ubuntu@13.228.63.192
 
 # Verify installations
 docker --version
@@ -919,7 +1413,7 @@ IMAGE_TAG="${1:-latest}"
 echo "=== Fetching configuration ==="
 export DATABASE_URL=$(aws ssm get-parameter --name /rktb/prod/DATABASE_URL --with-decryption --region $REGION --query Parameter.Value --output text)
 export SECRET_KEY=$(aws ssm get-parameter --name /rktb/prod/SECRET_KEY --with-decryption --region $REGION --query Parameter.Value --output text)
-export GEMINI_API_KEY=$(aws ssm get-parameter --name /rktb/prod/GEMINI_API_KEY --with-decryption --region $REGION --query Parameter.Value --output text)
+export DEEPSEEK_API_KEY=$(aws ssm get-parameter --name /rktb/prod/DEEPSEEK_API_KEY --with-decryption --region $REGION --query Parameter.Value --output text)
 export REDIS_PASSWORD=$(aws ssm get-parameter --name /rktb/prod/REDIS_PASSWORD --with-decryption --region $REGION --query Parameter.Value --output text)
 export FRONTEND_URL=$(aws ssm get-parameter --name /rktb/prod/FRONTEND_URL --region $REGION --query Parameter.Value --output text)
 export ADMIN_EMAILS=$(aws ssm get-parameter --name /rktb/prod/ADMIN_EMAILS --region $REGION --query Parameter.Value --output text)
@@ -971,6 +1465,128 @@ chmod +x /home/ubuntu/rktb/deploy.sh
 
 ## Phase 4: CloudFront Distribution
 
+```
+  What Phase 4 builds:
+
+  User types https://rkteambuilder.com
+       │
+       ▼
+  ┌──────────────────────────────────────────────────────────┐
+  │  Cloudflare DNS (4.4)                                    │
+  │  rkteambuilder.com CNAME → d12qs0zigkefaz.cloudfront.net │
+  │  (DNS only, grey cloud — no Cloudflare proxying)         │
+  └────────────────────────┬─────────────────────────────────┘
+                           │ resolves to CloudFront edge node
+                           ▼
+  ┌──────────────────────────────────────────────────────────┐
+  │  CloudFront Distribution (4.1)                           │
+  │  domain: d12qs0zigkefaz.cloudfront.net                   │
+  │  cert:   ACM rkteambuilder.com (from 1.10, us-east-1)    │
+  │  default root object: index.html                         │
+  │  security headers: SecurityHeadersPolicy (all behaviors) │
+  │                                                          │
+  │  Behavior matching (order matters, first match wins):    │
+  │                                                          │
+  │  /auth/*   /teams  /teams/*  /team/*                     │
+  │  /admin/*  /cache/* /analysis/*          ──────────────► │──► EC2 origin
+  │  (ALL HTTP methods allowed)                              │    origin-api.
+  │                                                          │    rkteambuilder
+  │  /monsters  /monsters/*  /moves  /moves/*                │    .com
+  │  /types  /traits  /personalities                         │    (port 80,
+  │  /magic_items  /game_terms  /species                     │    HTTP only)
+  │  /config/*  /health                      ──────────────► │──► EC2 origin
+  │  (GET, HEAD, OPTIONS only)                               │
+  │                                                          │
+  │  /* (default, everything else)            ──────────────►│──► S3 origin
+  │  (GET, HEAD only, CachingOptimized)                      │    rktb-frontend
+  └──────────────────────────────────────────────────────────┘    .s3.amazonaws
+                           │                                       .com
+          ┌────────────────┴────────────────┐
+          │                                 │
+          ▼                                 ▼
+  ┌───────────────────┐           ┌───────────────────┐
+  │  EC2 (API)        │           │  S3 (Frontend)    │
+  │                   │           │                   │
+  │  CloudFront sends │           │  CloudFront sends │
+  │  X-Origin-Verify  │           │  Referer header   │
+  │  header with      │           │  with secret      │
+  │  secret           │           │  (from 1.9)       │
+  │  (from 1.11)      │           │                   │
+  │                   │           │  S3 bucket policy │
+  │  Nginx checks it: │           │  (4.2) rejects    │
+  │  wrong → 403      │           │  requests without │
+  │  correct → proxy  │           │  correct Referer  │
+  │  to FastAPI :8000 │           │                   │
+  └───────────────────┘           └───────────────────┘
+
+  ──────────────────────────────────────────────────────────
+
+  4.1 — Two origins, two secrets
+
+  Origin 1: EC2 API                  Origin 2: S3 Frontend
+  ┌──────────────────────┐           ┌──────────────────────┐
+  │ origin-api.          │           │ rktb-frontend.s3.    │
+  │ rkteambuilder.com    │           │ amazonaws.com        │
+  │                      │           │                      │
+  │ CloudFront adds:     │           │ CloudFront adds:     │
+  │ X-Origin-Verify:     │           │ Referer:             │
+  │ <ORIGIN_SECRET>      │           │ <S3_REFERER_SECRET>  │
+  │ (stored in Parameter │           │ (stored in Parameter │
+  │  Store 1.11)         │           │  Store 1.11)         │
+  │                      │           │                      │
+  │ Nginx verifies it    │           │ S3 bucket policy     │
+  │ (Phase 3.2)          │           │ verifies it (4.2)    │
+  └──────────────────────┘           └──────────────────────┘
+
+  Both secrets prevent users from bypassing CloudFront
+  and hitting your origins directly.
+
+  ──────────────────────────────────────────────────────────
+
+  4.1 — Cache & Origin Request Policies (why each one matters)
+
+  All API behaviors:
+  ┌─────────────────────────────────────────────────────────┐
+  │ Cache policy: CachingDisabled                           │
+  │   → CloudFront never stores API responses               │
+  │   → Every request goes through to EC2                   │
+  │   → Critical: auth cookies, user data must be fresh     │
+  │                                                         │
+  │ Origin request policy: AllViewerExceptHostHeader        │
+  │   → Forwards cookies (JWT auth cookies)                 │
+  │   → Forwards Authorization header                       │
+  │   → Forwards query strings (?limit=10&offset=0)         │
+  │   → Skips Host header (prevents EC2 confusion)          │
+  │                                                         │
+  │ Response headers policy: SecurityHeadersPolicy          │
+  │   → Adds HSTS (force HTTPS even if user types http://)  │
+  │   → X-Frame-Options: DENY (no iframe embedding)         │
+  │   → X-Content-Type-Options: nosniff                     │
+  │   → Referrer-Policy (limits URL leakage)                │
+  └─────────────────────────────────────────────────────────┘
+
+  S3 default behavior:
+  ┌─────────────────────────────────────────────────────────┐
+  │ Cache policy: CachingOptimized                          │
+  │   → CloudFront caches static files at edge nodes        │
+  │   → Users in Tokyo/HK get files from nearby edge,       │
+  │     not Singapore S3 → faster loads                     │
+  │   → Cache cleared on deploy via CloudFront invalidation │
+  └─────────────────────────────────────────────────────────┘
+
+  ──────────────────────────────────────────────────────────
+
+  4.4 — Why Cloudflare DNS only, not proxied
+
+  DNS only (grey cloud) ✅          Proxied (orange cloud) ❌
+  User → CloudFront → EC2/S3        User → Cloudflare → CloudFront → EC2/S3
+
+  ✅ CloudFront sees real user IP    ❌ CloudFront sees Cloudflare IP
+  ✅ Rate limiting works correctly   ❌ Rate limiting broken (all same IP)
+  ✅ CloudFront SSL cert used        ❌ SSL chain gets complicated
+  ✅ One CDN layer (faster)          ❌ Two CDN layers (slower, redundant)
+```
+
 This is best done via the **AWS Console** due to the number of settings.
 
 ### 4.1 Create CloudFront Distribution
@@ -995,14 +1611,10 @@ This is best done via the **AWS Console** due to the number of settings.
 - Add custom header `X-Origin-Verify` with the secret from Parameter Store
 - **Origin timeout settings** (click "Additional settings"):
   - Connection timeout: **10 seconds** (default)
-  - Response timeout: **60 seconds** (time to first byte)
+  - Response timeout: **90 seconds** (LLM analysis typically takes ~45s, 90s provides safe buffer)
   - Keep-alive timeout: **5 seconds** (default)
-  - Read timeout: **60 seconds** (time to receive full response after first byte)
 
-> **Why 60 seconds?** This is CloudFront's maximum without AWS Support approval. To determine if it's enough:
-> 1. Test locally: `time curl -X POST http://localhost:8000/team/analyze -d '...'`
-> 2. If your p95 analysis time is under 50s, 60s timeout is fine
-> 3. If analyses regularly exceed 60s, either request a timeout increase (up to 180s via AWS Support) or implement async: `POST /analysis/submit` → poll → `GET /analysis/{id}/result`
+> **Note:** CloudFront allows response timeout up to 120 seconds without AWS Support approval. 90 seconds is chosen to provide comfortable buffer for LLM analysis calls (~45s typical).
 
 **Cache Behaviors (order matters - specific paths first, default last):**
 
@@ -1077,7 +1689,7 @@ The S3 bucket policy was already configured in step 1.9 with referer header prot
 
 To verify the policy is correct:
 ```bash
-aws s3api get-bucket-policy --bucket rktb-frontend --query Policy --output text | jq .
+aws s3api get-bucket-policy --bucket rktb-frontend --query Policy --output text
 ```
 
 The policy should show `aws:Referer` condition matching your secret.
@@ -1147,6 +1759,126 @@ Then add `www.rkteambuilder.com` to CloudFront's alternate domain names and upda
 ---
 
 ## Phase 5: GitHub Actions CI/CD
+
+```
+  5.1 — OIDC: How GitHub gets AWS credentials (no stored keys)
+
+  Old way (bad):                        Phase 5 way (OIDC):
+  ┌─────────────────┐                   ┌─────────────────┐
+  │ GitHub Secrets  │                   │ GitHub Actions  │
+  │ AWS_ACCESS_KEY  │                   │ runner          │
+  │ AWS_SECRET_KEY  │                   └────────┬────────┘
+  │ (permanent,     │                            │ "I am GitHub, running
+  │  if leaked =    │                            │  repo HaotingShen/roco-
+  │  catastrophe)   │                            │  kingdom-team-builder"
+  └─────────────────┘                            ▼
+                                        ┌─────────────────┐
+                                        │ AWS IAM (OIDC)  │
+                                        │ Identity        │
+                                        │ Provider        │
+                                        │ (registered in  │
+                                        │  5.1 console)   │
+                                        └────────┬────────┘
+                                                 │ verifies identity,
+                                                 │ checks trust policy:
+                                                 │ "is it the right repo?"
+                                                 ▼
+                                        ┌─────────────────┐
+                                        │ github-actions- │
+                                        │ rktb IAM Role   │
+                                        │ (created 5.1)   │
+                                        │                 │
+                                        │ grants 15-min   │
+                                        │ temp credentials│
+                                        └────────┬────────┘
+                                                 │ can now access:
+                                                 ├── ECR (push images)
+                                                 ├── S3 (upload frontend)
+                                                 ├── CloudFront (invalidate)
+                                                 └── SSM (send deploy cmd to EC2)
+
+  ──────────────────────────────────────────────────────────────────
+
+  5.2 — GitHub Secrets (what the workflow reads at runtime)
+
+  GitHub repo → Settings → Secrets:
+
+  AWS_ROLE_ARN               → which IAM role to assume (from 5.1)
+  ECR_REPOSITORY             → where to push Docker image (from 1.9)
+  S3_BUCKET                  → where to upload frontend (from 1.9)
+  CLOUDFRONT_DISTRIBUTION_ID → which distribution to invalidate (from 4.1)
+  EC2_INSTANCE_ID            → which EC2 to send SSM command to (from 1.8)
+
+  ──────────────────────────────────────────────────────────────────
+
+  5.3 — deploy.yml: What happens on every git push to main
+
+  git push to main
+       │
+       ▼
+  GitHub Actions triggers 4 parallel jobs:
+
+  ┌─────────────────────────┐    ┌─────────────────────────┐
+  │    test-backend         │    │    test-frontend        │
+  │                         │    │                         │
+  │  spins up:              │    │  runs:                  │
+  │  • postgres:16          │    │  • npm ci               │
+  │  • redis:7-alpine       │    │  • npm run typecheck    │
+  │                         │    │  • npm run lint         │
+  │  runs: pytest -v        │    │                         │
+  └────────────┬────────────┘    └────────────┬────────────┘
+               │ must pass                    │ must pass
+               ▼                              ▼
+  ┌─────────────────────────┐    ┌─────────────────────────┐
+  │    build-backend        │    │    deploy-frontend      │
+  │                         │    │                         │
+  │  OIDC → IAM role        │    │  OIDC → IAM role        │
+  │  ECR login              │    │  npm run build          │
+  │  docker build           │    │  (VITE_API_BASE_URL=    │
+  │    -f backend/Dockerfile│    │   https://rkteam        │
+  │  docker push to ECR     │    │   builder.com)          │
+  │    :latest              │    │                         │
+  │    :<git-sha>           │    │  s3 sync dist/ →        │
+  │                         │    │   rktb-frontend         │
+  │  Uses: ECR (1.9)        │    │                         │
+  │        Dockerfile (2)   │    │  cloudfront invalidate  │
+  └────────────┬────────────┘    │   "/*" (clears cache)   │
+               │ must pass       │                         │
+               ▼                 │  Uses: S3 (1.9)         │
+  ┌─────────────────────────┐    │        CloudFront (4.1) │
+  │    deploy-backend       │    └─────────────────────────┘
+  │                         │
+  │  OIDC → IAM role        │
+  │                         │
+  │  copies docker-compose  │
+  │  .prod.yml → S3         │
+  │                         │
+  │  SSM send-command to EC2│
+  │  → EC2 runs deploy.sh:  │
+  │     • fetch secrets from│
+  │       Parameter Store   │
+  │     • pull new image    │
+  │       from ECR          │
+  │     • run migrations    │
+  │     • restart containers│
+  │                         │
+  │  polls SSM until done   │
+  │  (up to 5 min)          │
+  │  fails CI if deploy     │
+  │  fails on EC2           │
+  │                         │
+  │  Uses: SSM (1.7 role)   │
+  │        ECR (1.9)        │
+  │        deploy.sh (3.3)  │
+  │        docker-compose   │
+  │        .prod.yml (2)    │
+  └─────────────────────────┘
+
+  End result after every push:
+  ├── Backend: new Docker image running on EC2 with zero-downtime swap
+  ├── Frontend: new files in S3, CloudFront cache cleared worldwide
+  └── Database: migrations applied automatically before containers start
+```
 
 ### 5.1 Set Up OIDC (GitHub → AWS, no stored AWS keys)
 
@@ -1328,6 +2060,7 @@ jobs:
           DATABASE_URL: postgresql://test:test@localhost:5432/test_roco
           REDIS_URL: redis://localhost:6379/0
           GEMINI_API_KEY: test-key-not-used-in-tests
+          DEEPSEEK_API_KEY: test-key-not-used-in-tests
           SECRET_KEY: test-secret-key-minimum-thirty-two-characters-long
           ENVIRONMENT: testing
 
@@ -1547,7 +2280,7 @@ aws ssm put-parameter --name /rktb/prod/SMTP_PASSWORD \
 Then redeploy backend to pick up the new env vars:
 ```bash
 # Option 1: Via SSH (if your IP is whitelisted)
-ssh -i ~/.ssh/rktb-key.pem ubuntu@$EC2_IP "cd /home/ubuntu/rktb && bash deploy.sh latest"
+ssh -i ~/.ssh/rktb-key.pem ubuntu@13.228.63.192 "cd /home/ubuntu/rktb && bash deploy.sh latest"
 
 # Option 2: Via SSM (works from anywhere)
 aws ssm start-session --target $INSTANCE_ID --region ap-southeast-1
@@ -1576,7 +2309,7 @@ Watch the GitHub Actions run in your repo's "Actions" tab.
 After the first deployment succeeds and the backend container is running:
 
 ```bash
-ssh -i ~/.ssh/rktb-key.pem ubuntu@$EC2_IP
+ssh -i ~/.ssh/rktb-key.pem ubuntu@13.228.63.192
 
 # Get the running backend container ID
 CONTAINER_ID=$(docker ps --filter "name=backend" --format "{{.ID}}")
@@ -1617,10 +2350,10 @@ curl -X POST https://rkteambuilder.com/auth/guest \
 # Expected: 200 with access_token
 
 # 5. Direct EC2 access blocked
-curl http://$EC2_IP/health
+curl http://13.228.63.192/health
 # Expected: 403 Forbidden (nginx rejects non-CloudFront requests)
 
-curl http://$EC2_IP:8000/health
+curl http://13.228.63.192:8000/health
 # Expected: Connection refused (port 8000 not exposed)
 
 # 6. HTTPS redirect
@@ -1628,7 +2361,7 @@ curl -I http://rkteambuilder.com
 # Expected: 301 → https://rkteambuilder.com
 
 # 7. Redis not accessible externally
-redis-cli -h $EC2_IP ping
+redis-cli -h 13.228.63.192 ping
 # Expected: Connection refused
 ```
 
@@ -1641,7 +2374,7 @@ redis-cli -h $EC2_IP ping
 **Nginx access logs → CloudWatch:**
 
 ```bash
-ssh -i ~/.ssh/rktb-key.pem ubuntu@$EC2_IP
+ssh -i ~/.ssh/rktb-key.pem ubuntu@13.228.63.192
 
 # Install CloudWatch agent
 wget https://s3.amazonaws.com/amazoncloudwatch-agent/ubuntu/amd64/latest/amazon-cloudwatch-agent.deb
@@ -1810,23 +2543,17 @@ Since the frontend and API are on the same domain (`rkteambuilder.com`), you nee
 | View CloudWatch logs | AWS Console → CloudWatch → Log groups → `/rktb/*` |
 | **Add new API route** | **1. Add in main.py → 2. Add CloudFront behavior → 3. Test returns JSON** |
 
-**Switching LLM Provider (e.g., Gemini → DeepSeek):**
+**Switching LLM Provider (currently using DeepSeek):**
 
-The backend uses `GEMINI_API_KEY` for LLM analysis. To switch providers:
+The backend uses DeepSeek (`LLM_PROVIDER=deepseek`) for LLM analysis in production. To switch to Gemini or another provider:
 
-1. **If using compatible API (OpenAI-compatible like DeepSeek):**
-   - Update `backend/llm_service.py` to use the new SDK/endpoint
-   - Add new parameter: `aws ssm put-parameter --name /rktb/prod/DEEPSEEK_API_KEY --value "..." --type SecureString`
-   - Update `docker-compose.prod.yml` to pass the new env var
-   - Update `deploy.sh` to fetch the new parameter
-   - Redeploy
+1. Update `LLM_PROVIDER` in `docker-compose.prod.yml` (e.g., `LLM_PROVIDER=gemini`)
+2. Ensure the API key is in Parameter Store (Gemini key is already stored)
+3. Update `docker-compose.prod.yml` to pass the correct env var
+4. Update `deploy.sh` to fetch the correct parameter
+5. Redeploy
 
-2. **Update rate limits:** DeepSeek may have different rate limits than Gemini. Adjust:
-   - `ANALYSIS_RATE_LIMIT` in docker-compose.prod.yml
-   - WAF rate-based rules (if configured)
-   - Backend rate limiter thresholds
-
-3. **Test thoroughly:** Different models may produce different JSON structures or response quality.
+**Note:** Different models may produce different response quality. Test thoroughly after switching.
 
 ---
 

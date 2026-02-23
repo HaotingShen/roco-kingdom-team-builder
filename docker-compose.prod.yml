@@ -1,0 +1,53 @@
+services:
+  backend:
+    image: ${ECR_URI}:${IMAGE_TAG:-latest}
+    restart: always
+    ports:
+      - "127.0.0.1:8000:8000"
+    environment:
+      - ENVIRONMENT=production
+      - DATABASE_URL=${DATABASE_URL}
+      - SECRET_KEY=${SECRET_KEY}
+      - LLM_PROVIDER=deepseek
+      - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY}
+      - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
+      # Cookie settings for path-based routing (same domain for frontend + API)
+      # COOKIE_DOMAIN not set = defaults to exact origin (rkteambuilder.com), correct for same-site
+      - COOKIE_SAMESITE=lax
+      - COOKIE_SECURE=true
+      - FRONTEND_URL=${FRONTEND_URL}  # CRITICAL: Used for email links, must be public URL
+      - ALLOWED_ORIGINS=${FRONTEND_URL}
+      - RATE_LIMIT_ENABLED=true
+      - ANALYSIS_RATE_LIMIT=1/2minutes
+      # NOTE: Backend rate limiter MUST extract client IP from CloudFront-Viewer-Address header
+      # (not from REMOTE_ADDR which will be CloudFront's IP). See backend/rate_limiter.py.
+      - SMTP_HOST=${SMTP_HOST:-}
+      - SMTP_PORT=${SMTP_PORT:-587}
+      - SMTP_USER=${SMTP_USER:-}
+      - SMTP_PASSWORD=${SMTP_PASSWORD:-}
+      - SMTP_FROM_EMAIL=noreply@rkteambuilder.com
+      - SMTP_FROM_NAME=RK Team Builder
+      - ADMIN_EMAILS=${ADMIN_EMAILS:-}
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  redis:
+    image: redis:7-alpine
+    restart: always
+    command: >
+      redis-server
+      --requirepass ${REDIS_PASSWORD}
+      --bind 0.0.0.0
+      --save 900 1
+      --save 300 10
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+volumes:
+  redis-data:
