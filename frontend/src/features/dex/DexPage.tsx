@@ -261,7 +261,7 @@ function MonstersTab() {
                 const formLabel = m.is_leader_form ? "" : pickFormName(m as any, lang);
                 const title = [titleName, formLabel ? `(${formLabel})` : ""].filter(Boolean).join(" ");
                 const fallbackChain = monsterImageFallbackChain(m, 180);
-                const src = fallbackChain[0] || "/monsters/placeholder.png";
+                const src = fallbackChain[0] || "/monster-images/placeholder.png";
 
                 return (
                   <Link
@@ -286,8 +286,8 @@ function MonstersTab() {
                           if (next < fallbackChain.length) {
                             img.dataset.fallbackStep = String(next);
                             img.src = fallbackChain[next]!;
-                          } else if (img.src !== "/monsters/placeholder.png") {
-                            img.src = "/monsters/placeholder.png";
+                          } else if (img.src !== "/monster-images/placeholder.png") {
+                            img.src = "/monster-images/placeholder.png";
                           }
                         }}
                       />
@@ -728,7 +728,7 @@ function MagicItemsTab() {
                 width={48}
                 height={48}
                 className="w-full h-full object-contain drop-shadow-sm"
-                onError={(e) => { (e.currentTarget as HTMLImageElement).src = "/monsters/placeholder.png"; }}
+                onError={(e) => { (e.currentTarget as HTMLImageElement).src = "/monster-images/placeholder.png"; }}
               />
             </div>
             <div className="min-w-0 flex-1">

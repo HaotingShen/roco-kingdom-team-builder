@@ -69,7 +69,7 @@ def delete_files(files_to_delete: Dict[str, List[Path]], dry_run: bool = False) 
 
 def main():
     # Define base path (WSL format)
-    base_path = Path("/mnt/d/Alan/Github Projects/roco-kingdom-team-builder/frontend/public/monsters")
+    base_path = Path("/mnt/d/Alan/Github Projects/roco-kingdom-team-builder/frontend/public/monster-images")
 
     # Define folders
     resize_folder = base_path / "resize"

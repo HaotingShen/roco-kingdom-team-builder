@@ -17,7 +17,7 @@ function MonsterAvatar({ monster, size = 60 }: { monster: any; size?: number }) 
   const fallbackChain = monsterImageFallbackChain(monster, 180);
 
   useEffect(() => {
-    setImgSrc(fallbackChain[0] || "/monsters/placeholder.png");
+    setImgSrc(fallbackChain[0] || "/monster-images/placeholder.png");
   }, [monster]);
 
   const handleError = () => {
@@ -36,7 +36,7 @@ function MonsterAvatar({ monster, size = 60 }: { monster: any; size?: number }) 
       style={{ width: size, height: size }}
     >
       <img
-        src={imgSrc || "/monsters/placeholder.png"}
+        src={imgSrc || "/monster-images/placeholder.png"}
         alt={monster?.name || "Monster"}
         className="w-full h-full object-cover"
         onError={handleError}

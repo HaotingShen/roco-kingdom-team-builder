@@ -33,7 +33,7 @@ function MonsterImage({ monster, size = 180 }: { monster: any; size?: number }) 
   const fallbackChain = monsterImageFallbackChain(monster, size as 180 | 270 | 360);
 
   useEffect(() => {
-    setImgSrc(fallbackChain[0] || "/monsters/placeholder.png");
+    setImgSrc(fallbackChain[0] || "/monster-images/placeholder.png");
   }, [monster]);
 
   const handleError = () => {
@@ -48,7 +48,7 @@ function MonsterImage({ monster, size = 180 }: { monster: any; size?: number }) 
 
   return (
     <img
-      src={imgSrc || "/monsters/placeholder.png"}
+      src={imgSrc || "/monster-images/placeholder.png"}
       alt={monster?.name || "Monster"}
       className="w-full h-full object-contain"
       onError={handleError}

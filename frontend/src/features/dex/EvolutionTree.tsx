@@ -143,7 +143,7 @@ function MonsterEvolutionCard({
       : monsterName;
 
   const fallbackChain = monsterImageFallbackChain(monster as any, 180);
-  const imgSrc = fallbackChain[0] || "/monsters/placeholder.png";
+  const imgSrc = fallbackChain[0] || "/monster-images/placeholder.png";
 
   // CRITICAL: Leader representatives navigate to first (lowest ID) leader form
   // monster.representative_id will be set to the lowest ID leader form in backend
@@ -176,8 +176,8 @@ function MonsterEvolutionCard({
               if (next < fallbackChain.length) {
                 img.dataset.fallbackStep = String(next);
                 img.src = fallbackChain[next]!;
-              } else if (img.src !== "/monsters/placeholder.png") {
-                img.src = "/monsters/placeholder.png";
+              } else if (img.src !== "/monster-images/placeholder.png") {
+                img.src = "/monster-images/placeholder.png";
               }
             }}
           />

@@ -1,5 +1,5 @@
 // Resize monster images to multiple square sizes (180, 270, 360) with padding as needed.
-// There must be a "resize" subfolder in the public/monsters/ folder containing source PNG images.
+// There must be a "resize" subfolder in the public/monster-images/ folder containing source PNG images.
 import sharp from "sharp";
 import fs from "fs/promises";
 import path from "path";
@@ -11,8 +11,8 @@ const __dirname = path.dirname(__filename);
 // Base directory = frontend/
 const BASE_DIR = __dirname + "/..";
 
-const INPUT_DIR = path.resolve(BASE_DIR, "public/monsters/resize");
-const OUTPUT_BASE = path.resolve(BASE_DIR, "public/monsters");
+const INPUT_DIR = path.resolve(BASE_DIR, "public/monster-images/resize");
+const OUTPUT_BASE = path.resolve(BASE_DIR, "public/monster-images");
 
 const SIZES = [180, 270, 360];
 
