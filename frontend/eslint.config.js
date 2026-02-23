@@ -24,8 +24,10 @@ export default tseslint.config([
       '@typescript-eslint/no-explicit-any': 'warn',
       // Downgrade to warn: fast-refresh export issue is a dev-tooling concern, not a runtime bug
       'react-refresh/only-export-components': 'warn',
-      // Allow unused vars if prefixed with _ (intentionally ignored)
-      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
+      // Allow unused vars/args/catch bindings if prefixed with _
+      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_', caughtErrorsIgnorePattern: '^_' }],
+      // Allow ternary expressions as statements (side-effect calls like x ? a() : b())
+      '@typescript-eslint/no-unused-expressions': ['error', { allowTernary: true }],
       // Control characters in regex are intentional in the username validator
       'no-control-regex': 'warn',
     },

@@ -70,7 +70,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             setAuth(user, response.data.access_token);
             console.log('Auth refreshed successfully');
           }
-        } catch (error) {
+        } catch (_error) {
           console.log('Token refresh failed, user becomes anonymous');
           if (!isCancelled) {
             // Clear auth - user is now anonymous
