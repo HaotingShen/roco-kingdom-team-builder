@@ -18,7 +18,7 @@ export function monsterImageUrlByCN(monster: any, size: 180 | 270 | 360 = 360): 
   const base = safeBaseName(cnForm ? `${cnName}(${cnForm})` : cnName);
   // URL-encode for the request path
   const encoded = encodeURIComponent(base);
-  return `/monsters/${size}/${encoded}.png`;
+  return `/monster-images/${size}/${encoded}.png`;
 }
 
 export function monsterImageUrlByEN(monster: any, size: 180 | 270 | 360 = 360): string | null {
@@ -33,11 +33,11 @@ export function monsterImageUrlByEN(monster: any, size: 180 | 270 | 360 = 360): 
 
   const base = safeBaseName(form ? `${enName}(${form})` : enName);
   const encoded = encodeURIComponent(base);
-  return `/monsters/${size}/${encoded}.png`;
+  return `/monster-images/${size}/${encoded}.png`;
 }
 
 export function monsterImageUrlById(monster: any, size: 180 | 270 | 360 = 360): string | null {
-  return monster?.id ? `/monsters/${size}/${monster.id}.png` : null;
+  return monster?.id ? `/monster-images/${size}/${monster.id}.png` : null;
 }
 
 export function typeIconUrl(name?: string, size: 30 | 45 | 60 = 60): string | null {
@@ -60,7 +60,7 @@ export function monsterImageFallbackChain(monster: any, size: 180 | 270 | 360 = 
     monsterImageUrlByCN(monster, size),
     monsterImageUrlByEN(monster, size),
     monsterImageUrlById(monster, size),
-    "/monsters/placeholder.png",
+    "/monster-images/placeholder.png",
   ].filter(Boolean) as string[];
 }
 
