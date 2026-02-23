@@ -1,8 +1,14 @@
+import os
 import pytest
 from sqlalchemy.orm import Session
 from backend.models import Type, Base
 from backend.config import DATABASE_URL
 from sqlalchemy import create_engine
+
+pytestmark = pytest.mark.skipif(
+    os.environ.get("ENVIRONMENT") == "testing",
+    reason="Requires seeded game data in PostgreSQL — run manually after data import"
+)
 
 TYPE_EXPECTATIONS = {
     "Fire": {
