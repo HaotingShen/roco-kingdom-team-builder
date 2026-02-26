@@ -28,6 +28,8 @@ services:
       - SMTP_FROM_EMAIL=noreply@rkteambuilder.com
       - SMTP_FROM_NAME=RK Team Builder
       - ADMIN_EMAILS=${ADMIN_EMAILS:-}
+    volumes:
+      - /home/ubuntu/rktb/logs:/app/backend/logs
     depends_on:
       redis:
         condition: service_healthy

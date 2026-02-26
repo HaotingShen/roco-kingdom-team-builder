@@ -243,12 +243,26 @@ redis_cache = RedisCache(
 )
 
 
+async def _periodic_prompt_log_cleanup():
+    """Background task: delete prompt logs older than 7 days, runs every 24 hours."""
+    while True:
+        await asyncio.sleep(24 * 60 * 60)
+        try:
+            from backend.prompt_logger import clear_old_logs
+            deleted = clear_old_logs(days=30)
+            if deleted:
+                logger.info(f"Prompt log cleanup: deleted {deleted} files older than 30 days")
+        except Exception as e:
+            logger.error(f"Prompt log cleanup failed: {e}")
+
+
 @app.on_event("startup")
 async def startup_event():
     """Initialize services on application startup."""
     logger.info("Application startup: connecting to Redis...")
     await redis_cache.connect()
     await revocation_service.connect()
+    asyncio.create_task(_periodic_prompt_log_cleanup())
 
 
 @app.on_event("shutdown")
