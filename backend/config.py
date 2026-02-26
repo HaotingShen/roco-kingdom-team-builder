@@ -28,11 +28,11 @@ GEMINI_THINKING_BUDGET = int(os.getenv("GEMINI_THINKING_BUDGET", "24576"))
 DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY", "")
 # Models: deepseek-chat (非思考模式), deepseek-reasoner (思考模式)
 DEEPSEEK_MODEL = os.getenv("DEEPSEEK_MODEL", "deepseek-reasoner")
-DEEPSEEK_TIMEOUT = float(os.getenv("DEEPSEEK_TIMEOUT", "60.0"))
+DEEPSEEK_TIMEOUT = float(os.getenv("DEEPSEEK_TIMEOUT", "200.0"))
 
 # LLM Response Configuration
 ANALYSIS_TEMPERATURE = float(os.getenv("ANALYSIS_TEMPERATURE", "0.7"))
-ANALYSIS_MAX_TOKENS = int(os.getenv("ANALYSIS_MAX_TOKENS", "4096"))
+ANALYSIS_MAX_TOKENS = int(os.getenv("ANALYSIS_MAX_TOKENS", "32768"))
 
 # Validate API keys based on selected provider
 if LLM_PROVIDER == "gemini" and not GEMINI_API_KEY:
@@ -75,14 +75,14 @@ ANALYSIS_RATE_LIMIT = os.getenv("ANALYSIS_RATE_LIMIT", "1/2minutes")
 # When enabled, LLM prompts include only referenced game terms instead of all 50+ terms
 # Improves signal-to-noise ratio for better analysis quality
 # Default: false (safe rollout - enable after validation)
-ENABLE_REFERENCE_RESOLUTION = os.getenv("ENABLE_REFERENCE_RESOLUTION", "false").lower() == "true"
+ENABLE_REFERENCE_RESOLUTION = os.getenv("ENABLE_REFERENCE_RESOLUTION", "true").lower() == "true"
 
 # Redis Cache Configuration
 # Redis provides persistent cache across restarts and stampede protection
 REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
 REDIS_CACHE_TTL = int(os.getenv("REDIS_CACHE_TTL", "3600"))  # 1 hour default
-REDIS_LOCK_TIMEOUT = int(os.getenv("REDIS_LOCK_TIMEOUT", "30"))  # 30 seconds for lock timeout
-REDIS_LOCK_BLOCKING_TIMEOUT = int(os.getenv("REDIS_LOCK_BLOCKING_TIMEOUT", "60"))  # 60 seconds to wait for lock
+REDIS_LOCK_TIMEOUT = int(os.getenv("REDIS_LOCK_TIMEOUT", "210"))  # must exceed max LLM response time
+REDIS_LOCK_BLOCKING_TIMEOUT = int(os.getenv("REDIS_LOCK_BLOCKING_TIMEOUT", "210"))  # must exceed max LLM response time
 
 
 # ========== JWT Configuration ==========
@@ -208,7 +208,7 @@ TIER_LIMITS = {
         "priority": 0,
     },
     "guest": {
-        "daily_analyses": int(os.getenv("TIER_GUEST_DAILY_ANALYSES", "3")),
+        "daily_analyses": int(os.getenv("TIER_GUEST_DAILY_ANALYSES", "2")),
         "monthly_analyses": int(os.getenv("TIER_GUEST_MONTHLY_ANALYSES", "30")),
         "teams_limit": int(os.getenv("TIER_GUEST_TEAMS_LIMIT", "3")),
         "priority": 0,
