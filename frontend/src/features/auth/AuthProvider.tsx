@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import { useAuthStore } from './authStore';
-import { authEndpoints } from '@/lib/api';
+import { authEndpoints, refreshCoordinator } from '@/lib/api';
 
 interface AuthContextType {
   isLoading: boolean;
@@ -61,17 +61,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // NOTE: Device ID is now handled by backend httpOnly cookie.
       // No need to manage it in frontend anymore.
 
-      // Case 1: User profile exists, try to refresh access token
+      // Case 1: User profile exists, try to refresh access token.
+      // Signal refresh start BEFORE the async call so any 401s from React Query
+      // (which fire immediately since user is in localStorage) are queued here
+      // instead of triggering a parallel refresh race.
       if (user) {
+        refreshCoordinator.begin();
         try {
           // SECURITY: Refresh endpoint reads httpOnly cookie automatically
           const response = await authEndpoints.refresh();
+          refreshCoordinator.succeed(response.data.access_token);
           if (!isCancelled) {
             setAuth(user, response.data.access_token);
-            console.log('Auth refreshed successfully');
           }
         } catch (_error) {
-          console.log('Token refresh failed, user becomes anonymous');
+          // Reject all queued requests — refresh token invalid/expired
+          refreshCoordinator.fail();
           if (!isCancelled) {
             // Clear auth - user is now anonymous
             // They can reclaim their guest account later via "Continue as Guest"

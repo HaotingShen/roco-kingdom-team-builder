@@ -1,5 +1,6 @@
 import axios from "axios";
 import { useAuthStore } from "@/features/auth/authStore";
+import { queryClient } from "@/lib/queryClient";
 
 // Defined in .env.local as VITE_API_BASE_URL
 const baseURL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000";
@@ -74,15 +75,46 @@ api.interceptors.request.use(
  * - Other requests wait for refresh to complete, then retry
  */
 let isRefreshing = false;
-let refreshSubscribers: Array<(token: string) => void> = [];
+type RefreshCallback = (token: string | null) => void;
+let refreshSubscribers: RefreshCallback[] = [];
 
 const onRefreshed = (token: string) => {
-  refreshSubscribers.forEach((callback) => callback(token));
+  refreshSubscribers.forEach((cb) => cb(token));
   refreshSubscribers = [];
 };
 
-const addRefreshSubscriber = (callback: (token: string) => void) => {
+const onRefreshFailed = () => {
+  refreshSubscribers.forEach((cb) => cb(null));
+  refreshSubscribers = [];
+};
+
+const addRefreshSubscriber = (callback: RefreshCallback) => {
   refreshSubscribers.push(callback);
+};
+
+/**
+ * Exported so AuthProvider can coordinate with the interceptor queue.
+ *
+ * On page reload, AuthProvider calls /auth/refresh to restore the access token.
+ * Meanwhile React Query fires queries (user is in localStorage) which get 401s.
+ * Without coordination, the interceptor would launch a parallel refresh call,
+ * racing with AuthProvider's — potentially invalidating the refresh token.
+ *
+ * Usage in AuthProvider:
+ *   refreshCoordinator.begin()   → queue any 401s, don't start parallel refresh
+ *   refreshCoordinator.succeed() → retry all queued requests with new token
+ *   refreshCoordinator.fail()    → reject all queued requests (user logged out)
+ */
+export const refreshCoordinator = {
+  begin: () => { isRefreshing = true; },
+  succeed: (token: string) => {
+    onRefreshed(token);
+    isRefreshing = false;
+    // Quota returns 200 with anonymous data when token is expired (no 401 to intercept).
+    // Force a re-fetch after every successful refresh so it picks up the correct tier data.
+    queryClient.invalidateQueries({ queryKey: ['quota'] });
+  },
+  fail: () => { onRefreshFailed(); isRefreshing = false; },
 };
 
 api.interceptors.response.use(
@@ -98,10 +130,15 @@ api.interceptors.response.use(
     if (error.response?.status === 401 && !originalRequest._retry && !isAuthEndpoint && currentUser) {
       originalRequest._retry = true;
 
-      // If already refreshing, queue this request
+      // If already refreshing (either by AuthProvider init or a prior 401),
+      // queue this request to be retried once the refresh completes.
       if (isRefreshing) {
-        return new Promise((resolve) => {
-          addRefreshSubscriber((token: string) => {
+        return new Promise((resolve, reject) => {
+          addRefreshSubscriber((token) => {
+            if (!token) {
+              reject(error);
+              return;
+            }
             originalRequest.headers.Authorization = `Bearer ${token}`;
             resolve(api(originalRequest));
           });
@@ -121,18 +158,17 @@ api.interceptors.response.use(
         // Retry original request with new token
         originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
 
-        // Notify queued requests
+        // Notify queued requests and fix stale anonymous quota data
         onRefreshed(newAccessToken);
         isRefreshing = false;
+        queryClient.invalidateQueries({ queryKey: ['quota'] });
 
         return api(originalRequest);
       } catch (refreshError) {
-        // Refresh failed - user becomes anonymous
-        // DO NOT auto-create guest account
-        console.error('Token refresh failed:', refreshError);
-        useAuthStore.getState().clearAuth();
-
+        // Refresh failed — reject all queued requests and clear auth
+        onRefreshFailed();
         isRefreshing = false;
+        useAuthStore.getState().clearAuth();
         return Promise.reject(refreshError);
       }
     }
