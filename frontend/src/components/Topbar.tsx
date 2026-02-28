@@ -3,7 +3,7 @@ import { useI18n } from "@/i18n";
 import { useBuilderStore } from "@/features/builder/builderStore";
 import { useAuthStore } from "@/features/auth/authStore";
 import { useMutation } from "@tanstack/react-query";
-import { endpoints, authEndpoints } from "@/lib/api";
+import { endpoints } from "@/lib/api";
 import type { TeamOut } from "@/types";
 import UserMenu from "./UserMenu";
 
@@ -11,7 +11,7 @@ export default function Topbar() {
   const nav = useNavigate();
   const loc = useLocation();
   const { lang, setLang, t } = useI18n();
-  const { user, updateUser } = useAuthStore();
+  const { user } = useAuthStore();
 
   const resetBuilder = useBuilderStore(s => s.reset);
   const loadFromTeam = useBuilderStore(s => s.loadFromTeam);
@@ -109,16 +109,7 @@ export default function Topbar() {
         )}
 
         <button
-          onClick={() => {
-            const newLang = lang === "en" ? "zh" : "en";
-            setLang(newLang);
-            if (user && !user.is_guest) {
-              // Update persisted user object so AuthProvider syncs correctly on reload
-              updateUser({ ...user, preferred_language: newLang });
-              // Fire-and-forget backend sync
-              authEndpoints.updateLanguagePreference(newLang).catch(() => {});
-            }
-          }}
+          onClick={() => setLang(lang === "en" ? "zh" : "en")}
           className="h-9 px-3 rounded border hover:bg-zinc-50 cursor-pointer"
           title={t("topbar.toggleLanguage")}
         >
