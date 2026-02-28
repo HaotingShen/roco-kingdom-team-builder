@@ -49,13 +49,9 @@ Users → https://rkteambuilder.com
      │  • Edge caching (Singapore, HK, Tokyo, etc.)  │
      └──────┬──────────────────────────┬─────────────┘
             │                          │
-  API paths → EC2:                     │  /* (default) → S3
-  /auth/* /teams/* /team/*             │
-  /monsters/* /moves/* /types          │
-  /traits /personalities /species      │
-  /magic_items /game_terms /config/*   │
-  /admin/* /cache/* /analysis/*        │
-  /health                              │
+  /api/* → EC2:                        │  /* (default) → S3
+  (all API calls use /api/ prefix)     │
+  Nginx strips /api before FastAPI     │
             │                          │
             ▼                          ▼
   ┌─────────────────────┐    ┌───────────────┐
@@ -94,9 +90,11 @@ Users → https://rkteambuilder.com
 ```
 
 **Path-based routing** means everything goes through `rkteambuilder.com`:
-- `rkteambuilder.com/build` → S3 (React SPA)
-- `rkteambuilder.com/auth/login` → EC2 (FastAPI API)
-- `rkteambuilder.com/teams` → EC2 (FastAPI API)
+- `rkteambuilder.com/teams` → S3 (React SPA — browser navigation)
+- `rkteambuilder.com/api/auth/login` → EC2 (FastAPI API call)
+- `rkteambuilder.com/api/teams` → EC2 (FastAPI data fetch)
+
+All API calls use the `/api/` prefix so CloudFront can distinguish them from SPA navigation (which uses the same path names but without the prefix). Nginx strips `/api` before FastAPI sees the request, so FastAPI routes remain unchanged.
 
 This means cookies are on the same domain — no cross-domain issues, no COOKIE_DOMAIN config needed, SameSite=Lax works.
 
@@ -1361,7 +1359,11 @@ server {
     add_header X-Content-Type-Options "nosniff" always;
     add_header X-Frame-Options "DENY" always;
 
-    location / {
+    location /api/ {
+        # Strip /api prefix before forwarding to FastAPI
+        # e.g. /api/teams → /teams, /api/auth/login → /auth/login
+        rewrite ^/api(/.*)$ $1 break;
+
         proxy_pass http://127.0.0.1:8000;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
@@ -1376,8 +1378,8 @@ server {
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection "upgrade";
 
-        # LLM analysis can take 30+ seconds
-        proxy_read_timeout 120s;
+        # DeepSeek analysis takes ~86s; set well above that
+        proxy_read_timeout 210s;
         proxy_connect_timeout 10s;
     }
 }
@@ -1485,17 +1487,15 @@ chmod +x /home/ubuntu/rktb/deploy.sh
   │  default root object: index.html                         │
   │  security headers: SecurityHeadersPolicy (all behaviors) │
   │                                                          │
-  │  Behavior matching (order matters, first match wins):    │
+  │  Behavior matching (2 rules, first match wins):          │
   │                                                          │
-  │  /auth/*   /teams  /teams/*  /team/*                     │
-  │  /admin/*  /cache/* /analysis/*          ──────────────► │──► EC2 origin
-  │  (ALL HTTP methods allowed)                              │    origin-api.
-  │                                                          │    rkteambuilder
-  │  /monsters  /monsters/*  /moves  /moves/*                │    .com
-  │  /types  /traits  /personalities                         │    (port 80,
-  │  /magic_items  /game_terms  /species                     │    HTTP only)
-  │  /config/*  /health                      ──────────────► │──► EC2 origin
-  │  (GET, HEAD, OPTIONS only)                               │
+  │  /api/*  (ALL HTTP methods)                              │
+  │  CachingDisabled                          ──────────────►│──► EC2 origin
+  │  AllViewerExceptHostHeader                │    origin-api.
+  │  Nginx rewrites /api/foo → /foo           │    rkteambuilder
+  │  before FastAPI sees the request          │    .com
+  │                                           │    (port 80,
+  │                                           │    HTTP only)
   │                                                          │
   │  /* (default, everything else)            ──────────────►│──► S3 origin
   │  (GET, HEAD only, CachingOptimized)                      │    rktb-frontend
@@ -1611,57 +1611,25 @@ This is best done via the **AWS Console** due to the number of settings.
 - Add custom header `X-Origin-Verify` with the secret from Parameter Store
 - **Origin timeout settings** (click "Additional settings"):
   - Connection timeout: **10 seconds** (default)
-  - Response timeout: **90 seconds** (LLM analysis typically takes ~45s, 90s provides safe buffer)
+  - Response timeout: **120 seconds** (LLM analysis typically takes ~90s, 120s provides safe buffer)
   - Keep-alive timeout: **5 seconds** (default)
 
-> **Note:** CloudFront allows response timeout up to 120 seconds without AWS Support approval. 90 seconds is chosen to provide comfortable buffer for LLM analysis calls (~45s typical).
+> **Note:** CloudFront allows response timeout up to 120 seconds without AWS Support approval. 120 seconds is chosen to provide comfortable buffer for DeepSeek LLM analysis calls (~90s typical).
 
 **Cache Behaviors (order matters - specific paths first, default last):**
 
 | Priority | Path Pattern | Origin | Viewer Protocol | Allowed Methods | Cache Policy | Origin Request Policy |
 |----------|-------------|--------|-----------------|-----------------|-------------|----------------------|
-| 1 | `/auth/*` | EC2-API | Redirect HTTPS | ALL (incl. DELETE) | CachingDisabled | AllViewerExceptHostHeader |
-| 2 | `/teams` | EC2-API | Redirect HTTPS | ALL | CachingDisabled | AllViewerExceptHostHeader |
-| 3 | `/teams/*` | EC2-API | Redirect HTTPS | ALL | CachingDisabled | AllViewerExceptHostHeader |
-| 4 | `/team/*` | EC2-API | Redirect HTTPS | ALL | CachingDisabled | AllViewerExceptHostHeader |
-| 5 | `/monsters` | EC2-API | Redirect HTTPS | GET, HEAD, OPTIONS | CachingDisabled | AllViewerExceptHostHeader |
-| 6 | `/monsters/*` | EC2-API | Redirect HTTPS | GET, HEAD, OPTIONS | CachingDisabled | AllViewerExceptHostHeader |
-| 7 | `/moves` | EC2-API | Redirect HTTPS | GET, HEAD, OPTIONS | CachingDisabled | AllViewerExceptHostHeader |
-| 8 | `/moves/*` | EC2-API | Redirect HTTPS | GET, HEAD, OPTIONS | CachingDisabled | AllViewerExceptHostHeader |
-| 9 | `/types` | EC2-API | Redirect HTTPS | GET, HEAD, OPTIONS | CachingDisabled | AllViewerExceptHostHeader |
-| 10 | `/traits` | EC2-API | Redirect HTTPS | GET, HEAD, OPTIONS | CachingDisabled | AllViewerExceptHostHeader |
-| 11 | `/personalities` | EC2-API | Redirect HTTPS | GET, HEAD, OPTIONS | CachingDisabled | AllViewerExceptHostHeader |
-| 12 | `/magic_items` | EC2-API | Redirect HTTPS | GET, HEAD, OPTIONS | CachingDisabled | AllViewerExceptHostHeader |
-| 13 | `/game_terms` | EC2-API | Redirect HTTPS | GET, HEAD, OPTIONS | CachingDisabled | AllViewerExceptHostHeader |
-| 14 | `/species` | EC2-API | Redirect HTTPS | GET, HEAD, OPTIONS | CachingDisabled | AllViewerExceptHostHeader |
-| 15 | `/admin/*` | EC2-API | Redirect HTTPS | ALL | CachingDisabled | AllViewerExceptHostHeader |
-| 16 | `/cache/*` | EC2-API | Redirect HTTPS | ALL | CachingDisabled | AllViewerExceptHostHeader |
-| 17 | `/analysis/*` | EC2-API | Redirect HTTPS | ALL | CachingDisabled | AllViewerExceptHostHeader |
-| 18 | `/config/*` | EC2-API | Redirect HTTPS | GET, HEAD, OPTIONS | CachingDisabled | AllViewerExceptHostHeader |
-| 19 | `/health` | EC2-API | Redirect HTTPS | GET, HEAD | CachingDisabled | AllViewerExceptHostHeader |
+| 1 | `/api/*` | EC2-API | Redirect HTTPS | ALL | CachingDisabled | AllViewerExceptHostHeader |
 | Default | `*` | S3-Frontend | Redirect HTTPS | GET, HEAD | CachingOptimized | None (not needed) |
 
-**Note on Origin Request Policy:** "AllViewerExceptHostHeader" is required for API behaviors to forward cookies, Authorization headers, and query strings. For the S3 default behavior, no origin request policy is needed since static files don't require these headers.
+**Why only two rules?** All API calls from the frontend use the `/api/` prefix (e.g., `GET /api/teams`, `POST /api/auth/login`). A single `/api/*` behavior routes them all to EC2. Everything else — including browser navigation to `/teams`, `/monsters`, `/build` — falls through to the S3 default and gets `index.html`, allowing React Router to handle the URL client-side.
 
-**Note:** CloudFront behaviors are matched in order. `/teams` and `/teams/*` need separate rules because CloudFront's `/teams/*` does NOT match the exact path `/teams` (only paths with content after the slash). Same for `/monsters` and `/monsters/*`, `/moves` and `/moves/*`.
+**Why not individual rules per API path?** The old approach had 19 separate CloudFront behaviors (one per API path). The fatal flaw: browser navigation and API calls shared the same URL namespace. For example, `GET /teams` could be either a React Router page load (should return `index.html`) or an API data fetch (should return JSON). CloudFront can't distinguish them, so refreshing `/teams` in the browser returned raw JSON instead of the app. The `/api/` prefix eliminates this namespace collision.
 
-**Future-proofing note:** Routes like `/types`, `/traits`, `/personalities`, `/magic_items`, `/game_terms`, `/species` currently only have list endpoints (no `/{id}` subpaths). If you ever add detail routes (e.g., `/types/fire`, `/traits/123`), you MUST add corresponding `/*` behaviors, or those requests will silently route to S3 and return HTML instead of JSON.
+**Adding new API routes:** Just add the endpoint in `backend/main.py`. No CloudFront changes needed — the single `/api/*` behavior covers all current and future API routes automatically.
 
-**Important: For all API behaviors**, you MUST forward cookies and the Authorization header. Use the managed origin request policy "AllViewerExceptHostHeader" which forwards all headers, cookies, and query strings. Use managed cache policy "CachingDisabled" so API responses are never cached by CloudFront.
-
-> ⚠️ **MAINTENANCE REQUIREMENT: Keep CloudFront behaviors in sync with API routes**
->
-> When you add a new API endpoint (e.g., `/search/*`, `/v2/*`, `/webhooks/*`), you MUST add a corresponding CloudFront behavior. Otherwise:
-> 1. CloudFront routes the request to S3 (default behavior)
-> 2. S3 returns `index.html` (the SPA error document)
-> 3. Your frontend receives HTML instead of JSON - silent failure!
->
-> **Checklist when adding new API routes:**
-> 1. Add endpoint in `backend/main.py`
-> 2. Add CloudFront behavior in AWS Console (or via CLI/Terraform)
-> 3. Test that the endpoint returns JSON, not HTML
->
-> **Alternative:** Prefix all API routes with `/api/*` and use a single CloudFront behavior. This requires refactoring the backend routes but eliminates maintenance burden.
+**Note on Origin Request Policy:** "AllViewerExceptHostHeader" forwards all headers, cookies, and query strings to EC2. This is required for auth cookies and Authorization headers to reach FastAPI. The S3 default behavior needs no origin request policy.
 
 **Distribution Settings:**
 - Alternate domain names (CNAMEs): `rkteambuilder.com`
@@ -1835,8 +1803,8 @@ Then add `www.rkteambuilder.com` to CloudFront's alternate domain names and upda
   │  OIDC → IAM role        │    │  OIDC → IAM role        │
   │  ECR login              │    │  npm run build          │
   │  docker build           │    │  (VITE_API_BASE_URL=    │
-  │    -f backend/Dockerfile│    │   https://rkteam        │
-  │  docker push to ECR     │    │   builder.com)          │
+  │    -f backend/Dockerfile│    │   https://rkteambuilder │
+  │  docker push to ECR     │    │   .com/api)             │
   │    :latest              │    │                         │
   │    :<git-sha>           │    │  s3 sync dist/ →        │
   │                         │    │   rktb-frontend         │
@@ -2126,7 +2094,7 @@ jobs:
         run: |
           cd frontend
           npm ci
-          VITE_API_BASE_URL=https://rkteambuilder.com npm run build
+          VITE_API_BASE_URL=https://rkteambuilder.com/api npm run build
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -2287,6 +2255,70 @@ aws ssm start-session --target $INSTANCE_ID --region ap-southeast-1
 # Then inside the session: cd /home/ubuntu/rktb && bash deploy.sh latest
 ```
 
+### 6.4 Resend (Active Email Provider — SES Alternative)
+
+AWS SES production access was denied twice by Trust and Safety. Resend is used instead — it has no approval process, a 3,000 emails/month free tier, and uses standard SMTP so zero code changes were needed.
+
+> **Note:** Resend is built on AWS infrastructure internally — the MX bounce record points to `amazonses.com`. It is essentially a developer-friendly wrapper around SES with pre-approved sending reputation.
+
+#### 6.4.1 Domain Setup
+
+1. Sign up at **resend.com**
+2. Resend Dashboard → Domains → Add domain → `rkteambuilder.com`, Region: any (US East is fine)
+3. Resend shows DNS records to add — add all of them in **Cloudflare → rkteambuilder.com → DNS**:
+
+| Type | Name | Content | Proxy |
+|------|------|---------|-------|
+| TXT | `resend._domainkey` | *(DKIM value from Resend)* | DNS only |
+| MX | `send` | *(bounce endpoint from Resend, priority 10)* | DNS only |
+| TXT | `send` | *(SPF value from Resend)* | DNS only |
+| TXT | `_dmarc` | `v=DMARC1; p=none;` | DNS only |
+
+4. Click **Verify Records** in Resend — wait for green status
+
+#### 6.4.2 Create API Key
+
+Resend Dashboard → API Keys → Create API key:
+- Name: `rktb-prod`
+- Permission: **Sending access**
+- Domain: **rkteambuilder.com**
+
+Copy the key immediately (shown only once, starts with `re_`).
+
+#### 6.4.3 Store Credentials in Parameter Store
+
+```bash
+aws ssm put-parameter --name /rktb/prod/SMTP_HOST \
+  --value "smtp.resend.com" --type String --overwrite \
+  --region ap-southeast-1
+
+aws ssm put-parameter --name /rktb/prod/SMTP_USER \
+  --value "resend" --type String --overwrite \
+  --region ap-southeast-1
+
+aws ssm put-parameter --name /rktb/prod/SMTP_PASSWORD \
+  --value "re_YOUR_API_KEY" --type SecureString --overwrite \
+  --region ap-southeast-1
+```
+
+`SMTP_PORT=587` and `SMTP_USE_TLS=true` remain unchanged — Resend uses identical settings to SES.
+`SMTP_FROM_EMAIL=noreply@rkteambuilder.com` is hardcoded in `docker-compose.prod.yml` and unchanged.
+
+#### 6.4.4 Redeploy Backend
+
+> **Note:** Steps 6.4.1–6.4.3 can be completed before Phase 7. If you do so, skip this step — the Phase 7 initial deployment will already pick up the credentials from Parameter Store automatically. Only run this if you configured Resend after the backend was already deployed.
+
+`deploy.sh` reads SMTP credentials fresh from Parameter Store on every run:
+
+```bash
+ssh -i ~/.ssh/rktb-key.pem ubuntu@13.228.63.192
+cd /home/ubuntu/rktb && bash deploy.sh latest
+```
+
+#### 6.4.5 Verify Email Delivery
+
+Register a new account on `https://rkteambuilder.com` and confirm the verification email arrives in the inbox.
+
 ---
 
 ## Phase 7: First Deployment & Data Import
@@ -2315,7 +2347,8 @@ ssh -i ~/.ssh/rktb-key.pem ubuntu@13.228.63.192
 CONTAINER_ID=$(docker ps --filter "name=backend" --format "{{.ID}}")
 
 # Run the data import inside the container
-docker exec $CONTAINER_ID python3 -m backend.scripts.importers.reset_and_reimport
+# NOTE: pipe "yes" via -i flag to answer the confirmation prompt non-interactively
+echo "yes" | docker exec -i $CONTAINER_ID python3 -m backend.scripts.importers.reset_and_reimport
 ```
 
 ### 7.3 Run Alembic Migrations (if not auto-run by deploy.sh)
@@ -2332,20 +2365,24 @@ docker exec $CONTAINER_ID python -m alembic -c backend/alembic.ini upgrade head
 # Set your EC2 IP if not already in environment (from Phase 1.8)
 # EC2_IP=<your-elastic-ip-here>
 
-# 1. Health check
-curl https://rkteambuilder.com/health
+# 1. Health check (API prefix required — /health alone goes to S3)
+curl https://rkteambuilder.com/api/health
 # Expected: {"status":"ok"}
 
 # 2. Frontend loads
 curl -I https://rkteambuilder.com
 # Expected: 200 OK, security headers present
 
-# 3. API endpoints work
-curl "https://rkteambuilder.com/monsters?limit=1"
+# 3. SPA routing works (browser refresh on /teams should return index.html, not JSON)
+curl -I https://rkteambuilder.com/teams
+# Expected: 200 OK with Content-Type: text/html (served by S3)
+
+# 4. API endpoints work
+curl "https://rkteambuilder.com/api/monsters?limit=1"
 # Expected: JSON response with monster data
 
-# 4. Auth works
-curl -X POST https://rkteambuilder.com/auth/guest \
+# 5. Auth works
+curl -X POST https://rkteambuilder.com/api/auth/guest \
   -H "Content-Type: application/json"
 # Expected: 200 with access_token
 
@@ -2505,13 +2542,19 @@ aws cloudwatch put-metric-alarm \
 
 ---
 
-## Phase 10: Backend Config Change for Path-Based Routing
+## Phase 10: Frontend API Prefix and SPA Routing
 
-Since the frontend and API are on the same domain (`rkteambuilder.com`), you need to update `VITE_API_BASE_URL`:
+**The `/api` prefix is critical — here's why:**
 
-**File: `frontend/src/lib/api.ts`** — verify that the axios base URL handles same-origin correctly. With `VITE_API_BASE_URL=https://rkteambuilder.com`, requests to `/auth/login` will go to `https://rkteambuilder.com/auth/login`, which CloudFront routes to EC2. This should work without changes.
+React SPA routes (like `/teams`, `/monsters`, `/auth/login`) and FastAPI routes share the same URL namespace. Without a prefix, a browser refresh on `/teams` causes CloudFront to route the request to EC2, which returns JSON instead of `index.html`. The React app never loads.
 
-**File: `backend/config.py`** — no COOKIE_DOMAIN needed. When cookies are set without an explicit domain, they default to the exact origin domain, which is `rkteambuilder.com`. Since both frontend and API are on this domain, cookies flow correctly.
+The fix: all frontend API calls use `VITE_API_BASE_URL=https://rkteambuilder.com/api`, so they hit `/api/*`. CloudFront routes `/api/*` to EC2. All other paths — including browser navigation to `/teams`, `/monsters`, etc. — fall through to the S3 default behavior and return `index.html`, letting React Router handle the URL client-side.
+
+Nginx on EC2 strips the `/api` prefix (`rewrite ^/api(/.*)$ $1 break`) before passing to FastAPI, so FastAPI routes remain unchanged.
+
+**File: `frontend/src/lib/api.ts`** — the axios base URL is set from `VITE_API_BASE_URL` at build time. No code changes needed; only the environment variable (set in `deploy.yml`) matters.
+
+**File: `backend/config.py`** — no COOKIE_DOMAIN needed. When cookies are set without an explicit domain, they default to the exact origin domain (`rkteambuilder.com`). Since both frontend and API are on this domain, cookies flow correctly.
 
 ---
 
@@ -2541,7 +2584,7 @@ Since the frontend and API are on the same domain (`rkteambuilder.com`), you nee
 | Check costs | `aws ce get-cost-and-usage --time-period Start=$(date +%Y-%m-01),End=$(date +%Y-%m-%d) --granularity MONTHLY --metrics BlendedCost` |
 | Scale up EC2 | Stop instance → Change type → Start (or launch new, swap Elastic IP) |
 | View CloudWatch logs | AWS Console → CloudWatch → Log groups → `/rktb/*` |
-| **Add new API route** | **1. Add in main.py → 2. Add CloudFront behavior → 3. Test returns JSON** |
+| **Add new API route** | **Add in main.py only — no CloudFront changes needed (all routes covered by `/api/*` behavior)** |
 
 **Switching LLM Provider (currently using DeepSeek):**
 

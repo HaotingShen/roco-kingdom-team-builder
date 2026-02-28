@@ -63,7 +63,7 @@ Go to GitHub → Actions tab → watch the running workflow. Takes ~5-8 minutes 
 
 **Verify it worked:**
 ```bash
-curl https://rkteambuilder.com/health
+curl https://rkteambuilder.com/api/health
 # Expected: {"status": "healthy"}
 ```
 
@@ -96,7 +96,7 @@ This doesn't deploy new code — it just restarts what's already running.
 ```bash
 # Is the site reachable at all?
 curl -I https://rkteambuilder.com
-curl https://rkteambuilder.com/health
+curl https://rkteambuilder.com/api/health
 ```
 
 - **curl times out** → CloudFront or EC2 is down
@@ -151,7 +151,7 @@ docker pull 273130558025.dkr.ecr.ap-southeast-1.amazonaws.com/rktb-backend:<prev
 
 ## Scenario 3: Managing Users
 
-Use the Swagger UI at **rkteambuilder.com/docs** while logged in as admin (shenhaoting@gmail.com). No SSH needed.
+Use the Swagger UI at **rkteambuilder.com/api/docs** while logged in as admin (shenhaoting@gmail.com). No SSH needed.
 
 ### Find a user
 ```
@@ -537,11 +537,11 @@ Each file contains: metadata, token usage, DeepSeek cache hit rate, response tim
 
 | Task | Method |
 |---|---|
-| Check site health | `curl https://rkteambuilder.com/health` |
+| Check site health | `curl https://rkteambuilder.com/api/health` |
 | Deploy new code | `git push origin main` |
 | View live logs | SSH → `docker compose -f docker-compose.prod.yml logs -f backend` |
 | Restart backend | SSH → `docker compose -f docker-compose.prod.yml restart backend` |
-| Manage users | `rkteambuilder.com/docs` (admin endpoints) |
+| Manage users | `rkteambuilder.com/api/docs` (admin endpoints) |
 | Run data scripts | SSH → `docker exec -it rktb-backend bash` → `python3 -m backend.scripts...` |
 | Run migrations | SSH → `docker exec -it rktb-backend bash` → `alembic upgrade head` |
 | Change a secret | AWS Parameter Store → put-parameter → restart backend |

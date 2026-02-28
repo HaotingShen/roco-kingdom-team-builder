@@ -105,7 +105,7 @@ async def send_verification_email(to_email: str, token: str, language: str = "en
     verify_url = f"{FRONTEND_URL}/auth/verify?token={token}"
 
     if language == "zh":
-        subject = "验证您的邮箱 - RK Team Builder"
+        subject = "验证您的邮箱 - 洛手配队器"
         html_body = f"""
     <!DOCTYPE html>
     <html>
@@ -185,7 +185,7 @@ async def send_password_reset_email(to_email: str, token: str, language: str = "
     reset_url = f"{FRONTEND_URL}/auth/reset-password?token={token}"
 
     if language == "zh":
-        subject = "重置密码 - RK Team Builder"
+        subject = "重置密码 - 洛手配队器"
         html_body = f"""
     <!DOCTYPE html>
     <html>
@@ -266,7 +266,7 @@ async def send_email_change_verification(to_email: str, token: str, language: st
     verify_url = f"{FRONTEND_URL}/auth/confirm-email?token={token}"
 
     if language == "zh":
-        subject = "确认新邮箱 - RK Team Builder"
+        subject = "确认新邮箱 - 洛手配队器"
         html_body = f"""
     <!DOCTYPE html>
     <html>

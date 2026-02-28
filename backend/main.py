@@ -5,7 +5,7 @@ from starlette.responses import RedirectResponse
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.middleware import SlowAPIMiddleware
 from sqlalchemy.orm import Session, sessionmaker, joinedload
-from sqlalchemy import create_engine, or_, cast, String, func, text
+from sqlalchemy import create_engine, or_, and_, cast, String, func, text
 from backend.config import (
     DATABASE_URL,
     LLM_PROVIDER,
@@ -256,6 +256,78 @@ async def _periodic_prompt_log_cleanup():
             logger.error(f"Prompt log cleanup failed: {e}")
 
 
+async def _periodic_guest_cleanup():
+    """
+    Background task: delete orphaned and abandoned guest accounts, runs every 24 hours.
+
+    Removes two categories:
+    - Explicitly orphaned guests: is_active=False (set by reset-device-id)
+    - Abandoned guests: active but no activity for 30+ days
+
+    Uses a Redis distributed lock so only one uvicorn worker runs this
+    (production runs --workers 2; without the lock both workers would delete
+    the same rows concurrently).
+    """
+    await asyncio.sleep(60)  # Brief delay after startup before first run
+    while True:
+        try:
+            # Acquire a short-lived Redis lock (non-blocking) so only one worker
+            # runs per cycle. The lock TTL (3600s) expires well before the next
+            # 24-hour cycle, so the other worker can win next time.
+            lock = None
+            acquired = True  # Default to running if Redis is unavailable
+            if redis_cache._connected and redis_cache._redis:
+                lock = redis_cache._redis.lock(
+                    "cleanup:guests",
+                    timeout=3600,
+                    blocking_timeout=0,
+                )
+                acquired = await lock.acquire(blocking=False)
+
+            if not acquired:
+                logger.debug("Guest cleanup skipped: another worker already claimed this cycle")
+            else:
+                try:
+                    db = SessionLocal()
+                    try:
+                        cutoff = datetime.now(timezone.utc) - timedelta(days=30)
+
+                        # Category 1: explicitly orphaned (reset-device-id was called)
+                        # Category 2: abandoned — no activity for 30+ days
+                        #   (use created_at as fallback when last_active_at is NULL)
+                        guests_to_delete = db.query(models.User).filter(
+                            models.User.is_guest == True,
+                            or_(
+                                models.User.is_active == False,
+                                models.User.last_active_at < cutoff,
+                                and_(
+                                    models.User.last_active_at == None,
+                                    models.User.created_at < cutoff,
+                                ),
+                            )
+                        ).all()
+
+                        count = len(guests_to_delete)
+                        for guest in guests_to_delete:
+                            db.delete(guest)
+                        db.commit()
+
+                        if count:
+                            logger.info(f"Guest cleanup: deleted {count} orphaned/abandoned guest accounts")
+                    finally:
+                        db.close()
+                finally:
+                    if lock:
+                        try:
+                            if await lock.owned():
+                                await lock.release()
+                        except Exception:
+                            pass
+        except Exception as e:
+            logger.error(f"Guest cleanup failed: {e}")
+        await asyncio.sleep(24 * 60 * 60)
+
+
 @app.on_event("startup")
 async def startup_event():
     """Initialize services on application startup."""
@@ -263,6 +335,7 @@ async def startup_event():
     await redis_cache.connect()
     await revocation_service.connect()
     asyncio.create_task(_periodic_prompt_log_cleanup())
+    asyncio.create_task(_periodic_guest_cleanup())
 
 
 @app.on_event("shutdown")
@@ -2127,6 +2200,12 @@ async def login_user(
     user.failed_login_attempts = 0
     user.locked_until = None
     user.last_login_at = datetime.now(timezone.utc)
+
+    # Auto-upgrade admin users to unlimited tier
+    if is_admin_user(user) and user.subscription_tier != "unlimited":
+        user.subscription_tier = "unlimited"
+        logger.info(f"Auto-upgraded admin {user.email} to unlimited tier")
+
     db.commit()
     db.refresh(user)
 
@@ -2320,6 +2399,7 @@ async def logout_all_devices(
 async def reset_device_id(
     request: Request,
     response: Response,
+    db: Session = Depends(get_db),
 ):
     """
     Reset device ID cookie to a new value.
@@ -2334,6 +2414,19 @@ async def reset_device_id(
     - Sets a new httpOnly device_id cookie
     - Resets cross-account daily caps for the new device
     """
+    # Deactivate the old guest account (if any) before issuing a new device_id
+    old_device_id = request.cookies.get(DEVICE_ID_COOKIE_NAME)
+    if old_device_id:
+        old_guest = db.query(models.User).filter(
+            models.User.device_id == old_device_id,
+            models.User.is_guest == True,
+        ).first()
+        if old_guest:
+            old_guest.is_active = False
+            old_guest.device_id = None
+            db.commit()
+            logger.info(f"Deactivated orphaned guest ID={old_guest.id} on device reset")
+
     # Generate new device_id
     new_device_id = str(uuid.uuid4())
 

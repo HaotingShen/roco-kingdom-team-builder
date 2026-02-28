@@ -302,7 +302,7 @@ const ui: Record<Lang, Dict> = {
     userMenu: {
       guest: "Guest",
       guestBadge: "Guest",
-      guestInfo: "Create an account to sync across devices.",
+      guestInfo: "Create an account to sync across devices and get higher daily analysis limits and team storage.",
       createAccount: "Create Account",
       login: "Log In",
       clearGuestData: "Clear Guest Data",
@@ -317,7 +317,7 @@ const ui: Record<Lang, Dict> = {
     },
     saveModal: {
       title: "Save Your Team",
-      description: "Create an account to sync across devices, or continue as guest (saved on this device only).",
+      description: "Create an account to sync across devices and get more analysis credits, or continue as guest (saved on this device only).",
       descriptionNoGuest: "Create an account or log in to save your team.",
       createAccount: "Create Account",
       continueAsGuest: "Continue as Guest",
@@ -819,7 +819,7 @@ const ui: Record<Lang, Dict> = {
     userMenu: {
       guest: "访客",
       guestBadge: "访客",
-      guestInfo: "创建账号以跨设备同步。",
+      guestInfo: "创建账号后可跨设备同步，并获得更多每日分析次数与队伍存储上限。",
       createAccount: "创建账号",
       login: "登录",
       clearGuestData: "清除访客数据",
@@ -834,7 +834,7 @@ const ui: Record<Lang, Dict> = {
     },
     saveModal: {
       title: "保存队伍",
-      description: "创建账号以跨设备同步，或以访客身份继续（仅保存在此设备）。",
+      description: "创建账号以跨设备同步并获得更多分析次数，或以访客身份继续（仅保存在此设备）。",
       descriptionNoGuest: "创建账号或登录以保存您的队伍。",
       createAccount: "创建账号",
       continueAsGuest: "以访客身份继续",
