@@ -44,7 +44,7 @@ export default function VerifyEmailPage() {
     },
   });
 
-  // Auto-verify if token is in the URL
+  // Auto-verify if token is in the URL (link click from email)
   useEffect(() => {
     if (tokenFromUrl) {
       verifyMutation.mutate(tokenFromUrl);
@@ -61,10 +61,11 @@ export default function VerifyEmailPage() {
   return (
     <div className="min-h-[calc(100vh-3.5rem)] flex items-center justify-center bg-zinc-50 px-4">
       <div className="w-full max-w-md bg-white rounded-lg shadow-sm border border-zinc-200 p-8">
-        <h1 className="text-2xl font-semibold text-zinc-900 mb-2 text-center">
+        <h1 className="text-2xl font-semibold text-zinc-900 mb-6 text-center">
           {t("auth.verifyEmailTitle")}
         </h1>
 
+        {/* Success state */}
         {verified ? (
           <div className="text-center space-y-4">
             <div className="p-3 rounded-md bg-green-50 border border-green-200 text-sm text-green-700">
@@ -77,17 +78,44 @@ export default function VerifyEmailPage() {
               {t("auth.loginButton")}
             </Link>
           </div>
+
+        /* Auto-verify mode: token came from email link — no input form needed */
+        ) : tokenFromUrl ? (
+          <div className="text-center space-y-4">
+            {verifyMutation.isPending && (
+              <p className="text-sm text-zinc-600">{t("auth.verifying")}</p>
+            )}
+            {error && (
+              <>
+                <div className="p-3 rounded-md bg-red-50 border border-red-200 text-sm text-red-700">
+                  {error}
+                </div>
+                {resendSuccess ? (
+                  <div className="p-3 rounded-md bg-green-50 border border-green-200 text-sm text-green-700">
+                    {t("auth.resendSuccess")}
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => resendMutation.mutate()}
+                    disabled={resendMutation.isPending}
+                    className="text-sm text-blue-600 hover:text-blue-800 disabled:opacity-50"
+                  >
+                    {resendMutation.isPending ? t("auth.resending") : t("auth.resendCode")}
+                  </button>
+                )}
+              </>
+            )}
+            <Link to="/" className="block text-sm text-zinc-500 hover:text-zinc-700">
+              {t("auth.skipForNow")}
+            </Link>
+          </div>
+
+        /* Manual mode: user navigated directly, no token in URL */
         ) : (
           <>
-            {verifyMutation.isPending ? (
-              <p className="text-sm text-zinc-600 text-center mb-6">
-                {t("auth.verifying")}
-              </p>
-            ) : (
-              <p className="text-sm text-zinc-600 mb-6 text-center">
-                {t("auth.verifyEmailMessage")}
-              </p>
-            )}
+            <p className="text-sm text-zinc-600 mb-6 text-center">
+              {t("auth.verifyEmailMessage")}
+            </p>
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
@@ -133,10 +161,7 @@ export default function VerifyEmailPage() {
               >
                 {resendMutation.isPending ? t("auth.resending") : t("auth.resendCode")}
               </button>
-              <Link
-                to="/"
-                className="block text-sm text-zinc-600 hover:text-zinc-800"
-              >
+              <Link to="/" className="block text-sm text-zinc-600 hover:text-zinc-800">
                 {t("auth.skipForNow")}
               </Link>
             </div>

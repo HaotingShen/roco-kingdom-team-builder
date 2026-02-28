@@ -11,7 +11,7 @@ export default function Topbar() {
   const nav = useNavigate();
   const loc = useLocation();
   const { lang, setLang, t } = useI18n();
-  const { user } = useAuthStore();
+  const { user, updateUser } = useAuthStore();
 
   const resetBuilder = useBuilderStore(s => s.reset);
   const loadFromTeam = useBuilderStore(s => s.loadFromTeam);
@@ -112,8 +112,10 @@ export default function Topbar() {
           onClick={() => {
             const newLang = lang === "en" ? "zh" : "en";
             setLang(newLang);
-            // Fire-and-forget backend sync for registered non-guest users
             if (user && !user.is_guest) {
+              // Update persisted user object so AuthProvider syncs correctly on reload
+              updateUser({ ...user, preferred_language: newLang });
+              // Fire-and-forget backend sync
               authEndpoints.updateLanguagePreference(newLang).catch(() => {});
             }
           }}

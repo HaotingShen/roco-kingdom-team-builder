@@ -9,7 +9,7 @@ import { useI18n } from "@/i18n";
 export default function SettingsPage() {
   const navigate = useNavigate();
   const { t, lang, setLang } = useI18n();
-  const { user, isGuest, clearAuth } = useAuthStore();
+  const { user, isGuest, clearAuth, updateUser } = useAuthStore();
 
   // --- Change Password state ---
   const [currentPassword, setCurrentPassword] = useState("");
@@ -112,6 +112,10 @@ export default function SettingsPage() {
     },
     onSuccess: ({ newLang }) => {
       setLang(newLang);
+      // Update persisted user object so AuthProvider syncs correctly on reload
+      if (user) {
+        updateUser({ ...user, preferred_language: newLang });
+      }
       toast.success(t("settings.languageChanged"));
     },
     onError: () => {
