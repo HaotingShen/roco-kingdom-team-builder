@@ -584,6 +584,8 @@ const ui: Record<Lang, Dict> = {
       free: "Free",
       premium: "Premium",
       unlimited_tier: "Unlimited",
+      unverified: "Unverified",
+      unverifiedHint: "Verify your email to unlock free tier",
     },
   },
   zh: {
@@ -1099,6 +1101,8 @@ const ui: Record<Lang, Dict> = {
       free: "免费",
       premium: "高级",
       unlimited_tier: "无限制",
+      unverified: "未验证",
+      unverifiedHint: "验证邮箱以解锁免费等级",
     },
   },
 };

@@ -1,12 +1,13 @@
 import { useI18n } from "@/i18n";
-import type { QuotaInfo } from "@/features/auth/authStore";
+import { useAuthStore, type QuotaInfo } from "@/features/auth/authStore";
 
 interface QuotaDisplayProps {
   quota: QuotaInfo | null;
   variant: "menu" | "inline";
 }
 
-function tierBadgeClasses(tier: string): string {
+function tierBadgeClasses(tier: string, isUnverified: boolean): string {
+  if (isUnverified) return "bg-amber-100 text-amber-700";
   switch (tier) {
     case "anonymous": return "bg-zinc-100 text-zinc-600";
     case "guest":     return "bg-zinc-200 text-zinc-700";
@@ -24,8 +25,12 @@ function formatUsage(used: number, limit: number, t: (key: string) => string): s
 
 export default function QuotaDisplay({ quota, variant }: QuotaDisplayProps) {
   const { t } = useI18n();
+  const { user } = useAuthStore();
 
   if (!quota) return null;
+
+  // Registered user whose email is not yet verified — backend enforces guest-tier limits
+  const isUnverified = !!user && !user.is_guest && !user.email_verified;
 
   if (variant === "inline") {
     if (quota.teams_limit === -1) return null;
@@ -41,10 +46,17 @@ export default function QuotaDisplay({ quota, variant }: QuotaDisplayProps) {
     <div className="px-3 py-2 border-b border-zinc-100 space-y-1.5">
       {/* Tier badge */}
       <div className="flex items-center gap-1.5">
-        <span className={`inline-block px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide ${tierBadgeClasses(quota.tier)}`}>
-          {t(`quota.${quota.tier}`) || quota.tier}
+        <span className={`inline-block px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide ${tierBadgeClasses(quota.tier, isUnverified)}`}>
+          {isUnverified ? t("quota.unverified") : (t(`quota.${quota.tier}`) || quota.tier)}
         </span>
       </div>
+
+      {/* Unverified hint */}
+      {isUnverified && (
+        <p className="text-[11px] text-amber-700">
+          {t("quota.unverifiedHint")}
+        </p>
+      )}
 
       {/* Analysis usage */}
       <div className="flex items-center justify-between text-xs text-zinc-600">

@@ -50,21 +50,27 @@ RATE_LIMIT_MESSAGES = {
     "en": {
         "daily_limit_anonymous": "Daily analysis limit reached ({limit} per day). Create an account for more analyses.",
         "monthly_limit_anonymous": "Monthly analysis limit reached ({limit} per month). Create an account for more analyses.",
+        "daily_limit_unverified": "Daily analysis limit reached. Verify your email to unlock {free_limit} analyses per day.",
+        "monthly_limit_unverified": "Monthly analysis limit reached. Verify your email to unlock more analyses.",
         "daily_limit_user": "Daily analysis limit reached ({limit} per day for {tier} tier). Upgrade to premium for more analyses.",
         "monthly_limit_user": "Monthly analysis limit reached ({limit} per month for {tier} tier). Upgrade to premium for more analyses.",
         "device_cap": "Analysis limit reached. Multiple accounts detected from this device.",
         "ip_cap": "Analysis limit reached. Please try again tomorrow.",
         "teams_limit_guest": "Team limit reached ({limit} teams for guests). Create an account to save more teams.",
+        "teams_limit_unverified": "Team limit reached ({limit} teams). Verify your email to save up to {free_limit} teams.",
         "teams_limit_user": "Team limit reached ({limit} teams for {tier} tier). Delete some teams or upgrade for more.",
     },
     "zh": {
         "daily_limit_anonymous": "已达到每日分析上限（每天 {limit} 次）。创建账号可获得更多分析次数。",
         "monthly_limit_anonymous": "已达到每月分析上限（每月 {limit} 次）。创建账号可获得更多分析次数。",
+        "daily_limit_unverified": "已达到每日分析上限。验证邮箱后每天可获得 {free_limit} 次分析。",
+        "monthly_limit_unverified": "已达到每月分析上限。验证邮箱后可获得更多分析次数。",
         "daily_limit_user": "已达到每日分析上限（{tier} 等级每天 {limit} 次）。升级至高级版可获得更多分析次数。",
         "monthly_limit_user": "已达到每月分析上限（{tier} 等级每月 {limit} 次）。升级至高级版可获得更多分析次数。",
         "device_cap": "已达到分析上限。检测到此设备有多个账号。",
         "ip_cap": "已达到分析上限。请明天再试。",
         "teams_limit_guest": "已达到队伍数量上限（访客最多 {limit} 支队伍）。创建账号可保存更多队伍。",
+        "teams_limit_unverified": "已达到队伍数量上限（{limit} 支）。验证邮箱后最多可保存 {free_limit} 支队伍。",
         "teams_limit_user": "已达到队伍数量上限（{tier} 等级最多 {limit} 支队伍）。删除部分队伍或升级订阅以获得更多。",
     },
 }
@@ -128,21 +134,24 @@ def get_tier_limits(tier: str) -> Dict[str, Any]:
 
 def get_effective_tier(user: models.User) -> str:
     """
-    Get effective tier for a user, considering admin status.
+    Get effective tier for a user, considering admin status and email verification.
 
-    Admins automatically get 'unlimited' tier regardless of their
-    subscription_tier setting in the database.
+    - Admins get 'unlimited' regardless of subscription_tier.
+    - Registered users who have not verified their email are capped at 'guest'
+      limits until they verify, then their actual subscription_tier applies.
 
     Args:
         user: User model instance
 
     Returns:
-        Effective tier string ('unlimited' for admins, otherwise user's tier)
+        Effective tier string
     """
     from backend.dependencies import is_admin_user
 
     if is_admin_user(user):
         return "unlimited"
+    if not user.is_guest and not user.email_verified:
+        return "guest"
     return user.subscription_tier or "free"
 
 
@@ -228,29 +237,39 @@ async def check_analysis_limit(user: models.User, db: Session, lang: str = "en")
         daily_used = int(redis_client.get(daily_key) or 0)
         monthly_used = int(redis_client.get(monthly_key) or 0)
 
+        is_unverified = not user.is_guest and not user.email_verified
+
         # Check daily limit
         if daily_used >= limits["daily_analyses"]:
+            if is_unverified:
+                free_limit = get_tier_limits("free")["daily_analyses"]
+                detail = get_rate_limit_message(
+                    "daily_limit_unverified", lang,
+                    limit=limits["daily_analyses"], free_limit=free_limit
+                )
+            else:
+                detail = get_rate_limit_message(
+                    "daily_limit_user", lang,
+                    limit=limits["daily_analyses"], tier=tier
+                )
             raise HTTPException(
                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-                detail=get_rate_limit_message(
-                    "daily_limit_user",
-                    lang,
-                    limit=limits["daily_analyses"],
-                    tier=tier
-                ),
+                detail=detail,
                 headers={"X-Tier-Limit-Type": "daily"}
             )
 
         # Check monthly limit
         if limits["monthly_analyses"] != -1 and monthly_used >= limits["monthly_analyses"]:
+            if is_unverified:
+                detail = get_rate_limit_message("monthly_limit_unverified", lang)
+            else:
+                detail = get_rate_limit_message(
+                    "monthly_limit_user", lang,
+                    limit=limits["monthly_analyses"], tier=tier
+                )
             raise HTTPException(
                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-                detail=get_rate_limit_message(
-                    "monthly_limit_user",
-                    lang,
-                    limit=limits["monthly_analyses"],
-                    tier=tier
-                ),
+                detail=detail,
                 headers={"X-Tier-Limit-Type": "monthly"}
             )
 
@@ -324,19 +343,21 @@ async def check_teams_limit(user: models.User, db: Session, lang: str = "en") ->
     team_count = db.query(models.Team).filter(models.Team.owner_id == user.id).count()
 
     if team_count >= limits["teams_limit"]:
-        # Use different message for guest vs registered users
         if user.is_guest:
             message = get_rate_limit_message(
-                "teams_limit_guest",
-                lang,
+                "teams_limit_guest", lang,
                 limit=limits["teams_limit"]
+            )
+        elif not user.email_verified:
+            free_limit = get_tier_limits("free")["teams_limit"]
+            message = get_rate_limit_message(
+                "teams_limit_unverified", lang,
+                limit=limits["teams_limit"], free_limit=free_limit
             )
         else:
             message = get_rate_limit_message(
-                "teams_limit_user",
-                lang,
-                limit=limits["teams_limit"],
-                tier=tier
+                "teams_limit_user", lang,
+                limit=limits["teams_limit"], tier=tier
             )
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
