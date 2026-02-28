@@ -19,9 +19,7 @@ export default function RegisterPage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // Email verification modal state
   const [showVerifyModal, setShowVerifyModal] = useState(false);
-  const [verificationToken, setVerificationToken] = useState("");
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
@@ -63,11 +61,6 @@ export default function RegisterPage() {
         setLang(data.user.preferred_language as "en" | "zh");
       }
       toast.success(t("auth.registerSuccess"));
-
-      // Show email verification modal (dev mode has debug_verification_token)
-      if (data.debug_verification_token) {
-        setVerificationToken(data.debug_verification_token);
-      }
       setShowVerifyModal(true);
     },
     onError: (error: any) => {
@@ -224,7 +217,6 @@ export default function RegisterPage() {
           setShowVerifyModal(false);
           navigate("/build");
         }}
-        initialToken={verificationToken}
       />
     </div>
   );

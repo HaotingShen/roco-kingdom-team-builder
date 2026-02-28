@@ -380,7 +380,7 @@ const ui: Record<Lang, Dict> = {
       guestPromotion: "Your teams will be preserved when you create an account.",
       // Email verification
       verifyEmailTitle: "Verify Your Email",
-      verifyEmailMessage: "Please check your inbox and enter the verification code to activate your account.",
+      verifyEmailMessage: "We've sent a verification link to your email. Click the link to activate your account.",
       verificationCode: "Verification Code",
       verificationCodePlaceholder: "Paste verification code here",
       verifyButton: "Verify Email",
@@ -895,7 +895,7 @@ const ui: Record<Lang, Dict> = {
       guestPromotion: "创建账号后，您的队伍将被保留。",
       // Email verification
       verifyEmailTitle: "验证您的邮箱",
-      verifyEmailMessage: "请查看您的收件箱，输入验证码以激活账号。",
+      verifyEmailMessage: "已向您的邮箱发送验证链接，请点击邮件中的链接以激活账号。",
       verificationCode: "验证码",
       verificationCodePlaceholder: "粘贴验证码",
       verifyButton: "验证邮箱",
