@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import { useAuthStore } from './authStore';
 import { authEndpoints, refreshCoordinator } from '@/lib/api';
+import { useI18n, type Lang } from '@/i18n';
 
 interface AuthContextType {
   isLoading: boolean;
@@ -53,6 +54,8 @@ export function getOrCreateDeviceId(): string {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const { user, setAuth, clearAuth } = useAuthStore();
+  // NOTE: AuthProvider is inside I18nProvider in the component tree, so useI18n() is valid here.
+  const { setLang } = useI18n();
 
   useEffect(() => {
     let isCancelled = false;
@@ -73,6 +76,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           refreshCoordinator.succeed(response.data.access_token);
           if (!isCancelled) {
             setAuth(user, response.data.access_token);
+            // Sync UI language from user's stored preference on page reload
+            if (!user.is_guest && user.preferred_language) {
+              setLang(user.preferred_language as Lang);
+            }
           }
         } catch (_error) {
           // Reject all queued requests — refresh token invalid/expired

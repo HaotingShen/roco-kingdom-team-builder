@@ -3,7 +3,7 @@ import { useI18n } from "@/i18n";
 import { useBuilderStore } from "@/features/builder/builderStore";
 import { useAuthStore } from "@/features/auth/authStore";
 import { useMutation } from "@tanstack/react-query";
-import { endpoints } from "@/lib/api";
+import { endpoints, authEndpoints } from "@/lib/api";
 import type { TeamOut } from "@/types";
 import UserMenu from "./UserMenu";
 
@@ -109,7 +109,14 @@ export default function Topbar() {
         )}
 
         <button
-          onClick={() => setLang(lang === "en" ? "zh" : "en")}
+          onClick={() => {
+            const newLang = lang === "en" ? "zh" : "en";
+            setLang(newLang);
+            // Fire-and-forget backend sync for registered non-guest users
+            if (user && !user.is_guest) {
+              authEndpoints.updateLanguagePreference(newLang).catch(() => {});
+            }
+          }}
           className="h-9 px-3 rounded border hover:bg-zinc-50 cursor-pointer"
           title={t("topbar.toggleLanguage")}
         >

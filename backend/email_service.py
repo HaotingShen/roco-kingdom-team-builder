@@ -90,21 +90,54 @@ async def send_email(to_email: str, subject: str, html_body: str, text_body: str
         return False
 
 
-async def send_verification_email(to_email: str, token: str) -> bool:
+async def send_verification_email(to_email: str, token: str, language: str = "en") -> bool:
     """
     Send email verification email.
 
     Args:
         to_email: Recipient email address
         token: Verification token
+        language: Preferred language for email content ("en" or "zh")
 
     Returns:
         True if sent successfully
     """
     verify_url = f"{FRONTEND_URL}/auth/verify?token={token}"
 
-    subject = "Verify your email - RK Team Builder"
-    html_body = f"""
+    if language == "zh":
+        subject = "验证您的邮箱 - RK Team Builder"
+        html_body = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+    </head>
+    <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h2 style="color: #333;">验证您的邮箱</h2>
+        <p>感谢您注册！请点击下方链接验证您的邮箱地址：</p>
+        <p style="margin: 20px 0;">
+            <a href="{verify_url}"
+               style="background-color: #2563eb; color: white; padding: 12px 24px;
+                      text-decoration: none; border-radius: 6px; display: inline-block;">
+                验证邮箱
+            </a>
+        </p>
+        <p style="color: #666; font-size: 14px;">
+            或复制以下链接到浏览器：<br>
+            <a href="{verify_url}" style="color: #2563eb;">{verify_url}</a>
+        </p>
+        <p style="color: #666; font-size: 14px;">此链接将在24小时后失效。</p>
+        <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
+        <p style="color: #999; font-size: 12px;">
+            如果您没有注册账号，请忽略此邮件。
+        </p>
+    </body>
+    </html>
+    """
+        text_body = f"验证您的邮箱：{verify_url}\n\n此链接将在24小时后失效。"
+    else:
+        subject = "Verify your email - RK Team Builder"
+        html_body = f"""
     <!DOCTYPE html>
     <html>
     <head>
@@ -132,26 +165,59 @@ async def send_verification_email(to_email: str, token: str) -> bool:
     </body>
     </html>
     """
-    text_body = f"Verify your email: {verify_url}\n\nThis link expires in 24 hours."
+        text_body = f"Verify your email: {verify_url}\n\nThis link expires in 24 hours."
 
     return await send_email(to_email, subject, html_body, text_body)
 
 
-async def send_password_reset_email(to_email: str, token: str) -> bool:
+async def send_password_reset_email(to_email: str, token: str, language: str = "en") -> bool:
     """
     Send password reset email.
 
     Args:
         to_email: Recipient email address
         token: Password reset token
+        language: Preferred language for email content ("en" or "zh")
 
     Returns:
         True if sent successfully
     """
     reset_url = f"{FRONTEND_URL}/auth/reset-password?token={token}"
 
-    subject = "Reset your password - RK Team Builder"
-    html_body = f"""
+    if language == "zh":
+        subject = "重置密码 - RK Team Builder"
+        html_body = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+    </head>
+    <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h2 style="color: #333;">重置您的密码</h2>
+        <p>我们收到了您的密码重置请求。请点击下方链接设置新密码：</p>
+        <p style="margin: 20px 0;">
+            <a href="{reset_url}"
+               style="background-color: #2563eb; color: white; padding: 12px 24px;
+                      text-decoration: none; border-radius: 6px; display: inline-block;">
+                重置密码
+            </a>
+        </p>
+        <p style="color: #666; font-size: 14px;">
+            或复制以下链接到浏览器：<br>
+            <a href="{reset_url}" style="color: #2563eb;">{reset_url}</a>
+        </p>
+        <p style="color: #666; font-size: 14px;"><strong>此链接将在1小时后失效。</strong></p>
+        <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
+        <p style="color: #999; font-size: 12px;">
+            如果您没有请求重置密码，请忽略此邮件，您的密码不会有任何变化。
+        </p>
+    </body>
+    </html>
+    """
+        text_body = f"重置密码：{reset_url}\n\n此链接将在1小时后失效。"
+    else:
+        subject = "Reset your password - RK Team Builder"
+        html_body = f"""
     <!DOCTYPE html>
     <html>
     <head>
@@ -180,26 +246,59 @@ async def send_password_reset_email(to_email: str, token: str) -> bool:
     </body>
     </html>
     """
-    text_body = f"Reset your password: {reset_url}\n\nThis link expires in 1 hour."
+        text_body = f"Reset your password: {reset_url}\n\nThis link expires in 1 hour."
 
     return await send_email(to_email, subject, html_body, text_body)
 
 
-async def send_email_change_verification(to_email: str, token: str) -> bool:
+async def send_email_change_verification(to_email: str, token: str, language: str = "en") -> bool:
     """
     Send email change verification to the NEW email address.
 
     Args:
         to_email: New email address to verify
         token: Email change token
+        language: Preferred language for email content ("en" or "zh")
 
     Returns:
         True if sent successfully
     """
     verify_url = f"{FRONTEND_URL}/auth/confirm-email?token={token}"
 
-    subject = "Confirm your new email - RK Team Builder"
-    html_body = f"""
+    if language == "zh":
+        subject = "确认新邮箱 - RK Team Builder"
+        html_body = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+    </head>
+    <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h2 style="color: #333;">确认您的新邮箱</h2>
+        <p>您请求修改邮箱地址。请点击下方链接确认：</p>
+        <p style="margin: 20px 0;">
+            <a href="{verify_url}"
+               style="background-color: #2563eb; color: white; padding: 12px 24px;
+                      text-decoration: none; border-radius: 6px; display: inline-block;">
+                确认修改邮箱
+            </a>
+        </p>
+        <p style="color: #666; font-size: 14px;">
+            或复制以下链接到浏览器：<br>
+            <a href="{verify_url}" style="color: #2563eb;">{verify_url}</a>
+        </p>
+        <p style="color: #666; font-size: 14px;">此链接将在24小时后失效。</p>
+        <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
+        <p style="color: #999; font-size: 12px;">
+            如果您没有申请此修改，请忽略此邮件，您的邮箱将保持不变。
+        </p>
+    </body>
+    </html>
+    """
+        text_body = f"确认新邮箱：{verify_url}\n\n此链接将在24小时后失效。"
+    else:
+        subject = "Confirm your new email - RK Team Builder"
+        html_body = f"""
     <!DOCTYPE html>
     <html>
     <head>
@@ -227,6 +326,6 @@ async def send_email_change_verification(to_email: str, token: str) -> bool:
     </body>
     </html>
     """
-    text_body = f"Confirm your new email: {verify_url}\n\nThis link expires in 24 hours."
+        text_body = f"Confirm your new email: {verify_url}\n\nThis link expires in 24 hours."
 
     return await send_email(to_email, subject, html_body, text_body)

@@ -8,7 +8,7 @@ import { useI18n } from "@/i18n";
 
 export default function LoginPage() {
   const navigate = useNavigate();
-  const { t, lang } = useI18n();
+  const { t, lang, setLang } = useI18n();
   const { setAuth } = useAuthStore();
 
   const [email, setEmail] = useState("");
@@ -24,6 +24,10 @@ export default function LoginPage() {
     },
     onSuccess: (data) => {
       setAuth(data.user, data.access_token);
+      // Apply user's stored language preference across devices
+      if (!data.user.is_guest && data.user.preferred_language) {
+        setLang(data.user.preferred_language as "en" | "zh");
+      }
       toast.success(t("auth.loginSuccess"));
       navigate("/build");
     },

@@ -193,7 +193,7 @@ export const authEndpoints = {
   /**
    * Register new user or convert guest to registered.
    */
-  register: (data: { username: string; email: string; password: string }) =>
+  register: (data: { username: string; email: string; password: string; preferred_language?: string }) =>
     api.post('/auth/register', data),
 
   /**
@@ -232,6 +232,13 @@ export const authEndpoints = {
    * Resend verification email.
    */
   resendVerification: () => api.post('/auth/resend-verification'),
+
+  /**
+   * Update the authenticated user's preferred language for transactional emails.
+   * Fire-and-forget for registered (non-guest) users only.
+   */
+  updateLanguagePreference: (preferred_language: "en" | "zh") =>
+    api.patch('/auth/update-language-preference', { preferred_language }),
 
   /**
    * Get quota/usage stats for current user or anonymous.

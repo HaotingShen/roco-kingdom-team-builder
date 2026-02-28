@@ -18,6 +18,7 @@ class UserOut(BaseModel):
     last_login_at: Optional[datetime] = None
     is_admin: bool = False
     guest_display_id: Optional[str] = None  # Unique 4-char ID for guest display (e.g., "A2B3")
+    preferred_language: str = "en"
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -33,6 +34,12 @@ class UserRegister(BaseModel):
     email: str = Field(..., max_length=120)
     password: str = Field(..., min_length=8, max_length=128)
     captcha_token: Optional[str] = Field(None, description="CAPTCHA response token (required if CAPTCHA enabled)")
+    preferred_language: str = Field("en", description="Preferred language for transactional emails (en or zh)")
+
+    @field_validator("preferred_language")
+    @classmethod
+    def validate_preferred_language(cls, v: str) -> str:
+        return v if v in ("en", "zh") else "en"
 
     @field_validator("username")
     @classmethod
@@ -224,6 +231,11 @@ class EmailVerifyRequest(BaseModel):
 class ResendVerificationRequest(BaseModel):
     """Request to resend verification email."""
     pass  # No body needed, uses current authenticated user's email
+
+
+class UpdateLanguageRequest(BaseModel):
+    """Update user's preferred language for transactional emails."""
+    preferred_language: str = Field(..., pattern="^(en|zh)$")
 
 
 # ========== PAGINATION SCHEMAS ==========

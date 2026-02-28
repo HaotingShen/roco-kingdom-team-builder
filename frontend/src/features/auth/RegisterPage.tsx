@@ -10,7 +10,7 @@ import EmailVerificationModal from "./EmailVerificationModal";
 
 export default function RegisterPage() {
   const navigate = useNavigate();
-  const { t } = useI18n();
+  const { t, lang, setLang } = useI18n();
   const { setAuth, isGuest } = useAuthStore();
 
   const [username, setUsername] = useState("");
@@ -53,11 +53,15 @@ export default function RegisterPage() {
 
   const registerMutation = useMutation({
     mutationFn: async () => {
-      const response = await authEndpoints.register({ username, email, password });
+      const response = await authEndpoints.register({ username, email, password, preferred_language: lang });
       return response.data;
     },
     onSuccess: (data) => {
       setAuth(data.user, data.access_token);
+      // Confirm language from server response (should match what we sent)
+      if (data.user.preferred_language) {
+        setLang(data.user.preferred_language as "en" | "zh");
+      }
       toast.success(t("auth.registerSuccess"));
 
       // Show email verification modal (dev mode has debug_verification_token)

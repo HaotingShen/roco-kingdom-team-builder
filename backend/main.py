@@ -319,7 +319,8 @@ def user_to_user_out(user: models.User) -> schemas.UserOut:
         created_at=user.created_at,
         last_login_at=user.last_login_at,
         is_admin=is_admin_user(user),
-        guest_display_id=user.guest_display_id
+        guest_display_id=user.guest_display_id,
+        preferred_language=user.preferred_language
     )
 
 # Compute effective stats with base, talent, and personality multipliers
@@ -1987,6 +1988,7 @@ async def register_user(
         user.verification_token = verification_token
         user.verification_token_expires = verification_expires
         user.last_password_change = datetime.now(timezone.utc)
+        user.preferred_language = user_data.preferred_language or "en"
 
         db.commit()
         db.refresh(user)
@@ -2005,6 +2007,7 @@ async def register_user(
             verification_token=verification_token,
             verification_token_expires=verification_expires,
             last_password_change=datetime.now(timezone.utc),
+            preferred_language=user_data.preferred_language or "en",
         )
 
         db.add(user)
@@ -2012,7 +2015,7 @@ async def register_user(
         db.refresh(user)
 
     # Send verification email
-    email_sent = await send_verification_email(user.email, verification_token)
+    email_sent = await send_verification_email(user.email, verification_token, language=user.preferred_language)
     logger.info(
         f"User registered: {user.username} (ID={user.id}), "
         f"email_sent={email_sent}"
@@ -2384,7 +2387,7 @@ async def forgot_password(
         db.commit()
 
         # Send password reset email
-        email_sent = await send_password_reset_email(user.email, reset_token)
+        email_sent = await send_password_reset_email(user.email, reset_token, language=user.preferred_language)
         logger.info(
             f"Password reset requested for {user.email}, email_sent={email_sent}"
         )
@@ -2542,7 +2545,7 @@ async def request_email_change(
     db.commit()
 
     # Send verification email to new address
-    email_sent = await send_email_change_verification(user.pending_email, token)
+    email_sent = await send_email_change_verification(user.pending_email, token, language=user.preferred_language)
     logger.info(
         f"Email change requested for user {user.id}: {user.email} -> {user.pending_email}, "
         f"email_sent={email_sent}"
@@ -2804,7 +2807,7 @@ async def resend_verification(
     db.commit()
 
     # Send verification email
-    email_sent = await send_verification_email(user.email, verification_token)
+    email_sent = await send_verification_email(user.email, verification_token, language=user.preferred_language)
     logger.info(f"Verification email resent for user {user.id} ({user.email}), email_sent={email_sent}")
 
     # Build response
@@ -2817,6 +2820,36 @@ async def resend_verification(
         response_data["debug_token"] = verification_token
 
     return response_data
+
+
+@app.patch("/auth/update-language-preference", tags=["Authentication"])
+@limiter.limit("10/hour")
+async def update_language_preference(
+    request: Request,
+    data: schemas.UpdateLanguageRequest,
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Update the authenticated user's preferred language for transactional emails.
+
+    No password required. Rejected for guest users (guests have no persistent profile).
+    """
+    if current_user.is_guest:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Guest users cannot set a language preference"
+        )
+
+    user = db.query(models.User).filter(models.User.id == current_user.id).first()
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+
+    user.preferred_language = data.preferred_language
+    db.commit()
+
+    logger.info(f"Language preference updated for user {user.id}: {data.preferred_language}")
+    return {"preferred_language": user.preferred_language}
 
 
 # ========== HEALTH CHECK ==========

@@ -565,6 +565,11 @@ const ui: Record<Lang, Dict> = {
       passwordMismatch: "Passwords do not match.",
       loginRequired: "Please log in to access settings.",
       registeredOnly: "Account settings are only available for registered users.",
+      languagePreference: "Language Preference",
+      selectLanguage: "Display Language",
+      languageHint: "Also applies to verification and reset emails.",
+      languageChanged: "Language preference updated.",
+      languageChangeFailed: "Failed to update language preference.",
     },
     quota: {
       tier: "Tier",
@@ -1075,6 +1080,11 @@ const ui: Record<Lang, Dict> = {
       passwordMismatch: "两次输入的密码不一致。",
       loginRequired: "请登录后访问设置。",
       registeredOnly: "账号设置仅对注册用户开放。",
+      languagePreference: "语言偏好",
+      selectLanguage: "显示语言",
+      languageHint: "同时适用于验证邮件和重置密码邮件的语言。",
+      languageChanged: "语言偏好已更新。",
+      languageChangeFailed: "更新语言偏好失败。",
     },
     quota: {
       tier: "等级",

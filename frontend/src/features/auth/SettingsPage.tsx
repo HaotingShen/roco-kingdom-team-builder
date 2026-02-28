@@ -8,7 +8,7 @@ import { useI18n } from "@/i18n";
 
 export default function SettingsPage() {
   const navigate = useNavigate();
-  const { t } = useI18n();
+  const { t, lang, setLang } = useI18n();
   const { user, isGuest, clearAuth } = useAuthStore();
 
   // --- Change Password state ---
@@ -101,6 +101,21 @@ export default function SettingsPage() {
         message = t("settings.emailChangConfirmFailed");
       }
       toast.error(message);
+    },
+  });
+
+  // --- Update Language Preference mutation ---
+  const updateLangMutation = useMutation({
+    mutationFn: async (newLang: "en" | "zh") => {
+      const response = await authEndpoints.updateLanguagePreference(newLang);
+      return { data: response.data, newLang };
+    },
+    onSuccess: ({ newLang }) => {
+      setLang(newLang);
+      toast.success(t("settings.languageChanged"));
+    },
+    onError: () => {
+      toast.error(t("settings.languageChangeFailed"));
     },
   });
 
@@ -256,7 +271,7 @@ export default function SettingsPage() {
         </div>
 
         {/* Change Email Section */}
-        <div className="bg-white rounded-lg shadow-sm border border-zinc-200 p-6">
+        <div className="bg-white rounded-lg shadow-sm border border-zinc-200 p-6 mb-6">
           <h2 className="text-lg font-medium text-zinc-900 mb-1">
             {t("settings.changeEmail")}
           </h2>
@@ -352,6 +367,31 @@ export default function SettingsPage() {
               </div>
             </form>
           )}
+        </div>
+        {/* Language Preference Section */}
+        <div className="bg-white rounded-lg shadow-sm border border-zinc-200 p-6">
+          <h2 className="text-lg font-medium text-zinc-900 mb-4">
+            {t("settings.languagePreference")}
+          </h2>
+          <div className="space-y-3">
+            <div>
+              <label className="block text-sm font-medium text-zinc-700 mb-1">
+                {t("settings.selectLanguage")}
+              </label>
+              <select
+                value={lang}
+                onChange={(e) => updateLangMutation.mutate(e.target.value as "en" | "zh")}
+                disabled={updateLangMutation.isPending}
+                className="w-full h-10 px-3 border border-zinc-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white disabled:bg-zinc-50 disabled:cursor-not-allowed"
+              >
+                <option value="en">English</option>
+                <option value="zh">中文</option>
+              </select>
+              <p className="text-xs text-zinc-500 mt-1">
+                {t("settings.languageHint")}
+              </p>
+            </div>
+          </div>
         </div>
       </div>
     </div>

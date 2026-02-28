@@ -71,6 +71,9 @@ class User(Base):
     # Only set for guest accounts, nullable for registered users
     guest_display_id: Mapped[Optional[str]] = mapped_column(String(8), unique=True, nullable=True, index=True)
 
+    # Language preference for transactional emails (verification, password reset, email change)
+    preferred_language: Mapped[str] = mapped_column(String(5), default="en", nullable=False)
+
     # Audit timestamps
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),

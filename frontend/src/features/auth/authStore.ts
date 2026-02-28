@@ -31,6 +31,7 @@ export interface User {
   last_login_at: string | null;
   is_admin?: boolean;
   guest_display_id?: string | null;  // Unique 4-char ID for guest display (e.g., "A2B3")
+  preferred_language?: "en" | "zh";
 }
 
 export interface QuotaInfo {
