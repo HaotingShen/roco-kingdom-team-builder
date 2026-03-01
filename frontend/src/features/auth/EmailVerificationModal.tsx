@@ -53,7 +53,7 @@ export default function EmailVerificationModal({
             type="button"
             onClick={() => resendMutation.mutate()}
             disabled={resendMutation.isPending}
-            className="flex-1 h-10 border border-zinc-300 text-zinc-700 rounded-md hover:bg-zinc-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="flex-1 h-10 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {resendMutation.isPending ? t("auth.resending") : t("auth.resendCode")}
           </button>
@@ -61,9 +61,9 @@ export default function EmailVerificationModal({
           <button
             type="button"
             onClick={onClose}
-            className="flex-1 h-10 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+            className="flex-1 h-10 border border-zinc-300 text-zinc-700 rounded-md hover:bg-zinc-50 transition-colors"
           >
-            {t("auth.skipForNow")}
+            {t("auth.closeModal")}
           </button>
         </div>
       </div>

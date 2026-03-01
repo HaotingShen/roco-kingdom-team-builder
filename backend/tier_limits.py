@@ -321,6 +321,117 @@ async def record_analysis_usage(user: models.User) -> None:
         logger.error(f"Failed to record analysis usage for user {user.id}: {e}")
 
 
+async def seed_user_counter_from_device(user: models.User, device_id: str) -> None:
+    """Seed a new user's daily counter from the device's cross-account cap count.
+
+    Called after creating a new guest or registered user account. Ensures the
+    quota display is honest — if the device already has N analyses today (from
+    anonymous or previous accounts), the new account starts at N instead of 0.
+
+    Caps the seeded value at the tier's daily limit to avoid confusing over-limit
+    displays (e.g., prevents showing 3/2 when device_count exceeds tier limit).
+    Skips silently if device_id is unknown or Redis is unavailable (fail open).
+    """
+    if not device_id or device_id == "unknown-device":
+        return
+
+    redis_client = get_redis()
+    if not redis_client:
+        logger.warning(f"Redis unavailable, skipping counter seeding for user {user.id}")
+        return
+
+    try:
+        device_key = _get_device_daily_key(device_id)
+        device_count = int(redis_client.get(device_key) or 0)
+
+        if device_count <= 0:
+            return
+
+        tier = get_effective_tier(user)
+        limits = get_tier_limits(tier)
+        daily_limit = limits["daily_analyses"]
+        seed_count = device_count if daily_limit == -1 else min(device_count, daily_limit)
+
+        if seed_count <= 0:
+            return
+
+        user_key = _get_user_key(user.id, "daily")
+        now = datetime.now(timezone.utc)
+        tomorrow = (now + timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
+        ttl = int((tomorrow - now).total_seconds())
+
+        redis_client.set(user_key, seed_count, ex=ttl)
+        logger.info(
+            f"Seeded daily counter for user {user.id} ({tier}) "
+            f"from device {device_id[:12]}...: {seed_count}/{daily_limit}"
+        )
+
+    except Exception as e:
+        logger.error(f"Failed to seed counter for user {user.id}: {e}")
+
+
+async def transfer_monthly_quota_from_guest(
+    new_user: models.User, prior_guest_id: int, device_id: str
+) -> None:
+    """Transfer monthly quota counter from a prior guest account to a newly registered user.
+
+    Called when a user registers after logging out of a guest account (Case 2 in register_user).
+    Daily quota is handled separately by seed_user_counter_from_device, which reads the
+    cross-account device cap. Monthly has no cross-account cap, so we reconstruct the total
+    from two sources and sum them:
+      - Guest monthly: tier:user:{prior_guest_id}:monthly:{YYYY-MM}
+      - Anonymous device monthly: tier:anon:device:{device_id}:monthly:{YYYY-MM}
+
+    These track distinct usage (guest analyses vs anonymous analyses), so summing them
+    gives the correct total without double-counting.
+
+    Caps the result at the new user's monthly limit. Fails open if Redis is unavailable.
+    """
+    redis_client = get_redis()
+    if not redis_client:
+        logger.warning(f"Redis unavailable, skipping monthly quota transfer for user {new_user.id}")
+        return
+
+    try:
+        now = datetime.now(timezone.utc)
+        month_str = now.strftime("%Y-%m")
+
+        # Guest's own monthly usage
+        guest_monthly_key = f"tier:user:{prior_guest_id}:monthly:{month_str}"
+        guest_monthly = int(redis_client.get(guest_monthly_key) or 0)
+
+        # Anonymous monthly usage on the same device (before guest account was created)
+        anon_monthly = 0
+        if device_id and device_id != "unknown-device":
+            anon_monthly_key = _get_anonymous_device_key(device_id, "monthly")
+            anon_monthly = int(redis_client.get(anon_monthly_key) or 0)
+
+        total = guest_monthly + anon_monthly
+        if total <= 0:
+            return
+
+        tier = get_effective_tier(new_user)
+        limits = get_tier_limits(tier)
+        monthly_limit = limits["monthly_analyses"]
+        seed_count = total if monthly_limit == -1 else min(total, monthly_limit)
+
+        if seed_count <= 0:
+            return
+
+        user_monthly_key = _get_user_key(new_user.id, "monthly")
+        next_month = (now.replace(day=1) + timedelta(days=32)).replace(day=1)
+        ttl = int((next_month - now).total_seconds())
+
+        redis_client.set(user_monthly_key, seed_count, ex=ttl)
+        logger.info(
+            f"Transferred monthly quota to user {new_user.id} ({tier}): "
+            f"{seed_count}/{monthly_limit} (guest={guest_monthly}, anon={anon_monthly})"
+        )
+
+    except Exception as e:
+        logger.error(f"Failed to transfer monthly quota for user {new_user.id}: {e}")
+
+
 async def check_teams_limit(user: models.User, db: Session, lang: str = "en") -> None:
     """Check if user can create more teams.
 

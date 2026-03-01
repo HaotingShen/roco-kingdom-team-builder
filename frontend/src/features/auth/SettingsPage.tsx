@@ -19,8 +19,7 @@ export default function SettingsPage() {
   // --- Change Email state ---
   const [newEmail, setNewEmail] = useState("");
   const [emailPassword, setEmailPassword] = useState("");
-  const [emailChangeStep, setEmailChangeStep] = useState<"request" | "confirm">("request");
-  const [emailToken, setEmailToken] = useState("");
+  const [emailChangeStep, setEmailChangeStep] = useState<"request" | "sent">("request");
 
   // --- Change Password mutation ---
   const changePasswordMutation = useMutation({
@@ -60,8 +59,7 @@ export default function SettingsPage() {
       return response.data;
     },
     onSuccess: () => {
-      toast.success(t("settings.emailChangeRequested"));
-      setEmailChangeStep("confirm");
+      setEmailChangeStep("sent");
     },
     onError: (error: any) => {
       const detail = error.response?.data?.detail;
@@ -72,33 +70,6 @@ export default function SettingsPage() {
         message = detail[0]?.msg || t("settings.emailChangeFailed");
       } else {
         message = t("settings.emailChangeFailed");
-      }
-      toast.error(message);
-    },
-  });
-
-  // --- Confirm Email Change mutation ---
-  const confirmEmailChangeMutation = useMutation({
-    mutationFn: async () => {
-      const response = await authEndpoints.confirmEmailChange({
-        token: emailToken,
-      });
-      return response.data;
-    },
-    onSuccess: () => {
-      toast.success(t("settings.emailChanged"));
-      clearAuth();
-      navigate("/auth/login");
-    },
-    onError: (error: any) => {
-      const detail = error.response?.data?.detail;
-      let message: string;
-      if (typeof detail === "string") {
-        message = detail;
-      } else if (Array.isArray(detail)) {
-        message = detail[0]?.msg || t("settings.emailChangConfirmFailed");
-      } else {
-        message = t("settings.emailChangConfirmFailed");
       }
       toast.error(message);
     },
@@ -135,11 +106,6 @@ export default function SettingsPage() {
   const handleRequestEmailChange = (e: React.FormEvent) => {
     e.preventDefault();
     requestEmailChangeMutation.mutate();
-  };
-
-  const handleConfirmEmailChange = (e: React.FormEvent) => {
-    e.preventDefault();
-    confirmEmailChangeMutation.mutate();
   };
 
   // Auth guard: not logged in
@@ -186,8 +152,6 @@ export default function SettingsPage() {
     newEmail.includes("@") &&
     newEmail.includes(".") &&
     emailPassword.length > 0;
-
-  const isEmailConfirmValid = emailToken.length >= 32;
 
   return (
     <div className="min-h-[calc(100vh-3.5rem)] flex items-start justify-center bg-zinc-50 px-4 py-8">
@@ -285,7 +249,26 @@ export default function SettingsPage() {
             </p>
           )}
 
-          {emailChangeStep === "request" ? (
+          {emailChangeStep === "sent" ? (
+            <div className="space-y-4">
+              <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                <p className="text-sm text-green-800">
+                  {t("settings.confirmEmailDescription")}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setEmailChangeStep("request");
+                  setNewEmail("");
+                  setEmailPassword("");
+                }}
+                className="w-full h-10 border border-zinc-300 text-zinc-700 rounded-md hover:bg-zinc-50 transition-colors"
+              >
+                {t("auth.back")}
+              </button>
+            </div>
+          ) : (
             <form onSubmit={handleRequestEmailChange} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-zinc-700 mb-1">
@@ -324,51 +307,6 @@ export default function SettingsPage() {
                   ? t("settings.sendingVerification")
                   : t("settings.sendVerification")}
               </button>
-            </form>
-          ) : (
-            <form onSubmit={handleConfirmEmailChange} className="space-y-4">
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-2">
-                <p className="text-sm text-blue-800">
-                  {t("settings.confirmEmailDescription")}
-                </p>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-zinc-700 mb-1">
-                  {t("settings.verificationToken")}
-                </label>
-                <input
-                  type="text"
-                  value={emailToken}
-                  onChange={(e) => setEmailToken(e.target.value)}
-                  placeholder={t("settings.verificationTokenPlaceholder")}
-                  required
-                  autoFocus
-                  className="w-full h-10 px-3 border border-zinc-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm"
-                />
-              </div>
-
-              <div className="flex gap-3">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setEmailChangeStep("request");
-                    setEmailToken("");
-                  }}
-                  className="flex-1 h-10 border border-zinc-300 text-zinc-700 rounded-md hover:bg-zinc-50 transition-colors"
-                >
-                  {t("auth.back")}
-                </button>
-                <button
-                  type="submit"
-                  disabled={!isEmailConfirmValid || confirmEmailChangeMutation.isPending}
-                  className="flex-1 h-10 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed transition-colors"
-                >
-                  {confirmEmailChangeMutation.isPending
-                    ? t("settings.confirming")
-                    : t("settings.confirmButton")}
-                </button>
-              </div>
             </form>
           )}
         </div>

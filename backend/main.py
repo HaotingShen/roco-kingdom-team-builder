@@ -95,6 +95,8 @@ from backend.tier_limits import (
     check_retry_grace,
     consume_retry_grace,
     clear_retry_grace,
+    seed_user_counter_from_device,
+    transfer_monthly_quota_from_guest,
 )
 from backend.email_service import (
     send_verification_email,
@@ -1931,6 +1933,9 @@ async def create_guest_user(
     db.commit()
     db.refresh(guest)
 
+    # Seed daily counter from device usage so quota display is honest
+    await seed_user_counter_from_device(guest, device_id)
+
     # Record guest creation for rate limiting
     await record_guest_creation(client_ip)
 
@@ -2087,6 +2092,47 @@ async def register_user(
         db.add(user)
         db.commit()
         db.refresh(user)
+
+        # Transfer teams and quota from any prior guest account on this device.
+        # Handles the case where a user saved teams as a guest, logged out, then
+        # registered a fresh account — their data should follow them.
+        device_id_for_seed = getattr(request.state, 'device_id', None)
+        prior_guest_id = None
+        if device_id_for_seed and device_id_for_seed != "unknown-device":
+            prior_guest = db.query(models.User).filter(
+                models.User.device_id == device_id_for_seed,
+                models.User.is_guest == True,
+                models.User.is_active == True,
+            ).first()
+            if prior_guest:
+                prior_guest_id = prior_guest.id
+                try:
+                    transferred = db.query(models.Team).filter(
+                        models.Team.owner_id == prior_guest.id
+                    ).update({"owner_id": user.id})
+                    prior_guest.is_active = False
+                    prior_guest.device_id = None
+                    db.commit()
+                    logger.info(
+                        f"Transferred {transferred} team(s) from guest {prior_guest.id} "
+                        f"to new user {user.id} ({user.username})"
+                    )
+                except Exception as e:
+                    logger.error(
+                        f"Failed to transfer teams from guest {prior_guest.id} "
+                        f"to user {user.id}: {e}"
+                    )
+                    db.rollback()
+                    prior_guest_id = None  # Skip quota transfer if teams transfer failed
+
+        # Seed daily counter from device usage so quota display is honest.
+        # Daily is read from the cross-account device cap (covers anon + guest usage).
+        await seed_user_counter_from_device(user, device_id_for_seed)
+
+        # Transfer monthly quota from the prior guest account (if any).
+        # Monthly has no cross-account cap, so we sum guest + anon device monthly directly.
+        if prior_guest_id is not None:
+            await transfer_monthly_quota_from_guest(user, prior_guest_id, device_id_for_seed)
 
     # Send verification email
     email_sent = await send_verification_email(user.email, verification_token, language=user.preferred_language)

@@ -10,6 +10,7 @@ import RegisterPage from "./features/auth/RegisterPage";
 import ForgotPasswordPage from "./features/auth/ForgotPasswordPage";
 import ResetPasswordPage from "./features/auth/ResetPasswordPage";
 import VerifyEmailPage from "./features/auth/VerifyEmailPage";
+import ConfirmEmailChangePage from "./features/auth/ConfirmEmailChangePage";
 import AdminPage from "./features/admin/AdminPage";
 import SettingsPage from "./features/auth/SettingsPage";
 
@@ -29,6 +30,7 @@ const router = createBrowserRouter([
       { path: "auth/forgot-password", element: <ForgotPasswordPage /> },
       { path: "auth/reset-password", element: <ResetPasswordPage /> },
       { path: "auth/verify", element: <VerifyEmailPage /> },
+      { path: "auth/confirm-email", element: <ConfirmEmailChangePage /> },
       { path: "settings", element: <SettingsPage /> },
       { path: "admin", element: <AdminPage /> }
     ]
