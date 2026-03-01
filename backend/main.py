@@ -2578,7 +2578,7 @@ async def change_password(
 # ========== EMAIL CHANGE (Phase 6) ==========
 
 @app.post("/auth/change-email", tags=["Authentication"])
-@limiter.limit("3/hour")
+@limiter.limit("5/hour")
 async def request_email_change(
     request: Request,
     email_data: schemas.EmailChangeRequest,
