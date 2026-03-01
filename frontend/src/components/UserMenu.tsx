@@ -307,16 +307,7 @@ export default function UserMenu() {
 
               <QuotaDisplay quota={quota} variant="menu" />
 
-              <button
-                onClick={() => {
-                  setIsOpen(false);
-                  // TODO: Navigate to profile page when implemented
-                  // navigate('/profile');
-                }}
-                className="w-full text-left px-3 py-2 text-sm text-zinc-700 hover:bg-zinc-50"
-              >
-                {t('userMenu.profile') || 'Profile'}
-              </button>
+              {/* TODO: Profile page not yet implemented */}
 
               <button
                 onClick={() => {

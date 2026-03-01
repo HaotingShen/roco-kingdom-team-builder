@@ -1860,7 +1860,8 @@ async def create_guest_user(
         username = f"guest_{device_id[:12]}"
         existing_guest = db.query(models.User).filter(
             models.User.username == username,
-            models.User.is_guest == True
+            models.User.is_guest == True,
+            models.User.is_active == True,
         ).first()
 
         if existing_guest:
@@ -2716,7 +2717,7 @@ async def confirm_email_change(
     SECURITY:
     - Token must be valid and not expired
     - Old email is replaced with new email
-    - email_verified is reset to False (requires re-verification in Phase 7A)
+    - email_verified is set to True (link click proves ownership of new email)
     - All sessions are invalidated
     """
     # Find user with this token
@@ -2761,8 +2762,8 @@ async def confirm_email_change(
     user.email_change_token = None
     user.email_change_token_expires = None
 
-    # Reset email verification status (Phase 7A)
-    user.email_verified = False
+    # Clicking the confirmation link proves ownership of the new email
+    user.email_verified = True
 
     # Invalidate all sessions for security
     user.token_version += 1
