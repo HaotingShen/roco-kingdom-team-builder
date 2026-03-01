@@ -1,0 +1,400 @@
+Here's the full picture. Every "wire" you've configured maps to a real connection:
+
+                          PUBLIC INTERNET
+                                │
+                                ▼
+                      ┌─────────────────┐
+                      │   Cloudflare    │  (DNS only, not proxied)
+                      │                 │
+                      │  rkteambuilder.com → CloudFront
+                      │  origin-api.rkteambuilder.com → EC2 IP (13.228.63.192)
+                      └────────┬────────┘
+                               │
+                               ▼
+                      ┌─────────────────────────────────────┐
+                      │         CloudFront (CDN)            │
+                      │                                     │
+                      │  ACM Certificate (HTTPS)            │
+                      │                                     │
+                      │  Route: /* → S3 (with Referer secret)
+                      │  Route: /auth/*, /teams/*, etc → EC2 (with Origin secret)
+                      └───────┬─────────────────┬───────────┘
+                              │                 │
+                Referer header│                 │ X-Origin-Verify header
+                              ▼                 ▼
+  ┌───────────────────┐     ┌──────────────────────────────────────────────┐
+  │   S3 Bucket       │     │              VPC (10.0.0.0/16)               │
+  │   rktb-frontend   │     │              "Your private network"          │
+  │                   │     │                                              │
+  │ Bucket Policy:    │     │  Internet Gateway ← Route Table              │
+  │ Only serve files  │     │       │                                      │
+  │ if Referer header │     │       ▼                                      │
+  │ matches secret    │     │  ┌─────────────────────────────────────┐     │
+  │                   │     │  │  Public Subnet (10.0.1.0/24)        │     │
+  │ Website hosting:  │     │  │                                     │     │
+  │ index.html for    │     │  │  EC2 (t3.small)                     │     │
+  │ all 404s (SPA)    │     │  │  Security Group (rktb-ec2-sg):      │     │
+  └───────────────────┘     │  │    IN: port 22 ← your IP only (SSH) │     │
+                            │  │    IN: port 80 ← CloudFront IPs only│     │
+                            │  │                                     │     │
+                            │  │  IAM Role (rktb-ec2-role):          │     │
+                            │  │    → Parameter Store (read secrets) │     │
+                            │  │    → ECR (pull Docker images)       │     │
+                            │  │    → CloudWatch (send logs)         │     │
+                            │  │    → SSM (receive deploy commands)  │     │
+                            │  │    → S3 (download deploy files)     │     │
+                            │  │                                     │     │
+                            │  │  ┌─────────────────────────────┐    │     │
+                            │  │  │ Nginx (:80)                 │    │     │
+                            │  │  │ Checks X-Origin-Verify      │    │     │
+                            │  │  │ header, rejects if wrong    │    │     │
+                            │  │  │         │                   │    │     │
+                            │  │  │         ▼                   │    │     │
+                            │  │  │ Docker Compose              │    │     │
+                            │  │  │  ├─ FastAPI (:8000)         │    │     │
+                            │  │  │  └─ Redis (:6379)           │    │     │
+                            │  │  └─────────────────────────────┘    │     │
+                            │  └──────────────────┬──────────────────┘     │
+                            │                     │ port 5432              │
+                            │  ┌──────────────────▼──────────────────┐     │
+                            │  │  Private Subnets (10.0.10.0, .11.0) │     │
+                            │  │                                     │     │
+                            │  │  RDS PostgreSQL (db.t3.micro)       │     │
+                            │  │  Security Group (rktb-rds-sg):      │     │
+                            │  │    IN: port 5432 ← EC2 SG only      │     │
+                            │  │    (no internet access)             │     │
+                            │  └─────────────────────────────────────┘     │
+                            └──────────────────────────────────────────────┘
+
+  OUTSIDE THE VPC:
+  ┌──────────────────────────────────────────────┐
+  │  Parameter Store: all your secrets           │
+  │    DB password, API keys, origin secret...   │
+  │    EC2 fetches these via IAM role            │
+  │                                              │
+  │  ECR: Docker image storage                   │
+  │    GitHub Actions pushes images here         │
+  │    EC2 pulls images via IAM role             │
+  │                                              │
+  │  GitHub Actions (CI/CD):                     │
+  │    OIDC → assumes IAM role (no stored keys)  │
+  │    → pushes Docker image to ECR              │
+  │    → uploads frontend to S3                  │
+  │    → invalidates CloudFront cache            │
+  │    → SSM command to EC2: "pull & restart"    │
+  └──────────────────────────────────────────────┘
+
+  The "wiring" in plain English:
+
+  1. Cloudflare DNS → maps domain names to destinations. Just a phone book — "rkteambuilder.com goes to CloudFront"
+  2. ACM Certificate → proves you own the domain. CloudFront uses it for HTTPS. Validated by adding a CNAME in
+  Cloudflare.
+  3. VPC → your isolated network. Nothing gets in or out unless you explicitly allow it.
+  4. Subnets → sections within your VPC. Public subnet has an Internet Gateway (EC2 lives here). Private subnets have no
+   internet (RDS lives here).
+  5. Route Table → traffic rule: "outbound traffic from public subnet → goes through Internet Gateway." Private subnets
+  don't have this rule, so they're isolated.
+  6. Security Groups → firewalls on individual resources. EC2 only accepts SSH from your IP and HTTP from CloudFront.
+  RDS only accepts PostgreSQL connections from EC2.
+  7. IAM Role → permissions for EC2. Instead of storing AWS credentials on the server, the role lets EC2 access specific
+   services (Parameter Store, ECR, etc.) automatically.
+  8. CloudFront → sits between users and your infrastructure. Routes /auth/*, /teams/* etc. to EC2, and everything else
+  to S3. Adds HTTPS, caching, DDoS protection.
+  9. S3 Bucket Policy + Referer secret → only CloudFront can read frontend files. Direct S3 access is blocked.
+  10. Nginx + Origin secret → only CloudFront can reach EC2's API. Direct EC2 access is blocked.
+
+  The key security principle: Users only talk to CloudFront. CloudFront proves its identity to both S3 (referer secret)
+  and EC2 (origin secret). EC2 proves its identity to RDS (security group). Everything else is locked down.
+
+
+1. Why security groups and IAM roles?
+
+  Think of them as two different kinds of locks:
+
+  - Security groups = physical locks on doors. "Who can physically reach this machine, and on which port?" Without them,
+   anyone on the internet could try connecting to your database directly.
+  - IAM roles = ID badges. "Once you're inside, what are you allowed to do?" Your EC2 needs to pull Docker images and
+  read secrets — the role says "you can do these specific things, nothing more."
+
+  Why both? A security group lets CloudFront reach EC2 on port 80, but that doesn't mean EC2 should be able to delete
+  your S3 bucket. The IAM role limits what EC2 can do with other AWS services.
+
+  The port numbers and subnet CIDRs — you don't need to memorize them. They're just addresses. 10.0.1.0/24 means "256
+  addresses starting at 10.0.1.0". Public subnet gets one range, private subnets get another. That's it.
+
+  2. Why Nginx and X-Origin-Verify?
+
+  The security group allows traffic from any CloudFront IP. But anyone can create a CloudFront distribution — not just
+  you. So a bad actor could set up their own CloudFront pointing to your EC2 and bypass your setup.
+
+  Nginx checks a secret header (X-Origin-Verify) that only your CloudFront distribution sends. No secret = 403 rejected.
+
+  Nginx also acts as a reverse proxy — it sits in front of FastAPI and handles things like timeouts and header
+  forwarding. FastAPI shouldn't be directly exposed.
+
+  3. Why so complicated? Why not needed locally?
+
+  Locally, everything runs on localhost:
+  - Only you can access it (your laptop isn't on the public internet)
+  - No one is trying to hack it
+  - No HTTPS needed (browsers trust localhost)
+  - No DNS needed (localhost just works)
+  - No CDN needed (you're the only user, sitting next to the server)
+
+  In production, you're exposing your app to the entire internet. The complexity comes from three things:
+
+  ┌─────────────────────────────────────────┬───────────────────────────────────────────────┬──────────────────────────┐
+  │                 Concern                 │                What solves it                 │         Locally?         │
+  ├─────────────────────────────────────────┼───────────────────────────────────────────────┼──────────────────────────┤
+  │ Security — attackers will find your     │ Security groups, secrets, Nginx origin check, │ Not needed, nobody can   │
+  │ server within hours                     │  private subnets for DB                       │ reach localhost          │
+  ├─────────────────────────────────────────┼───────────────────────────────────────────────┼──────────────────────────┤
+  │ Reliability — needs to stay up, handle  │ CloudFront (CDN/caching), Elastic IP          │ Not needed, just restart │
+  │ traffic                                 │ (survives reboot), RDS (managed backups)      │  if it crashes           │
+  ├─────────────────────────────────────────┼───────────────────────────────────────────────┼──────────────────────────┤
+  │ Automation — you don't want to SSH in   │ ECR, SSM, GitHub Actions, IAM roles,          │ Not needed, you just run │
+  │ and manually deploy every time          │ Parameter Store                               │  python main.py          │
+  └─────────────────────────────────────────┴───────────────────────────────────────────────┴──────────────────────────┘
+
+
+
+------------------------------Interview------------------------------------
+
+Here's the complete end-to-end walkthrough of how "Team Analyze" works in the codebase (Repo version: d0c54ce).
+
+  Visual Summary of the Flow
+
+  User clicks "Analyze"
+          │
+          ▼
+    BuilderPage.tsx ──toPayload()──► api.ts: POST /team/analyze
+          │                                      │
+          │                                      ▼
+          │                            FastAPI endpoint (main.py:4073)
+          │                                      │
+          │                          ┌───────────┴───────────┐
+          │                          ▼                       ▼
+          │                    Identity resolution      Schema validation
+          │                    (JWT + device + IP)      (6 monsters + moves)
+          │                          │
+          │                          ▼
+          │                    Cache pre-check (Redis)
+          │                     ┌────┴────┐
+          │                  ALL HIT    MISS
+          │                     │         │
+          │                     │    Quota/rate checks
+          │                     │         │
+          │                     │    Load data (PostgreSQL)
+          │                     │         │
+          │                     │    Build 7 LLM prompts
+          │                     │         │
+          │                     │    asyncio.gather (concurrent)
+          │                     │     ┌───┴───┐
+          │                     │   CACHED   LLM CALL
+          │                     │     │    (Gemini/DeepSeek)
+          │                     │     └───┬───┘
+          │                     │         │
+          │                     │    Store in Redis (1hr TTL)
+          │                     │         │
+          │                     └────┬────┘
+          │                          │
+          │                    Compute stats, coverage,
+          │                    recommendations, synergies
+          │                          │
+          │                    Record quota usage
+          │                          │
+          │                          ▼
+          │                    TeamAnalysisOut (JSON)
+          │                          │
+          ▼                          │
+    AnalysisResults.tsx ◄────────────┘
+    (4 sections: overview,
+     per-monster, recs, synergy)
+
+  The key architectural insight is the three-layer caching strategy: Redis for LLM responses (1hr TTL with stampede
+  protection), PostgreSQL for user-saved permanent analyses, and a sophisticated quota system that exempts cached
+  results from quota charges entirely.
+
+  ---
+  The Full Flow, Step by Step
+
+  Phase 1: Frontend -- User Builds a Team and Clicks "Analyze"
+
+  BuilderPage.tsx is the main UI. The user fills 6 monster slots, each with a monster, personality, legacy type, 4
+  moves, and talent boosts, plus a team-wide magic item.
+
+  Validation (BuilderPage.tsx:58-69): validateSlot() checks every slot is complete. The canAnalyze flag (line 340) is
+  true only when all 6 slots are valid AND a magic item is selected. The Analyze button is disabled otherwise.
+
+  Quota display (BuilderPage.tsx:272-280): The useQuota() hook fetches the user's current usage from GET /auth/quota.
+  The button shows something like (2/5) so the user knows how many analyses they have left today.
+
+  When the user clicks Analyze (BuilderPage.tsx:392-413):
+  1. onAnalyze() clears previous results and errors
+  2. Calls analyze.mutate(toPayload())
+
+  Building the payload (builderStore.ts:74-86): toPayload() converts the Zustand store state into a TeamCreate object --
+   team name, magic item ID, and an array of 6 user monsters (each with monster_id, personality_id, legacy_type_id, 4
+  move IDs, talent boosts, and position index).
+
+  The mutation (BuilderPage.tsx:343-369): A TanStack Query mutation that:
+  - Calls endpoints.analyzeTeam(payload, lang) from api.ts:274
+  - On success: stores the result in state, invalidates the quota cache (so the counter updates), scrolls to the results
+  - On error: shows the error message
+
+  The API call (api.ts:274): Sends POST /team/analyze with body { team: <TeamCreate>, language: "en"|"zh" }. The axios
+  instance includes withCredentials: true (for httpOnly cookies) and attaches the JWT Bearer token via interceptor.
+
+  ---
+  Phase 2: Backend -- Receiving the Request
+
+  Schema validation (schemas.py:450-452): The request is validated as TeamAnalyzeInlineRequest which contains a
+  TeamCreate (6 monsters, each with its own validation rules) and a language field.
+
+  Identity resolution (dependencies.py:257-285): get_user_or_anonymous() extracts three things:
+  1. device_id from an httpOnly cookie (set by middleware)
+  2. client_ip from the request
+  3. user from JWT token (or None if anonymous)
+
+  Device owner resolution (main.py:4091-4099): If the user is anonymous but the device_id belongs to a registered
+  account, that account's quota is used instead. This prevents "log out for free quota" abuse.
+
+  ---
+  Phase 3: Backend -- Quota and Rate Limit Gauntlet
+
+  Before any LLM call happens, the endpoint runs a series of checks (main.py:4113-4177):
+
+  1. Team hash (line 4102): Generates an MD5 hash of the team composition (monsters + moves + magic item, but NOT
+  personality/talent). This is language-independent.
+  2. Cache pre-check (line 4105): check_if_all_cached() checks Redis for all 7 cache keys (6 monster + 1 team). If
+  everything is cached, the entire quota/rate-limit gauntlet is skipped -- cached results are free.
+  3. If not fully cached, the checks are:
+    - Retry grace: If a previous analysis partially failed and grace was granted, this bypasses quota
+    - Per-user quota: Anonymous users get 1/day, guests 3/day, free 5/day, premium 20/day (configurable in
+  tier_limits.py)
+    - Cross-account device cap: Max 5 analyses/day per physical device regardless of account switching
+    - IP daily cap: Fallback when device_id is unknown (15/day)
+    - Global IP rate limit: Prevents rapid-fire analyses from same IP
+    - Per-team rate limit: Prevents re-analyzing the same team by switching languages
+
+  ---
+  Phase 4: Backend -- The Core Analysis (main.py:3540-4056)
+
+  Step 1: Load data from PostgreSQL (lines 3584-3643)
+
+  Batch-loads into dictionaries via SQLAlchemy:
+  - All 6 monsters from the monsters table
+  - All unique moves from the moves table
+  - All traits for these monsters from the traits table
+  - ALL types (with eager-loaded type effectiveness relations)
+  - All personalities, the magic item, and all game terms
+
+  Step 2: Build 7 LLM tasks (lines 3651-3817)
+
+  For each of the 6 monsters:
+  1. Resolves which game terms are actually referenced in that monster's trait and move descriptions using
+  reference_resolver.py (BFS traversal, depth 3) -- this keeps prompts focused and smaller
+  2. Generates a Redis cache key: llm_cache:monster_trait:{md5(monster_id + sorted_move_ids + language)}
+  3. Builds a prompt via build_trait_synergy_prompt() (line 523) asking the LLM to analyze synergies between the
+  monster's trait and its 4 selected moves, given the type chart and game terms
+  4. Creates an async call_llm() task
+
+  For the team overall (the 7th task):
+  1. Resolves references across ALL traits + moves + magic item
+  2. Cache key: llm_cache:team_synergy:{md5(magic_item + all_monster_keys + legacy_types)}
+  3. Builds a prompt via build_team_synergy_prompt() (line 746) asking for team archetype, action priority, switching
+  strategy, magic item usage, and overall strategy
+
+  Step 3: Execute concurrently (line 3820)
+
+  llm_results = await asyncio.gather(*llm_tasks, return_exceptions=True)
+
+  All 7 LLM calls run in parallel.
+
+  ---
+  Phase 5: LLM Service and Cache Layer
+
+  llm_service.py:282-418 -- generate_analysis_json():
+
+  Each of the 7 tasks goes through this function, which delegates to the cache layer.
+
+  cache.py:201-293 -- RedisCache.get_or_compute():
+  1. Check Redis for the cache key -- if hit, return immediately (no LLM call)
+  2. If miss: acquire a distributed Redis lock (stampede protection -- prevents 10 concurrent requests from all hitting
+  the LLM for the same key)
+  3. Double-check cache after getting the lock (another request may have filled it)
+  4. If still miss: call the LLM provider
+  5. Store result in Redis with 1-hour TTL
+  6. Release lock
+
+  LLM providers (llm_service.py):
+  - Gemini (lines 98-155): Uses genai.Client with thinking mode enabled (up to 24K thinking tokens), requests JSON
+  response format
+  - DeepSeek (lines 157-267): Uses OpenAI-compatible async client with response_format: json_object
+
+  Both return a parsed JSON dict + metadata.
+
+  ---
+  Phase 6: Backend -- Building the Response
+
+  After all 7 LLM calls complete (main.py:3822-4056):
+
+  Error handling (lines 3822-3906): Categorizes failures. Partial success is allowed -- failed monster analyses get
+  replaced with error markers containing user-visible warnings.
+
+  Per-monster analysis -- for each monster:
+  - compute_effective_stats() (line 315): Applies the stat formula using base stats + talent boosts + personality
+  modifiers
+  - compute_energy_profile() (line 349): Average move cost, zero-cost moves, energy restore moves
+  - compute_counter_coverage() (line 404): Categorizes attack/defense/status counter capabilities
+  - Maps LLM synergy findings to specific move IDs
+
+  Team-level analysis:
+  - compute_type_coverage(): Super-effective, resisted, and weak-to type lists
+  - compute_magic_item_eval(): Which monsters benefit from the item
+  - generate_recommendations(): Structured recommendations with severity levels (info/warn/danger)
+  - Extracts the LLM's team synergy output (5 strategy sections)
+
+  Final assembly (lines 4036-4051): Everything goes into a TeamAnalysisOut response.
+
+  ---
+  Phase 7: Backend -- Post-Analysis Quota Recording
+
+  Back in the endpoint (main.py:4181-4208):
+
+  - If fully cached: no quota charged
+  - If retry grace was active: no new charge; grace may be cleared or decremented
+  - Otherwise: increment Redis counters for the user's daily/monthly usage, device cap, and IP cap
+  - If partial failure: set_retry_grace() gives the user up to 3 free retries within 15 minutes
+
+  ---
+  Phase 8: Frontend -- Displaying Results
+
+  AnalysisResults.tsx receives the TeamAnalysisOut and renders 4 collapsible sections:
+
+  1. Team Overview (line 444): Team name, magic item with image and valid targets, type coverage in 3 columns (super
+  effective / resisted / team weak to)
+  2. Per-Monster Grid (line 640): A card for each monster showing:
+    - Monster image, name, form, types
+    - Personality and legacy type badges
+    - Stat bars (HP, Atk, Def, etc.) with computed effective stats
+    - Energy profile and counter coverage chips
+    - Trait-move synergy findings from the LLM (which moves synergize with the trait and why)
+  3. Recommendations (line 660): Grouped by category with severity badges (info/warn/danger)
+  4. Team Synergy (line 753): 5 collapsible sub-sections -- Team Archetype, Action Priority, Switching Strategy, Magic
+  Item Usage, Overall Strategy
+
+  If has_partial_errors is true, a warning banner shows that some analyses failed.
+
+  ---
+  Phase 9: Saving (Optional, Separate Action)
+
+  The analysis is NOT automatically saved. If the user is logged in and has a saved team, they can click "Save
+  Analysis":
+
+  - Frontend calls POST /analysis/save with the team ID and analysis data
+  - Backend upserts into the team_analyses PostgreSQL table (models.py:380-396): a JSONB column stores the entire
+  TeamAnalysisOut as JSON, keyed by (team_id, language) with a unique constraint
+  - Later, GET /teams/{team_id}/analysis?language=en retrieves it without re-running the LLM
+
+  ---

@@ -51,13 +51,6 @@ export default function QuotaDisplay({ quota, variant }: QuotaDisplayProps) {
         </span>
       </div>
 
-      {/* Unverified hint */}
-      {isUnverified && (
-        <p className="text-[11px] text-amber-700">
-          {t("quota.unverifiedHint")}
-        </p>
-      )}
-
       {/* Analysis usage */}
       <div className="flex items-center justify-between text-xs text-zinc-600">
         <span>{t("quota.analyses")}</span>

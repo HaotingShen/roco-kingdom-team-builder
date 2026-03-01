@@ -393,7 +393,7 @@ const ui: Record<Lang, Dict> = {
       resendFailed: "Failed to send verification code.",
       skipForNow: "Skip for now",
       emailNotVerified: "Email not verified",
-      emailNotVerifiedBanner: "Please verify your email to unlock all features.",
+      emailNotVerifiedBanner: "Please verify your email to get higher daily analysis limits and team storage.",
       verifyNow: "Verify Now",
       // Three-tier system
       continueAsGuest: "Continue as Guest",
@@ -585,7 +585,6 @@ const ui: Record<Lang, Dict> = {
       premium: "Premium",
       unlimited_tier: "Unlimited",
       unverified: "Unverified",
-      unverifiedHint: "Verify your email to unlock free tier",
     },
   },
   zh: {
@@ -910,7 +909,7 @@ const ui: Record<Lang, Dict> = {
       resendFailed: "发送验证码失败。",
       skipForNow: "暂时跳过",
       emailNotVerified: "邮箱未验证",
-      emailNotVerifiedBanner: "请验证您的邮箱以解锁所有功能。",
+      emailNotVerifiedBanner: "请验证您的邮箱以获得更多每日分析次数与队伍存储上限。",
       verifyNow: "立即验证",
       // Three-tier system
       continueAsGuest: "以访客身份继续",
@@ -1102,7 +1101,6 @@ const ui: Record<Lang, Dict> = {
       premium: "高级",
       unlimited_tier: "无限制",
       unverified: "未验证",
-      unverifiedHint: "验证邮箱以解锁免费等级",
     },
   },
 };
