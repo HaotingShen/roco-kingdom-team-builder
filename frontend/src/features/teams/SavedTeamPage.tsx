@@ -140,6 +140,7 @@ export default function SavedTeamPage() {
     mutationFn: () => endpoints.analyzeTeamById({ team_id: teamId, language: lang }).then(r => r.data),
     onMutate: () => {
       setIsAnalyzing(true);
+      setAnalysis(null);
     },
     onError: (err: any) => {
       setServerErr(err?.response?.data?.detail || err?.message || t("builder.analysisFailed"));
@@ -398,6 +399,14 @@ export default function SavedTeamPage() {
               t("teams.analyze")
             )}
           </button>
+
+          {/* Analyzing tip */}
+          {isAnalyzing && (
+            <div className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-700 flex items-start gap-2.5 animate-in slide-in-from-top duration-300">
+              <span className="shrink-0 mt-0.5">ℹ️</span>
+              <span>{t("builder.analyzingTip")}</span>
+            </div>
+          )}
 
           {/* View saved analysis button - only show if saved analysis exists */}
           {savedAnalysisQuery.data?.analysis_data && (

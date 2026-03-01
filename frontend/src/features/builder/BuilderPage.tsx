@@ -6,8 +6,8 @@ import CustomSelect from "@/components/CustomSelect";
 import AnalysisResults from "@/components/AnalysisResults";
 import SaveTeamModal from "@/components/SaveTeamModal";
 import type { MagicItemOut, UserMonsterCreate, TeamCreate, TeamAnalysisOut, TeamOut, TeamUpdate, FullSavedAnalysisOut } from "@/types";
-import { useMemo, useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useMemo, useState, useEffect, useRef } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import MonsterInspector from "./MonsterInspector";
 import { useI18n, pickName } from "@/i18n";
 import { extractErrorMessage } from "@/hooks/useTeamMutation";
@@ -268,8 +268,13 @@ export default function BuilderPage() {
   const [serverOk, setServerOk] = useState<string | null>(null);
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
   const [showSaveModal, setShowSaveModal] = useState(false);
+  const [attemptedAction, setAttemptedAction] = useState<'analyze' | 'save' | null>(null);
+  const showFieldErrors = attemptedAction !== null;
   const { lang, t } = useI18n();
   const navigate = useNavigate();
+  const location = useLocation();
+  const locationRef = useRef(location.pathname);
+  useEffect(() => { locationRef.current = location.pathname; }, [location.pathname]);
   const { user } = useAuthStore();
   const { quota } = useQuota();
 
@@ -341,6 +346,12 @@ export default function BuilderPage() {
   const allErrors = useMemo<VKey[][]>(() => slots.map(validateSlot), [slots]);
   const canAnalyze = allErrors.every((list) => list.length === 0) && !!magic_item_id;
 
+  // Auto-reset field error highlights once the attempted action's conditions are fully met
+  useEffect(() => {
+    if (attemptedAction === 'analyze' && canAnalyze) setAttemptedAction(null);
+    if (attemptedAction === 'save' && canAnalyze && !validateTeamName(name)) setAttemptedAction(null);
+  }, [attemptedAction, canAnalyze, name]);
+
   /* ---------- analyze ---------- */
   const analyze = useMutation({
     mutationFn: (payload: TeamCreate) =>
@@ -357,6 +368,11 @@ export default function BuilderPage() {
       setAnalysis(data);
       setIsAnalyzing(false);
       qc.invalidateQueries({ queryKey: QUERY_KEYS.QUOTA });
+      // If user navigated away during analysis, bring them back
+      if (locationRef.current !== "/build") {
+        navigate("/build");
+        return;
+      }
       // Scroll to analysis section
       setTimeout(() => {
         const element = document.getElementById("analysis-results");
@@ -396,16 +412,14 @@ export default function BuilderPage() {
       setServerErr(t("builder.analysisInProgress"));
       return;
     }
-    if (!magic_item_id) {
-      setServerErr(t("builder.v_pickMagicItem"));
-      return;
-    }
     if (!canAnalyze) {
-      setServerErr(t("builder.incompleteTeamMsg"));
+      setAttemptedAction('analyze');
+      setServerErr(!magic_item_id ? t("builder.v_pickMagicItem") : t("builder.incompleteTeamMsg"));
       return;
     }
     try {
       // Clear previous analysis results immediately when user clicks analyze
+      setAttemptedAction(null);
       setAnalysis(null);
       setServerErr(null);
       analyze.mutate(toPayload());
@@ -464,14 +478,18 @@ export default function BuilderPage() {
     // Validate team name
     const nameError = validateTeamName(name);
     if (nameError) {
+      setAttemptedAction('save');
       setServerErr(t(nameError));
       return;
     }
 
     if (!magic_item_id || !canAnalyze) {
+      setAttemptedAction('save');
       setServerErr(t("builder.incompleteTeamMsg"));
       return;
     }
+
+    setAttemptedAction(null);
 
     // Check team limit before attempting save
     if (isAtTeamLimit) {
@@ -513,14 +531,18 @@ export default function BuilderPage() {
     // Validate team name
     const nameError = validateTeamName(name);
     if (nameError) {
+      setAttemptedAction('save');
       setServerErr(t(nameError));
       return;
     }
 
     if (!magic_item_id || !canAnalyze) {
+      setAttemptedAction('save');
       setServerErr(t("builder.incompleteTeamMsg"));
       return;
     }
+
+    setAttemptedAction(null);
 
     try {
       // Check for duplicate names EXCLUDING current team
@@ -641,8 +663,9 @@ export default function BuilderPage() {
                     className={`
                       h-full rounded-lg border-2 p-3 space-y-2 cursor-pointer
                       transition-all duration-200
+                      ${showFieldErrors && errs.length > 0 ? "ring-2 ring-amber-400" : i === activeIdx ? "ring-2 ring-zinc-200" : ""}
                       ${i === activeIdx
-                        ? "border-zinc-800 bg-gradient-to-br from-zinc-50 via-white to-zinc-50 shadow-lg ring-2 ring-zinc-200"
+                        ? "border-zinc-800 bg-gradient-to-br from-zinc-50 via-white to-zinc-50 shadow-lg"
                         : "border-zinc-200 bg-white shadow-sm hover:shadow-md hover:border-zinc-300 hover:-translate-y-0.5"
                       }
                     `}
@@ -721,27 +744,29 @@ export default function BuilderPage() {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder={t("builder.teamNamePlaceholder") ?? "My Team"}
-                className="h-10 rounded-lg border-2 border-zinc-300 px-3 text-sm w-[160px] focus:outline-none focus:ring-2 focus:ring-zinc-400 focus:border-transparent transition-all shadow-sm"
+                className={`h-10 rounded-lg border-2 px-3 text-sm w-[160px] focus:outline-none focus:ring-2 focus:ring-zinc-400 focus:border-transparent transition-all shadow-sm ${showFieldErrors && attemptedAction === 'save' && !name?.trim() ? 'border-amber-400' : 'border-zinc-300'}`}
               />
             </div>
 
             {/* magic item */}
             <div className="flex items-center gap-2">
               <div className="text-sm font-medium text-zinc-700">{t("builder.magicItem")}</div>
-              <CustomSelect
-                value={magic_item_id ?? null}
-                options={[
-                  { value: 0, label: t("common.select"), leftIconUrl: null },
-                  ...(magicItems.data ?? []).map((mi) => ({
-                    value: mi.id,
-                    label: pickName(mi as any, lang) || mi.name,
-                    leftIconUrl: magicItemImageUrl(mi),
-                  })),
-                ]}
-                placeholder={t("common.select")}
-                onChange={(v) => setMagicItem(v ? v : null)}
-                buttonClassName="min-w-[160px]"
-              />
+              <div className={`rounded-lg transition-all ${showFieldErrors && !magic_item_id ? 'ring-2 ring-amber-400' : ''}`}>
+                <CustomSelect
+                  value={magic_item_id ?? null}
+                  options={[
+                    { value: 0, label: t("common.select"), leftIconUrl: null },
+                    ...(magicItems.data ?? []).map((mi) => ({
+                      value: mi.id,
+                      label: pickName(mi as any, lang) || mi.name,
+                      leftIconUrl: magicItemImageUrl(mi),
+                    })),
+                  ]}
+                  placeholder={t("common.select")}
+                  onChange={(v) => setMagicItem(v ? v : null)}
+                  buttonClassName="min-w-[160px]"
+                />
+              </div>
             </div>
 
             <div className="flex-1" />
@@ -749,7 +774,7 @@ export default function BuilderPage() {
             {/* Action buttons */}
             <button
               onClick={onSaveNew}
-              disabled={!canAnalyze || createTeam.isPending}
+              disabled={createTeam.isPending}
               data-testid="create-team-btn"
               className={`
                 h-10 px-5 rounded-lg font-medium text-sm
@@ -778,7 +803,7 @@ export default function BuilderPage() {
             {teamId ? (
               <button
                 onClick={onUpdateExisting}
-                disabled={!canAnalyze || updateTeam.isPending}
+                disabled={updateTeam.isPending}
                 className={`
                   h-10 px-5 rounded-lg font-medium text-sm
                   transition-all duration-200
@@ -803,7 +828,7 @@ export default function BuilderPage() {
             {/* analyze */}
             <button
               onClick={onAnalyze}
-              disabled={!canAnalyze || analyze.isPending || isAnalyzing}
+              disabled={analyze.isPending || isAnalyzing}
               title={
                 analysis?.has_partial_errors
                   ? t("builder.reanalyzeFree")
@@ -832,7 +857,7 @@ export default function BuilderPage() {
               ) : (
                 <span className="inline-flex items-center gap-1.5">
                   {analysis?.has_partial_errors ? t("builder.retryFree") : t("builder.analyze")}
-                  {quota && quota.daily_limit !== -1 && !analysis && (
+                  {quota && quota.daily_limit !== -1 && (
                     <span className={`text-xs opacity-70 ${isAtAnalysisLimit ? "text-red-300" : ""}`}>
                       ({quota.daily_used}/{quota.daily_limit})
                     </span>
@@ -841,6 +866,14 @@ export default function BuilderPage() {
               )}
             </button>
           </div>
+
+          {/* Analyzing tip */}
+          {isAnalyzing && (
+            <div className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-700 flex items-start gap-2.5 animate-in slide-in-from-top duration-300">
+              <span className="shrink-0 mt-0.5">ℹ️</span>
+              <span>{t("builder.analyzingTip")}</span>
+            </div>
+          )}
 
           {/* closable messages */}
           {serverErr && (
