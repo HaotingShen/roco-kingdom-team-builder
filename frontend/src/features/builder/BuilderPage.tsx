@@ -7,6 +7,7 @@ import AnalysisResults from "@/components/AnalysisResults";
 import SaveTeamModal from "@/components/SaveTeamModal";
 import type { MagicItemOut, UserMonsterCreate, TeamCreate, TeamAnalysisOut, TeamOut, TeamUpdate, FullSavedAnalysisOut } from "@/types";
 import { useMemo, useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import MonsterInspector from "./MonsterInspector";
 import { useI18n, pickName } from "@/i18n";
 import { extractErrorMessage } from "@/hooks/useTeamMutation";
@@ -268,6 +269,7 @@ export default function BuilderPage() {
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
   const [showSaveModal, setShowSaveModal] = useState(false);
   const { lang, t } = useI18n();
+  const navigate = useNavigate();
   const { user } = useAuthStore();
   const { quota } = useQuota();
 
@@ -583,7 +585,7 @@ export default function BuilderPage() {
               </p>
             </div>
             <button
-              onClick={() => setShowSaveModal(true)}
+              onClick={() => navigate('/auth/login')}
               className="h-9 px-4 bg-amber-600 text-white text-sm font-medium rounded-lg hover:bg-amber-700 transition-colors shrink-0"
             >
               {t("userMenu.login")}

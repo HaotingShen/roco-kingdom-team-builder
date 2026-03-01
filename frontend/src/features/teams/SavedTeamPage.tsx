@@ -243,7 +243,7 @@ export default function SavedTeamPage() {
                 {/* Monster image - reduced size */}
                 <div className="relative bg-gradient-to-br from-zinc-50 to-zinc-100 p-4 flex items-center justify-center" style={{ minHeight: '160px' }}>
                   <div className="w-32 h-32">
-                    <MonsterImage monster={um.monster} size={360} />
+                    <MonsterImage monster={um.monster} size={180} />
                   </div>
                   <div className="absolute top-2 left-2 bg-white/90 rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold text-zinc-700 shadow">
                     {idx + 1}
