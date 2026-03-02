@@ -125,8 +125,8 @@ export default function UserMenu() {
 
   /**
    * Handle "Clear Guest Data" for guest users.
-   * - Resets device_id cookie via backend endpoint
-   * - User becomes anonymous with fresh device_id
+   * - Orphans the current guest account (makes it inaccessible)
+   * - User becomes anonymous on the same device_id (quota history preserved)
    * - Old guest data remains in DB but cannot be reclaimed
    */
   const handleClearGuestData = async () => {
@@ -139,8 +139,7 @@ export default function UserMenu() {
     }
 
     try {
-      // Reset device_id cookie via backend endpoint
-      // This generates a new device_id, making old guest inaccessible
+      // Orphan the guest account via backend (device_id cookie is kept intact)
       await authEndpoints.resetDeviceId();
     } catch (error) {
       // Continue even if reset fails
@@ -155,7 +154,7 @@ export default function UserMenu() {
     clearTeamId();
     setAnalysis(null);
 
-    // User is now anonymous with new device_id
+    // User is now anonymous on the same device_id
     // Do NOT auto-create guest - user must explicitly choose
     navigate('/build');
   };

@@ -254,9 +254,9 @@ export const authEndpoints = {
     api.delete('/auth/account', { data }),
 
   /**
-   * Reset device ID cookie.
+   * Clear guest data by orphaning the current guest account.
    * Called when user wants to "Clear Guest Data" and start fresh.
-   * Generates a new device_id, making old guest account inaccessible.
+   * The device_id cookie is preserved so quota history carries over to any new guest account.
    */
   resetDeviceId: () =>
     api.post('/auth/reset-device-id'),

@@ -2446,53 +2446,34 @@ async def logout_all_devices(
 @app.post("/auth/reset-device-id", tags=["Authentication"])
 async def reset_device_id(
     request: Request,
-    response: Response,
     db: Session = Depends(get_db),
 ):
     """
-    Reset device ID cookie to a new value.
+    Clear guest data without changing the device ID cookie.
 
     Used for "Clear Guest Data" functionality:
-    - Generates a new device_id
-    - Old guest account becomes inaccessible (orphaned)
-    - User can create a fresh guest account
+    - Orphans the existing guest account (makes it inaccessible)
+    - User can create a fresh guest account on the same device
 
-    This endpoint:
-    - Does NOT require authentication
-    - Sets a new httpOnly device_id cookie
-    - Resets cross-account daily caps for the new device
+    Intentionally keeps the same device_id so that:
+    - Cross-account daily caps are preserved (prevents quota bypass via repeated clears)
+    - The new guest account seeds its quota from existing device usage (shows correct count)
+
+    This endpoint does NOT require authentication.
     """
-    # Deactivate the old guest account (if any) before issuing a new device_id
-    old_device_id = request.cookies.get(DEVICE_ID_COOKIE_NAME)
-    if old_device_id:
+    device_id = request.cookies.get(DEVICE_ID_COOKIE_NAME)
+    if device_id:
         old_guest = db.query(models.User).filter(
-            models.User.device_id == old_device_id,
+            models.User.device_id == device_id,
             models.User.is_guest == True,
         ).first()
         if old_guest:
             old_guest.is_active = False
             old_guest.device_id = None
             db.commit()
-            logger.info(f"Deactivated orphaned guest ID={old_guest.id} on device reset")
+            logger.info(f"Deactivated guest ID={old_guest.id} on clear-guest-data")
 
-    # Generate new device_id
-    new_device_id = str(uuid.uuid4())
-
-    # Set new cookie
-    response.set_cookie(
-        key=DEVICE_ID_COOKIE_NAME,
-        value=new_device_id,
-        max_age=DEVICE_ID_COOKIE_MAX_AGE,
-        httponly=True,
-        samesite=COOKIE_SAMESITE,
-        secure=COOKIE_SECURE,
-        domain=COOKIE_DOMAIN,
-        path="/",
-    )
-
-    logger.info(f"Reset device_id to {new_device_id[:12]}...")
-
-    return {"message": "Device ID reset successfully", "device_id": new_device_id[:8] + "..."}
+    return {"message": "Guest data cleared successfully"}
 
 
 # ========== PASSWORD RESET (Phase 6) ==========

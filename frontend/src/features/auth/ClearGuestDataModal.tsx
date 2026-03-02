@@ -10,8 +10,7 @@ interface ClearGuestDataModalProps {
  * Confirmation modal for clearing guest data.
  *
  * This action:
- * - Generates a new device_id
- * - Makes the old guest account inaccessible
+ * - Orphans the current guest account (makes it inaccessible)
  * - All saved teams on this guest will be lost
  */
 export default function ClearGuestDataModal({
