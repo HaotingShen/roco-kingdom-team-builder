@@ -7,7 +7,7 @@ import AnalysisResults from "@/components/AnalysisResults";
 import SaveTeamModal from "@/components/SaveTeamModal";
 import type { MagicItemOut, UserMonsterCreate, TeamCreate, TeamAnalysisOut, TeamOut, TeamUpdate, FullSavedAnalysisOut } from "@/types";
 import { useMemo, useState, useEffect, useRef } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import MonsterInspector from "./MonsterInspector";
 import { useI18n, pickName } from "@/i18n";
 import { extractErrorMessage } from "@/hooks/useTeamMutation";
@@ -272,9 +272,6 @@ export default function BuilderPage() {
   const showFieldErrors = attemptedAction !== null;
   const { lang, t } = useI18n();
   const navigate = useNavigate();
-  const location = useLocation();
-  const locationRef = useRef(location.pathname);
-  useEffect(() => { locationRef.current = location.pathname; }, [location.pathname]);
   const { user } = useAuthStore();
   const { quota } = useQuota();
 
@@ -369,8 +366,8 @@ export default function BuilderPage() {
       setIsAnalyzing(false);
       qc.invalidateQueries({ queryKey: QUERY_KEYS.QUOTA });
       // Scroll to analysis section, with longer delay if navigating back from another page
-      const scrollDelay = locationRef.current !== "/build" ? 300 : 100;
-      if (locationRef.current !== "/build") {
+      const scrollDelay = window.location.pathname !== "/build" ? 300 : 100;
+      if (window.location.pathname !== "/build") {
         navigate("/build");
       }
       setTimeout(() => {
