@@ -1,4 +1,4 @@
-import { useQuery, useQueries } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { endpoints } from "@/lib/api";
 import { useI18n, pickName } from "@/i18n";
 import MonsterPicker from "./MonsterPicker";
@@ -100,22 +100,17 @@ function useLegacyMap(detail: any) {
   const moveIdToTypeId = new Map<number, number>();
   outPairs.forEach(({ type_id, move_id }) => moveIdToTypeId.set(move_id, type_id));
 
-  const results = useQueries({
-    queries: moveIds.map((id) => ({
-      queryKey: QUERY_KEYS.MOVE_DETAIL(id),
-      queryFn: () => endpoints.moveById(id).then((r) => r.data as MoveOut),
-      enabled: !!id,
-    })),
+  const q = useQuery({
+    queryKey: ["moves-by-ids", moveIds.join(",")],
+    queryFn: () => endpoints.moves({ ids: moveIds.join(",") }).then((r) => (r.data?.items ?? r.data) as MoveOut[]),
+    enabled: moveIds.length > 0,
   });
 
-  const loading = results.some((r) => r.isLoading);
+  const loading = q.isLoading && moveIds.length > 0;
 
   const legacyMap = new Map<number, MoveOut>();
-  results.forEach((r, idx) => {
-    const move = r.data;
-    if (!move) return;
-    const moveId = moveIds[idx]!;
-    const typeId = moveIdToTypeId.get(moveId);
+  (q.data ?? []).forEach((move) => {
+    const typeId = moveIdToTypeId.get(move.id);
     if (typeof typeId === "number") legacyMap.set(typeId, move);
   });
 

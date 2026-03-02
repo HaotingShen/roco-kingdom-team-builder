@@ -1,4 +1,4 @@
-import { useQuery, useQueries } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { endpoints } from "@/lib/api";
 import type { MonsterLiteOut, PersonalityOut, TypeOut, MoveOut, TalentUpsert } from "@/types";
 import { pickName, pickFormName, useI18n } from "@/i18n";
@@ -37,21 +37,16 @@ function useMoveMap(ids: Array<number | 0 | undefined>) {
     () => Array.from(new Set(ids.filter((x): x is number => !!x && x > 0))),
     [ids]
   );
-  const results = useQueries({
-    queries: uniq.map((id) => ({
-      queryKey: QUERY_KEYS.MOVE_DETAIL(id),
-      queryFn: () => endpoints.moveById(id).then((r) => r.data as MoveOut),
-      enabled: !!id,
-    })),
+  const q = useQuery({
+    queryKey: ["moves-by-ids", uniq.join(",")],
+    queryFn: () => endpoints.moves({ ids: uniq.join(",") }).then((r) => (r.data?.items ?? r.data) as MoveOut[]),
+    enabled: uniq.length > 0,
   });
   return useMemo(() => {
     const m = new Map<number, MoveOut>();
-    results.forEach((r, i) => {
-      const data = r.data;
-      if (data) m.set(uniq[i]!, data);
-    });
+    (q.data ?? []).forEach((move) => m.set(move.id, move));
     return m;
-  }, [results, uniq]);
+  }, [q.data]);
 }
 
 /* ---------- component ---------- */
