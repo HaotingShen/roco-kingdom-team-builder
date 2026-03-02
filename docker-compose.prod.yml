@@ -30,6 +30,13 @@ services:
       - ADMIN_EMAILS=${ADMIN_EMAILS:-}
     volumes:
       - /home/ubuntu/rktb/logs:/app/backend/logs
+    logging:
+      driver: awslogs
+      options:
+        awslogs-region: ap-southeast-1
+        awslogs-group: /rktb/backend
+        awslogs-stream: backend
+        awslogs-create-group: "true"
     depends_on:
       redis:
         condition: service_healthy
