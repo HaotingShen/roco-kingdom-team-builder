@@ -2437,6 +2437,15 @@ sudo tee /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json << 'E
         ]
       }
     }
+  },
+  "metrics": {
+    "metrics_collected": {
+      "disk": {
+        "measurement": ["used_percent"],
+        "resources": ["/"],
+        "metrics_collection_interval": 60
+      }
+    }
   }
 }
 EOF
@@ -2529,13 +2538,30 @@ aws cloudwatch put-metric-alarm \
   --evaluation-periods 1 \
   --alarm-actions arn:aws:sns:ap-southeast-1:$ACCOUNT_ID:rktb-alerts \
   --region ap-southeast-1
+
+# EC2 disk usage alarm (triggers when root partition > 80% full)
+aws cloudwatch put-metric-alarm \
+  --alarm-name "rktb-ec2-high-disk" \
+  --metric-name disk_used_percent \
+  --namespace CWAgent \
+  --statistic Average \
+  --period 300 \
+  --threshold 80 \
+  --comparison-operator GreaterThanThreshold \
+  --dimensions Name=InstanceId,Value=$INSTANCE_ID Name=path,Value=/ Name=device,Value=nvme0n1p1 Name=fstype,Value=ext4 \
+  --evaluation-periods 1 \
+  --alarm-actions arn:aws:sns:ap-southeast-1:$ACCOUNT_ID:rktb-alerts \
+  --region ap-southeast-1
 ```
+
+> **Note:** `deploy.sh` automatically runs `docker image prune -a -f` after every successful deploy to prevent disk buildup from accumulated Docker images.
 
 ### 9.3 View Logs
 
 | Log Type | Location |
 |----------|----------|
 | Nginx access | CloudWatch → `/rktb/nginx/access` |
+| EC2 disk usage | CloudWatch → Metrics → CWAgent → `disk_used_percent` |
 | Nginx error | CloudWatch → `/rktb/nginx/error` |
 | Backend app | CloudWatch → `/rktb/backend` OR `ssh EC2 && docker logs rktb-backend-1` |
 | Docker events | `ssh EC2 && docker events` |
