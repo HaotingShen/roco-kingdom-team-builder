@@ -2584,7 +2584,11 @@ Nginx on EC2 strips the `/api` prefix (`rewrite ^/api(/.*)$ $1 break`) before pa
 | Check costs | `aws ce get-cost-and-usage --time-period Start=$(date +%Y-%m-01),End=$(date +%Y-%m-%d) --granularity MONTHLY --metrics BlendedCost` |
 | Scale up EC2 | Stop instance → Change type → Start (or launch new, swap Elastic IP) |
 | View CloudWatch logs | AWS Console → CloudWatch → Log groups → `/rktb/*` |
+| Check EC2 disk usage | `ssh rktb` then `df -h / && docker system df` |
+| Manual Docker cleanup | `ssh rktb` then `docker image prune -a -f` |
 | **Add new API route** | **Add in main.py only — no CloudFront changes needed (all routes covered by `/api/*` behavior)** |
+
+> **Disk space:** Each deploy pulls a new Docker image. `deploy.sh` automatically runs `docker image prune -a -f` after every successful deploy to remove old images. If a deploy ever fails with `no space left on device`, SSH in and run `docker image prune -a -f` manually, then redeploy.
 
 **Switching LLM Provider (currently using DeepSeek):**
 
