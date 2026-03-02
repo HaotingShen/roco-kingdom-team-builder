@@ -263,13 +263,38 @@ class RedisCache:
             logger.info(f"Cache MISS (locked): {key[:50]}...")
             if on_compute:
                 on_compute()
-            result = await compute_fn()
 
-            # Store result in cache
-            await self.set(key, result, ttl)
-            logger.info(f"Cached result for: {key[:50]}...")
+            # Keep the lock alive during computation by refreshing it
+            # periodically. Without this, a slow LLM call (e.g. deepseek-
+            # reasoner taking 210+ seconds) causes the lock to expire mid-
+            # flight. A concurrent waiter then acquires the freed lock, sees
+            # a cache miss, and makes a duplicate LLM call — charging quota
+            # twice.
+            refresh_interval = max(10, self.lock_timeout // 3)
 
-            return result
+            async def _keep_lock_alive():
+                while True:
+                    await asyncio.sleep(refresh_interval)
+                    try:
+                        if await lock.owned():
+                            await lock.extend(self.lock_timeout)
+                    except Exception as refresh_err:
+                        logger.warning(f"Lock refresh failed for {key[:50]}: {refresh_err}")
+                        break
+
+            refresh_task = asyncio.create_task(_keep_lock_alive())
+            try:
+                result = await compute_fn()
+                # Store result in cache
+                await self.set(key, result, ttl)
+                logger.info(f"Cached result for: {key[:50]}...")
+                return result
+            finally:
+                refresh_task.cancel()
+                try:
+                    await refresh_task
+                except asyncio.CancelledError:
+                    pass
 
         except asyncio.TimeoutError:
             logger.warning(f"Lock acquisition timeout for {key[:50]}")
