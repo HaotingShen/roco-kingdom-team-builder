@@ -1,7 +1,7 @@
 # User System Documentation
 
-> **Last Updated:** 2026-01-31
-> **Status:** Phase 7F Complete (Retry Grace — Charge on Partial Success + Free Retry)
+> **Last Updated:** 2026-03-01
+> **Status:** Phase 7G Complete (Concurrent Retry Race Fix + Navigate Fix + Clear Guest Data Fix)
 
 ---
 
@@ -254,6 +254,18 @@ When all 7 LLM responses are cached (`is_fully_cached=True`):
 - Analysis is instant and free (no quota charge)
 - Any lingering grace markers are proactively cleaned up to prevent exploitation if cache entries later expire
 
+### Concurrent Retry Race Fix (Phase 7G)
+
+**Problem:** CloudFront's 120s origin timeout causes the frontend to silently retry a long-running analysis while the first request is still executing. Both concurrent requests could pass `check_analysis_limit` before either one recorded usage, resulting in quota being charged twice (e.g., 0/1 → 2/1).
+
+**Fix:** An `actual_llm_calls` counter is tracked via an `on_compute` callback passed through the cache layer. `on_compute` fires **only when the compute function is actually invoked** (i.e., a true cache miss that triggers real LLM API calls), not on cache hits or lock-wait hits. The second concurrent request waits on the Redis lock, then gets results from cache — its `actual_llm_calls` stays 0, so quota is not charged. Quota is only charged when `actual_llm_calls > 0 and successful_calls > 0`.
+
+| Path | `actual_llm_calls` | Quota charged? |
+|------|--------------------|----------------|
+| Cache HIT (fast path, no lock) | 0 | No |
+| Cache HIT (after waiting for lock) | 0 | No |
+| Cache MISS (lock acquired, LLM called) | > 0 | Yes (if any succeed) |
+
 ### Configuration
 
 ```bash
@@ -301,13 +313,13 @@ RETRY_GRACE_MAX_RETRIES=3        # Max free retries per grace window
 | Email/Password Login | ✅ | ✅ | Working |
 | Token Refresh | ✅ | ✅ (automatic) | Working |
 | Logout (single device) | ✅ | ✅ | Working |
-| Logout All Devices | ✅ | ❌ | Backend only |
+| Logout All Devices | ✅ | ✅ | Merged into registered user "Log Out" |
 | Email Verification | ✅ | ✅ | Working |
 | Resend Verification | ✅ | ✅ | Working |
 | Password Reset (forgot) | ✅ | ✅ | Working |
-| Change Password | ✅ | ❌ | Backend only |
-| Change Email | ✅ | ❌ | Backend only |
-| Confirm Email Change | ✅ | ❌ | Backend only |
+| Change Password | ✅ | ✅ | Working (Settings page) |
+| Change Email | ✅ | ✅ | Working (Settings page) |
+| Confirm Email Change | ✅ | ✅ | Working (email link → `/auth/confirm-email-change`) |
 | Delete Account | ✅ | ✅ | Working |
 | Guest → Registered Conversion | ✅ | ✅ | Working |
 | Admin User Management | ✅ | ✅ | Working |
@@ -318,8 +330,8 @@ RETRY_GRACE_MAX_RETRIES=3        # Max free retries per grace window
 - **Creation**: Linked to `device_id` from httpOnly cookie (set by `DeviceIDMiddleware`)
 - **Deduplication**: Same device_id returns same guest account
 - **Rate Limit**: 2 new guest creations per IP per day
-- **Expiry**: Guest accounts expire after 90 days of inactivity (via `last_active_at`)
-- **Clear Guest Data**: Calls `/auth/reset-device-id` to get new device_id cookie, making old guest inaccessible (requires confirmation)
+- **Expiry**: Guest accounts expire after 30 days of inactivity (via `last_active_at`; also cleaned up immediately if explicitly orphaned)
+- **Clear Guest Data**: Calls `/auth/reset-device-id` to orphan the current guest account (`is_active=False`, `device_id=None`). The device_id cookie is **preserved** so cross-account quota history carries over to any new guest. Requires confirmation before proceeding.
 - **Display Name**: Shows as "Guest#XXXX" where XXXX is a unique 4-character alphanumeric ID (e.g., "A2B3")
 - **Display ID Generation**: Uses characters `23456789ABCDEFGHJKMNPQRSTUVWXYZ` (excludes confusables: 0/O, 1/I/L)
 - **Display ID Uniqueness**: Stored in `guest_display_id` column with unique constraint, guaranteed globally unique
@@ -473,7 +485,7 @@ Migrations:
 | GET | `/auth/me` | Get current user profile | None |
 | POST | `/auth/logout` | Logout (single device) | None |
 | POST | `/auth/logout-all` | Logout all devices | None |
-| POST | `/auth/reset-device-id` | Reset device_id cookie (for Clear Guest Data) | None |
+| POST | `/auth/reset-device-id` | Orphan current guest account (preserves device_id cookie) | None |
 
 ### Email Verification (Phase 7A)
 
@@ -560,14 +572,15 @@ Shows different UI based on user state:
 **Registered (is_guest = false):**
 - Avatar + username
 - Email verification warning (if unverified)
-- Profile (TODO)
-- Settings (TODO)
+- Profile (TODO — not yet implemented)
+- Settings (Change Password, Change Email)
 - Log Out
 - Delete Account
 
 **Logout Behavior:**
-- Calls logout API before clearing local state
-- Clears React Query cache to prevent data leakage between users
+- **Registered users:** Calls `/auth/logout-all` (increments `token_version`, invalidates all sessions on all devices immediately)
+- **Guest users:** Calls `/auth/logout` (revokes current refresh token only; guest account persists for reclaim via "Continue as Guest")
+- Both: Clears React Query cache to prevent data leakage between users
 
 ### Admin Pages (`/frontend/src/features/admin/`)
 
@@ -629,10 +642,9 @@ Shows different UI based on user state:
 
 ### Critical Issues
 
-1. **Email Service Not Configured**
-   - AWS SES credentials not set up
-   - Email verification/password reset emails fail silently
-   - Workaround: Backend returns `debug_token` in development mode
+1. ~~**Email Service Not Configured**~~ (FIXED)
+   - Production uses Resend via SMTP (`noreply@rkteambuilder.com`)
+   - Development still returns `debug_token` when SMTP is not configured
 
 2. **Analysis Results Not Persisted on Auth Change**
    - If user clicks "Analyze" then logs in/creates guest, analysis results may be lost
@@ -640,17 +652,15 @@ Shows different UI based on user state:
 
 ### Functional Limitations
 
-3. **No Change Password UI** (FIXED)
-   - Backend endpoint exists (`/auth/change-password`)
-   - No settings page to access it
+3. ~~**No Change Password UI**~~ (FIXED)
+   - Settings page (`/settings`) implemented with Change Password form
 
-4. **No Change Email UI** (FIXED)
-   - Backend endpoints exist (`/auth/change-email`, `/auth/confirm-email-change`)
-   - No settings page to access them
+4. ~~**No Change Email UI**~~ (FIXED)
+   - Settings page (`/settings`) implemented with Change Email form
 
-5. **No Logout All Devices UI**
-   - Backend endpoint exists (`/auth/logout-all`)
-   - No button in UserMenu to trigger it
+5. ~~**No Logout All Devices UI**~~ (FIXED)
+   - Registered user "Log Out" now calls `/auth/logout-all` (invalidates all sessions on all devices)
+   - Guest "Log Out" still calls `/auth/logout` (single-device, guest account persists for reclaim)
 
 6. **No Usage/Quota/Limit Display** (FIXED)
    - Quota display added to UserMenu dropdown (tier badge, analysis usage, team count)
@@ -662,8 +672,8 @@ Shows different UI based on user state:
 7. **Profile Page Not Implemented**
    - "Profile" button in UserMenu does nothing (TODO comment)
 
-8. **Settings Page Not Implemented** (FIXED)
-   - "Settings" button in UserMenu does nothing (TODO comment)
+8. ~~**Settings Page Not Implemented**~~ (FIXED)
+   - Settings page at `/settings` implements Change Password and Change Email
 
 ### UX Issues
 
@@ -705,9 +715,10 @@ Shows different UI based on user state:
 
 ### Technical Debt
 
-18. **Guest Cleanup Script Exists But Not Scheduled**
-    - `backend/scripts/cleanup_expired_guests.py` exists
-    - No cron job or scheduled task configured
+18. ~~**Guest Cleanup Script Exists But Not Scheduled**~~ (FIXED)
+    - `_periodic_guest_cleanup()` background task runs in-process every 24 hours on startup
+    - Deletes explicitly orphaned guests (`is_active=False`) and guests inactive for 30+ days
+    - Uses a Redis distributed lock so only one uvicorn worker runs per cycle (production uses `--workers 2`)
 
 ---
 
@@ -721,18 +732,18 @@ Shows different UI based on user state:
 
 ### Medium Priority
 
-| Feature | Backend Endpoint | Priority | Effort |
+| Feature | Backend Endpoint | Priority | Status |
 |---------|------------------|----------|--------|
-| Change Password | `/auth/change-password` | Medium | Low |
-| Change Email | `/auth/change-email`, `/auth/confirm-email-change` | Medium | Medium |
-| Logout All Devices | `/auth/logout-all` | Medium | Low |
+| ~~Change Password~~ | `/auth/change-password` | Medium | Done (Settings page) |
+| ~~Change Email~~ | `/auth/change-email`, `/auth/confirm-email-change` | Medium | Done (Settings page) |
+| ~~Logout All Devices~~ | `/auth/logout-all` | Medium | Done (merged into Log Out for registered users) |
 
 ### Low Priority
 
-| Feature | Backend Endpoint | Priority | Effort |
+| Feature | Backend Endpoint | Priority | Status |
 |---------|------------------|----------|--------|
-| Profile Page | `/auth/me` | Low | Medium |
-| Settings Page | N/A | Low | Medium |
+| Profile Page | `/auth/me` | Low | Pending |
+| ~~Settings Page~~ | N/A | Low | Done |
 
 ---
 
@@ -826,15 +837,18 @@ DEVICE_ID_COOKIE_MAX_AGE=31536000  # 1 year in seconds
 RETRY_GRACE_TTL=900              # Grace window duration in seconds (default: 15 min)
 RETRY_GRACE_MAX_RETRIES=3        # Max free retries per grace window
 
-# Email (AWS SES)
-AWS_SES_REGION=ap-southeast-1
-AWS_ACCESS_KEY_ID=your-key
-AWS_SECRET_ACCESS_KEY=your-secret
-EMAIL_FROM=noreply@yourdomain.com
+# Email (SMTP — production uses Resend)
+SMTP_HOST=smtp.resend.com
+SMTP_PORT=587
+SMTP_USER=resend
+SMTP_PASSWORD=your-resend-api-key
+EMAIL_FROM=noreply@rkteambuilder.com
 
 # CAPTCHA (optional)
 CAPTCHA_ENABLED=false
-TURNSTILE_SECRET_KEY=your-secret
+CAPTCHA_PROVIDER=hcaptcha          # "hcaptcha" or "recaptcha"
+CAPTCHA_SECRET_KEY=your-secret
+CAPTCHA_SITE_KEY=your-site-key     # Exposed to frontend
 ```
 
 ---
@@ -893,16 +907,14 @@ TURNSTILE_SECRET_KEY=your-secret
 ### Immediate (Next Sprint)
 
 1. ~~Add quota display component (show remaining analyses)~~ Done
-2. Configure email service (AWS SES or alternative)
-3. Add scheduled job for guest cleanup
+2. ~~Configure email service~~ Done (Resend via SMTP)
+3. ~~Add scheduled job for guest cleanup~~ Done (`_periodic_guest_cleanup` runs every 24 hours)
 
 ### Short-Term
 
-4. Add settings page with:
-   - Change password
-   - Change email
-   - Logout all devices
-5. Add team limit warning when approaching max
+4. ~~Add settings page with Change Password and Change Email~~ Done
+5. ~~Add Logout All Devices to Settings page~~ Done (merged into Log Out)
+6. Add team limit warning when approaching max
 
 ### Long-Term
 

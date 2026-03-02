@@ -65,8 +65,8 @@ export default function UserMenu() {
 
   /**
    * Handle logout for registered users.
-   * - Logs out and becomes anonymous (no auto guest creation)
-   * - Can log back in to their registered account
+   * - Logs out all devices (invalidates all sessions immediately)
+   * - Becomes anonymous (no auto guest creation)
    */
   const handleLogout = async () => {
     setIsOpen(false);
@@ -75,7 +75,8 @@ export default function UserMenu() {
       // IMPORTANT: Call logout BEFORE clearing auth state
       // Otherwise the access token is null and logout API returns 401,
       // leaving the refresh token cookie valid (user can still refresh)
-      await authEndpoints.logout();
+      // logoutAll increments token_version → invalidates all sessions on all devices
+      await authEndpoints.logoutAll();
     } catch (error) {
       // Ignore logout errors - user might already be logged out
       console.error('Logout API failed (continuing anyway):', error);
