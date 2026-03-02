@@ -3729,21 +3729,27 @@ async def _perform_team_analysis(
     team_data: schemas.TeamCreate,
     language: str,
     db: Session
-) -> tuple[schemas.TeamAnalysisOut, bool, int]:
+) -> tuple[schemas.TeamAnalysisOut, bool, int, int]:
     """
     Core team analysis logic shared by both endpoints.
     This function does NOT have rate limiting - that's applied at the endpoint level.
 
     Returns:
-        Tuple of (analysis result, all_succeeded, successful_calls) where:
+        Tuple of (analysis result, all_succeeded, successful_calls, actual_llm_calls) where:
         - all_succeeded is True only if all 7 LLM calls completed without errors
         - successful_calls is the count of LLM calls that completed successfully
+        - actual_llm_calls is the count of calls that invoked the LLM API (not cache hits)
     """
     start_time = time.time()
 
     # team_data is TeamCreate (with 6 UserMonsterCreate)
 
     # --- Helper: Call LLM with Caching ---
+    _actual_llm_calls = [0]  # mutable counter for real API calls (not cache hits)
+
+    def _on_llm_compute():
+        _actual_llm_calls[0] += 1
+
     async def call_llm(
         prompt: str,
         cache_key: str,
@@ -3767,6 +3773,7 @@ async def _perform_team_analysis(
             team_hash=team_hash,
             language=language,
             monster_name=monster_name,
+            on_compute=_on_llm_compute,
         )
 
     # === EFFICIENT DATA LOADING ===
@@ -4241,7 +4248,7 @@ async def _perform_team_analysis(
     logger.debug("Finish team-level analysis!")
     elapsed = time.time() - start_time
     logger.info(f"Team analysis took {elapsed:.3f} seconds")
-    return result, all_succeeded, successful_calls
+    return result, all_succeeded, successful_calls, _actual_llm_calls[0]
 
 
 # -------- Helper to apply rate limiting --------
@@ -4364,7 +4371,7 @@ async def analyze_team(
                 effective_user, device_id, client_ip, team_hash, req.language
             )
 
-    result, all_succeeded, successful_calls = await _perform_team_analysis(req.team, req.language, db)
+    result, all_succeeded, successful_calls, actual_llm_calls = await _perform_team_analysis(req.team, req.language, db)
 
     # Post-analysis: quota recording and grace management
     if not is_fully_cached:
@@ -4377,8 +4384,11 @@ async def analyze_team(
             # If retry also partially failed, grace counter was already decremented.
             # If counter hit 0, key is deleted — next attempt will be a fresh one.
         else:
-            # First attempt — charge quota if any calls succeeded
-            if successful_calls > 0:
+            # Charge quota only if actual LLM API calls were made and at least one succeeded.
+            # actual_llm_calls == 0 means all results came from cache (including via lock-wait),
+            # which prevents double-charging when a concurrent retry arrives while the first
+            # request is still computing (CloudFront 120s timeout → frontend retry scenario).
+            if actual_llm_calls > 0 and successful_calls > 0:
                 if effective_user is None:
                     # Truly anonymous user
                     await record_anonymous_analysis(device_id, client_ip)
@@ -4537,7 +4547,7 @@ async def analyze_team_by_id(
                 effective_user, device_id, client_ip, team_hash, req.language
             )
 
-    result, all_succeeded, successful_calls = await _perform_team_analysis(team_data, req.language, db)
+    result, all_succeeded, successful_calls, actual_llm_calls = await _perform_team_analysis(team_data, req.language, db)
 
     # Post-analysis: quota recording and grace management
     if not is_fully_cached:
@@ -4550,8 +4560,9 @@ async def analyze_team_by_id(
             # If retry also partially failed, grace counter was already decremented.
             # If counter hit 0, key is deleted — next attempt will be a fresh one.
         else:
-            # First attempt — charge quota if any calls succeeded
-            if successful_calls > 0:
+            # Charge quota only if actual LLM API calls were made and at least one succeeded.
+            # actual_llm_calls == 0 means all results came from cache (including via lock-wait).
+            if actual_llm_calls > 0 and successful_calls > 0:
                 if effective_user is None:
                     # Truly anonymous user
                     await record_anonymous_analysis(device_id, client_ip)

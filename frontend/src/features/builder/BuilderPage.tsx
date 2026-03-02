@@ -368,18 +368,17 @@ export default function BuilderPage() {
       setAnalysis(data);
       setIsAnalyzing(false);
       qc.invalidateQueries({ queryKey: QUERY_KEYS.QUOTA });
-      // If user navigated away during analysis, bring them back
+      // Scroll to analysis section, with longer delay if navigating back from another page
+      const scrollDelay = locationRef.current !== "/build" ? 300 : 100;
       if (locationRef.current !== "/build") {
         navigate("/build");
-        return;
       }
-      // Scroll to analysis section
       setTimeout(() => {
         const element = document.getElementById("analysis-results");
         if (element) {
           element.scrollIntoView({ behavior: "smooth", block: "start" });
         }
-      }, 100);
+      }, scrollDelay);
     },
     onSettled: () => {
       setIsAnalyzing(false);

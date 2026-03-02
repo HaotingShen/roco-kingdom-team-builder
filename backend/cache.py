@@ -203,6 +203,7 @@ class RedisCache:
         key: str,
         compute_fn: Callable[[], Awaitable[Any]],
         ttl: Optional[int] = None,
+        on_compute: Optional[Callable[[], None]] = None,
     ) -> Any:
         """
         Get value from cache or compute it with stampede protection.
@@ -214,12 +215,16 @@ class RedisCache:
             key: Cache key
             compute_fn: Async function to compute value on cache miss
             ttl: Optional TTL override
+            on_compute: Optional callback fired when compute_fn is actually invoked
+                        (not fired on cache hits, including "after lock" hits)
 
         Returns:
             Cached or computed value
         """
         if not self._connected or not self._redis:
             logger.warning("Redis not connected, computing without cache")
+            if on_compute:
+                on_compute()
             return await compute_fn()
 
         # Fast path: check cache first (no lock needed)
@@ -243,6 +248,8 @@ class RedisCache:
             if not acquired:
                 # Timeout waiting for lock - compute anyway (degraded mode)
                 logger.warning(f"Lock timeout for {key[:50]}, computing anyway")
+                if on_compute:
+                    on_compute()
                 return await compute_fn()
 
             # Double-check cache after acquiring lock
@@ -254,6 +261,8 @@ class RedisCache:
 
             # Still a miss - we get to compute
             logger.info(f"Cache MISS (locked): {key[:50]}...")
+            if on_compute:
+                on_compute()
             result = await compute_fn()
 
             # Store result in cache
@@ -264,6 +273,8 @@ class RedisCache:
 
         except asyncio.TimeoutError:
             logger.warning(f"Lock acquisition timeout for {key[:50]}")
+            if on_compute:
+                on_compute()
             result = await compute_fn()
             try:
                 await self.set(key, result, ttl)
@@ -275,6 +286,8 @@ class RedisCache:
         except Exception as e:
             logger.error(f"Error in get_or_compute for {key[:50]}: {e}")
             # Retry compute and cache the result if retry succeeds
+            if on_compute:
+                on_compute()
             result = await compute_fn()
             try:
                 await self.set(key, result, ttl)

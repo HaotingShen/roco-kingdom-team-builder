@@ -6,7 +6,7 @@ Provides unified interface for multiple LLM providers:
 - DeepSeek Official API (production - for China access)
 """
 
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, Callable
 import json
 import logging
 import time
@@ -290,6 +290,7 @@ async def generate_analysis_json(
     team_hash: Optional[str] = None,
     language: Optional[str] = None,
     monster_name: Optional[str] = None,
+    on_compute: Optional[Callable[[], None]] = None,
 ) -> Dict[str, Any]:
     """
     Generate analysis with caching support.
@@ -358,7 +359,7 @@ async def generate_analysis_json(
             return result
 
         # Use get_or_compute with stampede protection
-        return await llm_cache.get_or_compute(cache_key, compute_fn)
+        return await llm_cache.get_or_compute(cache_key, compute_fn, on_compute=on_compute)
 
     else:
         # Fallback to simple get/set pattern (TimedCache - no stampede protection)
