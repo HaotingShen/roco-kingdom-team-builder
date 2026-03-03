@@ -511,8 +511,9 @@ def find_device_owner(device_id: str, db: Session) -> Optional[models.User]:
                 models.User.is_active == True,
             )
             .order_by(
-                models.User.is_guest.asc(),  # registered first
-                models.User.last_active_at.desc().nullslast(),
+                models.User.is_guest.asc(),           # registered first
+                models.User.last_active_at.desc().nullslast(),  # most recent guest activity
+                models.User.last_login_at.desc().nullslast(),   # most recent registered login
             )
             .first()
         )

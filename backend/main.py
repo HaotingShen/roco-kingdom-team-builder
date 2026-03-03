@@ -2075,6 +2075,13 @@ async def register_user(
 
     # Case 2: New registration (no guest account)
     else:
+        # Get device_id before creating the user so we can store it.
+        # This allows find_device_owner() to identify the user after logout,
+        # ensuring quota is inherited rather than resetting to anonymous.
+        device_id_for_seed = getattr(request.state, 'device_id', None)
+        if device_id_for_seed == "unknown-device":
+            device_id_for_seed = None
+
         user = models.User(
             username=trimmed_username,
             canonical_username=canonical,
@@ -2088,6 +2095,7 @@ async def register_user(
             verification_token_expires=verification_expires,
             last_password_change=datetime.now(timezone.utc),
             preferred_language=user_data.preferred_language or "en",
+            device_id=device_id_for_seed,
         )
 
         db.add(user)
@@ -2097,7 +2105,6 @@ async def register_user(
         # Transfer teams and quota from any prior guest account on this device.
         # Handles the case where a user saved teams as a guest, logged out, then
         # registered a fresh account — their data should follow them.
-        device_id_for_seed = getattr(request.state, 'device_id', None)
         prior_guest_id = None
         if device_id_for_seed and device_id_for_seed != "unknown-device":
             prior_guest = db.query(models.User).filter(
@@ -2248,6 +2255,12 @@ async def login_user(
     user.failed_login_attempts = 0
     user.locked_until = None
     user.last_login_at = datetime.now(timezone.utc)
+
+    # Update device_id to the current device so find_device_owner() works after logout.
+    # This also retroactively fixes existing users whose device_id was never stored.
+    current_device_id = getattr(request.state, 'device_id', None)
+    if current_device_id and current_device_id != "unknown-device":
+        user.device_id = current_device_id
 
     # Auto-upgrade admin users to unlimited tier
     if is_admin_user(user) and user.subscription_tier != "unlimited":
