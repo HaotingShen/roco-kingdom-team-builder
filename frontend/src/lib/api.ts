@@ -339,6 +339,8 @@ export const endpoints = {
 
   getQuotaStatus: (team_id?: number, language?: "en" | "zh") =>
     api.get("/quota/status", { params: { team_id, language: language || "en" } }),
+
+  getFeaturedTeams: () => api.get("/teams/featured"),
 };
 
 
@@ -380,6 +382,7 @@ export interface AdminStats {
   total_active: number;
   total_locked: number;
   total_teams: number;
+  total_featured_teams: number;
   total_analyses: number;
   users_by_tier: Record<string, number>;
   registrations_today: number;
@@ -452,4 +455,16 @@ export const adminEndpoints = {
    */
   resetUsers: () =>
     api.post('/admin/database/reset-users'),
+
+  /** Create a featured team. ADMIN ONLY. */
+  createFeaturedTeam: (data: any) =>
+    api.post('/admin/featured-teams', data),
+
+  /** Update a featured team. ADMIN ONLY. */
+  updateFeaturedTeam: (id: number, data: any) =>
+    api.put(`/admin/featured-teams/${id}`, data),
+
+  /** Delete a featured team. ADMIN ONLY. */
+  deleteFeaturedTeam: (id: number) =>
+    api.delete(`/admin/featured-teams/${id}`),
 };

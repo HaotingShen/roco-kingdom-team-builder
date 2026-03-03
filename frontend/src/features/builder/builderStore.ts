@@ -25,6 +25,9 @@ type BuilderState = {
   magic_item_id: ID | null;
   slots: (UserMonsterCreate & { id?: ID })[]; // length 6
 
+  isFeaturedTeam: boolean;           // true when editing an existing featured team
+  setIsFeaturedTeam: (v: boolean) => void;
+
   setName: (v: string) => void;
   setMagicItem: (id: ID | null) => void;
   setSlot: (idx: number, patch: PartialNoUndef<UserMonsterCreate & { id?: ID }>) => void;
@@ -52,6 +55,9 @@ export const useBuilderStore = create<BuilderState>()(
       name: "",
       magic_item_id: null,
       slots: Array.from({ length: 6 }, emptySlot),
+
+      isFeaturedTeam: false,
+      setIsFeaturedTeam: (v) => set({ isFeaturedTeam: v }),
 
       setName: (name) => set({ name }),
       setMagicItem: (magic_item_id) => set({ magic_item_id }),
@@ -123,7 +129,7 @@ export const useBuilderStore = create<BuilderState>()(
         return { teamId: team.id, name: team.name ?? "My Team", magic_item_id: team.magic_item?.id ?? null, slots, analysis: null };
       }),
 
-      clearTeamId: () => set({ teamId: null }),
+      clearTeamId: () => set({ teamId: null, isFeaturedTeam: false }),
 
       analysis: null,
       setAnalysis: (a) => set({ analysis: a }),
@@ -133,6 +139,7 @@ export const useBuilderStore = create<BuilderState>()(
 
       reset: () => set({
         teamId: null,
+        isFeaturedTeam: false,
         name: "",
         magic_item_id: null,
         slots: Array.from({ length: 6 }, emptySlot),

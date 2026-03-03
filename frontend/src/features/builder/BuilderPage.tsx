@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
-import { endpoints } from "@/lib/api";
+import { endpoints, adminEndpoints } from "@/lib/api";
 import { useBuilderStore } from "./builderStore";
 import MonsterCard from "@/components/MonsterCard";
 import CustomSelect from "@/components/CustomSelect";
@@ -257,6 +257,7 @@ export default function BuilderPage() {
     setMagicItem,
     toPayload,
     toUpdatePayload,
+    isFeaturedTeam,
     analysis,
     setAnalysis,
     isAnalyzing,
@@ -471,6 +472,48 @@ export default function BuilderPage() {
       qc.invalidateQueries({ queryKey: QUERY_KEYS.TEAM_DETAIL(variables.id) });
     },
   });
+
+  /* ---------- featured team mutations (admin only) ---------- */
+  const saveFeatured = useMutation({
+    mutationFn: (payload: TeamCreate) =>
+      adminEndpoints.createFeaturedTeam(payload).then((r) => r.data as TeamOut),
+    onError: (err: any) => {
+      setServerOk(null);
+      setServerErr(extractErrorMessage(err));
+    },
+    onSuccess: (team) => {
+      setServerErr(null);
+      setServerOk(t("builder.saveAsFeaturedSuccess") ?? "Saved as featured team!");
+      useBuilderStore.setState({ teamId: team.id, isFeaturedTeam: true });
+    },
+  });
+
+  const updateFeatured = useMutation({
+    mutationFn: ({ id, body }: { id: number; body: ReturnType<typeof toUpdatePayload> }) =>
+      adminEndpoints.updateFeaturedTeam(id, body).then((r) => r.data as TeamOut),
+    onError: (err: any) => {
+      setServerOk(null);
+      setServerErr(extractErrorMessage(err));
+    },
+    onSuccess: () => {
+      setServerErr(null);
+      setServerOk(t("builder.updateFeaturedSuccess") ?? "Featured team updated!");
+    },
+  });
+
+  const onSaveAsFeatured = () => {
+    if (!teamIsReady) { setAttemptedAction('save'); setServerErr(t(teamErrorKey!)); return; }
+    setAttemptedAction(null);
+    try { saveFeatured.mutate(toPayload()); } catch (e: any) { setServerErr(e.message); }
+  };
+
+  const onUpdateFeatured = () => {
+    if (!teamIsReady || !teamId) { setAttemptedAction('save'); setServerErr(t(teamErrorKey!)); return; }
+    const body = toUpdatePayload();
+    if (!body) { setServerErr("Cannot update: team is incomplete."); return; }
+    setAttemptedAction(null);
+    updateFeatured.mutate({ id: teamId, body });
+  };
 
   const onSaveNew = async () => {
     // Completeness check runs first for everyone (including anonymous users)
@@ -787,7 +830,7 @@ export default function BuilderPage() {
               )}
             </button>
 
-            {teamId ? (
+            {teamId && !isFeaturedTeam ? (
               <button
                 onClick={onUpdateExisting}
                 disabled={updateTeam.isPending}
@@ -811,6 +854,56 @@ export default function BuilderPage() {
                 )}
               </button>
             ) : null}
+
+            {user?.is_admin && (
+              isFeaturedTeam ? (
+                <button
+                  onClick={onUpdateFeatured}
+                  disabled={!teamIsReady || updateFeatured.isPending}
+                  className={`
+                    h-10 px-5 rounded-lg font-medium text-sm
+                    transition-all duration-200
+                    ${teamIsReady
+                      ? "bg-gradient-to-r from-purple-500 to-purple-600 text-white cursor-pointer shadow-md hover:from-purple-600 hover:to-purple-700 hover:shadow-lg hover:-translate-y-0.5"
+                      : "bg-zinc-200 text-zinc-500 cursor-not-allowed border-2 border-zinc-300"
+                    }
+                  `}
+                  title={teamErrorKey ? t(teamErrorKey) : ""}
+                >
+                  {updateFeatured.isPending ? (
+                    <span className="inline-flex items-center justify-center">
+                      {t("builder.updating").replace("…", "").replace("...", "")}
+                      <AnimatedDots />
+                    </span>
+                  ) : (
+                    t("builder.updateFeatured") ?? "Update Featured"
+                  )}
+                </button>
+              ) : (
+                <button
+                  onClick={onSaveAsFeatured}
+                  disabled={!teamIsReady || saveFeatured.isPending}
+                  className={`
+                    h-10 px-5 rounded-lg font-medium text-sm
+                    transition-all duration-200
+                    ${teamIsReady
+                      ? "bg-gradient-to-r from-purple-400 to-purple-500 text-white cursor-pointer shadow-md hover:from-purple-500 hover:to-purple-600 hover:shadow-lg hover:-translate-y-0.5"
+                      : "bg-zinc-200 text-zinc-500 cursor-not-allowed border-2 border-zinc-300"
+                    }
+                  `}
+                  title={teamErrorKey ? t(teamErrorKey) : ""}
+                >
+                  {saveFeatured.isPending ? (
+                    <span className="inline-flex items-center justify-center">
+                      {t("builder.saving").replace("…", "").replace("...", "")}
+                      <AnimatedDots />
+                    </span>
+                  ) : (
+                    t("builder.saveAsFeatured") ?? "Save as Featured"
+                  )}
+                </button>
+              )
+            )}
 
             {/* analyze */}
             <button

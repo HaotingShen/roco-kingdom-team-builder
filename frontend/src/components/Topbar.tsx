@@ -1,4 +1,5 @@
 import { useNavigate, useLocation, Link } from "react-router-dom";
+import { useState, useEffect, useRef } from "react";
 import { useI18n } from "@/i18n";
 import { useBuilderStore } from "@/features/builder/builderStore";
 import { useAuthStore } from "@/features/auth/authStore";
@@ -50,12 +51,16 @@ export default function Topbar() {
     if (!isOnBuilder) nav("/build");
   };
 
-  // Quick Build (load a random team into the builder as a new unsaved draft)
+  // Brief "Loaded: {name}" message shown after Quick Build succeeds
+  const [quickBuildMsg, setQuickBuildMsg] = useState<string | null>(null);
+  const quickBuildMsgTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Quick Build (load a random featured team into the builder as a new unsaved draft)
   const quickBuild = useMutation<TeamOut, Error, void>({
     mutationFn: async (): Promise<TeamOut> => {
-      const r = await endpoints.listTeams({ limit: 50 });
-      const items: TeamOut[] = r.data?.items ?? r.data ?? [];
-      if (!items.length) throw new Error("No teams available");
+      const r = await endpoints.getFeaturedTeams();
+      const items: TeamOut[] = r.data ?? [];
+      if (!items.length) throw new Error("No featured teams available");
       const pick = items[Math.floor(Math.random() * items.length)]!;
       return pick;
     },
@@ -63,11 +68,22 @@ export default function Topbar() {
       loadFromTeam(team);
       clearTeamId();
       if (!isOnBuilder) nav("/build");
+      // Show "Loaded: {name}" for 3 seconds
+      if (quickBuildMsgTimer.current) clearTimeout(quickBuildMsgTimer.current);
+      const name = team.name ?? "";
+      const msg = (t("topbar.quickBuildLoaded") ?? "Loaded: {name}").replace("{name}", name);
+      setQuickBuildMsg(msg);
+      quickBuildMsgTimer.current = setTimeout(() => setQuickBuildMsg(null), 3000);
     },
     onError: () => {
       alert(t("topbar.quickBuildFailed") ?? "Failed to load a sample team.");
     },
   });
+
+  // Cleanup timer on unmount
+  useEffect(() => () => {
+    if (quickBuildMsgTimer.current) clearTimeout(quickBuildMsgTimer.current);
+  }, []);
 
   const onQuickBuildClick = () => {
     if (hasCurrentWork) {
@@ -96,6 +112,9 @@ export default function Topbar() {
             >
               {quickBuild.isPending ? t("topbar.quickBuilding") : t("topbar.quickBuild")}
             </button>
+            {quickBuildMsg && (
+              <span className="text-xs text-zinc-500 max-w-[120px] truncate">{quickBuildMsg}</span>
+            )}
 
             {/* Reset */}
             <button

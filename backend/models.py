@@ -366,6 +366,8 @@ class Team(Base):
         index=True
     )
 
+    is_featured: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, index=True)
+
     created_at = Column(DateTime(timezone=True),
                         server_default=text("timezone('utc', now())"),
                         nullable=False)

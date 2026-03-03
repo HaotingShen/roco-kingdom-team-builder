@@ -1897,6 +1897,19 @@ async def create_guest_user(
     # Create new guest with "guest" tier (not "free")
     username = f"guest_{device_id[:12]}" if device_id else generate_guest_username()
 
+    # Clean up any inactive/deactivated guest with the same username so the unique constraint
+    # doesn't block the INSERT (e.g. after "clear guest data" or registration with same device)
+    if device_id:
+        stale_guest = db.query(models.User).filter(
+            models.User.username == username,
+            models.User.is_guest == True,
+            models.User.is_active == False,
+        ).first()
+        if stale_guest:
+            db.delete(stale_guest)
+            db.commit()
+            logger.info(f"Removed stale inactive guest '{username}' (ID={stale_guest.id}) to allow re-creation")
+
     # Generate unique display ID (retry on collision)
     max_attempts = 10
     display_id = None
@@ -3466,6 +3479,65 @@ def list_teams(
         .all()
     )
 
+@app.get("/teams/featured", response_model=List[schemas.TeamOut], tags=["Teams"])
+@limiter.limit("30/minute")
+async def get_featured_teams(
+    request: Request,
+    db: Session = Depends(get_db)
+):
+    """
+    Get all admin-curated featured teams.
+
+    PUBLIC: No authentication required. Used by the Quick Build feature.
+    Results are cached in Redis for 5 minutes.
+    """
+    cache_key = "featured_teams:list"
+
+    # Try cache first
+    cached = await redis_cache.get(cache_key)
+    if cached is not None:
+        return cached
+
+    teams = (
+        db.query(models.Team)
+        .filter(models.Team.is_featured == True)
+        .options(
+            joinedload(models.Team.user_monsters)
+                .joinedload(models.UserMonster.monster)
+                .joinedload(models.Monster.main_type),
+            joinedload(models.Team.user_monsters)
+                .joinedload(models.UserMonster.monster)
+                .joinedload(models.Monster.sub_type),
+            joinedload(models.Team.user_monsters)
+                .joinedload(models.UserMonster.monster)
+                .joinedload(models.Monster.default_legacy_type),
+            joinedload(models.Team.user_monsters)
+                .joinedload(models.UserMonster.personality),
+            joinedload(models.Team.user_monsters)
+                .joinedload(models.UserMonster.legacy_type),
+            joinedload(models.Team.user_monsters)
+                .joinedload(models.UserMonster.move1),
+            joinedload(models.Team.user_monsters)
+                .joinedload(models.UserMonster.move2),
+            joinedload(models.Team.user_monsters)
+                .joinedload(models.UserMonster.move3),
+            joinedload(models.Team.user_monsters)
+                .joinedload(models.UserMonster.move4),
+            joinedload(models.Team.user_monsters)
+                .joinedload(models.UserMonster.talent),
+            joinedload(models.Team.magic_item),
+        )
+        .order_by(models.Team.id)
+        .all()
+    )
+
+    # Serialize to dicts for caching (Pydantic v2 compatible)
+    serialized = [schemas.TeamOut.model_validate(t).model_dump(mode="json") for t in teams]
+    await redis_cache.set(cache_key, serialized, ttl=300)
+
+    return teams
+
+
 @app.get("/teams/{team_id}", response_model=schemas.TeamOut, tags=["Teams"])
 def get_team(
     team_id: int,
@@ -4706,6 +4778,13 @@ def delete_team(
     if not db_team:
         raise HTTPException(status_code=404, detail="Team not found")
 
+    # Block deletion of featured teams via the regular endpoint
+    if db_team.is_featured:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Cannot delete a featured team via this endpoint"
+        )
+
     # SECURITY: Check ownership
     if db_team.owner_id != current_user.id:
         raise HTTPException(
@@ -5200,6 +5279,203 @@ async def admin_delete_user(
     }
 
 
+@app.post("/admin/featured-teams", response_model=schemas.TeamOut, tags=["Admin"])
+async def admin_create_featured_team(
+    team: schemas.TeamCreate,
+    admin_user: models.User = Depends(require_admin),
+    db: Session = Depends(get_db)
+):
+    """
+    Create a new featured team (admin-curated).
+
+    ADMIN ONLY: Team is owned by the system user and marked as featured.
+    Featured teams appear in the Quick Build pool for all users.
+    """
+    system_user = db.query(models.User).filter(models.User.is_system == True).first()
+    if not system_user:
+        raise HTTPException(status_code=500, detail="System user not found. Cannot create featured team.")
+
+    # Case-insensitive name uniqueness among featured teams
+    existing = db.query(models.Team).filter(
+        models.Team.is_featured == True,
+        func.lower(models.Team.name) == func.lower(team.name)
+    ).first()
+    if existing:
+        raise HTTPException(
+            status_code=409,
+            detail=f"A featured team named '{team.name}' already exists"
+        )
+
+    db_team = models.Team(
+        name=team.name,
+        magic_item_id=team.magic_item_id,
+        owner_id=system_user.id,
+        is_featured=True
+    )
+    db.add(db_team)
+    db.flush()
+
+    for um in team.user_monsters:
+        db_um = models.UserMonster(
+            monster_id=um.monster_id,
+            personality_id=um.personality_id,
+            legacy_type_id=um.legacy_type_id,
+            move1_id=um.move1_id,
+            move2_id=um.move2_id,
+            move3_id=um.move3_id,
+            move4_id=um.move4_id,
+            team_id=db_team.id,
+            position=um.position
+        )
+        db.add(db_um)
+        db.flush()
+        db_talent = models.Talent(
+            monster_instance_id=db_um.id,
+            hp_boost=um.talent.hp_boost,
+            phy_atk_boost=um.talent.phy_atk_boost,
+            mag_atk_boost=um.talent.mag_atk_boost,
+            phy_def_boost=um.talent.phy_def_boost,
+            mag_def_boost=um.talent.mag_def_boost,
+            spd_boost=um.talent.spd_boost
+        )
+        db.add(db_talent)
+        db_um.talent = db_talent
+    db.commit()
+    db.refresh(db_team)
+
+    # Invalidate featured teams cache
+    await redis_cache.delete("featured_teams:list")
+
+    logger.info(f"ADMIN ACTION: {admin_user.email} created featured team {db_team.id} '{db_team.name}'")
+    return db_team
+
+
+@app.put("/admin/featured-teams/{team_id}", response_model=schemas.TeamOut, tags=["Admin"])
+async def admin_update_featured_team(
+    team_id: int,
+    team_update: schemas.TeamUpdate,
+    admin_user: models.User = Depends(require_admin),
+    db: Session = Depends(get_db)
+):
+    """
+    Update an existing featured team.
+
+    ADMIN ONLY: Can update name, magic item, and all 6 monsters.
+    """
+    db_team = db.query(models.Team).filter(models.Team.id == team_id).first()
+    if not db_team or not db_team.is_featured:
+        raise HTTPException(status_code=404, detail="Featured team not found")
+
+    # Case-insensitive name uniqueness, excluding self
+    if team_update.name is not None:
+        existing = db.query(models.Team).filter(
+            models.Team.is_featured == True,
+            models.Team.id != team_id,
+            func.lower(models.Team.name) == func.lower(team_update.name)
+        ).first()
+        if existing:
+            raise HTTPException(
+                status_code=409,
+                detail=f"A featured team named '{team_update.name}' already exists"
+            )
+        db_team.name = team_update.name
+
+    if team_update.magic_item_id is not None:
+        db_team.magic_item_id = team_update.magic_item_id
+
+    # Upsert user_monsters (same logic as PUT /teams/{team_id})
+    incoming_by_id = {um.id: um for um in team_update.user_monsters if um.id is not None}
+    incoming_ids = set(incoming_by_id.keys())
+
+    for db_um in list(db_team.user_monsters):
+        if db_um.id not in incoming_ids:
+            db.delete(db_um)
+    db.flush()
+
+    existing_ums = {um.id: um for um in db_team.user_monsters}
+
+    for um_data in team_update.user_monsters:
+        if um_data.id is not None and um_data.id in existing_ums:
+            um = existing_ums[um_data.id]
+            um.monster_id = um_data.monster_id
+            um.personality_id = um_data.personality_id
+            um.legacy_type_id = um_data.legacy_type_id
+            um.move1_id = um_data.move1_id
+            um.move2_id = um_data.move2_id
+            um.move3_id = um_data.move3_id
+            um.move4_id = um_data.move4_id
+            um.position = um_data.position
+            if um.talent:
+                t = um_data.talent
+                um.talent.hp_boost = t.hp_boost
+                um.talent.phy_atk_boost = t.phy_atk_boost
+                um.talent.mag_atk_boost = t.mag_atk_boost
+                um.talent.phy_def_boost = t.phy_def_boost
+                um.talent.mag_def_boost = t.mag_def_boost
+                um.talent.spd_boost = t.spd_boost
+        else:
+            um = models.UserMonster(
+                monster_id=um_data.monster_id,
+                personality_id=um_data.personality_id,
+                legacy_type_id=um_data.legacy_type_id,
+                move1_id=um_data.move1_id,
+                move2_id=um_data.move2_id,
+                move3_id=um_data.move3_id,
+                move4_id=um_data.move4_id,
+                team=db_team,
+                position=um_data.position
+            )
+            db.add(um)
+            db.flush()
+            t = um_data.talent
+            talent = models.Talent(
+                monster_instance_id=um.id,
+                hp_boost=t.hp_boost,
+                phy_atk_boost=t.phy_atk_boost,
+                mag_atk_boost=t.mag_atk_boost,
+                phy_def_boost=t.phy_def_boost,
+                mag_def_boost=t.mag_def_boost,
+                spd_boost=t.spd_boost
+            )
+            db.add(talent)
+            um.talent = talent
+
+    db_team.updated_at = func.now()
+    db.commit()
+    db.refresh(db_team)
+
+    # Invalidate featured teams cache
+    await redis_cache.delete("featured_teams:list")
+
+    logger.info(f"ADMIN ACTION: {admin_user.email} updated featured team {team_id}")
+    return db_team
+
+
+@app.delete("/admin/featured-teams/{team_id}", status_code=status.HTTP_204_NO_CONTENT, tags=["Admin"])
+async def admin_delete_featured_team(
+    team_id: int,
+    admin_user: models.User = Depends(require_admin),
+    db: Session = Depends(get_db)
+):
+    """
+    Delete a featured team.
+
+    ADMIN ONLY: Cascades to user_monsters, talent, and analyses.
+    """
+    db_team = db.query(models.Team).filter(models.Team.id == team_id).first()
+    if not db_team or not db_team.is_featured:
+        raise HTTPException(status_code=404, detail="Featured team not found")
+
+    db.delete(db_team)
+    db.commit()
+
+    # Invalidate featured teams cache
+    await redis_cache.delete("featured_teams:list")
+
+    logger.info(f"ADMIN ACTION: {admin_user.email} deleted featured team {team_id}")
+    return
+
+
 @app.get("/admin/stats", response_model=schemas.AdminStatsOut, tags=["Admin"])
 async def admin_get_stats(
     admin_user: models.User = Depends(require_admin),
@@ -5232,6 +5508,7 @@ async def admin_get_stats(
 
     # Team and analysis counts
     total_teams = db.query(models.Team).count()
+    total_featured_teams = db.query(models.Team).filter(models.Team.is_featured == True).count()
     total_analyses = db.query(models.TeamAnalysis).count()
 
     # Users by tier
@@ -5267,6 +5544,7 @@ async def admin_get_stats(
         total_active=total_active,
         total_locked=total_locked,
         total_teams=total_teams,
+        total_featured_teams=total_featured_teams,
         total_analyses=total_analyses,
         users_by_tier=users_by_tier,
         registrations_today=registrations_today,

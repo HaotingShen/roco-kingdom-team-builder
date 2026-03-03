@@ -227,6 +227,7 @@ export interface TeamOut {
   name?: string | null;
   user_monsters: UserMonsterOut[];
   magic_item: MagicItemOut;
+  is_featured?: boolean;
   created_at?: string;
   updated_at?: string;
 }

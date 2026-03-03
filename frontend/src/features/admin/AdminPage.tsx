@@ -5,6 +5,7 @@ import { useAuthStore } from "@/features/auth/authStore";
 import { adminEndpoints, type AdminStats } from "@/lib/api";
 import { useI18n } from "@/i18n";
 import UserTable from "./UserTable";
+import FeaturedTeamsTab from "./FeaturedTeamsTab";
 
 /**
  * Admin Dashboard Page
@@ -19,7 +20,7 @@ import UserTable from "./UserTable";
 export default function AdminPage() {
   const { t } = useI18n();
   const { user } = useAuthStore();
-  const [activeTab, setActiveTab] = useState<"stats" | "users">("stats");
+  const [activeTab, setActiveTab] = useState<"stats" | "users" | "featured">("stats");
 
   // Check if user is admin (backend will verify, this is just for UI)
   const statsQuery = useQuery({
@@ -88,6 +89,16 @@ export default function AdminPage() {
         >
           {t("admin.usersTab") || "Users"}
         </button>
+        <button
+          onClick={() => setActiveTab("featured")}
+          className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
+            activeTab === "featured"
+              ? "border-purple-600 text-purple-600"
+              : "border-transparent text-zinc-500 hover:text-zinc-700"
+          }`}
+        >
+          {t("admin.featuredTeamsTab") || "Featured Teams"}
+        </button>
       </div>
 
       {/* Content */}
@@ -95,6 +106,7 @@ export default function AdminPage() {
         <StatsPanel stats={statsQuery.data} isLoading={statsQuery.isLoading} />
       )}
       {activeTab === "users" && <UserTable />}
+      {activeTab === "featured" && <FeaturedTeamsTab />}
     </div>
   );
 }
@@ -152,6 +164,10 @@ function StatsPanel({ stats, isLoading }: StatsPanelProps) {
           value={stats.total_teams}
         />
         <StatCard
+          label={t("admin.featuredTeamsTotal") || "Featured Teams"}
+          value={stats.total_featured_teams}
+        />
+        <StatCard
           label={t("admin.totalAnalyses") || "Total Analyses"}
           value={stats.total_analyses}
         />
@@ -159,10 +175,6 @@ function StatsPanel({ stats, isLoading }: StatsPanelProps) {
           label={t("admin.lockedUsers") || "Locked"}
           value={stats.total_locked}
           highlight={stats.total_locked > 0 ? "warning" : undefined}
-        />
-        <StatCard
-          label={t("admin.registrationsToday") || "Registrations Today"}
-          value={stats.registrations_today}
         />
       </div>
 

@@ -450,6 +450,7 @@ class TeamOut(BaseModel):
     owner: Optional[UserOut] = None  # Owner profile (optional for backward compatibility)
     user_monsters: List[UserMonsterOut]
     magic_item: MagicItemOut
+    is_featured: bool = False
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
 
@@ -714,6 +715,7 @@ class AdminStatsOut(BaseModel):
     total_active: int  # Active in last 30 days
     total_locked: int
     total_teams: int
+    total_featured_teams: int
     total_analyses: int
     users_by_tier: dict
     registrations_today: int
