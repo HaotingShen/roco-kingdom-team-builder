@@ -1,13 +1,16 @@
 import { useState, useEffect } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import { useMutation } from "@tanstack/react-query";
 import { authEndpoints } from "@/lib/api";
+import { useAuthStore } from "@/features/auth/authStore";
 import { useI18n } from "@/i18n";
 
 export default function VerifyEmailPage() {
   const { t } = useI18n();
   const [searchParams] = useSearchParams();
   const tokenFromUrl = searchParams.get("token") || "";
+  const navigate = useNavigate();
+  const { user, isAuthenticated, updateUser } = useAuthStore();
 
   const [token, setToken] = useState(tokenFromUrl);
   const [verified, setVerified] = useState(false);
@@ -22,6 +25,14 @@ export default function VerifyEmailPage() {
     onSuccess: () => {
       setVerified(true);
       setError(null);
+      // Update auth store so user menu reflects verified status without re-login
+      if (user) {
+        updateUser({ ...user, email_verified: true });
+      }
+      // Strip token from URL so back-navigation doesn't re-trigger verification
+      if (tokenFromUrl) {
+        navigate('/auth/verify', { replace: true });
+      }
     },
     onError: (err: any) => {
       const detail = err.response?.data?.detail;
@@ -47,6 +58,11 @@ export default function VerifyEmailPage() {
   // Auto-verify if token is in the URL (link click from email)
   useEffect(() => {
     if (tokenFromUrl) {
+      // Already verified (e.g., navigated back to this page) — skip the API call
+      if (user?.email_verified) {
+        setVerified(true);
+        return;
+      }
       verifyMutation.mutate(tokenFromUrl);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -71,12 +87,23 @@ export default function VerifyEmailPage() {
             <div className="p-3 rounded-md bg-green-50 border border-green-200 text-sm text-green-700">
               {t("auth.verifySuccess")}
             </div>
-            <Link
-              to="/auth/login"
-              className="block w-full h-10 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors flex items-center justify-center"
-            >
-              {t("auth.loginButton")}
-            </Link>
+            {isAuthenticated ? (
+              <Link
+                to="/build"
+                replace
+                className="block w-full h-10 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors flex items-center justify-center"
+              >
+                {t("auth.verifyDone")}
+              </Link>
+            ) : (
+              <Link
+                to="/auth/login"
+                replace
+                className="block w-full h-10 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors flex items-center justify-center"
+              >
+                {t("auth.loginButton")}
+              </Link>
+            )}
           </div>
 
         /* Auto-verify mode: token came from email link — no input form needed */
