@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import { useAuthStore } from './authStore';
-import { authEndpoints, refreshCoordinator } from '@/lib/api';
+import { api, authEndpoints, refreshCoordinator } from '@/lib/api';
 import { useI18n, type Lang } from '@/i18n';
 
 interface AuthContextType {
@@ -73,12 +73,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         try {
           // SECURITY: Refresh endpoint reads httpOnly cookie automatically
           const response = await authEndpoints.refresh();
-          refreshCoordinator.succeed(response.data.access_token);
+          const freshToken = response.data.access_token;
+          refreshCoordinator.succeed(freshToken);
           if (!isCancelled) {
-            setAuth(user, response.data.access_token);
-            // Sync UI language from user's stored preference on page reload
-            if (!user.is_guest && user.preferred_language) {
-              setLang(user.preferred_language as Lang);
+            // Fetch fresh profile to pick up server-side changes (e.g. email_verified)
+            let freshUser = user;
+            try {
+              const meResponse = await api.get('/auth/me', {
+                headers: { Authorization: `Bearer ${freshToken}` },
+              });
+              freshUser = meResponse.data;
+            } catch {
+              // Non-critical — fall back to stale user data
+            }
+            setAuth(freshUser, freshToken);
+            if (!freshUser.is_guest && freshUser.preferred_language) {
+              setLang(freshUser.preferred_language as Lang);
             }
           }
         } catch (_error) {
