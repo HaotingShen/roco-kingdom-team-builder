@@ -342,12 +342,24 @@ export default function BuilderPage() {
 
   const allErrors = useMemo<VKey[][]>(() => slots.map(validateSlot), [slots]);
   const canAnalyze = allErrors.every((list) => list.length === 0) && !!magic_item_id;
+  const slotsHaveErrors = !allErrors.every((list) => list.length === 0);
+  const nameIsEmpty = !!validateTeamName(name);
+  const missingCount = [slotsHaveErrors, !magic_item_id, nameIsEmpty].filter(Boolean).length;
+  const teamIsReady = canAnalyze && !nameIsEmpty;
+  const teamErrorKey = !teamIsReady
+    ? missingCount >= 2
+      ? "builder.incompleteTeamMsg"
+      : slotsHaveErrors
+        ? "builder.v_incompleteSlots"
+        : !magic_item_id
+          ? "builder.v_pickMagicItem"
+          : "builder.v_emptyTeamName"
+    : null;
 
   // Auto-reset field error highlights once the attempted action's conditions are fully met
   useEffect(() => {
-    if (attemptedAction === 'analyze' && canAnalyze) setAttemptedAction(null);
-    if (attemptedAction === 'save' && canAnalyze && !validateTeamName(name)) setAttemptedAction(null);
-  }, [attemptedAction, canAnalyze, name]);
+    if (attemptedAction && teamIsReady) setAttemptedAction(null);
+  }, [attemptedAction, teamIsReady]);
 
   /* ---------- analyze ---------- */
   const analyze = useMutation({
@@ -408,20 +420,16 @@ export default function BuilderPage() {
       setServerErr(t("builder.analysisInProgress"));
       return;
     }
-    if (!canAnalyze) {
+    if (!teamIsReady) {
       setAttemptedAction('analyze');
-      setServerErr(!magic_item_id ? t("builder.v_pickMagicItem") : t("builder.incompleteTeamMsg"));
+      setServerErr(t(teamErrorKey!));
       return;
     }
-    try {
-      // Clear previous analysis results immediately when user clicks analyze
-      setAttemptedAction(null);
-      setAnalysis(null);
-      setServerErr(null);
-      analyze.mutate(toPayload());
-    } catch (e: any) {
-      setServerErr(e?.message || t("builder.incompleteTeamMsg"));
-    }
+    // Clear previous analysis results immediately when user clicks analyze
+    setAttemptedAction(null);
+    setAnalysis(null);
+    setServerErr(null);
+    analyze.mutate(toPayload());
   };
 
   /* ---------- save (create new) / update (modify existing) ---------- */
@@ -465,23 +473,16 @@ export default function BuilderPage() {
   });
 
   const onSaveNew = async () => {
-    // If user is not logged in, show the save modal first
+    // Completeness check runs first for everyone (including anonymous users)
+    if (!teamIsReady) {
+      setAttemptedAction('save');
+      setServerErr(t(teamErrorKey!));
+      return;
+    }
+
+    // If user is not logged in, show the save modal
     if (!user) {
       setShowSaveModal(true);
-      return;
-    }
-
-    // Validate team name
-    const nameError = validateTeamName(name);
-    if (nameError) {
-      setAttemptedAction('save');
-      setServerErr(t(nameError));
-      return;
-    }
-
-    if (!magic_item_id || !canAnalyze) {
-      setAttemptedAction('save');
-      setServerErr(t("builder.incompleteTeamMsg"));
       return;
     }
 
@@ -524,17 +525,9 @@ export default function BuilderPage() {
   const onUpdateExisting = async () => {
     if (!teamId) return; // hidden if no teamId anyway
 
-    // Validate team name
-    const nameError = validateTeamName(name);
-    if (nameError) {
+    if (!teamIsReady) {
       setAttemptedAction('save');
-      setServerErr(t(nameError));
-      return;
-    }
-
-    if (!magic_item_id || !canAnalyze) {
-      setAttemptedAction('save');
-      setServerErr(t("builder.incompleteTeamMsg"));
+      setServerErr(t(teamErrorKey!));
       return;
     }
 
@@ -740,7 +733,7 @@ export default function BuilderPage() {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder={t("builder.teamNamePlaceholder") ?? "My Team"}
-                className={`h-10 rounded-lg border-2 px-3 text-sm w-[160px] focus:outline-none focus:ring-2 focus:ring-zinc-400 focus:border-transparent transition-all shadow-sm ${showFieldErrors && attemptedAction === 'save' && !name?.trim() ? 'border-amber-400' : 'border-zinc-300'}`}
+                className={`h-10 rounded-lg border-2 px-3 text-sm w-[160px] focus:outline-none focus:ring-2 focus:ring-zinc-400 focus:border-transparent transition-all shadow-sm ${showFieldErrors && nameIsEmpty ? 'border-amber-400' : 'border-zinc-300'}`}
               />
             </div>
 
@@ -775,15 +768,13 @@ export default function BuilderPage() {
               className={`
                 h-10 px-5 rounded-lg font-medium text-sm
                 transition-all duration-200
-                ${canAnalyze
+                ${teamIsReady
                   ? "bg-white border-2 border-zinc-700 text-zinc-800 cursor-pointer shadow-sm hover:bg-zinc-50 hover:shadow-md hover:-translate-y-0.5"
                   : "bg-zinc-200 text-zinc-500 cursor-not-allowed border-2 border-zinc-300"
                 }
               `}
               title={
-                !canAnalyze
-                  ? t("builder.incompleteTeamMsg")
-                  : ""
+                teamErrorKey ? t(teamErrorKey) : ""
               }
             >
               {createTeam.isPending ? (
@@ -803,12 +794,12 @@ export default function BuilderPage() {
                 className={`
                   h-10 px-5 rounded-lg font-medium text-sm
                   transition-all duration-200
-                  ${canAnalyze
+                  ${teamIsReady
                     ? "bg-gradient-to-r from-blue-400 to-blue-500 text-white cursor-pointer shadow-md hover:from-blue-500 hover:to-blue-600 hover:shadow-lg hover:-translate-y-0.5"
                     : "bg-zinc-200 text-zinc-500 cursor-not-allowed border-2 border-zinc-300"
                   }
                 `}
-                title={!canAnalyze ? t("builder.incompleteTeamMsg") : ""}
+                title={teamErrorKey ? t(teamErrorKey) : ""}
               >
                 {updateTeam.isPending ? (
                   <span className="inline-flex items-center justify-center">
@@ -832,14 +823,14 @@ export default function BuilderPage() {
                     ? t("quota.analysisLimitReached")
                     : isAtAnalysisLimit && analysis
                       ? t("builder.reanalyzeFree")
-                      : !canAnalyze
-                        ? t("builder.incompleteTeamMsg")
+                      : teamErrorKey
+                        ? t(teamErrorKey)
                         : ""
               }
               className={`
                 h-10 px-6 rounded-lg font-semibold text-sm
                 transition-all duration-200
-                ${canAnalyze && !isAnalyzing
+                ${teamIsReady && !isAnalyzing
                   ? "bg-gradient-to-r from-zinc-800 to-zinc-900 text-white cursor-pointer shadow-md hover:from-zinc-900 hover:to-black hover:shadow-lg hover:-translate-y-0.5"
                   : "bg-zinc-300 text-zinc-500 cursor-not-allowed"
                 }
@@ -944,7 +935,7 @@ export default function BuilderPage() {
         // After guest account created, retry saving the team
         // Small delay to ensure auth state is updated
         setTimeout(() => {
-          if (canAnalyze && magic_item_id) {
+          if (teamIsReady) {
             createTeam.mutate(toPayload());
           }
         }, 100);
