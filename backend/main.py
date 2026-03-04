@@ -24,6 +24,7 @@ from backend.config import (
     COOKIE_SECURE,
     REFRESH_TOKEN_EXPIRE_DAYS,
     DEVICE_ID_COOKIE_MAX_AGE,
+    ADMIN_EMAILS,
 )
 from typing import Optional, List, Literal
 from datetime import datetime, timedelta, timezone
@@ -105,6 +106,7 @@ from backend.email_service import (
     send_verification_email,
     send_password_reset_email,
     send_email_change_verification,
+    send_email,
 )
 from backend.username_validator import get_canonical_username, trim_username
 
@@ -5740,3 +5742,61 @@ async def admin_reset_users(
         "teams_deleted": teams_deleted,
         "email_cooldowns_cleared": cooldowns_cleared
     }
+
+
+# ========== FEEDBACK ==========
+
+@app.post("/feedback", tags=["Feedback"])
+@limiter.limit("3/day")
+async def submit_feedback(
+    request: Request,
+    data: schemas.FeedbackRequest,
+    current_user: Optional[models.User] = Depends(get_optional_user),
+):
+    """
+    Submit user feedback or bug report.
+
+    - Rate limited: 3 submissions per IP per day
+    - Open to all users (anonymous, guest, registered)
+    - Honeypot field silently discards bot submissions
+    - Sends email to all ADMIN_EMAILS via existing SMTP config
+    """
+    # Honeypot: bots fill hidden fields, humans don't see them
+    if data.website:
+        return {"message": "Feedback received."}
+
+    if not ADMIN_EMAILS:
+        logger.warning("No ADMIN_EMAILS configured — feedback not delivered")
+        return {"message": "Feedback received."}
+
+    ip = get_real_client_ip(request)
+    if current_user:
+        user_info = f"User: {current_user.username} (id={current_user.id}, email={current_user.email})"
+    else:
+        user_info = f"Anonymous (IP: {ip})"
+
+    category_display = data.category.title()
+    reply_line = f"<p><strong>Reply to:</strong> {data.reply_email}</p>" if data.reply_email else "<p><em>No reply email provided.</em></p>"
+
+    subject = f"[RK Feedback] {category_display} — {user_info[:60]}"
+    html_body = f"""
+    <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 24px;">
+      <h2 style="color: #1d4ed8; margin-bottom: 4px;">RK Team Builder — New Feedback</h2>
+      <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 12px 0;" />
+      <p><strong>Category:</strong> {category_display}</p>
+      <p><strong>Submitted by:</strong> {user_info}</p>
+      {reply_line}
+      <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 12px 0;" />
+      <p><strong>Message:</strong></p>
+      <div style="background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; white-space: pre-wrap; font-size: 15px; line-height: 1.6;">
+        {data.message}
+      </div>
+    </div>
+    """
+    text_body = f"[RK Feedback] {category_display}\n\nFrom: {user_info}\nReply to: {data.reply_email or 'N/A'}\n\n{data.message}"
+
+    for admin_email in ADMIN_EMAILS:
+        await send_email(admin_email, subject, html_body, text_body)
+
+    logger.info(f"Feedback submitted: category={data.category}, from={user_info}")
+    return {"message": "Feedback received."}

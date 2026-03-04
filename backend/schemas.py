@@ -698,6 +698,14 @@ class AdminLockUserRequest(BaseModel):
     duration_hours: Optional[int] = Field(None, ge=1, le=8760)  # Max 1 year
 
 
+class FeedbackRequest(BaseModel):
+    """User feedback / bug report submission."""
+    category: str = Field(..., pattern="^(bug|feature|experience|other)$")
+    message: str = Field(..., min_length=10, max_length=2000)
+    reply_email: Optional[str] = Field(None, max_length=120)
+    website: str = Field("", description="Honeypot — must be empty")
+
+
 class AdminDeleteUserRequest(BaseModel):
     """Request to delete a user (admin action)."""
     reason: Optional[str] = Field(None, max_length=255)

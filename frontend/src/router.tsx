@@ -13,6 +13,7 @@ import VerifyEmailPage from "./features/auth/VerifyEmailPage";
 import ConfirmEmailChangePage from "./features/auth/ConfirmEmailChangePage";
 import AdminPage from "./features/admin/AdminPage";
 import SettingsPage from "./features/auth/SettingsPage";
+import FeedbackPage from "./features/feedback/FeedbackPage";
 
 const router = createBrowserRouter([
   {
@@ -32,7 +33,8 @@ const router = createBrowserRouter([
       { path: "auth/verify", element: <VerifyEmailPage /> },
       { path: "auth/confirm-email", element: <ConfirmEmailChangePage /> },
       { path: "settings", element: <SettingsPage /> },
-      { path: "admin", element: <AdminPage /> }
+      { path: "admin", element: <AdminPage /> },
+      { path: "feedback", element: <FeedbackPage /> }
     ]
   }
 ]);
