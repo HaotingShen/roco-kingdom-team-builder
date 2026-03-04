@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useI18n } from "@/i18n";
 import { useAuthStore } from "@/features/auth/authStore";
 import { api } from "@/lib/api";
@@ -39,6 +39,7 @@ export default function FeedbackPage() {
   const [replyEmail, setReplyEmail] = useState("");
   const [honeypot, setHoneypot] = useState("");
   const [status, setStatus] = useState<Status>("idle");
+  const isComposing = useRef(false);
 
   // Pre-fill reply email for registered users
   useEffect(() => {
@@ -149,7 +150,9 @@ export default function FeedbackPage() {
           <div className="relative">
             <textarea
               value={message}
-              onChange={(e) => setMessage(e.target.value)}
+              onChange={(e) => { if (!isComposing.current) setMessage(e.target.value); }}
+              onCompositionStart={() => { isComposing.current = true; }}
+              onCompositionEnd={(e) => { isComposing.current = false; setMessage((e.target as HTMLTextAreaElement).value); }}
               placeholder={t("feedback.messagePlaceholder") ?? ""}
               rows={6}
               maxLength={2000}
