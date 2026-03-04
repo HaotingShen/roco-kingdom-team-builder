@@ -1246,3 +1246,79 @@ async def clear_retry_grace(
             )
     except Exception as e:
         logger.error(f"Failed to clear retry grace: {e}")
+
+
+# TTL matches LLM cache TTL so user markers expire together with cached results
+_USER_ANALYZED_TTL = 3600  # 1 hour
+
+
+async def try_claim_user_analysis_slot(
+    effective_user: Optional[models.User],
+    device_id: str,
+    client_ip: str,
+    team_hash: str,
+    language: str,
+) -> bool:
+    """Atomically claim the analysis slot for this identity + team + language.
+
+    Uses Redis SET NX EX to prevent concurrent double-charges on cached results:
+    - Returns True if this request claimed the slot (will pay quota).
+    - Returns False if slot was already claimed by a previous payment within the
+      cache TTL window OR by a concurrent request from the same user — both cases
+      mean no quota should be charged for this request.
+
+    Fails open (returns True → pay) on Redis error so that quota is charged rather
+    than silently given away.
+    """
+    redis_client = get_redis()
+    if not redis_client:
+        return True  # fail open: charge quota rather than give free result
+    try:
+        identity_type, identity_value = _resolve_grace_identity(effective_user, device_id, client_ip)
+        key = f"user_analyzed:{identity_type}:{identity_value}:{team_hash}:{language}"
+        # SET NX EX: atomic set-if-not-exists with TTL — returns None if key existed
+        result = redis_client.set(key, 1, ex=_USER_ANALYZED_TTL, nx=True)
+        claimed = result is not None
+        if claimed:
+            logger.debug(
+                f"Claimed analysis slot: {identity_type}={identity_value[:12]}... "
+                f"team={team_hash[:12]}... lang={language}"
+            )
+        else:
+            logger.debug(
+                f"Analysis slot already claimed (same user within TTL or concurrent duplicate): "
+                f"{identity_type}={identity_value[:12]}... team={team_hash[:12]}... lang={language}"
+            )
+        return claimed
+    except Exception as e:
+        logger.error(f"Failed to claim analysis slot: {e}")
+        return True  # fail open: charge quota
+
+
+async def mark_user_team_analyzed(
+    effective_user: Optional[models.User],
+    device_id: str,
+    client_ip: str,
+    team_hash: str,
+    language: str,
+) -> None:
+    """Unconditionally set the user-analyzed marker after actual LLM quota was charged.
+
+    Used in the non-cached path after successful quota charge so that subsequent
+    cached-path requests from the same user within the TTL window are free.
+    Uses plain SET (not NX) to ensure the marker is always written even if a
+    previous partial result had already set it.
+    """
+    redis_client = get_redis()
+    if not redis_client:
+        return
+    try:
+        identity_type, identity_value = _resolve_grace_identity(effective_user, device_id, client_ip)
+        key = f"user_analyzed:{identity_type}:{identity_value}:{team_hash}:{language}"
+        redis_client.set(key, 1, ex=_USER_ANALYZED_TTL)
+        logger.debug(
+            f"Marked user_analyzed: {identity_type}={identity_value[:12]}... "
+            f"team={team_hash[:12]}... lang={language}"
+        )
+    except Exception as e:
+        logger.error(f"Failed to mark user_analyzed: {e}")

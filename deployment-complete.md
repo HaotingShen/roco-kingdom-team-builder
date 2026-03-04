@@ -2556,7 +2556,23 @@ aws cloudwatch put-metric-alarm \
 
 > **Note:** `deploy.sh` automatically runs `docker image prune -a -f` after every successful deploy to prevent disk buildup from accumulated Docker images.
 
-### 9.3 View Logs
+### 9.3 Set Log Retention
+
+Prevent logs from accumulating forever (~$0.03/GB/month storage). Run after log groups are created:
+
+```bash
+# /rktb/backend is created on first deploy
+aws logs put-retention-policy --log-group-name /rktb/backend --retention-in-days 30 --region ap-southeast-1
+
+# Nginx log groups are created once the CloudWatch agent starts collecting logs
+# Run these after the first nginx traffic arrives
+aws logs put-retention-policy --log-group-name /rktb/nginx/access --retention-in-days 30 --region ap-southeast-1
+aws logs put-retention-policy --log-group-name /rktb/nginx/error --retention-in-days 30 --region ap-southeast-1
+```
+
+> **Note:** Retention only deletes old log events — the log group and stream remain intact.
+
+### 9.4 View Logs
 
 | Log Type | Location |
 |----------|----------|

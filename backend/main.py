@@ -95,6 +95,8 @@ from backend.tier_limits import (
     check_retry_grace,
     consume_retry_grace,
     clear_retry_grace,
+    try_claim_user_analysis_slot,
+    mark_user_team_analyzed,
     seed_user_counter_from_device,
     transfer_monthly_quota_from_guest,
 )
@@ -4362,15 +4364,48 @@ async def analyze_team(
     # Generate language-independent team composition hash
     team_hash = generate_team_composition_hash(req.team)
 
-    # Check if fully cached - cached analyses bypass all rate limits
+    # Check if fully cached
     is_fully_cached = await check_if_all_cached(req.team, req.language)
     has_grace = False
+    # Tracks whether this request atomically claimed the paying slot for a cached result.
+    # Only meaningful when is_fully_cached=True; drives post-analysis quota charge.
+    is_paying_cached_request = False
 
     if is_fully_cached:
-        # Fast path: all cached. Also clean up any lingering grace markers
-        # from a previous partial failure (prevents stale grace exploitation).
-        if await check_retry_grace(effective_user, device_id, client_ip, team_hash, req.language):
-            await clear_retry_grace(effective_user, device_id, client_ip, team_hash, req.language)
+        # Check grace first — a grace token means the user already paid for a partial
+        # failure; this cached result is their free retry, so skip quota entirely.
+        has_grace = await check_retry_grace(effective_user, device_id, client_ip, team_hash, req.language)
+        if not has_grace:
+            # Cache hit for a new or returning user.
+            # Rule: speed benefit only — quota is still consumed.
+            # Same user within TTL gets it free via the user_analyzed marker.
+
+            # 1. Per-user quota check based on user type
+            if effective_user is None:
+                await check_anonymous_analysis_limit(device_id, client_ip, req.language)
+            else:
+                await check_analysis_limit(effective_user, db, req.language)
+
+            # 2. Cross-account device daily cap (prevents multi-account abuse)
+            await check_device_daily_cap(device_id, effective_user)
+
+            # 3. IP daily cap (fallback when device_id missing, also abuse signal)
+            if device_id == "unknown-device":
+                await check_ip_daily_cap(client_ip, effective_user)
+
+            # Atomically claim the analysis slot using SET NX EX.
+            # Returns True  → this request is the paying one (slot was free).
+            # Returns False → slot already exists: either the same user paid within
+            #                 the cache TTL, or a concurrent request from the same
+            #                 user just claimed it — both mean no charge for this request.
+            # This prevents double-charging when the same user sends concurrent requests
+            # (e.g. double-click) to a cached result.
+            is_paying_cached_request = await try_claim_user_analysis_slot(
+                effective_user, device_id, client_ip, team_hash, req.language
+            )
+
+        # Skip IP/per-team throughput rate limits (4, 5) — those protect LLM API cost,
+        # not quota. Cached results have no LLM cost.
     else:
         # Not cached - check retry grace before quota checks
         has_grace = await check_retry_grace(
@@ -4409,7 +4444,7 @@ async def analyze_team(
             )
             raise HTTPException(
                 status_code=429,
-                detail=get_rate_limit_message(req.language)
+                detail=get_rate_limit_message(req.language, minutes=1)
             )
 
         # 5. Per-team rate limit (prevents language-switching exploits)
@@ -4419,12 +4454,17 @@ async def analyze_team(
             )
             raise HTTPException(
                 status_code=429,
-                detail=get_rate_limit_message(req.language)
+                detail=get_rate_limit_message(req.language, minutes=1)
             )
 
         # Record rate limit BEFORE analysis (prevents concurrent bypass)
+        # TTL=60s (1 min) is intentionally less than CloudFront's 120s origin timeout.
+        # When CF times out and TanStack retries, the retry arrives at ~t=120s after the
+        # rate limit keys have already expired. The retry then passes rate limit checks,
+        # waits for the original request's distributed lock (up to 60s), and returns the
+        # cached result with actual_llm_calls=0 — no duplicate quota charge.
         logger.info(f"Recording analysis for {client_ip}:{team_hash}")
-        await record_analysis_async(client_ip, team_hash)
+        await record_analysis_async(client_ip, team_hash, limit_per_minutes=1)
 
         # Consume grace AFTER all pre-flight checks pass, BEFORE analysis starts.
         # This is the "point of no return" — rate limits didn't reject us, so we're
@@ -4440,7 +4480,22 @@ async def analyze_team(
     result, all_succeeded, successful_calls, actual_llm_calls = await _perform_team_analysis(req.team, req.language, db)
 
     # Post-analysis: quota recording and grace management
-    if not is_fully_cached:
+    if is_fully_cached:
+        if has_grace:
+            # Grace retry resolved by a fully-cached result (full success) — clear grace,
+            # no quota charge (the original partial failure already charged quota).
+            await clear_retry_grace(effective_user, device_id, client_ip, team_hash, req.language)
+        elif is_paying_cached_request:
+            # This request atomically claimed the slot in pre-flight — charge quota.
+            # The marker is already set in Redis (from try_claim_user_analysis_slot),
+            # so future cached requests from the same user within TTL will be free.
+            if effective_user is None:
+                await record_anonymous_analysis(device_id, client_ip)
+            else:
+                await record_analysis_usage(effective_user)
+            await record_device_and_ip_usage(device_id, client_ip)
+        # else: slot was already claimed (same user within TTL or concurrent duplicate) — free
+    else:
         if has_grace:
             # This was a retry under grace — don't charge quota again
             if all_succeeded:
@@ -4463,6 +4518,8 @@ async def analyze_team(
                     await record_analysis_usage(effective_user)
                 # Record device/IP usage for cross-account caps
                 await record_device_and_ip_usage(device_id, client_ip)
+                # Mark so this user gets free repeats within the cache TTL window
+                await mark_user_team_analyzed(effective_user, device_id, client_ip, team_hash, req.language)
 
                 if not all_succeeded:
                     # Partial success: grant grace for free retry
@@ -4538,15 +4595,46 @@ async def analyze_team_by_id(
     # Generate language-independent team composition hash
     team_hash = generate_team_composition_hash(team_data)
 
-    # Check if fully cached - cached analyses bypass all rate limits
+    # Check if fully cached
     is_fully_cached = await check_if_all_cached(team_data, req.language)
     has_grace = False
+    # Tracks whether this request atomically claimed the paying slot for a cached result.
+    # Only meaningful when is_fully_cached=True; drives post-analysis quota charge.
+    is_paying_cached_request = False
 
     if is_fully_cached:
-        # Fast path: all cached. Also clean up any lingering grace markers
-        # from a previous partial failure (prevents stale grace exploitation).
-        if await check_retry_grace(effective_user, device_id, client_ip, team_hash, req.language):
-            await clear_retry_grace(effective_user, device_id, client_ip, team_hash, req.language)
+        # Check grace first — a grace token means the user already paid for a partial
+        # failure; this cached result is their free retry, so skip quota entirely.
+        has_grace = await check_retry_grace(effective_user, device_id, client_ip, team_hash, req.language)
+        if not has_grace:
+            # Cache hit for a new or returning user.
+            # Rule: speed benefit only — quota is still consumed.
+            # Same user within TTL gets it free via the user_analyzed marker.
+
+            # 1. Per-user quota check based on user type
+            if effective_user is None:
+                await check_anonymous_analysis_limit(device_id, client_ip, req.language)
+            else:
+                await check_analysis_limit(effective_user, db, req.language)
+
+            # 2. Cross-account device daily cap (prevents multi-account abuse)
+            await check_device_daily_cap(device_id, effective_user)
+
+            # 3. IP daily cap (fallback when device_id missing, also abuse signal)
+            if device_id == "unknown-device":
+                await check_ip_daily_cap(client_ip, effective_user)
+
+            # Atomically claim the analysis slot using SET NX EX.
+            # Returns True  → this request is the paying one (slot was free).
+            # Returns False → slot already exists: either the same user paid within
+            #                 the cache TTL, or a concurrent request from the same
+            #                 user just claimed it — both mean no charge for this request.
+            is_paying_cached_request = await try_claim_user_analysis_slot(
+                effective_user, device_id, client_ip, team_hash, req.language
+            )
+
+        # Skip IP/per-team throughput rate limits (4, 5) — those protect LLM API cost,
+        # not quota. Cached results have no LLM cost.
     else:
         # Not cached - check retry grace before quota checks
         has_grace = await check_retry_grace(
@@ -4585,7 +4673,7 @@ async def analyze_team_by_id(
             )
             raise HTTPException(
                 status_code=429,
-                detail=get_rate_limit_message(req.language)
+                detail=get_rate_limit_message(req.language, minutes=1)
             )
 
         # 5. Per-team rate limit (prevents language-switching exploits)
@@ -4595,12 +4683,13 @@ async def analyze_team_by_id(
             )
             raise HTTPException(
                 status_code=429,
-                detail=get_rate_limit_message(req.language)
+                detail=get_rate_limit_message(req.language, minutes=1)
             )
 
         # Record rate limit BEFORE analysis (prevents concurrent bypass)
+        # TTL=60s (1 min) — see comment in /team/analyze for rationale.
         logger.info(f"Recording analysis for {client_ip}:{team_hash}")
-        await record_analysis_async(client_ip, team_hash)
+        await record_analysis_async(client_ip, team_hash, limit_per_minutes=1)
 
         # Consume grace AFTER all pre-flight checks pass, BEFORE analysis starts.
         # This is the "point of no return" — rate limits didn't reject us, so we're
@@ -4616,7 +4705,22 @@ async def analyze_team_by_id(
     result, all_succeeded, successful_calls, actual_llm_calls = await _perform_team_analysis(team_data, req.language, db)
 
     # Post-analysis: quota recording and grace management
-    if not is_fully_cached:
+    if is_fully_cached:
+        if has_grace:
+            # Grace retry resolved by a fully-cached result (full success) — clear grace,
+            # no quota charge (the original partial failure already charged quota).
+            await clear_retry_grace(effective_user, device_id, client_ip, team_hash, req.language)
+        elif is_paying_cached_request:
+            # This request atomically claimed the slot in pre-flight — charge quota.
+            # The marker is already set in Redis (from try_claim_user_analysis_slot),
+            # so future cached requests from the same user within TTL will be free.
+            if effective_user is None:
+                await record_anonymous_analysis(device_id, client_ip)
+            else:
+                await record_analysis_usage(effective_user)
+            await record_device_and_ip_usage(device_id, client_ip)
+        # else: slot was already claimed (same user within TTL or concurrent duplicate) — free
+    else:
         if has_grace:
             # This was a retry under grace — don't charge quota again
             if all_succeeded:
@@ -4637,6 +4741,8 @@ async def analyze_team_by_id(
                     await record_analysis_usage(effective_user)
                 # Record device/IP usage for cross-account caps
                 await record_device_and_ip_usage(device_id, client_ip)
+                # Mark so this user gets free repeats within the cache TTL window
+                await mark_user_team_analyzed(effective_user, device_id, client_ip, team_hash, req.language)
 
                 if not all_succeeded:
                     # Partial success: grant grace for free retry

@@ -481,7 +481,13 @@ const ui: Record<Lang, Dict> = {
       featuredTeamsTotal: "Featured Teams",
       totalAnalyses: "Total Analyses",
       // Featured teams management
-      featuredTeamsEmpty: "No featured teams yet. Build a team in the builder and click \"Save as Featured\".",
+      featuredTeamsEmpty: "No featured teams yet.",
+      featuredTeamsHint: "Build a team in the builder and click \"Save as Featured\".",
+      featuredTeamsColName: "Name",
+      featuredTeamsColMonsters: "Monsters",
+      featuredTeamsColMagicItem: "Magic Item",
+      featuredTeamsColCreated: "Created",
+      featuredTeamsColActions: "Actions",
       editFeaturedTeam: "Edit",
       deleteFeaturedTeam: "Delete",
       lockedUsers: "Locked",
@@ -1008,7 +1014,13 @@ const ui: Record<Lang, Dict> = {
       featuredTeamsTotal: "精选队伍",
       totalAnalyses: "总分析数",
       // 精选队伍管理
-      featuredTeamsEmpty: "暂无精选队伍。在组队页面组好队伍后点击「保存为精选队伍」。",
+      featuredTeamsEmpty: "暂无精选队伍。",
+      featuredTeamsHint: "在组队页面组好队伍后点击「保存为精选队伍」。",
+      featuredTeamsColName: "名称",
+      featuredTeamsColMonsters: "精灵",
+      featuredTeamsColMagicItem: "魔法道具",
+      featuredTeamsColCreated: "创建时间",
+      featuredTeamsColActions: "操作",
       editFeaturedTeam: "编辑",
       deleteFeaturedTeam: "删除",
       lockedUsers: "已锁定",
@@ -1138,7 +1150,8 @@ type Ctx = { lang: Lang; setLang: (l: Lang) => void; t: (key: string, vars?: Rec
 const I18nCtx = createContext<Ctx | null>(null);
 
 export function I18nProvider({ children }: { children: React.ReactNode }) {
-  const [lang, setLang] = useState<Lang>((localStorage.getItem("lang") as Lang) || "en");
+  const browserLang: Lang = navigator.language.startsWith("zh") ? "zh" : "en";
+  const [lang, setLang] = useState<Lang>((localStorage.getItem("lang") as Lang) || browserLang);
   const value = useMemo<Ctx>(() => ({
       lang,
       setLang: (l) => { localStorage.setItem("lang", l); setLang(l); },
