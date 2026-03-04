@@ -199,7 +199,7 @@ export default function UserMenu() {
       {/* User button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 h-9 px-2 rounded border hover:bg-zinc-50 cursor-pointer"
+        className="flex items-center gap-2 h-9 px-2 rounded-lg border-2 border-zinc-300 hover:bg-zinc-100 transition-colors cursor-pointer"
       >
         {/* Avatar with warning indicator for unverified email */}
         <div className="relative">
