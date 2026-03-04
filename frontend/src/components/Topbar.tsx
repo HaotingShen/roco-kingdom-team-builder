@@ -7,6 +7,7 @@ import { useMutation } from "@tanstack/react-query";
 import { endpoints } from "@/lib/api";
 import type { TeamOut } from "@/types";
 import UserMenu from "./UserMenu";
+import DonationModal from "./DonationModal";
 
 export default function Topbar() {
   const nav = useNavigate();
@@ -50,6 +51,8 @@ export default function Topbar() {
 
     if (!isOnBuilder) nav("/build");
   };
+
+  const [showDonation, setShowDonation] = useState(false);
 
   // Brief "Loaded: {name}" message shown after Quick Build succeeds
   const [quickBuildMsg, setQuickBuildMsg] = useState<string | null>(null);
@@ -127,6 +130,15 @@ export default function Topbar() {
           </>
         )}
 
+        {/* Donate */}
+        <button
+          onClick={() => setShowDonation(true)}
+          className="h-9 px-3 rounded-lg border-2 border-amber-300 bg-amber-50 text-sm font-medium text-amber-700 hover:bg-amber-100 transition-colors cursor-pointer"
+          title={t("topbar.donate")}
+        >
+          {t("topbar.donate") ?? "Donate"}
+        </button>
+
         <button
           onClick={() => setLang(lang === "en" ? "zh" : "en")}
           className="h-9 px-3 rounded-lg border-2 border-zinc-300 text-sm font-medium text-zinc-700 hover:bg-zinc-100 transition-colors cursor-pointer"
@@ -149,6 +161,8 @@ export default function Topbar() {
         {/* User Menu */}
         <UserMenu />
       </div>
+
+      <DonationModal isOpen={showDonation} onClose={() => setShowDonation(false)} />
     </header>
   );
 }
