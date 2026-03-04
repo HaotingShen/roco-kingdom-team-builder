@@ -1252,6 +1252,31 @@ async def clear_retry_grace(
 _USER_ANALYZED_TTL = 3600  # 1 hour
 
 
+async def has_user_analyzed_team(
+    effective_user: Optional[models.User],
+    device_id: str,
+    client_ip: str,
+    team_hash: str,
+    language: str,
+) -> bool:
+    """Check (EXISTS) whether this identity has already paid quota for this team + language.
+
+    Used as a pre-quota-check gate in the cached path: if True, skip quota checks
+    entirely so a user at their daily limit can still retrieve their own cached result.
+    Fails open (returns False) on Redis error — quota checks will then run normally.
+    """
+    redis_client = get_redis()
+    if not redis_client:
+        return False
+    try:
+        identity_type, identity_value = _resolve_grace_identity(effective_user, device_id, client_ip)
+        key = f"user_analyzed:{identity_type}:{identity_value}:{team_hash}:{language}"
+        return redis_client.exists(key) > 0
+    except Exception as e:
+        logger.error(f"Failed to check user_analyzed: {e}")
+        return False
+
+
 async def try_claim_user_analysis_slot(
     effective_user: Optional[models.User],
     device_id: str,

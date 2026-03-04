@@ -95,6 +95,7 @@ from backend.tier_limits import (
     check_retry_grace,
     consume_retry_grace,
     clear_retry_grace,
+    has_user_analyzed_team,
     try_claim_user_analysis_slot,
     mark_user_team_analyzed,
     seed_user_counter_from_device,
@@ -4376,33 +4377,34 @@ async def analyze_team(
         # failure; this cached result is their free retry, so skip quota entirely.
         has_grace = await check_retry_grace(effective_user, device_id, client_ip, team_hash, req.language)
         if not has_grace:
-            # Cache hit for a new or returning user.
-            # Rule: speed benefit only — quota is still consumed.
-            # Same user within TTL gets it free via the user_analyzed marker.
-
-            # 1. Per-user quota check based on user type
-            if effective_user is None:
-                await check_anonymous_analysis_limit(device_id, client_ip, req.language)
-            else:
-                await check_analysis_limit(effective_user, db, req.language)
-
-            # 2. Cross-account device daily cap (prevents multi-account abuse)
-            await check_device_daily_cap(device_id, effective_user)
-
-            # 3. IP daily cap (fallback when device_id missing, also abuse signal)
-            if device_id == "unknown-device":
-                await check_ip_daily_cap(client_ip, effective_user)
-
-            # Atomically claim the analysis slot using SET NX EX.
-            # Returns True  → this request is the paying one (slot was free).
-            # Returns False → slot already exists: either the same user paid within
-            #                 the cache TTL, or a concurrent request from the same
-            #                 user just claimed it — both mean no charge for this request.
-            # This prevents double-charging when the same user sends concurrent requests
-            # (e.g. double-click) to a cached result.
-            is_paying_cached_request = await try_claim_user_analysis_slot(
+            # Check if this user already paid for this team within the cache TTL.
+            # Must happen BEFORE quota checks so a user at their daily limit can still
+            # retrieve their own cached result without hitting a 429.
+            already_paid = await has_user_analyzed_team(
                 effective_user, device_id, client_ip, team_hash, req.language
             )
+            if not already_paid:
+                # New user hitting this cached result — quota applies.
+
+                # 1. Per-user quota check based on user type
+                if effective_user is None:
+                    await check_anonymous_analysis_limit(device_id, client_ip, req.language)
+                else:
+                    await check_analysis_limit(effective_user, db, req.language)
+
+                # 2. Cross-account device daily cap (prevents multi-account abuse)
+                await check_device_daily_cap(device_id, effective_user)
+
+                # 3. IP daily cap (fallback when device_id missing, also abuse signal)
+                if device_id == "unknown-device":
+                    await check_ip_daily_cap(client_ip, effective_user)
+
+                # Atomically claim the slot (SET NX EX). Only the first of any
+                # concurrent same-user requests claims it and pays; others are free.
+                is_paying_cached_request = await try_claim_user_analysis_slot(
+                    effective_user, device_id, client_ip, team_hash, req.language
+                )
+            # else: same user within TTL — is_paying_cached_request stays False, no quota check
 
         # Skip IP/per-team throughput rate limits (4, 5) — those protect LLM API cost,
         # not quota. Cached results have no LLM cost.
@@ -4607,31 +4609,34 @@ async def analyze_team_by_id(
         # failure; this cached result is their free retry, so skip quota entirely.
         has_grace = await check_retry_grace(effective_user, device_id, client_ip, team_hash, req.language)
         if not has_grace:
-            # Cache hit for a new or returning user.
-            # Rule: speed benefit only — quota is still consumed.
-            # Same user within TTL gets it free via the user_analyzed marker.
-
-            # 1. Per-user quota check based on user type
-            if effective_user is None:
-                await check_anonymous_analysis_limit(device_id, client_ip, req.language)
-            else:
-                await check_analysis_limit(effective_user, db, req.language)
-
-            # 2. Cross-account device daily cap (prevents multi-account abuse)
-            await check_device_daily_cap(device_id, effective_user)
-
-            # 3. IP daily cap (fallback when device_id missing, also abuse signal)
-            if device_id == "unknown-device":
-                await check_ip_daily_cap(client_ip, effective_user)
-
-            # Atomically claim the analysis slot using SET NX EX.
-            # Returns True  → this request is the paying one (slot was free).
-            # Returns False → slot already exists: either the same user paid within
-            #                 the cache TTL, or a concurrent request from the same
-            #                 user just claimed it — both mean no charge for this request.
-            is_paying_cached_request = await try_claim_user_analysis_slot(
+            # Check if this user already paid for this team within the cache TTL.
+            # Must happen BEFORE quota checks so a user at their daily limit can still
+            # retrieve their own cached result without hitting a 429.
+            already_paid = await has_user_analyzed_team(
                 effective_user, device_id, client_ip, team_hash, req.language
             )
+            if not already_paid:
+                # New user hitting this cached result — quota applies.
+
+                # 1. Per-user quota check based on user type
+                if effective_user is None:
+                    await check_anonymous_analysis_limit(device_id, client_ip, req.language)
+                else:
+                    await check_analysis_limit(effective_user, db, req.language)
+
+                # 2. Cross-account device daily cap (prevents multi-account abuse)
+                await check_device_daily_cap(device_id, effective_user)
+
+                # 3. IP daily cap (fallback when device_id missing, also abuse signal)
+                if device_id == "unknown-device":
+                    await check_ip_daily_cap(client_ip, effective_user)
+
+                # Atomically claim the slot (SET NX EX). Only the first of any
+                # concurrent same-user requests claims it and pays; others are free.
+                is_paying_cached_request = await try_claim_user_analysis_slot(
+                    effective_user, device_id, client_ip, team_hash, req.language
+                )
+            # else: same user within TTL — is_paying_cached_request stays False, no quota check
 
         # Skip IP/per-team throughput rate limits (4, 5) — those protect LLM API cost,
         # not quota. Cached results have no LLM cost.
