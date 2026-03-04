@@ -130,6 +130,14 @@ export default function Topbar() {
           </>
         )}
 
+        <button
+          onClick={() => setLang(lang === "en" ? "zh" : "en")}
+          className="h-9 px-3 rounded-lg border-2 border-zinc-300 text-sm font-medium text-zinc-700 hover:bg-zinc-100 transition-colors cursor-pointer"
+          title={t("topbar.toggleLanguage")}
+        >
+          {lang === "en" ? t("topbar.lang_en_zh") : t("topbar.lang_zh_en")}
+        </button>
+
         {/* Donate */}
         <button
           onClick={() => setShowDonation(true)}
@@ -137,14 +145,6 @@ export default function Topbar() {
           title={t("topbar.donate")}
         >
           {t("topbar.donate") ?? "Donate"}
-        </button>
-
-        <button
-          onClick={() => setLang(lang === "en" ? "zh" : "en")}
-          className="h-9 px-3 rounded-lg border-2 border-zinc-300 text-sm font-medium text-zinc-700 hover:bg-zinc-100 transition-colors cursor-pointer"
-          title={t("topbar.toggleLanguage")}
-        >
-          {lang === "en" ? t("topbar.lang_en_zh") : t("topbar.lang_zh_en")}
         </button>
 
         {/* Admin Link (visible to admins only) */}
