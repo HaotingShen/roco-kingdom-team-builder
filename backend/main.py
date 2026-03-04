@@ -4490,11 +4490,14 @@ async def analyze_team(
             # This request atomically claimed the slot in pre-flight — charge quota.
             # The marker is already set in Redis (from try_claim_user_analysis_slot),
             # so future cached requests from the same user within TTL will be free.
+            # NOTE: record_device_and_ip_usage is intentionally NOT called here.
+            # The device/IP cross-account cap tracks real LLM usage only. Counting
+            # cached hits would inflate the cap without any LLM cost, causing false
+            # 429s on non-cached analyses and incorrect quota seeding for new accounts.
             if effective_user is None:
                 await record_anonymous_analysis(device_id, client_ip)
             else:
                 await record_analysis_usage(effective_user)
-            await record_device_and_ip_usage(device_id, client_ip)
         # else: slot was already claimed (same user within TTL or concurrent duplicate) — free
     else:
         if has_grace:
@@ -4717,11 +4720,14 @@ async def analyze_team_by_id(
             # This request atomically claimed the slot in pre-flight — charge quota.
             # The marker is already set in Redis (from try_claim_user_analysis_slot),
             # so future cached requests from the same user within TTL will be free.
+            # NOTE: record_device_and_ip_usage is intentionally NOT called here.
+            # The device/IP cross-account cap tracks real LLM usage only. Counting
+            # cached hits would inflate the cap without any LLM cost, causing false
+            # 429s on non-cached analyses and incorrect quota seeding for new accounts.
             if effective_user is None:
                 await record_anonymous_analysis(device_id, client_ip)
             else:
                 await record_analysis_usage(effective_user)
-            await record_device_and_ip_usage(device_id, client_ip)
         # else: slot was already claimed (same user within TTL or concurrent duplicate) — free
     else:
         if has_grace:

@@ -1278,7 +1278,11 @@ async def has_user_analyzed_team(
             keys_to_check.append(f"user_analyzed:user:{effective_user.id}:{team_hash}:{language}")
         if device_id and device_id != "unknown-device":
             keys_to_check.append(f"user_analyzed:device:{device_id}:{team_hash}:{language}")
-        keys_to_check.append(f"user_analyzed:ip:{client_ip}:{team_hash}:{language}")
+        else:
+            # Only fall back to IP key when device is unknown (IP key is only ever written
+            # for unknown-device identities). Checking IP for known-device users would give
+            # a free ride to anyone on the same network if an unknown-device user paid first.
+            keys_to_check.append(f"user_analyzed:ip:{client_ip}:{team_hash}:{language}")
 
         for key in keys_to_check:
             if redis_client.exists(key) > 0:

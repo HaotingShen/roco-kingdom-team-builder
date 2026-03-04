@@ -174,7 +174,7 @@ export default function UserMenu() {
     return (
       <button
         onClick={() => navigate('/auth/login')}
-        className="h-9 px-4 bg-blue-600 text-white text-sm font-medium rounded hover:bg-blue-700 transition-colors"
+        className="h-9 px-4 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
       >
         {t('userMenu.login') || 'Log In'}
       </button>
