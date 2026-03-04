@@ -161,6 +161,7 @@ export default function RegisterPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder={t("auth.passwordPlaceholder")}
+              autoComplete="new-password"
               required
               className={`w-full h-10 px-3 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                 errors.password ? "border-red-500" : "border-zinc-300"
@@ -180,6 +181,7 @@ export default function RegisterPage() {
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               placeholder={t("auth.confirmPasswordPlaceholder")}
+              autoComplete="new-password"
               required
               className={`w-full h-10 px-3 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                 errors.confirmPassword ? "border-red-500" : "border-zinc-300"

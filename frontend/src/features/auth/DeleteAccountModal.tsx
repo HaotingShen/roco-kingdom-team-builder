@@ -3,6 +3,7 @@ import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { authEndpoints } from "@/lib/api";
+import { queryClient } from "@/lib/queryClient";
 import { useAuthStore, clearDeviceRegistered } from "./authStore";
 import { useI18n } from "@/i18n";
 
@@ -45,6 +46,8 @@ export default function DeleteAccountModal({
       // Clear auth state and allow guest creation again
       clearAuth();
       clearDeviceRegistered();
+      // Clear all cached query data so stale teams/quota don't appear after deletion
+      queryClient.clear();
       toast.success(t("auth.accountDeleted") || "Your account has been permanently deleted.");
       onClose();
       navigate("/");

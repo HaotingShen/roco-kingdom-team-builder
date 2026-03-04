@@ -1259,19 +1259,31 @@ async def has_user_analyzed_team(
     team_hash: str,
     language: str,
 ) -> bool:
-    """Check (EXISTS) whether this identity has already paid quota for this team + language.
+    """Check (EXISTS) whether this device/identity has already paid quota for this team + language.
+
+    Checks the full identity hierarchy (user → device → ip) so that a payment made
+    under one identity is recognized after an upgrade (e.g. anonymous → guest on the
+    same device within the cache TTL window).
 
     Used as a pre-quota-check gate in the cached path: if True, skip quota checks
-    entirely so a user at their daily limit can still retrieve their own cached result.
+    entirely so the device doesn't pay twice for the same cached result.
     Fails open (returns False) on Redis error — quota checks will then run normally.
     """
     redis_client = get_redis()
     if not redis_client:
         return False
     try:
-        identity_type, identity_value = _resolve_grace_identity(effective_user, device_id, client_ip)
-        key = f"user_analyzed:{identity_type}:{identity_value}:{team_hash}:{language}"
-        return redis_client.exists(key) > 0
+        keys_to_check = []
+        if effective_user is not None:
+            keys_to_check.append(f"user_analyzed:user:{effective_user.id}:{team_hash}:{language}")
+        if device_id and device_id != "unknown-device":
+            keys_to_check.append(f"user_analyzed:device:{device_id}:{team_hash}:{language}")
+        keys_to_check.append(f"user_analyzed:ip:{client_ip}:{team_hash}:{language}")
+
+        for key in keys_to_check:
+            if redis_client.exists(key) > 0:
+                return True
+        return False
     except Exception as e:
         logger.error(f"Failed to check user_analyzed: {e}")
         return False

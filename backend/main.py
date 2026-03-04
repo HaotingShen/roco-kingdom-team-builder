@@ -4392,12 +4392,11 @@ async def analyze_team(
                 else:
                     await check_analysis_limit(effective_user, db, req.language)
 
-                # 2. Cross-account device daily cap (prevents multi-account abuse)
-                await check_device_daily_cap(device_id, effective_user)
-
-                # 3. IP daily cap (fallback when device_id missing, also abuse signal)
-                if device_id == "unknown-device":
-                    await check_ip_daily_cap(client_ip, effective_user)
+                # Note: device/IP daily caps are intentionally skipped for cached results.
+                # Those caps guard LLM compute costs; since there's no LLM call here, they
+                # must not block a new identity whose device accumulated usage under a
+                # different account (e.g., deleted registered account → same device is now
+                # anonymous).
 
                 # Atomically claim the slot (SET NX EX). Only the first of any
                 # concurrent same-user requests claims it and pays; others are free.
@@ -4624,12 +4623,11 @@ async def analyze_team_by_id(
                 else:
                     await check_analysis_limit(effective_user, db, req.language)
 
-                # 2. Cross-account device daily cap (prevents multi-account abuse)
-                await check_device_daily_cap(device_id, effective_user)
-
-                # 3. IP daily cap (fallback when device_id missing, also abuse signal)
-                if device_id == "unknown-device":
-                    await check_ip_daily_cap(client_ip, effective_user)
+                # Note: device/IP daily caps are intentionally skipped for cached results.
+                # Those caps guard LLM compute costs; since there's no LLM call here, they
+                # must not block a new identity whose device accumulated usage under a
+                # different account (e.g., deleted registered account → same device is now
+                # anonymous).
 
                 # Atomically claim the slot (SET NX EX). Only the first of any
                 # concurrent same-user requests claims it and pays; others are free.
