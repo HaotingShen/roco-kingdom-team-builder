@@ -107,7 +107,7 @@ export default function Topbar() {
             {/* Quick Build */}
             <button
               onClick={onQuickBuildClick}
-              className="h-9 px-3 rounded border hover:bg-zinc-50 cursor-pointer"
+              className="h-9 px-3 rounded-lg border border-zinc-200 text-sm font-medium text-zinc-700 hover:bg-zinc-100 transition-colors"
               title={t("topbar.quickBuild")}
             >
               {quickBuild.isPending ? t("topbar.quickBuilding") : t("topbar.quickBuild")}
@@ -119,7 +119,7 @@ export default function Topbar() {
             {/* Reset */}
             <button
               onClick={onResetClick}
-              className="h-9 px-3 rounded border hover:bg-zinc-50 cursor-pointer"
+              className="h-9 px-3 rounded-lg border border-zinc-200 text-sm font-medium text-zinc-700 hover:bg-zinc-100 transition-colors"
               title={t("topbar.reset")}
             >
               {t("topbar.reset") ?? "Reset"}
@@ -129,7 +129,7 @@ export default function Topbar() {
 
         <button
           onClick={() => setLang(lang === "en" ? "zh" : "en")}
-          className="h-9 px-3 rounded border hover:bg-zinc-50 cursor-pointer"
+          className="h-9 px-3 rounded-lg border border-zinc-200 text-sm font-medium text-zinc-700 hover:bg-zinc-100 transition-colors"
           title={t("topbar.toggleLanguage")}
         >
           {lang === "en" ? t("topbar.lang_en_zh") : t("topbar.lang_zh_en")}
@@ -139,7 +139,7 @@ export default function Topbar() {
         {user?.is_admin && (
           <Link
             to="/admin"
-            className="h-9 px-3 rounded border border-purple-300 bg-purple-50 text-purple-700 hover:bg-purple-100 flex items-center cursor-pointer"
+            className="h-9 px-3 rounded-lg border border-purple-200 bg-purple-50 text-sm font-medium text-purple-700 hover:bg-purple-100 flex items-center transition-colors"
             title={t("topbar.admin")}
           >
             {t("topbar.admin") ?? "Admin"}
