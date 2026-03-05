@@ -6,7 +6,7 @@ import CustomSelect from "@/components/CustomSelect";
 import AnalysisResults from "@/components/AnalysisResults";
 import SaveTeamModal from "@/components/SaveTeamModal";
 import type { MagicItemOut, UserMonsterCreate, TeamCreate, TeamAnalysisOut, TeamOut, TeamUpdate, FullSavedAnalysisOut } from "@/types";
-import { useMemo, useState, useEffect, useRef } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import MonsterInspector from "./MonsterInspector";
 import { useI18n, pickName } from "@/i18n";
@@ -78,19 +78,6 @@ function validateTeamName(name: string | undefined): string | null {
     return "builder.v_teamNameTooLong";
   }
   return null;
-}
-
-// Fingerprint of team composition (excludes name — name doesn't affect analysis content).
-// Used to determine if the builder state still matches what was last analyzed.
-function buildAnalysisFingerprint(magic_item_id: number | null, slots: (UserMonsterCreate & { id?: number })[]): string {
-  return JSON.stringify({
-    magic_item_id,
-    slots: slots.map(s => ({
-      monster_id: s.monster_id, personality_id: s.personality_id, legacy_type_id: s.legacy_type_id,
-      move1_id: s.move1_id, move2_id: s.move2_id, move3_id: s.move3_id, move4_id: s.move4_id,
-      talent: s.talent,
-    })),
-  });
 }
 
 // quick helper for clearing a single slot
@@ -261,7 +248,6 @@ function analysesMatch(
 export default function BuilderPage() {
   const {
     teamId,
-    isDirty,
     name,
     setName,
     slots,
@@ -276,7 +262,6 @@ export default function BuilderPage() {
     setAnalysis,
     isAnalyzing,
     setIsAnalyzing,
-    clearDirty,
   } = useBuilderStore();
 
   const [activeIdx, setActiveIdx] = useState<number>(0);
@@ -284,7 +269,6 @@ export default function BuilderPage() {
   const [serverOk, setServerOk] = useState<string | null>(null);
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
   const [showSaveModal, setShowSaveModal] = useState(false);
-  const [showUpdateConfirm, setShowUpdateConfirm] = useState(false);
   const [attemptedAction, setAttemptedAction] = useState<'analyze' | 'save' | null>(null);
   const showFieldErrors = attemptedAction !== null;
   const { lang, t } = useI18n();
@@ -342,17 +326,11 @@ export default function BuilderPage() {
   });
   const qc = useQueryClient();
 
-  // Tracks which saved team the current analysis was run for (captured at Analyze click time).
-  // null means the analysis doesn't correspond to any saved team (built from scratch or dirty at analysis time).
-  const [analysisTeamId, setAnalysisTeamId] = useState<number | null>(null);
-  const analysisTeamIdRef = useRef<number | null>(null);
-  const analysisPayloadRef = useRef<string | null>(null);
-
-  // Query for saved analysis scoped to the team this analysis was run for
+  // Query for saved analysis (only when teamId exists)
   const savedAnalysisQuery = useQuery<FullSavedAnalysisOut>({
-    queryKey: ["savedAnalysis", analysisTeamId, lang],
-    queryFn: () => endpoints.getSavedAnalysis(analysisTeamId!, lang).then(r => r.data),
-    enabled: !!analysisTeamId && Number.isFinite(analysisTeamId),
+    queryKey: ["savedAnalysis", teamId, lang],
+    queryFn: () => endpoints.getSavedAnalysis(teamId!, lang).then(r => r.data),
+    enabled: !!teamId && Number.isFinite(teamId),
     retry: false, // 404 is expected when no saved analysis exists
     staleTime: 30000, // Cache for 30 seconds
   });
@@ -398,7 +376,6 @@ export default function BuilderPage() {
     onSuccess: (data) => {
       setServerErr(null);
       setAnalysis(data);
-      setAnalysisTeamId(analysisTeamIdRef.current);
       setIsAnalyzing(false);
       qc.invalidateQueries({ queryKey: QUERY_KEYS.QUOTA });
       // Scroll to analysis section, with longer delay if navigating back from another page
@@ -421,9 +398,9 @@ export default function BuilderPage() {
   /* ---------- save analysis mutation ---------- */
   const saveAnalysis = useMutation({
     mutationFn: async () => {
-      if (!analysisTeamId || !analysis) throw new Error("No team or analysis");
+      if (!teamId || !analysis) throw new Error("No team or analysis");
       return endpoints.saveAnalysis({
-        team_id: analysisTeamId,
+        team_id: teamId,
         language: lang,
         analysis_data: analysis,
         is_from_cache: false,
@@ -432,7 +409,7 @@ export default function BuilderPage() {
     onSuccess: () => {
       setServerOk(t("builder.analysisSaved"));
       // Invalidate to refresh "Already Saved" state
-      qc.invalidateQueries({ queryKey: ["savedAnalysis", analysisTeamId, lang] });
+      qc.invalidateQueries({ queryKey: ["savedAnalysis", teamId, lang] });
     },
     onError: (err: any) => {
       setServerErr(err?.response?.data?.detail || t("builder.failedToSave"));
@@ -452,12 +429,6 @@ export default function BuilderPage() {
     // Clear previous analysis results immediately when user clicks analyze
     setAttemptedAction(null);
     setAnalysis(null);
-    setAnalysisTeamId(null);
-    // Capture which saved team this analysis corresponds to at click time.
-    // isDirty=true means builder diverged from the saved team → analysis won't belong to any saved team.
-    analysisTeamIdRef.current = isDirty ? null : (teamId as number | null);
-    // Capture composition fingerprint so create/update can later attribute the analysis to the saved team.
-    analysisPayloadRef.current = buildAnalysisFingerprint(magic_item_id, slots);
     setServerErr(null);
     analyze.mutate(toPayload());
   };
@@ -480,13 +451,7 @@ export default function BuilderPage() {
     onSuccess: (team) => {
       setServerErr(null);
       setServerOk(t("builder.savedMsg"));           // persistent until closed
-      useBuilderStore.setState({ teamId: team.id, isDirty: false }); // keep id for future updates
-      // If there's a current analysis and it was run on the same composition now saved, attribute it to this team.
-      const { analysis: currentAnalysis, magic_item_id: mi, slots: sl } = useBuilderStore.getState();
-      if (currentAnalysis && analysisPayloadRef.current === buildAnalysisFingerprint(mi, sl)) {
-        setAnalysisTeamId(team.id);
-        analysisTeamIdRef.current = team.id;
-      }
+      useBuilderStore.setState({ teamId: team.id }); // keep id for future updates
       qc.invalidateQueries({ queryKey: QUERY_KEYS.TEAMS });
       qc.invalidateQueries({ queryKey: QUERY_KEYS.TEAM_DETAIL(team.id) });
       qc.invalidateQueries({ queryKey: QUERY_KEYS.QUOTA });
@@ -503,13 +468,6 @@ export default function BuilderPage() {
     onSuccess: (_updatedTeam, variables) => {
       setServerErr(null);
       setServerOk(t("builder.updatedMsg"));         // persistent until closed
-      clearDirty();
-      // If there's a current analysis and it was run on the same composition now saved, attribute it to this team.
-      const { analysis: currentAnalysis, magic_item_id: mi, slots: sl } = useBuilderStore.getState();
-      if (currentAnalysis && analysisPayloadRef.current === buildAnalysisFingerprint(mi, sl)) {
-        setAnalysisTeamId(variables.id);
-        analysisTeamIdRef.current = variables.id;
-      }
       qc.invalidateQueries({ queryKey: QUERY_KEYS.TEAMS });
       qc.invalidateQueries({ queryKey: QUERY_KEYS.TEAM_DETAIL(variables.id) });
     },
@@ -526,7 +484,7 @@ export default function BuilderPage() {
     onSuccess: (team) => {
       setServerErr(null);
       setServerOk(t("builder.saveAsFeaturedSuccess") ?? "Saved as featured team!");
-      useBuilderStore.setState({ teamId: team.id, isDirty: false, isFeaturedTeam: true });
+      useBuilderStore.setState({ teamId: team.id, isFeaturedTeam: true });
     },
   });
 
@@ -540,7 +498,6 @@ export default function BuilderPage() {
     onSuccess: () => {
       setServerErr(null);
       setServerOk(t("builder.updateFeaturedSuccess") ?? "Featured team updated!");
-      clearDirty();
     },
   });
 
@@ -636,19 +593,15 @@ export default function BuilderPage() {
         return;
       }
 
-      // Show confirmation dialog before overwriting
-      setShowUpdateConfirm(true);
+      const body = toUpdatePayload();
+      if (!body) {
+        setServerErr(t("builder.incompleteTeamMsg"));
+        return;
+      }
+      updateTeam.mutate({ id: teamId, body });
     } catch (e: any) {
       setServerErr(e?.message || t("builder.incompleteTeamMsg"));
     }
-  };
-
-  const confirmUpdate = () => {
-    if (!teamId) return;
-    const body = toUpdatePayload();
-    if (!body) { setServerErr(t("builder.incompleteTeamMsg")); return; }
-    setShowUpdateConfirm(false);
-    updateTeam.mutate({ id: teamId, body });
   };
 
   // Check if user has any work in progress
@@ -881,7 +834,6 @@ export default function BuilderPage() {
               <button
                 onClick={onUpdateExisting}
                 disabled={updateTeam.isPending}
-                data-testid="update-team-btn"
                 className={`
                   h-10 px-5 rounded-lg font-medium text-sm
                   transition-all duration-200
@@ -1046,7 +998,7 @@ export default function BuilderPage() {
         {analysis && (
           <AnalysisResults
             analysis={analysis}
-            teamId={analysisTeamId}
+            teamId={teamId}
             onSaveAnalysis={() => saveAnalysis.mutate()}
             isSaving={saveAnalysis.isPending}
             isAlreadySaved={isAnalysisAlreadySaved}
@@ -1082,35 +1034,6 @@ export default function BuilderPage() {
         }, 100);
       }}
     />
-
-    {/* Update confirmation dialog */}
-    {showUpdateConfirm && (
-      <div className="fixed inset-0 z-50 flex items-center justify-center">
-        <div className="absolute inset-0 bg-black/50" onClick={() => setShowUpdateConfirm(false)} />
-        <div className="relative bg-white rounded-lg shadow-xl w-full max-w-sm mx-4 p-6">
-          <h2 className="text-lg font-semibold text-zinc-900 mb-2">
-            {t("builder.updateConfirmTitle")}
-          </h2>
-          <p className="text-sm text-zinc-600 mb-6">
-            {t("builder.updateConfirmMsg", { name: name?.trim() || "" })}
-          </p>
-          <div className="flex gap-3 justify-end">
-            <button
-              onClick={() => setShowUpdateConfirm(false)}
-              className="px-4 py-2 rounded-lg text-sm font-medium bg-zinc-100 text-zinc-700 hover:bg-zinc-200 transition-colors"
-            >
-              {t("builder.updateConfirmCancel")}
-            </button>
-            <button
-              onClick={confirmUpdate}
-              className="px-4 py-2 rounded-lg text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 transition-colors"
-            >
-              {t("builder.updateConfirmYes")}
-            </button>
-          </div>
-        </div>
-      </div>
-    )}
   </DndContext>
   );
 }

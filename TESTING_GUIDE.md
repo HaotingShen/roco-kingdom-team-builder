@@ -38,7 +38,7 @@ TRUNCATE deleted_emails;
 
 # Redis: clear all quota/rate/cache keys (preserves JWT blacklist)
 EVAL "local k=redis.call('keys','tier:*'); if #k>0 then return redis.call('del',unpack(k)) else return 0 end" 0
-EVAL "local k=redis.call('keys','SLOWAPI:*'); if #k>0 then return redis.call('del',unpack(k)) else return 0 end" 0
+EVAL "local k=redis.call('keys','LIMITS:LIMITER/*'); if #k>0 then return redis.call('del',unpack(k)) else return 0 end" 0
 EVAL "local k=redis.call('keys','retry_grace:*'); if #k>0 then return redis.call('del',unpack(k)) else return 0 end" 0
 EVAL "local k=redis.call('keys','llm_cache:*'); if #k>0 then return redis.call('del',unpack(k)) else return 0 end" 0
 EVAL "local k=redis.call('keys','user_analyzed:*'); if #k>0 then return redis.call('del',unpack(k)) else return 0 end" 0

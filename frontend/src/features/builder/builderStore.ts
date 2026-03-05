@@ -21,7 +21,6 @@ function mergeWithoutUndef<T extends object>(base: T, patch: PartialNoUndef<T>):
 
 type BuilderState = {
   teamId: ID | null;
-  isDirty: boolean;          // true when builder state diverged from saved team (teamId set but unsaved changes exist)
   name: string;
   magic_item_id: ID | null;
   slots: (UserMonsterCreate & { id?: ID })[]; // length 6
@@ -39,7 +38,6 @@ type BuilderState = {
 
   loadFromTeam: (team: TeamOut) => void;          // pull saved team into builder
   clearTeamId: () => void;
-  clearDirty: () => void;                         // call after successful save/update
 
   analysis: TeamAnalysisOut | null;
   setAnalysis: (a: TeamAnalysisOut | null) => void;
@@ -54,7 +52,6 @@ export const useBuilderStore = create<BuilderState>()(
   persist(
     (set, get) => ({
       teamId: null,
-      isDirty: false,
       name: "",
       magic_item_id: null,
       slots: Array.from({ length: 6 }, emptySlot),
@@ -62,13 +59,13 @@ export const useBuilderStore = create<BuilderState>()(
       isFeaturedTeam: false,
       setIsFeaturedTeam: (v) => set({ isFeaturedTeam: v }),
 
-      setName: (name) => set((s) => ({ name, isDirty: s.teamId != null ? true : s.isDirty })),
-      setMagicItem: (magic_item_id) => set((s) => ({ magic_item_id, isDirty: s.teamId != null ? true : s.isDirty })),
+      setName: (name) => set({ name }),
+      setMagicItem: (magic_item_id) => set({ magic_item_id }),
       setSlot: (idx, patch) => set((s) => {
         const slots = s.slots.slice();
         const current = slots[idx] ?? emptySlot();
         slots[idx] = mergeWithoutUndef<typeof current>(current, patch);
-        return { slots, isDirty: s.teamId != null ? true : s.isDirty };
+        return { slots };
       }),
       moveSlot: (fromIdx, toIdx) => set((s) => {
         if (fromIdx === toIdx || fromIdx < 0 || fromIdx >= 6 || toIdx < 0 || toIdx >= 6) return s;
@@ -77,7 +74,7 @@ export const useBuilderStore = create<BuilderState>()(
         const temp = slots[fromIdx]!;
         slots[fromIdx] = slots[toIdx]!;
         slots[toIdx] = temp;
-        return { slots, isDirty: s.teamId != null ? true : s.isDirty };
+        return { slots };
       }),
 
       toPayload: () => {
@@ -129,11 +126,10 @@ export const useBuilderStore = create<BuilderState>()(
           }
         }));
         while (slots.length < 6) slots.push(emptySlot());
-        return { teamId: team.id, isDirty: false, name: team.name ?? "My Team", magic_item_id: team.magic_item?.id ?? null, slots, analysis: null };
+        return { teamId: team.id, name: team.name ?? "My Team", magic_item_id: team.magic_item?.id ?? null, slots, analysis: null };
       }),
 
-      clearTeamId: () => set({ teamId: null, isDirty: false, isFeaturedTeam: false }),
-      clearDirty: () => set({ isDirty: false }),
+      clearTeamId: () => set({ teamId: null, isFeaturedTeam: false }),
 
       analysis: null,
       setAnalysis: (a) => set({ analysis: a }),
@@ -143,7 +139,6 @@ export const useBuilderStore = create<BuilderState>()(
 
       reset: () => set({
         teamId: null,
-        isDirty: false,
         isFeaturedTeam: false,
         name: "",
         magic_item_id: null,
