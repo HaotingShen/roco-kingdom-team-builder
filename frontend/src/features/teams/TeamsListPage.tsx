@@ -252,9 +252,11 @@ export default function TeamsListPage() {
             </div>
           </div>
         ))}
-        {!teams.data?.length && (
+        {teams.isLoading ? (
+          <div className="text-zinc-500">{t("common.loading")}</div>
+        ) : !teams.data?.length ? (
           <div className="text-zinc-500">{t("teams.noTeams")}</div>
-        )}
+        ) : null}
       </div>
 
       {/* Rename Modal */}

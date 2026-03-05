@@ -249,7 +249,9 @@ function MonstersTab() {
       </div>
 
       {/* Virtualized grid (window-based) */}
-      {(!monsters.data || !displayList.length) ? (
+      {monsters.isLoading ? (
+        <div className="text-zinc-500">{t("common.loading")}</div>
+      ) : !displayList.length ? (
         <div className="text-zinc-500">{t("dex.noResults")}</div>
       ) : (
         <div style={{ height: rowVirt.getTotalSize() + 90, position: "relative" }}>
@@ -549,7 +551,9 @@ function MovesTab() {
       </div>
 
       {/* Virtualized grid (window-based) with dynamic-measured rows + controlled inter-row gap */}
-      {(!moves.data || !filtered.length) ? (
+      {moves.isLoading ? (
+        <div className="text-zinc-500">{t("common.loading")}</div>
+      ) : !filtered.length ? (
         <div className="text-zinc-500">{t("dex.noResults")}</div>
       ) : (
         <div /* wrapper keeps the total scroll height */ style={{ height: rowVirt.getTotalSize() + 90, position: "relative" }}>
@@ -738,7 +742,8 @@ function MagicItemsTab() {
           </div>
         );
       })}
-      {!items.data?.length && <div className="text-zinc-500">{t("dex.noResults")}</div>}
+      {items.isLoading && <div className="text-zinc-500">{t("common.loading")}</div>}
+      {!items.isLoading && !items.data?.length && <div className="text-zinc-500">{t("dex.noResults")}</div>}
     </div>
   );
 }
@@ -773,7 +778,8 @@ function GameTermsTab() {
           </div>
         );
       })}
-      {!terms.data?.length && <div className="text-zinc-500">{t("dex.noResults")}</div>}
+      {terms.isLoading && <div className="text-zinc-500">{t("common.loading")}</div>}
+      {!terms.isLoading && !terms.data?.length && <div className="text-zinc-500">{t("dex.noResults")}</div>}
     </div>
   );
 }
