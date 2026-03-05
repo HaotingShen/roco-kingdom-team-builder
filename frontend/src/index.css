@@ -10,7 +10,7 @@
   padding: 0;
 }
 
-.ml-sidebar {
+@utility ml-sidebar {
   margin-left: var(--sidebar-w);
 }
 

@@ -213,8 +213,8 @@ export default function UserMenu() {
           )}
         </div>
 
-        {/* Username */}
-        <span className="text-sm text-zinc-700 max-w-[100px] truncate">
+        {/* Username — hidden on mobile to keep topbar compact */}
+        <span className="hidden sm:inline text-sm text-zinc-700 max-w-[100px] truncate">
           {displayName}
         </span>
 
