@@ -80,6 +80,19 @@ function validateTeamName(name: string | undefined): string | null {
   return null;
 }
 
+// Fingerprint of team composition (excludes name — name doesn't affect analysis content).
+// Used to determine if the builder state still matches what was last analyzed.
+function buildAnalysisFingerprint(magic_item_id: number | null, slots: (UserMonsterCreate & { id?: number })[]): string {
+  return JSON.stringify({
+    magic_item_id,
+    slots: slots.map(s => ({
+      monster_id: s.monster_id, personality_id: s.personality_id, legacy_type_id: s.legacy_type_id,
+      move1_id: s.move1_id, move2_id: s.move2_id, move3_id: s.move3_id, move4_id: s.move4_id,
+      talent: s.talent,
+    })),
+  });
+}
+
 // quick helper for clearing a single slot
 const zeroTalent = { hp_boost:0, phy_atk_boost:0, mag_atk_boost:0, phy_def_boost:0, mag_def_boost:0, spd_boost:0 } as const;
 
@@ -333,6 +346,7 @@ export default function BuilderPage() {
   // null means the analysis doesn't correspond to any saved team (built from scratch or dirty at analysis time).
   const [analysisTeamId, setAnalysisTeamId] = useState<number | null>(null);
   const analysisTeamIdRef = useRef<number | null>(null);
+  const analysisPayloadRef = useRef<string | null>(null);
 
   // Query for saved analysis scoped to the team this analysis was run for
   const savedAnalysisQuery = useQuery<FullSavedAnalysisOut>({
@@ -442,6 +456,8 @@ export default function BuilderPage() {
     // Capture which saved team this analysis corresponds to at click time.
     // isDirty=true means builder diverged from the saved team → analysis won't belong to any saved team.
     analysisTeamIdRef.current = isDirty ? null : (teamId as number | null);
+    // Capture composition fingerprint so create/update can later attribute the analysis to the saved team.
+    analysisPayloadRef.current = buildAnalysisFingerprint(magic_item_id, slots);
     setServerErr(null);
     analyze.mutate(toPayload());
   };
@@ -465,6 +481,12 @@ export default function BuilderPage() {
       setServerErr(null);
       setServerOk(t("builder.savedMsg"));           // persistent until closed
       useBuilderStore.setState({ teamId: team.id, isDirty: false }); // keep id for future updates
+      // If there's a current analysis and it was run on the same composition now saved, attribute it to this team.
+      const { analysis: currentAnalysis, magic_item_id: mi, slots: sl } = useBuilderStore.getState();
+      if (currentAnalysis && analysisPayloadRef.current === buildAnalysisFingerprint(mi, sl)) {
+        setAnalysisTeamId(team.id);
+        analysisTeamIdRef.current = team.id;
+      }
       qc.invalidateQueries({ queryKey: QUERY_KEYS.TEAMS });
       qc.invalidateQueries({ queryKey: QUERY_KEYS.TEAM_DETAIL(team.id) });
       qc.invalidateQueries({ queryKey: QUERY_KEYS.QUOTA });
@@ -482,6 +504,12 @@ export default function BuilderPage() {
       setServerErr(null);
       setServerOk(t("builder.updatedMsg"));         // persistent until closed
       clearDirty();
+      // If there's a current analysis and it was run on the same composition now saved, attribute it to this team.
+      const { analysis: currentAnalysis, magic_item_id: mi, slots: sl } = useBuilderStore.getState();
+      if (currentAnalysis && analysisPayloadRef.current === buildAnalysisFingerprint(mi, sl)) {
+        setAnalysisTeamId(variables.id);
+        analysisTeamIdRef.current = variables.id;
+      }
       qc.invalidateQueries({ queryKey: QUERY_KEYS.TEAMS });
       qc.invalidateQueries({ queryKey: QUERY_KEYS.TEAM_DETAIL(variables.id) });
     },
