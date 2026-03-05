@@ -6,7 +6,7 @@ import CustomSelect from "@/components/CustomSelect";
 import AnalysisResults from "@/components/AnalysisResults";
 import SaveTeamModal from "@/components/SaveTeamModal";
 import type { MagicItemOut, UserMonsterCreate, TeamCreate, TeamAnalysisOut, TeamOut, TeamUpdate, FullSavedAnalysisOut } from "@/types";
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import MonsterInspector from "./MonsterInspector";
 import { useI18n, pickName } from "@/i18n";
@@ -329,11 +329,16 @@ export default function BuilderPage() {
   });
   const qc = useQueryClient();
 
-  // Query for saved analysis (only when teamId exists)
+  // Tracks which saved team the current analysis was run for (captured at Analyze click time).
+  // null means the analysis doesn't correspond to any saved team (built from scratch or dirty at analysis time).
+  const [analysisTeamId, setAnalysisTeamId] = useState<number | null>(null);
+  const analysisTeamIdRef = useRef<number | null>(null);
+
+  // Query for saved analysis scoped to the team this analysis was run for
   const savedAnalysisQuery = useQuery<FullSavedAnalysisOut>({
-    queryKey: ["savedAnalysis", teamId, lang],
-    queryFn: () => endpoints.getSavedAnalysis(teamId!, lang).then(r => r.data),
-    enabled: !!teamId && Number.isFinite(teamId),
+    queryKey: ["savedAnalysis", analysisTeamId, lang],
+    queryFn: () => endpoints.getSavedAnalysis(analysisTeamId!, lang).then(r => r.data),
+    enabled: !!analysisTeamId && Number.isFinite(analysisTeamId),
     retry: false, // 404 is expected when no saved analysis exists
     staleTime: 30000, // Cache for 30 seconds
   });
@@ -379,6 +384,7 @@ export default function BuilderPage() {
     onSuccess: (data) => {
       setServerErr(null);
       setAnalysis(data);
+      setAnalysisTeamId(analysisTeamIdRef.current);
       setIsAnalyzing(false);
       qc.invalidateQueries({ queryKey: QUERY_KEYS.QUOTA });
       // Scroll to analysis section, with longer delay if navigating back from another page
@@ -401,9 +407,9 @@ export default function BuilderPage() {
   /* ---------- save analysis mutation ---------- */
   const saveAnalysis = useMutation({
     mutationFn: async () => {
-      if (!teamId || !analysis) throw new Error("No team or analysis");
+      if (!analysisTeamId || !analysis) throw new Error("No team or analysis");
       return endpoints.saveAnalysis({
-        team_id: teamId,
+        team_id: analysisTeamId,
         language: lang,
         analysis_data: analysis,
         is_from_cache: false,
@@ -412,7 +418,7 @@ export default function BuilderPage() {
     onSuccess: () => {
       setServerOk(t("builder.analysisSaved"));
       // Invalidate to refresh "Already Saved" state
-      qc.invalidateQueries({ queryKey: ["savedAnalysis", teamId, lang] });
+      qc.invalidateQueries({ queryKey: ["savedAnalysis", analysisTeamId, lang] });
     },
     onError: (err: any) => {
       setServerErr(err?.response?.data?.detail || t("builder.failedToSave"));
@@ -432,6 +438,10 @@ export default function BuilderPage() {
     // Clear previous analysis results immediately when user clicks analyze
     setAttemptedAction(null);
     setAnalysis(null);
+    setAnalysisTeamId(null);
+    // Capture which saved team this analysis corresponds to at click time.
+    // isDirty=true means builder diverged from the saved team → analysis won't belong to any saved team.
+    analysisTeamIdRef.current = isDirty ? null : (teamId as number | null);
     setServerErr(null);
     analyze.mutate(toPayload());
   };
@@ -1008,8 +1018,7 @@ export default function BuilderPage() {
         {analysis && (
           <AnalysisResults
             analysis={analysis}
-            teamId={teamId}
-            isDirty={isDirty}
+            teamId={analysisTeamId}
             onSaveAnalysis={() => saveAnalysis.mutate()}
             isSaving={saveAnalysis.isPending}
             isAlreadySaved={isAnalysisAlreadySaved}
