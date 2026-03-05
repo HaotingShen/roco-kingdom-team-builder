@@ -49,9 +49,10 @@ export default function FeedbackPage() {
     }
   }, [user]);
 
-  // Freeze the displayed count during IME composition so it doesn't jump with pinyin keystrokes
-  const charCount = isComposing ? preCompositionLength.current : message.length;
-  const isMessageValid = message.length >= 10 && message.length <= 2000;
+  // Use committed length during IME composition — excludes intermediate pinyin keystrokes
+  const committedLength = isComposing ? preCompositionLength.current : message.length;
+  const charCount = committedLength;
+  const isMessageValid = committedLength >= 10 && committedLength <= 2000;
   const canSubmit = isMessageValid && status !== "pending";
 
   const handleSubmit = async (e: React.FormEvent) => {
