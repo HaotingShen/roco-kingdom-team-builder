@@ -15,9 +15,13 @@ import { typeIconUrl, magicItemImageUrl, monsterImageFallbackChain } from "@/lib
 function useColumns(kind: "monsters" | "moves") {
   const [w, setW] = useState<number>(() => (typeof window !== "undefined" ? window.innerWidth : 1024));
   useEffect(() => {
-    const onR = () => setW(window.innerWidth);
+    let timer: ReturnType<typeof setTimeout>;
+    const onR = () => {
+      clearTimeout(timer);
+      timer = setTimeout(() => setW(window.innerWidth), 150);
+    };
     window.addEventListener("resize", onR);
-    return () => window.removeEventListener("resize", onR);
+    return () => { window.removeEventListener("resize", onR); clearTimeout(timer); };
   }, []);
   if (kind === "monsters") {
     // matches: 1 / 2(sm) / 3(lg) / 5(xl)
@@ -174,12 +178,13 @@ function MonstersTab() {
     count: rowCount,
     estimateSize: () => rowEstimate,
     overscan: 6,
+    measureElement: (el: HTMLElement) => el.getBoundingClientRect().height,
   });
-  const vItems = rowVirt.getVirtualItems();
-  const fromRow = vItems[0]?.index ?? 0;
-  const toRow = vItems[vItems.length - 1]?.index ?? -1;
-  const startIdx = fromRow * cols;
-  const endIdx = Math.min(displayList.length, (toRow + 1) * cols);
+  const vis = rowVirt.getVirtualItems();
+  const firstVis = vis[0];
+  const lastVis = vis.length ? vis[vis.length - 1] : undefined;
+  const topPad = firstVis?.start ?? 0;
+  const bottomPad = lastVis ? Math.max(0, rowVirt.getTotalSize() - lastVis.end) : 0;
 
   // keep URL in sync
   useEffect(() => {
@@ -255,63 +260,75 @@ function MonstersTab() {
         <div className="text-zinc-500">{t("dex.noResults")}</div>
       ) : (
         <div style={{ height: rowVirt.getTotalSize() + 90, position: "relative" }}>
-          <div style={{ transform: `translateY(${vItems[0]?.start ?? 0}px)` }}>
-            <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-              {displayList.slice(startIdx, endIdx).map((m) => {
-                const titleName = pickName(m as any, lang) || m.name;
-                // Don't show form name for leader monsters in the card list
-                const formLabel = m.is_leader_form ? "" : pickFormName(m as any, lang);
-                const title = [titleName, formLabel ? `(${formLabel})` : ""].filter(Boolean).join(" ");
-                const fallbackChain = monsterImageFallbackChain(m, 180);
-                const src = fallbackChain[0] || "/monster-images/placeholder.png";
-
-                return (
-                  <Link
-                    key={m.id}
-                    to={`/dex/monsters/${m.id}?tab=monsters`}
-                    className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400"
-                  >
-                    <div className="text-sm font-semibold truncate text-zinc-800" title={title}>{title}</div>
-                    <div className="mt-3 flex items-center justify-center">
-                      <img
-                        src={src}
-                        alt=""
-                        width={180}
-                        height={180}
-                        className="h-[120px] w-[120px] object-contain drop-shadow-sm"
-                        loading="lazy"
-                        data-fallback-step="0"
-                        onError={(e) => {
-                          const img = e.currentTarget as HTMLImageElement;
-                          const step = Number(img.dataset.fallbackStep || "0");
-                          const next = step + 1;
-                          if (next < fallbackChain.length) {
-                            img.dataset.fallbackStep = String(next);
-                            img.src = fallbackChain[next]!;
-                          } else if (img.src !== "/monster-images/placeholder.png") {
-                            img.src = "/monster-images/placeholder.png";
-                          }
-                        }}
-                      />
-                    </div>
-                    <div className="mt-3 flex items-center gap-1 flex-wrap">
-                      {[m.main_type, m.sub_type].filter(Boolean).map((tp) => (
-                        <Pill key={(tp as TypeOut).id}>
-                          {typeIconUrl((tp as TypeOut).name, 30) ? (
-                            <img src={typeIconUrl((tp as TypeOut).name, 30)!} alt="" width={20} height={20} />
-                          ) : null}
-                          {pickName(tp as any, lang)}
-                        </Pill>
-                      ))}
-                      {m.is_leader_form ? <Pill tone="amber">{t("labels.leader")}</Pill> : null}
-                    </div>
-                  </Link>
-                );
-              })}
-            </div>
-            {/* Bottom spacer for breathing room */}
-            <div style={{ height: 24 }} />
-          </div>
+          <div style={{ height: topPad }} />
+          {vis.map((vi) => {
+            const rowIndex = vi.index;
+            const start = rowIndex * cols;
+            const end = Math.min(displayList.length, start + cols);
+            const rowMonsters = displayList.slice(start, end);
+            return (
+              <div
+                key={(vi as any).key ?? rowIndex}
+                ref={rowVirt.measureElement}
+                data-index={vi.index}
+                className="mb-3"
+              >
+                <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+                  {rowMonsters.map((m) => {
+                    const titleName = pickName(m as any, lang) || m.name;
+                    const formLabel = m.is_leader_form ? "" : pickFormName(m as any, lang);
+                    const title = [titleName, formLabel ? `(${formLabel})` : ""].filter(Boolean).join(" ");
+                    const fallbackChain = monsterImageFallbackChain(m, 180);
+                    const src = fallbackChain[0] || "/monster-images/placeholder.png";
+                    return (
+                      <Link
+                        key={m.id}
+                        to={`/dex/monsters/${m.id}?tab=monsters`}
+                        className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400"
+                      >
+                        <div className="text-sm font-semibold truncate text-zinc-800" title={title}>{title}</div>
+                        <div className="mt-3 flex items-center justify-center">
+                          <img
+                            src={src}
+                            alt=""
+                            width={180}
+                            height={180}
+                            className="h-[120px] w-[120px] object-contain drop-shadow-sm"
+                            loading="lazy"
+                            data-fallback-step="0"
+                            onError={(e) => {
+                              const img = e.currentTarget as HTMLImageElement;
+                              const step = Number(img.dataset.fallbackStep || "0");
+                              const next = step + 1;
+                              if (next < fallbackChain.length) {
+                                img.dataset.fallbackStep = String(next);
+                                img.src = fallbackChain[next]!;
+                              } else if (img.src !== "/monster-images/placeholder.png") {
+                                img.src = "/monster-images/placeholder.png";
+                              }
+                            }}
+                          />
+                        </div>
+                        <div className="mt-3 flex items-center gap-1 flex-wrap">
+                          {[m.main_type, m.sub_type].filter(Boolean).map((tp) => (
+                            <Pill key={(tp as TypeOut).id}>
+                              {typeIconUrl((tp as TypeOut).name, 30) ? (
+                                <img src={typeIconUrl((tp as TypeOut).name, 30)!} alt="" width={20} height={20} />
+                              ) : null}
+                              {pickName(tp as any, lang)}
+                            </Pill>
+                          ))}
+                          {m.is_leader_form ? <Pill tone="amber">{t("labels.leader")}</Pill> : null}
+                        </div>
+                      </Link>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+          <div style={{ height: bottomPad }} />
+          <div style={{ height: 24 }} />
         </div>
       )}
     </div>
