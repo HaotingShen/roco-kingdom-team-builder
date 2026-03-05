@@ -5771,9 +5771,11 @@ async def submit_feedback(
 
     ip = get_real_client_ip(request)
     if current_user:
-        user_info = f"User: {current_user.username} (id={current_user.id}, email={current_user.email})"
+        email_display = current_user.email or "—"
+        user_type = "Guest" if current_user.is_guest else "Registered"
+        user_info = f"{user_type}: {current_user.username} (id={current_user.id}, email={email_display})"
     else:
-        user_info = f"Anonymous (IP: {ip})"
+        user_info = "Anonymous"
 
     category_display = data.category.title()
     reply_line = f"<p><strong>Reply to:</strong> {data.reply_email}</p>" if data.reply_email else "<p><em>No reply email provided.</em></p>"
@@ -5785,6 +5787,7 @@ async def submit_feedback(
       <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 12px 0;" />
       <p><strong>Category:</strong> {category_display}</p>
       <p><strong>Submitted by:</strong> {user_info}</p>
+      <p><strong>IP:</strong> {ip}</p>
       {reply_line}
       <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 12px 0;" />
       <p><strong>Message:</strong></p>
@@ -5793,7 +5796,7 @@ async def submit_feedback(
       </div>
     </div>
     """
-    text_body = f"[RK Feedback] {category_display}\n\nFrom: {user_info}\nReply to: {data.reply_email or 'N/A'}\n\n{data.message}"
+    text_body = f"[RK Feedback] {category_display}\n\nFrom: {user_info}\nIP: {ip}\nReply to: {data.reply_email or 'N/A'}\n\n{data.message}"
 
     for admin_email in ADMIN_EMAILS:
         await send_email(admin_email, subject, html_body, text_body)
