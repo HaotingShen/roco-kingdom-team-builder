@@ -38,7 +38,11 @@ def get_real_client_ip(request: Request) -> str:
         cf_viewer = request.headers.get("CloudFront-Viewer-Address")
         if cf_viewer:
             # Extract IP (remove port if present)
-            ip = cf_viewer.split(":")[0]
+            # IPv4: "1.2.3.4:port" → split on last ":" → "1.2.3.4"
+            # IPv6: "2600:xxxx::1:port" → split on last ":" → "2600:xxxx::1"
+            # IPv6 no port: "2600:xxxx::1" → rsplit gives ["2600:xxxx:", "1"], check if port is numeric
+            parts = cf_viewer.rsplit(":", 1)
+            ip = parts[0] if len(parts) == 2 and parts[1].isdigit() else cf_viewer
             logger.debug(f"Client IP from CloudFront-Viewer-Address: {ip}")
             return ip
 
