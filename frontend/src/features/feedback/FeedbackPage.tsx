@@ -39,7 +39,8 @@ export default function FeedbackPage() {
   const [replyEmail, setReplyEmail] = useState("");
   const [honeypot, setHoneypot] = useState("");
   const [status, setStatus] = useState<Status>("idle");
-  const isComposing = useRef(false);
+  const [isComposing, setIsComposing] = useState(false);
+  const preCompositionLength = useRef(0);
 
   // Pre-fill reply email for registered users
   useEffect(() => {
@@ -48,8 +49,9 @@ export default function FeedbackPage() {
     }
   }, [user]);
 
-  const charCount = message.length;
-  const isMessageValid = charCount >= 10 && charCount <= 2000;
+  // Freeze the displayed count during IME composition so it doesn't jump with pinyin keystrokes
+  const charCount = isComposing ? preCompositionLength.current : message.length;
+  const isMessageValid = message.length >= 10 && message.length <= 2000;
   const canSubmit = isMessageValid && status !== "pending";
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -146,14 +148,14 @@ export default function FeedbackPage() {
           <label className="text-sm font-medium text-zinc-700 block mb-1">
             {t("feedback.message")}
           </label>
-          <p className="text-xs text-zinc-400 mb-2">{t("feedback.messageHelper")}</p>
+          <p className="text-xs text-zinc-400 mb-2">{t(`feedback.messageHelper_${category}`)}</p>
           <div className="relative">
             <textarea
               value={message}
-              onChange={(e) => { if (!isComposing.current) setMessage(e.target.value); }}
-              onCompositionStart={() => { isComposing.current = true; }}
-              onCompositionEnd={(e) => { isComposing.current = false; setMessage((e.target as HTMLTextAreaElement).value); }}
-              placeholder={t("feedback.messagePlaceholder") ?? ""}
+              onChange={(e) => setMessage(e.target.value)}
+              onCompositionStart={() => { preCompositionLength.current = message.length; setIsComposing(true); }}
+              onCompositionEnd={() => setIsComposing(false)}
+              placeholder={t(`feedback.messagePlaceholder_${category}`) ?? ""}
               rows={6}
               maxLength={2000}
               className="w-full rounded-lg border-2 border-zinc-200 px-3 py-2.5 text-sm text-zinc-800 placeholder-zinc-400 focus:outline-none focus:border-blue-400 resize-none transition-colors"
