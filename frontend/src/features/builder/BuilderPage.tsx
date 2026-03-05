@@ -658,7 +658,7 @@ export default function BuilderPage() {
             </div>
 
             {/* grid */}
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
             {slots.map((slot, i) => {
               const errs = allErrors?.[i] ?? [];
               const hasMonster = !!slot.monster_id;
@@ -768,7 +768,7 @@ export default function BuilderPage() {
           </div>
 
           {/* bottom bar */}
-          <div className="flex flex-wrap items-center gap-3 bg-gradient-to-br from-white via-zinc-50 to-white border-2 border-zinc-200 rounded-lg shadow-md p-4">
+          <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-3 bg-gradient-to-br from-white via-zinc-50 to-white border-2 border-zinc-200 rounded-lg shadow-md p-4">
             {/* team name */}
             <div className="flex items-center gap-2">
               <label className="text-sm font-medium text-zinc-700">{t("builder.teamName") ?? "Team name"}</label>
@@ -776,14 +776,14 @@ export default function BuilderPage() {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder={t("builder.teamNamePlaceholder") ?? "My Team"}
-                className={`h-10 rounded-lg border-2 px-3 text-sm w-[160px] focus:outline-none focus:ring-2 focus:ring-zinc-400 focus:border-transparent transition-all shadow-sm ${showFieldErrors && !!nameError ? 'border-amber-400' : 'border-zinc-300'}`}
+                className={`h-10 rounded-lg border-2 px-3 text-sm w-full sm:w-[160px] focus:outline-none focus:ring-2 focus:ring-zinc-400 focus:border-transparent transition-all shadow-sm ${showFieldErrors && !!nameError ? 'border-amber-400' : 'border-zinc-300'}`}
               />
             </div>
 
             {/* magic item */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 w-full sm:w-auto">
               <div className="text-sm font-medium text-zinc-700">{t("builder.magicItem")}</div>
-              <div className={`rounded-lg transition-all ${showFieldErrors && !magic_item_id ? 'ring-2 ring-amber-400' : ''}`}>
+              <div className={`rounded-lg transition-all flex-1 sm:flex-none ${showFieldErrors && !magic_item_id ? 'ring-2 ring-amber-400' : ''}`}>
                 <CustomSelect
                   value={magic_item_id ?? null}
                   options={[
@@ -796,12 +796,12 @@ export default function BuilderPage() {
                   ]}
                   placeholder={t("common.select")}
                   onChange={(v) => setMagicItem(v ? v : null)}
-                  buttonClassName="min-w-[160px]"
+                  buttonClassName="w-full sm:min-w-[160px]"
                 />
               </div>
             </div>
 
-            <div className="flex-1" />
+            <div className="hidden sm:block flex-1" />
 
             {/* Action buttons */}
             <button

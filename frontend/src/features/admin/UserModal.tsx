@@ -139,7 +139,7 @@ export default function UserModal({ user, onClose }: UserModalProps) {
           </div>
 
           {/* Info Grid */}
-          <div className="grid grid-cols-2 gap-4 text-sm">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
             <InfoRow label={t("admin.userId") || "User ID"} value={user.id} />
             <InfoRow label={t("admin.username") || "Username"} value={displayName} />
             <InfoRow label={t("admin.email") || "Email"} value={user.email || "-"} />

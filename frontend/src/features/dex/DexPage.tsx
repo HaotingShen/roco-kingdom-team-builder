@@ -205,7 +205,7 @@ function MonstersTab() {
               value={q}
               onChange={(e) => setQ(e.target.value)}
               placeholder={t("dex.search")}
-              className="h-10 w-[220px] rounded-lg border border-zinc-300 pl-4 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-400 focus:border-transparent transition-all"
+              className="h-10 w-full sm:w-[220px] rounded-lg border border-zinc-300 pl-4 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-400 focus:border-transparent transition-all"
             />
             <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 text-lg">🔍</span>
           </div>
@@ -515,7 +515,7 @@ function MovesTab() {
               value={q}
               onChange={(e) => setQ(e.target.value)}
               placeholder={t("dex.search")}
-              className="h-10 w-[220px] rounded-lg border border-zinc-300 pl-4 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-400 focus:border-transparent transition-all"
+              className="h-10 w-full sm:w-[220px] rounded-lg border border-zinc-300 pl-4 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-400 focus:border-transparent transition-all"
             />
             <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 text-lg">🔍</span>
           </div>
@@ -640,6 +640,7 @@ function MovesTab() {
                         <div
                           className="
                             grid
+                            grid-cols-[80px_minmax(0,1fr)_40px_8px_50px_4px]
                             sm:grid-cols-[80px_minmax(0,1fr)_40px_12px_50px_4px]
                             md:grid-cols-[80px_minmax(0,1fr)_40px_20px_50px_8px]
                             lg:grid-cols-[80px_minmax(0,1fr)_40px_28px_50px_12px]

@@ -226,7 +226,7 @@ export default function UserMenu() {
 
       {/* Dropdown menu */}
       {isOpen && (
-        <div className="absolute right-0 mt-1 w-48 bg-white border border-zinc-200 rounded-lg shadow-lg py-1 z-50">
+        <div className="absolute right-0 mt-1 w-48 max-w-[calc(100vw-1rem)] bg-white border border-zinc-200 rounded-lg shadow-lg py-1 z-50">
           {isGuest ? (
             <>
               {/* Guest menu items */}

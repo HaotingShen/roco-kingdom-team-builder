@@ -43,7 +43,7 @@ export default function DonationModal({ isOpen, onClose }: Props) {
         </div>
 
         {/* QR Codes */}
-        <div className="px-6 pb-5 flex gap-4 justify-center">
+        <div className="px-6 pb-5 flex flex-col sm:flex-row gap-4 justify-center items-center">
           {/* WeChat Pay */}
           <div className="flex flex-col items-center gap-2">
             <div className="rounded-xl border-2 border-[#07C160] overflow-hidden shadow-sm">

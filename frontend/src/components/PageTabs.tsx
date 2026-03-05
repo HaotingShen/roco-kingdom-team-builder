@@ -26,12 +26,12 @@ export default function PageTabs({
 
   return (
     <div>
-      <div className="flex gap-2 border-b mb-3">
+      <div className="flex gap-2 border-b mb-3 overflow-x-auto">
         {tabs.map(t => (
           <button
             key={t.key}
             onClick={() => setActive(t.key)}
-            className={`px-3 py-2 text-sm border-b-2 -mb-px ${active === t.key ? "border-zinc-900" : "border-transparent text-zinc-500"}`}
+            className={`px-3 py-2 text-sm border-b-2 -mb-px whitespace-nowrap shrink-0 ${active === t.key ? "border-zinc-900" : "border-transparent text-zinc-500"}`}
           >
             {t.label}
           </button>

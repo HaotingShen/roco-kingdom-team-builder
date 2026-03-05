@@ -475,7 +475,7 @@ function TalentsSection({
   return (
     <div className="space-y-3 pt-2">
       <div className="text-sm font-semibold text-zinc-800">{t("builder.talents")}</div>
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
         {KEYS.map((k) => {
           const value = slot.talent?.[k] ?? 0;
           const opts = allowed.map((n) => ({ value: n, label: String(n) }));

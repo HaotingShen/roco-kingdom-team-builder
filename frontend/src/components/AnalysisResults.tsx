@@ -501,7 +501,7 @@ export default function AnalysisResults({
               _isEnhanced = false
             ) => {
               return (
-                <div className="grid md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   {/* Box 1: Effective Against */}
                   <div className="p-4 rounded-lg border-2 border-emerald-200 bg-gradient-to-br from-emerald-50/30 via-white to-emerald-50/20">
                     <div className="flex items-center gap-2 mb-3">

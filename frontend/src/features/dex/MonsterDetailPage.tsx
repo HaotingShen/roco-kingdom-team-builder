@@ -558,6 +558,7 @@ function MovesList({ list }: { list: any[] }) {
             <div
               className="
                 grid
+                grid-cols-[80px_minmax(0,1fr)_40px_8px_50px_4px]
                 sm:grid-cols-[80px_minmax(0,1fr)_40px_12px_50px_4px]
                 md:grid-cols-[80px_minmax(0,1fr)_40px_20px_50px_8px]
                 lg:grid-cols-[80px_minmax(0,1fr)_40px_28px_50px_12px]

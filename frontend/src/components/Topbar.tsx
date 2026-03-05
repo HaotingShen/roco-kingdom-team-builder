@@ -110,19 +110,19 @@ export default function Topbar() {
             {/* Quick Build */}
             <button
               onClick={onQuickBuildClick}
-              className="h-9 px-3 rounded-lg border-2 border-zinc-300 text-sm font-medium text-zinc-700 hover:bg-zinc-100 transition-colors cursor-pointer"
+              className="hidden sm:inline-flex h-9 px-3 rounded-lg border-2 border-zinc-300 text-sm font-medium text-zinc-700 hover:bg-zinc-100 transition-colors cursor-pointer"
               title={t("topbar.quickBuild")}
             >
               {quickBuild.isPending ? t("topbar.quickBuilding") : t("topbar.quickBuild")}
             </button>
             {quickBuildMsg && (
-              <span className="text-xs text-zinc-500 max-w-[120px] truncate">{quickBuildMsg}</span>
+              <span className="hidden sm:inline text-xs text-zinc-500 max-w-[120px] truncate">{quickBuildMsg}</span>
             )}
 
             {/* Reset */}
             <button
               onClick={onResetClick}
-              className="h-9 px-3 rounded-lg border-2 border-zinc-300 text-sm font-medium text-zinc-700 hover:bg-zinc-100 transition-colors cursor-pointer"
+              className="hidden sm:inline-flex h-9 px-3 rounded-lg border-2 border-zinc-300 text-sm font-medium text-zinc-700 hover:bg-zinc-100 transition-colors cursor-pointer"
               title={t("topbar.reset")}
             >
               {t("topbar.reset") ?? "Reset"}
