@@ -347,9 +347,9 @@ export default function BuilderPage() {
   const allErrors = useMemo<VKey[][]>(() => slots.map(validateSlot), [slots]);
   const canAnalyze = allErrors.every((list) => list.length === 0) && !!magic_item_id;
   const slotsHaveErrors = !allErrors.every((list) => list.length === 0);
-  const nameIsEmpty = !!validateTeamName(name);
-  const missingCount = [slotsHaveErrors, !magic_item_id, nameIsEmpty].filter(Boolean).length;
-  const teamIsReady = canAnalyze && !nameIsEmpty;
+  const nameError = validateTeamName(name); // null | i18n key
+  const missingCount = [slotsHaveErrors, !magic_item_id, !!nameError].filter(Boolean).length;
+  const teamIsReady = canAnalyze && !nameError;
   const teamErrorKey = !teamIsReady
     ? missingCount >= 2
       ? "builder.incompleteTeamMsg"
@@ -357,7 +357,7 @@ export default function BuilderPage() {
         ? "builder.v_incompleteSlots"
         : !magic_item_id
           ? "builder.v_pickMagicItem"
-          : "builder.v_emptyTeamName"
+          : nameError!
     : null;
 
   // Auto-reset field error highlights once the attempted action's conditions are fully met
@@ -785,7 +785,7 @@ export default function BuilderPage() {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder={t("builder.teamNamePlaceholder") ?? "My Team"}
-                className={`h-10 rounded-lg border-2 px-3 text-sm w-[160px] focus:outline-none focus:ring-2 focus:ring-zinc-400 focus:border-transparent transition-all shadow-sm ${showFieldErrors && nameIsEmpty ? 'border-amber-400' : 'border-zinc-300'}`}
+                className={`h-10 rounded-lg border-2 px-3 text-sm w-[160px] focus:outline-none focus:ring-2 focus:ring-zinc-400 focus:border-transparent transition-all shadow-sm ${showFieldErrors && !!nameError ? 'border-amber-400' : 'border-zinc-300'}`}
               />
             </div>
 
