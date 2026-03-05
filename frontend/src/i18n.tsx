@@ -643,6 +643,10 @@ const ui: Record<Lang, Dict> = {
       unlimited_tier: "Unlimited",
       unverified: "Unverified",
     },
+    footer: {
+      disclaimer: "Unofficial fan-made tool. Not affiliated with or endorsed by Tencent or the Roco Kingdom franchise.",
+      feedback: "Feedback",
+    },
   },
   zh: {
     common: {
@@ -1215,6 +1219,10 @@ const ui: Record<Lang, Dict> = {
       premium: "高级",
       unlimited_tier: "无限制",
       unverified: "未验证",
+    },
+    footer: {
+      disclaimer: "非官方玩家工具，与腾讯及洛克王国官方无任何关联。",
+      feedback: "意见反馈",
     },
   },
 };
