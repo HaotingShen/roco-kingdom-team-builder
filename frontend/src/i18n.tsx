@@ -162,7 +162,7 @@ const ui: Record<Lang, Dict> = {
         "Legacy Type grants: {{name}}. You can use it in one move slot.",
       legacyMissing: "No legacy move found for this Legacy Type.",
       legacyHint:
-        "You can pick at most 1 Legacy Move.",
+        "Changing the Legacy Type will automatically update the available Legacy Move.",
       moves: "Moves",
       moveN: "Move {{n}}",
       talents: "Talents",
@@ -740,7 +740,7 @@ const ui: Record<Lang, Dict> = {
       legacyType: "血脉",
       legacyGrants: "血脉提供：{{name}}。该技能仅可占用一个技能栏位。",
       legacyMissing: "该血脉没有可用的血脉技能。",
-      legacyHint: "最多选择1个血脉技能。",
+      legacyHint: "更改血脉将自动更新血脉技能。",
       moves: "技能",
       moveN: "技能{{n}}",
       talents: "个体值",

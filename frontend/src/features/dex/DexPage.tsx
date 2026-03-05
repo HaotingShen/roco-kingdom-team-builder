@@ -252,7 +252,7 @@ function MonstersTab() {
       {(!monsters.data || !displayList.length) ? (
         <div className="text-zinc-500">{t("dex.noResults")}</div>
       ) : (
-        <div style={{ height: rowVirt.getTotalSize() + 100, position: "relative" }}>
+        <div style={{ height: rowVirt.getTotalSize() + 90, position: "relative" }}>
           <div style={{ transform: `translateY(${vItems[0]?.start ?? 0}px)` }}>
             <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
               {displayList.slice(startIdx, endIdx).map((m) => {
@@ -552,7 +552,7 @@ function MovesTab() {
       {(!moves.data || !filtered.length) ? (
         <div className="text-zinc-500">{t("dex.noResults")}</div>
       ) : (
-        <div /* wrapper keeps the total scroll height */ style={{ height: rowVirt.getTotalSize() + 100, position: "relative" }}>
+        <div /* wrapper keeps the total scroll height */ style={{ height: rowVirt.getTotalSize() + 90, position: "relative" }}>
           {/* TOP spacer equals the offset to the first visible row */}
           <div style={{ height: topPad }} />
 
