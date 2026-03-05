@@ -248,6 +248,7 @@ function analysesMatch(
 export default function BuilderPage() {
   const {
     teamId,
+    isDirty,
     name,
     setName,
     slots,
@@ -262,6 +263,7 @@ export default function BuilderPage() {
     setAnalysis,
     isAnalyzing,
     setIsAnalyzing,
+    clearDirty,
   } = useBuilderStore();
 
   const [activeIdx, setActiveIdx] = useState<number>(0);
@@ -269,6 +271,7 @@ export default function BuilderPage() {
   const [serverOk, setServerOk] = useState<string | null>(null);
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
   const [showSaveModal, setShowSaveModal] = useState(false);
+  const [showUpdateConfirm, setShowUpdateConfirm] = useState(false);
   const [attemptedAction, setAttemptedAction] = useState<'analyze' | 'save' | null>(null);
   const showFieldErrors = attemptedAction !== null;
   const { lang, t } = useI18n();
@@ -451,7 +454,7 @@ export default function BuilderPage() {
     onSuccess: (team) => {
       setServerErr(null);
       setServerOk(t("builder.savedMsg"));           // persistent until closed
-      useBuilderStore.setState({ teamId: team.id }); // keep id for future updates
+      useBuilderStore.setState({ teamId: team.id, isDirty: false }); // keep id for future updates
       qc.invalidateQueries({ queryKey: QUERY_KEYS.TEAMS });
       qc.invalidateQueries({ queryKey: QUERY_KEYS.TEAM_DETAIL(team.id) });
       qc.invalidateQueries({ queryKey: QUERY_KEYS.QUOTA });
@@ -468,6 +471,7 @@ export default function BuilderPage() {
     onSuccess: (_updatedTeam, variables) => {
       setServerErr(null);
       setServerOk(t("builder.updatedMsg"));         // persistent until closed
+      clearDirty();
       qc.invalidateQueries({ queryKey: QUERY_KEYS.TEAMS });
       qc.invalidateQueries({ queryKey: QUERY_KEYS.TEAM_DETAIL(variables.id) });
     },
@@ -484,7 +488,7 @@ export default function BuilderPage() {
     onSuccess: (team) => {
       setServerErr(null);
       setServerOk(t("builder.saveAsFeaturedSuccess") ?? "Saved as featured team!");
-      useBuilderStore.setState({ teamId: team.id, isFeaturedTeam: true });
+      useBuilderStore.setState({ teamId: team.id, isDirty: false, isFeaturedTeam: true });
     },
   });
 
@@ -498,6 +502,7 @@ export default function BuilderPage() {
     onSuccess: () => {
       setServerErr(null);
       setServerOk(t("builder.updateFeaturedSuccess") ?? "Featured team updated!");
+      clearDirty();
     },
   });
 
@@ -593,15 +598,19 @@ export default function BuilderPage() {
         return;
       }
 
-      const body = toUpdatePayload();
-      if (!body) {
-        setServerErr(t("builder.incompleteTeamMsg"));
-        return;
-      }
-      updateTeam.mutate({ id: teamId, body });
+      // Show confirmation dialog before overwriting
+      setShowUpdateConfirm(true);
     } catch (e: any) {
       setServerErr(e?.message || t("builder.incompleteTeamMsg"));
     }
+  };
+
+  const confirmUpdate = () => {
+    if (!teamId) return;
+    const body = toUpdatePayload();
+    if (!body) { setServerErr(t("builder.incompleteTeamMsg")); return; }
+    setShowUpdateConfirm(false);
+    updateTeam.mutate({ id: teamId, body });
   };
 
   // Check if user has any work in progress
@@ -834,6 +843,7 @@ export default function BuilderPage() {
               <button
                 onClick={onUpdateExisting}
                 disabled={updateTeam.isPending}
+                data-testid="update-team-btn"
                 className={`
                   h-10 px-5 rounded-lg font-medium text-sm
                   transition-all duration-200
@@ -999,6 +1009,7 @@ export default function BuilderPage() {
           <AnalysisResults
             analysis={analysis}
             teamId={teamId}
+            isDirty={isDirty}
             onSaveAnalysis={() => saveAnalysis.mutate()}
             isSaving={saveAnalysis.isPending}
             isAlreadySaved={isAnalysisAlreadySaved}
@@ -1034,6 +1045,35 @@ export default function BuilderPage() {
         }, 100);
       }}
     />
+
+    {/* Update confirmation dialog */}
+    {showUpdateConfirm && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center">
+        <div className="absolute inset-0 bg-black/50" onClick={() => setShowUpdateConfirm(false)} />
+        <div className="relative bg-white rounded-lg shadow-xl w-full max-w-sm mx-4 p-6">
+          <h2 className="text-lg font-semibold text-zinc-900 mb-2">
+            {t("builder.updateConfirmTitle")}
+          </h2>
+          <p className="text-sm text-zinc-600 mb-6">
+            {t("builder.updateConfirmMsg", { name: name?.trim() || "" })}
+          </p>
+          <div className="flex gap-3 justify-end">
+            <button
+              onClick={() => setShowUpdateConfirm(false)}
+              className="px-4 py-2 rounded-lg text-sm font-medium bg-zinc-100 text-zinc-700 hover:bg-zinc-200 transition-colors"
+            >
+              {t("builder.updateConfirmCancel")}
+            </button>
+            <button
+              onClick={confirmUpdate}
+              className="px-4 py-2 rounded-lg text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+            >
+              {t("builder.updateConfirmYes")}
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
   </DndContext>
   );
 }

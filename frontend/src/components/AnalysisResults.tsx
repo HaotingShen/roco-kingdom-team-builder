@@ -330,6 +330,7 @@ function byCategory(items: RecItem[]) {
 export default function AnalysisResults({
   analysis,
   teamId,
+  isDirty = false,
   onSaveAnalysis,
   isSaving,
   isAlreadySaved,
@@ -337,6 +338,7 @@ export default function AnalysisResults({
 }: {
   analysis: TeamAnalysisOut;
   teamId: number | null;
+  isDirty?: boolean;
   onSaveAnalysis?: () => void;
   isSaving?: boolean;
   isAlreadySaved?: boolean;
@@ -401,6 +403,23 @@ export default function AnalysisResults({
               className="px-6 py-3 rounded-lg bg-amber-50 border-2 border-amber-300 text-amber-700 text-sm font-medium hover:bg-amber-100 hover:border-amber-400 transition-colors cursor-pointer"
             >
               💡 {t("builder.saveTeamFirst")} <span className="underline">{t("builder.clickToCreate")}</span>
+            </button>
+          ) : isDirty ? (
+            <button
+              onClick={() => {
+                // Scroll to and briefly highlight the Update button
+                const updateBtn = document.querySelector('[data-testid="update-team-btn"]');
+                if (updateBtn) {
+                  updateBtn.scrollIntoView({ behavior: "smooth", block: "center" });
+                  updateBtn.classList.add("ring-4", "ring-amber-400", "ring-offset-2");
+                  setTimeout(() => {
+                    updateBtn.classList.remove("ring-4", "ring-amber-400", "ring-offset-2");
+                  }, 2000);
+                }
+              }}
+              className="px-6 py-3 rounded-lg bg-amber-50 border-2 border-amber-300 text-amber-700 text-sm font-medium hover:bg-amber-100 hover:border-amber-400 transition-colors cursor-pointer"
+            >
+              💡 {t("builder.updateTeamFirst")} <span className="underline">{t("builder.clickToUpdate")}</span>
             </button>
           ) : (
             <button
