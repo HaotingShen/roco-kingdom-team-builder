@@ -101,7 +101,7 @@ export default function Topbar() {
 
   return (
     <header className="h-14 border-b border-zinc-200 bg-white flex items-center gap-3 px-4 sticky top-0 z-10">
-      {/* Logo — shown on mobile only (sidebar is hidden there) */}
+      {/* Logo — shown below 800px only (sidebar is hidden there) */}
       <Link
         to="/build"
         className="sm:hidden shrink-0"
@@ -117,7 +117,7 @@ export default function Topbar() {
         />
       </Link>
 
-      {/* Page title — hidden on mobile to save space */}
+      {/* Page title — hidden below 800px to save space */}
       <h1 className="hidden sm:block font-medium text-zinc-800 shrink-0">{title}</h1>
 
       <div className="flex-1" />
@@ -125,7 +125,7 @@ export default function Topbar() {
       <div className="flex items-center gap-2">
         {isOnBuilder && (
           <>
-            {/* Quick Build — icon only on mobile, text on sm+ */}
+            {/* Quick Build — icon only below 800px, text on 800px+ */}
             <button
               onClick={onQuickBuildClick}
               className="sm:hidden h-9 w-9 flex items-center justify-center rounded-lg border-2 border-zinc-300 text-zinc-700 hover:bg-zinc-100 transition-colors cursor-pointer"
@@ -146,7 +146,7 @@ export default function Topbar() {
               <span className="hidden sm:inline text-xs text-zinc-500 max-w-[120px] truncate">{quickBuildMsg}</span>
             )}
 
-            {/* Reset — icon only on mobile, text on sm+ */}
+            {/* Reset — icon only below 800px, text on 800px+ */}
             <button
               onClick={onResetClick}
               className="sm:hidden h-9 w-9 flex items-center justify-center rounded-lg border-2 border-zinc-300 text-zinc-700 hover:bg-zinc-100 transition-colors cursor-pointer"
@@ -166,7 +166,7 @@ export default function Topbar() {
           </>
         )}
 
-        {/* Language toggle — compact on mobile */}
+        {/* Language toggle — compact below 800px */}
         <button
           onClick={() => setLang(lang === "en" ? "zh" : "en")}
           className="h-9 px-2 sm:px-3 rounded-lg border-2 border-zinc-300 text-sm font-medium text-zinc-700 hover:bg-zinc-100 transition-colors cursor-pointer"
@@ -176,7 +176,7 @@ export default function Topbar() {
           <span className="hidden sm:inline">{lang === "en" ? t("topbar.lang_en_zh") : t("topbar.lang_zh_en")}</span>
         </button>
 
-        {/* Donate — compact on mobile */}
+        {/* Donate — compact below 800px */}
         <button
           onClick={() => setShowDonation(true)}
           className="h-9 px-2 sm:px-3 rounded-lg border-2 border-amber-300 bg-amber-50 text-sm font-medium text-amber-700 hover:bg-amber-100 transition-colors cursor-pointer"

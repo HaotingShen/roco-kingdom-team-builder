@@ -735,7 +735,7 @@ function MagicItemsTab() {
   });
 
   return (
-    <div className="grid gap-3 grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+    <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
       {(items.data ?? []).map((it) => {
         const nm = pickName(it as any, lang) || it.name;
         const desc = pickDesc(it as any, lang) || it.description || "";
@@ -780,7 +780,7 @@ function GameTermsTab() {
   });
 
   return (
-    <div className="grid gap-3 grid-cols-2">
+    <div className="grid gap-3 grid-cols-1 md:grid-cols-2">
       {(terms.data ?? []).map((g) => {
         const label = pickName(g as any, lang) || g.name || g.key;
         const desc = pickDesc(g as any, lang) || g.description || "";

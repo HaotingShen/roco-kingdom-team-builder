@@ -649,8 +649,8 @@ export default function BuilderPage() {
 
         {/* Row 1: Team Builder + Team Settings + Inspector Grid */}
         <div className="grid gap-4 grid-cols-1 lg:grid-cols-[1fr_380px] xl:grid-cols-[1fr_420px]">
-          {/* Left: Monster Slots + Team Settings */}
-          <section className="space-y-4">
+          {/* A: Monster Slots — left col row 1 on desktop */}
+          <div className="space-y-4">
             {/* Section header */}
             <div className="flex items-center gap-2 px-1">
               <div className="h-6 w-1 bg-gradient-to-b from-zinc-800 to-zinc-600 rounded-full" />
@@ -658,7 +658,7 @@ export default function BuilderPage() {
             </div>
 
             {/* grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 min-[800px]:grid-cols-2 min-[1400px]:grid-cols-3 gap-3">
             {slots.map((slot, i) => {
               const errs = allErrors?.[i] ?? [];
               const hasMonster = !!slot.monster_id;
@@ -718,7 +718,7 @@ export default function BuilderPage() {
                       aria-label={statusText}
                     >
                       <span className={`h-2.5 w-2.5 rounded-full ${dotClass} animate-pulse`} />
-                      <span className="hidden sm:inline">{statusText}</span>
+                      <span>{statusText}</span>
                     </span>
                   </div>
 
@@ -760,9 +760,17 @@ export default function BuilderPage() {
               );
             })}
           </div>
+          </div>
 
+          {/* B: Monster Inspector — right col (rows 1-2) on desktop, between slots and settings on mobile */}
+          <div className="lg:col-[2] lg:row-[1/3]">
+            <MonsterInspector activeIdx={activeIdx} />
+          </div>
+
+          {/* C: Team Settings — left col row 2 on desktop */}
+          <div className="space-y-4">
           {/* Team Configuration Section */}
-          <div className="flex items-center gap-2 px-1 mt-6">
+          <div className="flex items-center gap-2 px-1">
             <div className="h-6 w-1 bg-gradient-to-b from-zinc-800 to-zinc-600 rounded-full" />
             <h2 className="text-lg font-semibold text-zinc-800">{t("builder.teamSettings") || "Team Settings"}</h2>
           </div>
@@ -776,7 +784,7 @@ export default function BuilderPage() {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder={t("builder.teamNamePlaceholder") ?? "My Team"}
-                className={`h-10 rounded-lg border-2 px-3 text-sm w-full sm:w-[160px] focus:outline-none focus:ring-2 focus:ring-zinc-400 focus:border-transparent transition-all shadow-sm ${showFieldErrors && !!nameError ? 'border-amber-400' : 'border-zinc-300'}`}
+                className={`h-10 rounded-lg border-2 px-3 text-sm flex-1 sm:flex-none sm:w-[160px] focus:outline-none focus:ring-2 focus:ring-zinc-400 focus:border-transparent transition-all shadow-sm ${showFieldErrors && !!nameError ? 'border-amber-400' : 'border-zinc-300'}`}
               />
             </div>
 
@@ -988,10 +996,7 @@ export default function BuilderPage() {
               </button>
             </div>
           )}
-          </section>
-
-          {/* Right: Monster Inspector */}
-          <MonsterInspector activeIdx={activeIdx} />
+          </div>
         </div>
 
         {/* Row 2: Analysis Results (Full Width, Conditional) */}
