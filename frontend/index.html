@@ -6,7 +6,45 @@
       name="viewport"
       content="width=device-width, initial-scale=1, viewport-fit=cover"
     />
-    <title>RK Team Builder</title>
+    <title>RK Team Builder · 洛手配队器 | Roco Kingdom PvP Team Planner</title>
+    <meta name="description" content="Build and analyze PvP teams for Roco Kingdom: World. Browse the monster dex, plan your team composition, and get AI-powered trait and move synergy analysis." />
+    <meta name="keywords" content="Roco Kingdom, Roco Kingdom World, RK Team Builder, 洛手配队器, team builder, PvP, monster dex, team planner, 洛克王国, 配队" />
+    <meta name="author" content="RK Team Builder" />
+    <link rel="canonical" href="https://rkteambuilder.com/" />
+
+    <!-- Language alternates (bilingual: en + zh) -->
+    <link rel="alternate" hreflang="x-default" href="https://rkteambuilder.com/" />
+    <link rel="alternate" hreflang="en" href="https://rkteambuilder.com/" />
+    <link rel="alternate" hreflang="zh" href="https://rkteambuilder.com/" />
+
+    <!-- Force webkit rendering in Chinese browsers (360, QQ Browser, etc.) -->
+    <meta name="renderer" content="webkit" />
+    <meta name="force-rendering" content="webkit" />
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="/favicon/favicon-96x96.png" sizes="96x96" />
+    <link rel="icon" type="image/svg+xml" href="/favicon/favicon.svg" />
+    <link rel="shortcut icon" href="/favicon/favicon.ico" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/favicon/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-title" content="RK Team Builder" />
+
+    <!-- Web App Manifest -->
+    <link rel="manifest" href="/favicon/site.webmanifest" />
+    <meta name="theme-color" content="#3b82f6" />
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://rkteambuilder.com/" />
+    <meta property="og:title" content="RK Team Builder · 洛手配队器" />
+    <meta property="og:description" content="Build and analyze PvP teams for Roco Kingdom: World. Browse the monster dex, plan your team composition, and get AI-powered trait and move synergy analysis." />
+    <meta property="og:image" content="https://rkteambuilder.com/logo.png" />
+    <meta property="og:site_name" content="RK Team Builder" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="RK Team Builder · 洛手配队器" />
+    <meta name="twitter:description" content="Build and analyze PvP teams for Roco Kingdom: World. Browse the monster dex, plan your team composition, and get AI-powered synergy analysis." />
+    <meta name="twitter:image" content="https://rkteambuilder.com/logo.png" />
     <style>
       /* Loading screen - shown while JavaScript loads */
       #app-loading {
@@ -87,7 +125,7 @@
         document.getElementById('loading-subtext').textContent = text.subtitle;
 
         // Also update page title
-        document.title = lang === 'zh' ? '洛手配队器' : 'RK Team Builder';
+        document.title = lang === 'zh' ? '洛手配队器 | 洛克王国 PvP 配队工具' : 'RK Team Builder | Roco Kingdom PvP Team Planner';
       })();
 
       // Loading screen is now controlled by AuthProvider
