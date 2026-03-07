@@ -18,8 +18,8 @@ function tierBadgeClasses(tier: string, isUnverified: boolean): string {
   }
 }
 
-function formatUsage(used: number, limit: number, t: (key: string) => string): string {
-  if (limit === -1) return t("quota.unlimited");
+function formatUsage(used: number, limit: number): string {
+  if (limit === -1) return `${used} / ∞`;
   return `${used}/${limit}`;
 }
 
@@ -33,10 +33,9 @@ export default function QuotaDisplay({ quota, variant }: QuotaDisplayProps) {
   const isUnverified = !!user && !user.is_guest && !user.email_verified;
 
   if (variant === "inline") {
-    if (quota.teams_limit === -1) return null;
     return (
       <span className="text-sm text-zinc-500">
-        {quota.teams_used}/{quota.teams_limit} {t("quota.teams")}
+        {formatUsage(quota.teams_used, quota.teams_limit)} {t("quota.teams")}
       </span>
     );
   }
@@ -59,7 +58,7 @@ export default function QuotaDisplay({ quota, variant }: QuotaDisplayProps) {
             ? "text-red-600 font-medium"
             : "text-zinc-700"
         }>
-          {formatUsage(quota.daily_used, quota.daily_limit, t)} {quota.daily_limit !== -1 ? t("quota.today") : ""}
+          {formatUsage(quota.daily_used, quota.daily_limit)} {quota.daily_limit !== -1 ? t("quota.today") : ""}
         </span>
       </div>
 
@@ -72,7 +71,7 @@ export default function QuotaDisplay({ quota, variant }: QuotaDisplayProps) {
               ? "text-red-600 font-medium"
               : "text-zinc-700"
           }>
-            {formatUsage(quota.teams_used, quota.teams_limit, t)}
+            {formatUsage(quota.teams_used, quota.teams_limit)}
           </span>
         </div>
       )}
