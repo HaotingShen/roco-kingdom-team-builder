@@ -15,6 +15,10 @@ export default function Footer() {
         <NavLink to="/feedback" className="hover:text-zinc-700 underline underline-offset-2">
           {t("footer.feedback")}
         </NavLink>
+        <span>·</span>
+        <span>{t("footer.qqGroup")}</span>
+        <span>·</span>
+        <span>{t("footer.wechatGroup")}</span>
       </div>
     </footer>
   );

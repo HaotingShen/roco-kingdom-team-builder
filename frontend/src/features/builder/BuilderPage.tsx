@@ -945,9 +945,9 @@ export default function BuilderPage() {
               ) : (
                 <span className="inline-flex items-center gap-1.5">
                   {analysis?.has_partial_errors ? t("builder.retryFree") : t("builder.analyze")}
-                  {quota && quota.daily_limit !== -1 && (
+                  {quota && (
                     <span className={`text-xs opacity-70 ${isAtAnalysisLimit ? "text-red-300" : ""}`}>
-                      ({quota.daily_used}/{quota.daily_limit})
+                      ({quota.daily_used}/{quota.daily_limit === -1 ? "∞" : quota.daily_limit})
                     </span>
                   )}
                 </span>
