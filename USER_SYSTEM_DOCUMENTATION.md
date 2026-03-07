@@ -30,7 +30,7 @@ The system supports three primary user types with different capabilities:
 |-----------|---------------|---------------|----------------|----------------|
 | **Anonymous** | No account | Visit site | No | 1/day |
 | **Guest** | Temporary account | Click "Continue as Guest" | Yes (3 max) | 3/day |
-| **Registered** | Permanent account | Register with email | Yes (100 max) | 5/day |
+| **Registered** | Permanent account | Register with email | Yes (20 max) | 5/day |
 
 ### User Journey Flow
 
@@ -59,8 +59,8 @@ New Visitor (Anonymous)
 |------|---------------|------------------|-----------|----------|
 | `anonymous` | 1 | 5 | 0 | 0 |
 | `guest` | 3 | 30 | 3 | 0 |
-| `free` | 5 | 100 | 100 | 0 |
-| `premium` | 20 | 500 | 500 | 1 |
+| `free` | 5 | 100 | 20 | 0 |
+| `premium` | 10 | 200 | 100 | 1 |
 | `unlimited` | ∞ | ∞ | ∞ | 2 |
 
 **Notes:**
@@ -893,7 +893,7 @@ CAPTCHA_SITE_KEY=your-site-key     # Exposed to frontend
   "monthly_used": 15,
   "monthly_limit": 100,
   "teams_used": 3,
-  "teams_limit": 100,
+  "teams_limit": 20,
   "is_anonymous": false,
   "is_guest": false,
   "redis_available": true

@@ -216,13 +216,13 @@ TIER_LIMITS = {
     "free": {
         "daily_analyses": int(os.getenv("TIER_FREE_DAILY_ANALYSES", "5")),
         "monthly_analyses": int(os.getenv("TIER_FREE_MONTHLY_ANALYSES", "100")),
-        "teams_limit": int(os.getenv("TIER_FREE_TEAMS_LIMIT", "100")),
+        "teams_limit": int(os.getenv("TIER_FREE_TEAMS_LIMIT", "20")),
         "priority": 0,
     },
     "premium": {
-        "daily_analyses": int(os.getenv("TIER_PREMIUM_DAILY_ANALYSES", "20")),
-        "monthly_analyses": int(os.getenv("TIER_PREMIUM_MONTHLY_ANALYSES", "500")),
-        "teams_limit": int(os.getenv("TIER_PREMIUM_TEAMS_LIMIT", "500")),
+        "daily_analyses": int(os.getenv("TIER_PREMIUM_DAILY_ANALYSES", "10")),
+        "monthly_analyses": int(os.getenv("TIER_PREMIUM_MONTHLY_ANALYSES", "200")),
+        "teams_limit": int(os.getenv("TIER_PREMIUM_TEAMS_LIMIT", "100")),
         "priority": 1,
     },
     "unlimited": {
