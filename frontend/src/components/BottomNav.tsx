@@ -44,7 +44,7 @@ export default function BottomNav() {
   const { t } = useI18n();
 
   return (
-    <nav className="sm:hidden fixed bottom-0 left-0 right-0 z-20 border-t border-zinc-200 bg-white flex" style={{ height: "calc(4rem + env(safe-area-inset-bottom, 0px))", paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
+    <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-20 border-t border-zinc-200 bg-white flex" style={{ height: "calc(4rem + env(safe-area-inset-bottom, 0px))", paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
       {items.map(({ to, labelKey, icon }) => (
         <NavLink
           key={to}

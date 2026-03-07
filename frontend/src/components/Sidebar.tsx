@@ -38,7 +38,7 @@ export default function Sidebar() {
   const { t } = useI18n();
   return (
     <aside
-      className="hidden sm:block fixed left-0 top-0 h-full border-r border-zinc-200 bg-white"
+      className="hidden lg:block fixed left-0 top-0 h-full border-r border-zinc-200 bg-white"
       style={{ width: "var(--sidebar-w)" }}
     >
       {/* Brand area */}

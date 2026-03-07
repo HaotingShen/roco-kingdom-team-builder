@@ -648,7 +648,7 @@ export default function BuilderPage() {
         )}
 
         {/* Row 1: Team Builder + Team Settings + Inspector Grid */}
-        <div className="grid gap-4 grid-cols-1 lg:grid-cols-[1fr_380px] xl:grid-cols-[1fr_420px]">
+        <div className="grid gap-4 grid-cols-1 xl:grid-cols-[1fr_420px]">
           {/* A: Monster Slots — left col row 1 on desktop */}
           <div className="space-y-4">
             {/* Section header */}
@@ -658,7 +658,7 @@ export default function BuilderPage() {
             </div>
 
             {/* grid */}
-            <div className="grid grid-cols-1 min-[800px]:grid-cols-2 min-[1400px]:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {slots.map((slot, i) => {
               const errs = allErrors?.[i] ?? [];
               const hasMonster = !!slot.monster_id;
@@ -763,7 +763,7 @@ export default function BuilderPage() {
           </div>
 
           {/* B: Monster Inspector — right col (rows 1-2) on desktop, between slots and settings on mobile */}
-          <div className="lg:col-[2] lg:row-[1/3]">
+          <div className="xl:col-[2] xl:row-[1/3]">
             <MonsterInspector activeIdx={activeIdx} />
           </div>
 
