@@ -648,7 +648,7 @@ export default function BuilderPage() {
         )}
 
         {/* Row 1: Team Builder + Team Settings + Inspector Grid */}
-        <div className="grid gap-4 grid-cols-1 lg:grid-cols-[1fr_420px]">
+        <div className="grid gap-4 grid-cols-1 lg:grid-cols-[1fr_340px] xl:grid-cols-[1fr_420px]">
           {/* A: Monster Slots — left col row 1 on desktop */}
           <div className="space-y-4">
             {/* Section header */}
