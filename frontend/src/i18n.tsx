@@ -588,6 +588,16 @@ const ui: Record<Lang, Dict> = {
       userDeleted: "User deleted",
       confirmDelete: "Delete user",
       cannotUndo: "This cannot be undone.",
+      // New admin fields
+      lockReasonDisplay: "Lock Reason",
+      registrationIp: "Registration IP",
+      lastLoginIp: "Last Login IP",
+      preferredLanguage: "Preferred Language",
+      langEnglish: "English",
+      langChinese: "Chinese (中文)",
+      analysesCount: "Analyses Run",
+      analysisTrends: "Analysis Trends",
+      guestConversions: "Guest Conversions",
     },
     settings: {
       title: "Settings",
@@ -1165,6 +1175,16 @@ const ui: Record<Lang, Dict> = {
       userDeleted: "用户已删除",
       confirmDelete: "删除用户",
       cannotUndo: "此操作不可撤销。",
+      // 新增管理字段
+      lockReasonDisplay: "锁定原因",
+      registrationIp: "注册IP",
+      lastLoginIp: "最后登录IP",
+      preferredLanguage: "语言偏好",
+      langEnglish: "英文 (English)",
+      langChinese: "中文",
+      analysesCount: "分析次数",
+      analysisTrends: "分析趋势",
+      guestConversions: "访客转化数",
     },
     settings: {
       title: "设置",

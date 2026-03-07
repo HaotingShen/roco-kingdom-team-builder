@@ -674,6 +674,12 @@ class AdminUserOut(BaseModel):
     guest_display_id: Optional[str] = None  # Unique 4-char ID for guest display
     teams_count: int = 0
     is_admin: bool = False
+    lock_reason: Optional[str] = None
+    registration_ip: Optional[str] = None
+    last_login_ip: Optional[str] = None
+    preferred_language: str = "en"
+    analyses_count: int = 0
+    converted_from_guest: bool = False
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -729,3 +735,7 @@ class AdminStatsOut(BaseModel):
     registrations_today: int
     registrations_this_week: int
     registrations_this_month: int
+    analyses_today: int
+    analyses_this_week: int
+    analyses_this_month: int
+    guest_conversions: int

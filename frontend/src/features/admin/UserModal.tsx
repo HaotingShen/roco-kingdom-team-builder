@@ -177,6 +177,34 @@ export default function UserModal({ user, onClose }: UserModalProps) {
                 value={user.device_id}
               />
             )}
+            <InfoRow
+              label={t("admin.analysesCount") || "Analyses Run"}
+              value={user.analyses_count}
+            />
+            <InfoRow
+              label={t("admin.preferredLanguage") || "Preferred Language"}
+              value={user.preferred_language === "zh"
+                ? (t("admin.langChinese") || "Chinese (中文)")
+                : (t("admin.langEnglish") || "English")}
+            />
+            {user.registration_ip && (
+              <InfoRow
+                label={t("admin.registrationIp") || "Registration IP"}
+                value={user.registration_ip}
+              />
+            )}
+            {user.last_login_ip && (
+              <InfoRow
+                label={t("admin.lastLoginIp") || "Last Login IP"}
+                value={user.last_login_ip}
+              />
+            )}
+            {!user.is_active && user.lock_reason && (
+              <InfoRow
+                label={t("admin.lockReasonDisplay") || "Lock Reason"}
+                value={user.lock_reason}
+              />
+            )}
           </div>
 
           {/* Actions */}

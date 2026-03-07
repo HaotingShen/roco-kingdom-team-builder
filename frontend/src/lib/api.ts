@@ -365,6 +365,12 @@ export interface AdminUser {
   guest_display_id: string | null;  // Unique 4-char ID for guest display
   teams_count: number;
   is_admin: boolean;
+  analyses_count: number;
+  lock_reason: string | null;
+  registration_ip: string | null;
+  last_login_ip: string | null;
+  preferred_language: string;
+  converted_from_guest: boolean;
 }
 
 export interface AdminUserListResponse {
@@ -388,6 +394,10 @@ export interface AdminStats {
   registrations_today: number;
   registrations_this_week: number;
   registrations_this_month: number;
+  analyses_today: number;
+  analyses_this_week: number;
+  analyses_this_month: number;
+  guest_conversions: number;
 }
 
 export interface AdminUserListParams {

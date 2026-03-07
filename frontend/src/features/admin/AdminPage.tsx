@@ -158,7 +158,7 @@ function StatsPanel({ stats, isLoading }: StatsPanelProps) {
       </div>
 
       {/* Secondary Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         <StatCard
           label={t("admin.totalTeams") || "Total Teams"}
           value={stats.total_teams}
@@ -175,6 +175,10 @@ function StatsPanel({ stats, isLoading }: StatsPanelProps) {
           label={t("admin.lockedUsers") || "Locked"}
           value={stats.total_locked}
           highlight={stats.total_locked > 0 ? "warning" : undefined}
+        />
+        <StatCard
+          label={t("admin.guestConversions") || "Guest Conversions"}
+          value={stats.guest_conversions}
         />
       </div>
 
@@ -203,6 +207,39 @@ function StatsPanel({ stats, isLoading }: StatsPanelProps) {
           <div>
             <div className="text-2xl font-semibold text-zinc-900">
               {stats.registrations_this_month}
+            </div>
+            <div className="text-sm text-zinc-500">
+              {t("admin.thisMonth") || "This Month"}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Analysis Trends */}
+      <div className="bg-white border border-zinc-200 rounded-lg p-4">
+        <h3 className="font-medium text-zinc-900 mb-3">
+          {t("admin.analysisTrends") || "Analysis Trends"}
+        </h3>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
+          <div>
+            <div className="text-2xl font-semibold text-zinc-900">
+              {stats.analyses_today}
+            </div>
+            <div className="text-sm text-zinc-500">
+              {t("admin.today") || "Today"}
+            </div>
+          </div>
+          <div>
+            <div className="text-2xl font-semibold text-zinc-900">
+              {stats.analyses_this_week}
+            </div>
+            <div className="text-sm text-zinc-500">
+              {t("admin.thisWeek") || "This Week"}
+            </div>
+          </div>
+          <div>
+            <div className="text-2xl font-semibold text-zinc-900">
+              {stats.analyses_this_month}
             </div>
             <div className="text-sm text-zinc-500">
               {t("admin.thisMonth") || "This Month"}

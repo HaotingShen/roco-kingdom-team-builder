@@ -59,6 +59,7 @@ class User(Base):
     # 🔒 SECURITY: Account lockout
     failed_login_attempts: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     locked_until: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    lock_reason: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
 
     # Future payment fields (prepared but unused)
     subscription_tier: Mapped[str] = mapped_column(String(32), default="free", nullable=False)
@@ -66,6 +67,9 @@ class User(Base):
 
     # Device tracking (for guest account linking)
     device_id: Mapped[Optional[str]] = mapped_column(String(64), index=True, nullable=True)
+    registration_ip: Mapped[Optional[str]] = mapped_column(String(45), nullable=True)
+    last_login_ip: Mapped[Optional[str]] = mapped_column(String(45), nullable=True)
+    converted_from_guest: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 
     # Guest display ID - unique 4-char alphanumeric for display (e.g., "Guest#A1B2")
     # Only set for guest accounts, nullable for registered users

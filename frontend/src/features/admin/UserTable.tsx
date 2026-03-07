@@ -214,6 +214,9 @@ export default function UserTable() {
                   {t("admin.teams") || "Teams"}
                 </th>
                 <th className="text-left px-4 py-3 font-medium text-zinc-700">
+                  {t("admin.lastActive") || "Last Active"}
+                </th>
+                <th className="text-left px-4 py-3 font-medium text-zinc-700">
                   {t("admin.created") || "Created"}
                 </th>
                 <th className="text-right px-4 py-3 font-medium text-zinc-700">
@@ -224,13 +227,13 @@ export default function UserTable() {
             <tbody>
               {usersQuery.isLoading ? (
                 <tr>
-                  <td colSpan={7} className="text-center py-8 text-zinc-500">
+                  <td colSpan={8} className="text-center py-8 text-zinc-500">
                     {t("common.loading") || "Loading..."}
                   </td>
                 </tr>
               ) : usersQuery.data?.users.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="text-center py-8 text-zinc-500">
+                  <td colSpan={8} className="text-center py-8 text-zinc-500">
                     {t("admin.noUsers") || "No users found"}
                   </td>
                 </tr>
@@ -295,6 +298,9 @@ export default function UserTable() {
                       )}
                     </td>
                     <td className="px-4 py-3 text-zinc-600">{user.teams_count}</td>
+                    <td className="px-4 py-3 text-zinc-600">
+                      {formatDate(user.last_active_at)}
+                    </td>
                     <td className="px-4 py-3 text-zinc-600">
                       {formatDate(user.created_at)}
                     </td>

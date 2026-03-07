@@ -2087,6 +2087,8 @@ async def register_user(
         user.verification_token_expires = verification_expires
         user.last_password_change = datetime.now(timezone.utc)
         user.preferred_language = user_data.preferred_language or "en"
+        user.registration_ip = get_real_client_ip(request)
+        user.converted_from_guest = True
 
         db.commit()
         db.refresh(user)
@@ -2114,6 +2116,7 @@ async def register_user(
             last_password_change=datetime.now(timezone.utc),
             preferred_language=user_data.preferred_language or "en",
             device_id=device_id_for_seed,
+            registration_ip=get_real_client_ip(request),
         )
 
         db.add(user)
@@ -2138,6 +2141,7 @@ async def register_user(
                     ).update({"owner_id": user.id})
                     prior_guest.is_active = False
                     prior_guest.device_id = None
+                    user.converted_from_guest = True
                     db.commit()
                     logger.info(
                         f"Transferred {transferred} team(s) from guest {prior_guest.id} "
@@ -2273,6 +2277,7 @@ async def login_user(
     user.failed_login_attempts = 0
     user.locked_until = None
     user.last_login_at = datetime.now(timezone.utc)
+    user.last_login_ip = get_real_client_ip(request)
 
     # Update device_id to the current device so find_device_owner() works after logout.
     # This also retroactively fixes existing users whose device_id was never stored.
@@ -5125,6 +5130,12 @@ async def admin_list_users(
     user_list = []
     for user in users:
         teams_count = db.query(models.Team).filter(models.Team.owner_id == user.id).count()
+        analyses_count = (
+            db.query(models.TeamAnalysis)
+            .join(models.Team, models.TeamAnalysis.team_id == models.Team.id)
+            .filter(models.Team.owner_id == user.id)
+            .count()
+        )
         user_data = schemas.AdminUserOut(
             id=user.id,
             username=user.username,
@@ -5143,7 +5154,13 @@ async def admin_list_users(
             device_id=user.device_id,
             guest_display_id=user.guest_display_id,
             teams_count=teams_count,
-            is_admin=is_admin_user(user)
+            is_admin=is_admin_user(user),
+            analyses_count=analyses_count,
+            lock_reason=user.lock_reason,
+            registration_ip=user.registration_ip,
+            last_login_ip=user.last_login_ip,
+            preferred_language=user.preferred_language,
+            converted_from_guest=user.converted_from_guest,
         )
         user_list.append(user_data)
 
@@ -5174,6 +5191,12 @@ async def admin_get_user(
         raise HTTPException(status_code=404, detail="User not found")
 
     teams_count = db.query(models.Team).filter(models.Team.owner_id == user.id).count()
+    analyses_count = (
+        db.query(models.TeamAnalysis)
+        .join(models.Team, models.TeamAnalysis.team_id == models.Team.id)
+        .filter(models.Team.owner_id == user.id)
+        .count()
+    )
 
     return schemas.AdminUserOut(
         id=user.id,
@@ -5193,7 +5216,13 @@ async def admin_get_user(
         device_id=user.device_id,
         guest_display_id=user.guest_display_id,
         teams_count=teams_count,
-        is_admin=is_admin_user(user)
+        is_admin=is_admin_user(user),
+        analyses_count=analyses_count,
+        lock_reason=user.lock_reason,
+        registration_ip=user.registration_ip,
+        last_login_ip=user.last_login_ip,
+        preferred_language=user.preferred_language,
+        converted_from_guest=user.converted_from_guest,
     )
 
 
@@ -5272,6 +5301,8 @@ async def admin_lock_user(
     else:
         user.locked_until = None  # Indefinite lock
 
+    user.lock_reason = lock_data.reason if lock_data and lock_data.reason else None
+
     # Increment token version to invalidate all sessions
     user.token_version += 1
 
@@ -5314,6 +5345,7 @@ async def admin_unlock_user(
     user.is_active = True
     user.locked_until = None
     user.failed_login_attempts = 0  # Reset failed attempts
+    user.lock_reason = None
 
     db.commit()
 
@@ -5628,6 +5660,24 @@ async def admin_get_stats(
     total_featured_teams = db.query(models.Team).filter(models.Team.is_featured == True).count()
     total_analyses = db.query(models.TeamAnalysis).count()
 
+    # Analysis trends
+    analyses_today = db.query(models.TeamAnalysis).filter(
+        models.TeamAnalysis.created_at >= today_start
+    ).count()
+    analyses_this_week = db.query(models.TeamAnalysis).filter(
+        models.TeamAnalysis.created_at >= week_start
+    ).count()
+    analyses_this_month = db.query(models.TeamAnalysis).filter(
+        models.TeamAnalysis.created_at >= month_start
+    ).count()
+
+    # Guest conversion tracking
+    guest_conversions = db.query(models.User).filter(
+        models.User.converted_from_guest == True,
+        models.User.is_guest == False,
+        models.User.is_system == False
+    ).count()
+
     # Users by tier
     tier_counts = db.query(
         models.User.subscription_tier,
@@ -5666,7 +5716,11 @@ async def admin_get_stats(
         users_by_tier=users_by_tier,
         registrations_today=registrations_today,
         registrations_this_week=registrations_this_week,
-        registrations_this_month=registrations_this_month
+        registrations_this_month=registrations_this_month,
+        analyses_today=analyses_today,
+        analyses_this_week=analyses_this_week,
+        analyses_this_month=analyses_this_month,
+        guest_conversions=guest_conversions,
     )
 
 
