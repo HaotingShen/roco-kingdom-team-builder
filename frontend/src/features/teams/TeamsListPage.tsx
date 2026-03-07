@@ -14,7 +14,7 @@ import { useAuthStore } from "@/features/auth/authStore";
 /** Component for displaying circular monster images with fallback */
 function MonsterAvatar({ monster, size = 60 }: { monster: any; size?: number }) {
   const [imgSrc, setImgSrc] = useState<string | null>(null);
-  const fallbackChain = monsterImageFallbackChain(monster, 180);
+  const fallbackChain = monsterImageFallbackChain(monster, 360);
 
   useEffect(() => {
     setImgSrc(fallbackChain[0] || "/monster-images/placeholder.png");

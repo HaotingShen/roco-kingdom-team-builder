@@ -142,7 +142,7 @@ function MonsterEvolutionCard({
       ? `${monsterName} (${pickFormName(monster as any, lang) || monster.form})`
       : monsterName;
 
-  const fallbackChain = monsterImageFallbackChain(monster as any, 180);
+  const fallbackChain = monsterImageFallbackChain(monster as any, 360);
   const imgSrc = fallbackChain[0] || "/monster-images/placeholder.png";
 
   // CRITICAL: Leader representatives navigate to first (lowest ID) leader form

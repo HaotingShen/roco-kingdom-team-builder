@@ -278,7 +278,7 @@ function MonstersTab() {
                     const titleName = pickName(m as any, lang) || m.name;
                     const formLabel = m.is_leader_form ? "" : pickFormName(m as any, lang);
                     const title = [titleName, formLabel ? `(${formLabel})` : ""].filter(Boolean).join(" ");
-                    const fallbackChain = monsterImageFallbackChain(m, 180);
+                    const fallbackChain = monsterImageFallbackChain(m, 360);
                     const src = fallbackChain[0] || "/monster-images/placeholder.png";
                     return (
                       <Link
@@ -291,8 +291,8 @@ function MonstersTab() {
                           <img
                             src={src}
                             alt=""
-                            width={180}
-                            height={180}
+                            width={360}
+                            height={360}
                             className="h-[120px] w-[120px] object-contain drop-shadow-sm"
                             loading="lazy"
                             data-fallback-step="0"

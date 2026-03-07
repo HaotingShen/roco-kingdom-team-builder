@@ -160,7 +160,7 @@ export default function MonsterDetailPage() {
   }, [legacyMovesRaw, typesQ.data]);
 
   // Image fallback chain for leader form handling
-  const fallbackChain = m ? monsterImageFallbackChain(m, 270) : [];
+  const fallbackChain = m ? monsterImageFallbackChain(m, 360) : [];
   const mainImageSrc = fallbackChain[0] || "/monster-images/placeholder.png";
 
   if (q.isLoading) return <div>{t("common.loading")}</div>;
@@ -313,8 +313,8 @@ export default function MonsterDetailPage() {
               <img
                 src={mainImageSrc}
                 alt=""
-                width={270}
-                height={270}
+                width={360}
+                height={360}
                 className="h-[200px] w-[200px] object-contain drop-shadow-md hover:scale-105 transition-transform duration-200"
                 data-fallback-step="0"
                 onError={(e) => {
