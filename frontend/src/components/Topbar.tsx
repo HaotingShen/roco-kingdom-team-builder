@@ -132,7 +132,12 @@ export default function Topbar() {
               title={t("topbar.quickBuild")}
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                <rect x="3" y="3" width="18" height="18" rx="3" ry="3" strokeWidth={2} />
+                <circle cx="8.5" cy="8.5" r="1" fill="currentColor" stroke="none" />
+                <circle cx="15.5" cy="8.5" r="1" fill="currentColor" stroke="none" />
+                <circle cx="8.5" cy="15.5" r="1" fill="currentColor" stroke="none" />
+                <circle cx="15.5" cy="15.5" r="1" fill="currentColor" stroke="none" />
+                <circle cx="12" cy="12" r="1" fill="currentColor" stroke="none" />
               </svg>
             </button>
             <button
