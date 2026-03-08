@@ -11,7 +11,7 @@ export default function DonationModal({ isOpen, onClose }: Props) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
+    <div className="fixed inset-0 z-50 flex items-center justify-center pb-16 lg:pb-0">
       {/* Backdrop */}
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
 
@@ -54,7 +54,7 @@ export default function DonationModal({ isOpen, onClose }: Props) {
                 <img
                   src="/payments/wechat.jpg"
                   alt={t("donation.wechat") ?? "WeChat Pay"}
-                  className="w-36 h-36 object-cover"
+                  className="w-28 h-28 sm:w-36 sm:h-36 object-cover"
                 />
               </div>
             </div>
@@ -70,7 +70,7 @@ export default function DonationModal({ isOpen, onClose }: Props) {
                 <img
                   src="/payments/alipay.jpg"
                   alt={t("donation.alipay") ?? "Alipay"}
-                  className="w-36 h-36 object-cover"
+                  className="w-28 h-28 sm:w-36 sm:h-36 object-cover"
                 />
               </div>
             </div>
