@@ -676,7 +676,7 @@ function MovesTab() {
                                   className="block shrink-0"
                                 />
                               ) : null}
-                              <div className="font-medium whitespace-normal break-words sm:break-keep">
+                              <div className="font-medium whitespace-normal break-words min-w-0">
                                 {cname}
                               </div>
                             </div>
