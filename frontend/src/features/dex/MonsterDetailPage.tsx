@@ -3,6 +3,7 @@ import { useEffect, useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { endpoints } from "@/lib/api";
 import { useI18n, pickName, pickDesc, pickFormName } from "@/i18n";
+import { useSeoMeta } from "@/hooks/useSeoMeta";
 import type { TypeOut, MoveOut, MonsterOut, StatKey } from "@/types";
 import { STAT_KEYS } from "@/types";
 import { typeIconUrl, monsterImageFallbackChain } from "@/lib/images";
@@ -69,6 +70,20 @@ export default function MonsterDetailPage() {
   });
 
   const m = q.data;
+  const monsterName = m ? pickName(m, lang) : "";
+  useSeoMeta({
+    title: monsterName
+      ? lang === "zh" ? `${monsterName} | 洛手配队器` : `${monsterName} | RK Team Builder`
+      : lang === "zh" ? "精灵详情 | 洛手配队器" : "Monster Detail | RK Team Builder",
+    description: monsterName
+      ? lang === "zh"
+        ? `${monsterName} 的数值、招式、特性和进化 — 洛克王国: 世界。`
+        : `${monsterName} — stats, moves, traits, and evolution for Roco Kingdom: World.`
+      : lang === "zh"
+        ? "查看精灵的数值、招式、特性和进化。"
+        : "View monster stats, moves, traits, and evolution for Roco Kingdom: World.",
+    canonicalPath: id ? `/dex/monsters/${id}` : "/dex",
+  });
 
   // Fetch all forms of the same species (for leader form selection)
   const allForms = useQuery({

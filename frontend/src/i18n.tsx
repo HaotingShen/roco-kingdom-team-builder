@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useMemo, useState } from "react";
+import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { endpoints } from "@/lib/api";
 import type { TypeOut } from "@/types";
@@ -1264,6 +1264,10 @@ const I18nCtx = createContext<Ctx | null>(null);
 export function I18nProvider({ children }: { children: React.ReactNode }) {
   const browserLang: Lang = navigator.language.startsWith("zh") ? "zh" : "en";
   const [lang, setLang] = useState<Lang>((localStorage.getItem("lang") as Lang) || browserLang);
+  useEffect(() => {
+    document.documentElement.lang = lang;
+  }, [lang]);
+
   const value = useMemo<Ctx>(() => ({
       lang,
       setLang: (l) => { localStorage.setItem("lang", l); setLang(l); },

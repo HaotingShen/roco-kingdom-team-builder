@@ -11,6 +11,7 @@ import { useNavigate } from "react-router-dom";
 import MonsterInspector from "./MonsterInspector";
 import { useI18n, pickName } from "@/i18n";
 import { extractErrorMessage } from "@/hooks/useTeamMutation";
+import { useSeoMeta } from "@/hooks/useSeoMeta";
 import { magicItemImageUrl } from "@/lib/images";
 import { QUERY_KEYS } from "@/lib/constants";
 import { useAuthStore } from "@/features/auth/authStore";
@@ -272,6 +273,13 @@ export default function BuilderPage() {
   const [attemptedAction, setAttemptedAction] = useState<'analyze' | 'save' | null>(null);
   const showFieldErrors = attemptedAction !== null;
   const { lang, t } = useI18n();
+  useSeoMeta({
+    title: lang === "zh" ? "洛手配队器 | 洛克王国对战配队工具" : "Team Builder | Roco Kingdom PvP Team Planner",
+    description: lang === "zh"
+      ? "为洛克王国: 世界创建并分析对战队伍，获得 AI 驱动的特性与招式协同分析。"
+      : "Build and analyze PvP teams for Roco Kingdom: World. Get AI-powered trait and move synergy analysis.",
+    canonicalPath: "/",
+  });
   const navigate = useNavigate();
   const { user } = useAuthStore();
   const { quota } = useQuota();

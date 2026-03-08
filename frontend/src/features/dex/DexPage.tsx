@@ -6,6 +6,7 @@ import { useI18n, pickName, pickDesc, pickFormName } from "@/i18n";
 import type { MonsterLiteOut, MoveOut, TypeOut, MagicItemOut } from "@/types";
 import PageTabs from "@/components/PageTabs";
 import useDebounce from "@/hooks/useDebounce";
+import { useSeoMeta } from "@/hooks/useSeoMeta";
 import { useQuery } from "@tanstack/react-query";
 import { useWindowVirtualizer } from "@tanstack/react-virtual";
 import { typeIconUrl, magicItemImageUrl, monsterImageFallbackChain } from "@/lib/images";
@@ -807,7 +808,14 @@ function GameTermsTab() {
    =========================================================== */
 
 export default function DexPage() {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
+  useSeoMeta({
+    title: lang === "zh" ? "精灵图鉴 | 洛克王国: 世界" : "Monster Dex | Roco Kingdom: World",
+    description: lang === "zh"
+      ? "浏览完整的洛克王国: 世界精灵图鉴，按属性、数值和招式搜索。"
+      : "Browse the complete Roco Kingdom: World monster dex. Search by type, stats, and moves.",
+    canonicalPath: "/dex",
+  });
   const [sp, setSp] = useSearchParams();
 
   // Get active tab from URL or default to "monsters"

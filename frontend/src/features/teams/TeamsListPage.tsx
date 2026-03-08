@@ -8,6 +8,7 @@ import { useState, useEffect } from "react";
 import { monsterImageFallbackChain, magicItemImageUrl } from "@/lib/images";
 import { QUERY_KEYS } from "@/lib/constants";
 import { useQuota } from "@/hooks/useQuota";
+import { useSeoMeta } from "@/hooks/useSeoMeta";
 import QuotaDisplay from "@/components/QuotaDisplay";
 import { useAuthStore } from "@/features/auth/authStore";
 
@@ -47,6 +48,13 @@ function MonsterAvatar({ monster, size = 60 }: { monster: any; size?: number }) 
 
 export default function TeamsListPage() {
   const { t, lang } = useI18n();
+  useSeoMeta({
+    title: lang === "zh" ? "我的队伍 | 洛手配队器" : "My Teams | RK Team Builder",
+    description: lang === "zh"
+      ? "查看和管理您保存的洛克王国对战队伍。"
+      : "View and manage your saved Roco Kingdom PvP teams.",
+    canonicalPath: "/teams",
+  });
   const qc = useQueryClient();
   const { quota } = useQuota();
   const user = useAuthStore(s => s.user);

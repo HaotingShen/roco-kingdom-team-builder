@@ -7,6 +7,7 @@ import { useBuilderStore } from "../builder/builderStore";
 import type { TeamOut, FullSavedAnalysisOut } from "@/types";
 import { pickName, pickFormName, useI18n, type Lang } from "@/i18n";
 import { monsterImageFallbackChain, typeIconUrl, magicItemImageUrl } from "@/lib/images";
+import { useSeoMeta } from "@/hooks/useSeoMeta";
 import { formatRowEffects } from "@/lib/personality";
 
 /* --- Animated dots component --- */
@@ -81,12 +82,6 @@ export default function SavedTeamPage() {
   const { id } = useParams();
   const nav = useNavigate();
   const { lang, t } = useI18n();
-  const loadIntoBuilder = useBuilderStore(s => s.loadFromTeam);
-  const setAnalysis = useBuilderStore(s => s.setAnalysis);
-  const isAnalyzing = useBuilderStore(s => s.isAnalyzing);
-  const setIsAnalyzing = useBuilderStore(s => s.setIsAnalyzing);
-  const qc = useQueryClient();
-
   const teamId = Number(id);
   const q = useQuery<TeamOut>({
     queryKey: ["team", teamId],
@@ -96,6 +91,25 @@ export default function SavedTeamPage() {
     refetchOnMount: "always",
     refetchOnWindowFocus: false,
   });
+  const teamName = q.data?.name ?? "";
+  useSeoMeta({
+    title: teamName
+      ? lang === "zh" ? `${teamName} | 洛手配队器` : `${teamName} | RK Team Builder`
+      : lang === "zh" ? "队伍详情 | 洛手配队器" : "Team | RK Team Builder",
+    description: teamName
+      ? lang === "zh"
+        ? `${teamName} — 洛克王国对战队伍及 AI 协同分析。`
+        : `${teamName} — a Roco Kingdom PvP team with AI synergy analysis.`
+      : lang === "zh"
+        ? "查看此洛克王国对战队伍。"
+        : "View this Roco Kingdom PvP team.",
+    canonicalPath: id ? `/teams/${id}` : "/teams",
+  });
+  const loadIntoBuilder = useBuilderStore(s => s.loadFromTeam);
+  const setAnalysis = useBuilderStore(s => s.setAnalysis);
+  const isAnalyzing = useBuilderStore(s => s.isAnalyzing);
+  const setIsAnalyzing = useBuilderStore(s => s.setIsAnalyzing);
+  const qc = useQueryClient();
 
   // Query for saved analysis
   const savedAnalysisQuery = useQuery<FullSavedAnalysisOut>({
