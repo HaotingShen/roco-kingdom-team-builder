@@ -104,7 +104,7 @@ export default function Topbar() {
       {/* Logo — shown below 800px only (sidebar is hidden there) */}
       <Link
         to="/build"
-        className="sm:hidden shrink-0"
+        className="lg:hidden shrink-0"
         aria-label="Home"
       >
         <img
@@ -118,7 +118,7 @@ export default function Topbar() {
       </Link>
 
       {/* Page title — hidden below 800px to save space */}
-      <h1 className="hidden sm:block font-medium text-zinc-800 shrink-0">{title}</h1>
+      <h1 className="hidden lg:block font-medium text-zinc-800 shrink-0">{title}</h1>
 
       <div className="flex-1" />
 
