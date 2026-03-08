@@ -1,5 +1,10 @@
 @import "tailwindcss";
 
+@theme {
+  --breakpoint-moves-md: 800px;   /* 2-col threshold for move cards and monster slots */
+  --breakpoint-moves-lg: 1400px;  /* 3-col threshold for move cards and monster slots */
+}
+
 :root {
   --sidebar-w: 12rem; /* 192px */
 }

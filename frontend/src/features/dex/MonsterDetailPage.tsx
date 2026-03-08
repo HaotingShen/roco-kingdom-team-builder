@@ -517,7 +517,7 @@ function MovesList({ list }: { list: any[] }) {
   };
 
   return (
-    <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+    <div className="grid gap-3 grid-cols-1 moves-md:grid-cols-2 moves-lg:grid-cols-3">
       {(list ?? []).map((m: MoveOut & any) => {
         const tp = (m.move_type || m.type) as TypeOut | null;
         const cname = pickName(m as any, lang) || m.name;

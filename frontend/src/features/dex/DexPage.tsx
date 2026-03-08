@@ -27,8 +27,8 @@ function useColumns(kind: "monsters" | "moves") {
     // matches: 2 / 2(sm) / 3(lg) / 5(xl)
     return w >= 1280 ? 5 : w >= 1024 ? 3 : 2;
   }
-  // moves: 1 / 2(sm) / 3(lg)
-  return w >= 1024 ? 3 : w >= 640 ? 2 : 1;
+  // moves: 1 / 2(800px) / 3(1400px)
+  return w >= 1400 ? 3 : w >= 800 ? 2 : 1;
 }
 
 /* ---------------- tiny UI atoms ---------------- */
@@ -591,7 +591,7 @@ function MovesTab() {
                 data-index={vi.index}
                 className="mb-3"
               >
-                <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="grid gap-3 grid-cols-1 moves-md:grid-cols-2 moves-lg:grid-cols-3">
                   {rowMoves.map((m) => {
                     const tp = (m.move_type || m.type) as TypeOut | null;
                     const cname = pickName(m as any, lang) || m.name;
