@@ -12,13 +12,13 @@ export default function Footer() {
       </div>
       <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1">
         <span>© {year} RK Team Builder · 洛手配队器</span>
-        <NavLink to="/feedback" className="hover:text-zinc-700 underline underline-offset-2">
-          {t("footer.feedback")}
-        </NavLink>
         <span>·</span>
         <span>{t("footer.qqGroup")}</span>
         <span>·</span>
         <span>{t("footer.wechatGroup")}</span>
+        <NavLink to="/feedback" className="hover:text-zinc-700 underline underline-offset-2">
+          {t("footer.feedback")}
+        </NavLink>
       </div>
     </footer>
   );
