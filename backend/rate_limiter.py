@@ -176,9 +176,9 @@ async def rate_limit_exceeded_handler(request: Request, exc: RateLimitExceeded):
             message = f"Too many registration attempts. Please wait {retry_time} before trying again."
     elif "/team/analyze" in path:
         if language == "zh":
-            message = f"请求过于频繁，请等待 {retry_time} 后再试。\n提示：重新分析相同队伍会使用缓存，无需等待！"
+            message = "请求过于频繁，请稍后再试。"
         else:
-            message = f"Too many requests. Please wait {retry_time} before analyzing again.\nTip: Analyzing the same team again uses cache and is instant!"
+            message = "Too many requests. Please try again shortly."
     else:
         # Generic message for other endpoints
         if language == "zh":
@@ -284,46 +284,11 @@ async def check_analysis_rate_limit_async(ip: str, team_hash: str, limit_per_min
         return True  # Fail open - allow request if Redis unavailable
 
 
-async def check_global_ip_rate_limit_async(ip: str, limit_per_minutes: int = 2) -> bool:
-    """
-    Redis-based global IP rate limit.
-
-    This prevents users from bypassing rate limits by analyzing different teams.
-
-    Args:
-        ip: Client IP address
-        limit_per_minutes: Time window in minutes (default: 2)
-
-    Returns:
-        True if allowed, False if rate limited
-    """
-    try:
-        r = await get_rate_limit_redis()
-        if not r:
-            # Redis unavailable - fail open (allow request)
-            logger.warning("Redis unavailable for global IP rate limit, allowing request")
-            return True
-
-        key = f"ratelimit:global_ip:{ip}"
-
-        # Check if key exists (meaning we're within the rate limit window)
-        exists = await r.exists(key)
-        if exists:
-            return False  # Rate limited
-
-        return True  # Allowed
-
-    except Exception as e:
-        logger.error(f"Redis global rate limit check failed: {e}")
-        return True  # Fail open
-
-
 async def record_analysis_async(ip: str, team_hash: str, limit_per_minutes: int = 2):
     """
     Record that an analysis was performed for the given IP and team composition.
 
-    Sets both global IP and per-team keys with TTL.
-    Should be called AFTER successful analysis completion.
+    Sets per-team key with TTL to prevent concurrent duplicate submissions.
 
     Args:
         ip: Client IP address
@@ -337,15 +302,7 @@ async def record_analysis_async(ip: str, team_hash: str, limit_per_minutes: int 
             return
 
         ttl_seconds = limit_per_minutes * 60
-
-        # Use pipeline for atomic multi-key set
-        async with r.pipeline(transaction=True) as pipe:
-            # Set per-team key
-            pipe.setex(f"ratelimit:analysis:{ip}:{team_hash}", ttl_seconds, "1")
-            # Set global IP key
-            pipe.setex(f"ratelimit:global_ip:{ip}", ttl_seconds, "1")
-            await pipe.execute()
-
+        await r.setex(f"ratelimit:analysis:{ip}:{team_hash}", ttl_seconds, "1")
         logger.debug(f"Recorded analysis rate limit for ip={ip}")
 
     except Exception as e:
@@ -372,22 +329,6 @@ def check_analysis_rate_limit(ip: str, team_hash: str, limit_per_minutes: int = 
         return True  # Fail open
 
 
-def check_global_ip_rate_limit(ip: str, limit_per_minutes: int = 2) -> bool:
-    """
-    Synchronous global IP rate limit check (backward compatibility).
-
-    NOTE: Prefer using check_global_ip_rate_limit_async in async endpoints.
-    """
-    import redis as sync_redis
-    try:
-        r = sync_redis.from_url(REDIS_URL, decode_responses=True)
-        key = f"ratelimit:global_ip:{ip}"
-        return not r.exists(key)
-    except Exception as e:
-        logger.error(f"Sync Redis global rate limit check failed: {e}")
-        return True  # Fail open
-
-
 def record_analysis(ip: str, team_hash: str, limit_per_minutes: int = 2):
     """
     Synchronous record analysis (backward compatibility).
@@ -398,25 +339,21 @@ def record_analysis(ip: str, team_hash: str, limit_per_minutes: int = 2):
     try:
         r = sync_redis.from_url(REDIS_URL, decode_responses=True)
         ttl_seconds = limit_per_minutes * 60
-        pipe = r.pipeline()
-        pipe.setex(f"ratelimit:analysis:{ip}:{team_hash}", ttl_seconds, "1")
-        pipe.setex(f"ratelimit:global_ip:{ip}", ttl_seconds, "1")
-        pipe.execute()
+        r.setex(f"ratelimit:analysis:{ip}:{team_hash}", ttl_seconds, "1")
     except Exception as e:
         logger.error(f"Sync Redis record analysis failed: {e}")
 
 
-def get_rate_limit_message(language: str = "en", minutes: int = 2) -> str:
+def get_rate_limit_message(language: str = "en") -> str:
     """
     Get localized rate limit error message for analysis endpoints.
 
     Args:
         language: "en" or "zh"
-        minutes: Time window in minutes (default: 2)
 
     Returns:
         Localized error message string
     """
     if language == "zh":
-        return f"请求过于频繁，请等待 {minutes} 分钟后再试。提示：重新分析相同队伍会使用缓存，无需等待！"
-    return f"Too many requests. Please wait {minutes} minutes before analyzing again. Tip: Analyzing the same team again uses cache and is instant!"
+        return "请求过于频繁，请稍后再试。"
+    return "Too many requests. Please try again shortly."

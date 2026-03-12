@@ -34,14 +34,13 @@ Scripts for managing Redis cache in development.
 
 Same team + language = instant cached response (no LLM call).
 
-### Rate Limits (`ratelimit:*`) - 2min TTL
+### Rate Limits (`ratelimit:*`) - 1min TTL
 
 | Key Pattern | Purpose |
 |-------------|---------|
-| `ratelimit:analysis:{ip}:{team_hash}` | Per-team cooldown |
-| `ratelimit:global_ip:{ip}` | Global IP cooldown (any analysis) |
+| `ratelimit:analysis:{ip}:{team_hash}` | Per-team cooldown (prevents concurrent duplicate submissions) |
 
-Prevents spam/abuse of LLM API.
+Prevents concurrent duplicate LLM calls for the same team from the same IP.
 
 ### Usage Quotas (`tier:*`)
 
@@ -125,7 +124,6 @@ The script shortens long keys for display:
 | `llm_cache:monster_trait:{hash}` | `cache:monster:{hash}` |
 | `llm_cache:team_synergy:{hash}` | `cache:team:{hash}` |
 | `ratelimit:analysis:{ip}:{hash}` | `rate:team:{ip}:{hash}` |
-| `ratelimit:global_ip:{ip}` | `rate:ip:{ip}` |
 | `tier:user:{id}:...` | `user:{id}:...` |
 | `tier:anon:device:{id}:...` | `anon:device:{id}:...` |
 | `tier:anon:ip:{ip}:...` | `anon:ip:{ip}:...` |

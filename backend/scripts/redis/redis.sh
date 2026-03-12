@@ -72,7 +72,6 @@ cmd_status() {
     local cache_team=$(count_keys 'llm_cache:team_synergy:*')
     local locks=$(count_keys 'lock:*')
     local rate_team=$(count_keys 'ratelimit:analysis:*')
-    local rate_global=$(count_keys 'ratelimit:global_ip:*')
     local quota_user=$(count_keys 'tier:user:*')
     local quota_anon_device=$(count_keys 'tier:anon:device:*')
     local quota_anon_ip=$(count_keys 'tier:anon:ip:*')
@@ -87,9 +86,8 @@ cmd_status() {
     [ "$locks" -gt 0 ] && echo -e "  Active locks:     $locks ${DIM}(in-progress analyses)${NC}"
     echo ""
 
-    echo -e "${CYAN}Rate Limits${NC} ${DIM}(prevents spam, 2min TTL)${NC}"
+    echo -e "${CYAN}Rate Limits${NC} ${DIM}(per-team cooldown, 1min TTL)${NC}"
     echo "  Per-team:   $rate_team"
-    echo "  Per-IP:     $rate_global"
     echo ""
 
     echo -e "${CYAN}Usage Quotas${NC} ${DIM}(daily/monthly limits per tier)${NC}"
@@ -187,11 +185,11 @@ cmd_stats() {
     echo ""
 
     echo -e "${CYAN}Rate Limited Now${NC}"
-    local rate_count=$(count_keys "ratelimit:global_ip:*")
+    local rate_count=$(count_keys "ratelimit:analysis:*")
     if [ "$rate_count" -eq 0 ]; then
-        echo -e "  ${GREEN}No one is rate limited${NC}"
+        echo -e "  ${GREEN}No active per-team cooldowns${NC}"
     else
-        echo -e "  ${YELLOW}$rate_count IPs currently blocked${NC} (2min cooldown)"
+        echo -e "  ${YELLOW}$rate_count team/IP combos on cooldown${NC} (1min TTL)"
     fi
     echo ""
 }
@@ -224,7 +222,7 @@ show_keys_with_ttl() {
                 ttl_str="no TTL"
             fi
             # Shorten key for display
-            local short_key=$(echo "$key" | sed 's/llm_cache:monster_trait:/cache:monster:/; s/llm_cache:team_synergy:/cache:team:/; s/ratelimit:analysis:/rate:team:/; s/ratelimit:global_ip:/rate:ip:/; s/tier:anon:device:/anon:device:/; s/tier:anon:ip:/anon:ip:/; s/tier:user:/user:/; s/tier:guest_create:ip:/guest_create:/; s/tier:device:/cap:device:/; s/tier:ip:/cap:ip:/')
+            local short_key=$(echo "$key" | sed 's/llm_cache:monster_trait:/cache:monster:/; s/llm_cache:team_synergy:/cache:team:/; s/ratelimit:analysis:/rate:team:/; s/tier:anon:device:/anon:device:/; s/tier:anon:ip:/anon:ip:/; s/tier:user:/user:/; s/tier:guest_create:ip:/guest_create:/; s/tier:device:/cap:device:/; s/tier:ip:/cap:ip:/')
 
             if [ "$show_value" = "true" ]; then
                 local value=$(redis-cli GET "$key" 2>/dev/null)
@@ -264,7 +262,7 @@ show_quota_keys() {
             fi
 
             # Shorten key for display - extract the identifier
-            local short_key=$(echo "$key" | sed 's/llm_cache:monster_trait:/cache:monster:/; s/llm_cache:team_synergy:/cache:team:/; s/ratelimit:analysis:/rate:team:/; s/ratelimit:global_ip:/rate:ip:/; s/tier:anon:device:/anon:device:/; s/tier:anon:ip:/anon:ip:/; s/tier:user:/user:/; s/tier:guest_create:ip:/guest_create:/; s/tier:device:/cap:device:/; s/tier:ip:/cap:ip:/')
+            local short_key=$(echo "$key" | sed 's/llm_cache:monster_trait:/cache:monster:/; s/llm_cache:team_synergy:/cache:team:/; s/ratelimit:analysis:/rate:team:/; s/tier:anon:device:/anon:device:/; s/tier:anon:ip:/anon:ip:/; s/tier:user:/user:/; s/tier:guest_create:ip:/guest_create:/; s/tier:device:/cap:device:/; s/tier:ip:/cap:ip:/')
 
             # Color based on usage
             local usage_str=""
@@ -307,15 +305,11 @@ cmd_show() {
             ;;
         rate)
             echo -e "${CYAN}Rate Limits${NC}"
-            echo -e "${DIM}Prevents rapid-fire requests. Resets after 2 minutes.${NC}"
+            echo -e "${DIM}Prevents concurrent duplicate submissions. Resets after 1 minute.${NC}"
             echo ""
             echo "Per-Team ($(count_keys 'ratelimit:analysis:*')):"
-            echo -e "${DIM}Same team = blocked for 2min (use cache instead)${NC}"
+            echo -e "${DIM}Same team from same IP = blocked for 1min${NC}"
             show_keys_with_ttl "ratelimit:analysis:*" 10
-            echo ""
-            echo "Per-IP ($(count_keys 'ratelimit:global_ip:*')):"
-            echo -e "${DIM}Any analysis = blocked for 2min${NC}"
-            show_keys_with_ttl "ratelimit:global_ip:*" 10
             ;;
         quota|tier)
             echo -e "${CYAN}Usage Quotas${NC}"
@@ -414,7 +408,6 @@ cmd_clear() {
         rate)
             echo "Clearing rate limits..."
             clear_pattern "ratelimit:analysis:*"
-            clear_pattern "ratelimit:global_ip:*"
             echo -e "\n${GREEN}Done!${NC} Users can analyze immediately."
             ;;
         quota|tier)
@@ -505,15 +498,14 @@ cmd_watch() {
         echo ""
 
         # Rate limits
-        echo -e "${CYAN}Rate Limits${NC} ${DIM}(blocked users)${NC}"
-        local rates=$(redis-cli --scan --pattern "ratelimit:global_ip:*" 2>/dev/null)
+        echo -e "${CYAN}Rate Limits${NC} ${DIM}(per-team cooldowns)${NC}"
+        local rates=$(redis-cli --scan --pattern "ratelimit:analysis:*" 2>/dev/null)
         if [ -z "$rates" ]; then
-            echo -e "  ${GREEN}None${NC} - no one is rate limited"
+            echo -e "  ${GREEN}None${NC} - no per-team cooldowns active"
         else
             echo "$rates" | while read -r key; do
                 local ttl=$(redis-cli TTL "$key")
-                local ip=$(echo "$key" | sed 's/ratelimit:global_ip://')
-                echo -e "  ${RED}●${NC} $ip blocked for ${ttl}s"
+                echo -e "  ${YELLOW}●${NC} $key (${ttl}s)"
             done
         fi
         echo ""

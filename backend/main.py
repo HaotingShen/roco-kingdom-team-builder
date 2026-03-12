@@ -36,7 +36,6 @@ from backend.rate_limiter import (
     analysis_rate_limit,
     rate_limit_exceeded_handler,
     check_analysis_rate_limit_async,
-    check_global_ip_rate_limit_async,
     record_analysis_async,
     get_rate_limit_message,
     get_real_client_ip,
@@ -4444,25 +4443,14 @@ async def analyze_team(
                 f"bypassing quota checks"
             )
 
-        # 4. IP-based rate limit (prevents analyzing different teams rapidly)
-        # Rate limits ALWAYS apply, even during grace (protects Gemini API)
-        if not await check_global_ip_rate_limit_async(client_ip):
-            logger.warning(
-                f"Global rate limit exceeded for {client_ip} analyzing team {team_hash} in {req.language}"
-            )
-            raise HTTPException(
-                status_code=429,
-                detail=get_rate_limit_message(req.language, minutes=1)
-            )
-
-        # 5. Per-team rate limit (prevents language-switching exploits)
+        # 4. Per-team rate limit (prevents same-team concurrent duplicate submissions)
         if not await check_analysis_rate_limit_async(client_ip, team_hash):
             logger.warning(
                 f"Per-team rate limit exceeded for {client_ip} analyzing team {team_hash} in {req.language}"
             )
             raise HTTPException(
                 status_code=429,
-                detail=get_rate_limit_message(req.language, minutes=1)
+                detail=get_rate_limit_message(req.language)
             )
 
         # Record rate limit BEFORE analysis (prevents concurrent bypass)
@@ -4678,25 +4666,14 @@ async def analyze_team_by_id(
                 f"bypassing quota checks"
             )
 
-        # 4. IP-based rate limit (prevents analyzing different teams rapidly)
-        # Rate limits ALWAYS apply, even during grace (protects Gemini API)
-        if not await check_global_ip_rate_limit_async(client_ip):
-            logger.warning(
-                f"Global rate limit exceeded for {client_ip} analyzing team {team_hash} (ID: {req.team_id}) in {req.language}"
-            )
-            raise HTTPException(
-                status_code=429,
-                detail=get_rate_limit_message(req.language, minutes=1)
-            )
-
-        # 5. Per-team rate limit (prevents language-switching exploits)
+        # 4. Per-team rate limit (prevents same-team concurrent duplicate submissions)
         if not await check_analysis_rate_limit_async(client_ip, team_hash):
             logger.warning(
                 f"Per-team rate limit exceeded for {client_ip} analyzing team {team_hash} (ID: {req.team_id}) in {req.language}"
             )
             raise HTTPException(
                 status_code=429,
-                detail=get_rate_limit_message(req.language, minutes=1)
+                detail=get_rate_limit_message(req.language)
             )
 
         # Record rate limit BEFORE analysis (prevents concurrent bypass)

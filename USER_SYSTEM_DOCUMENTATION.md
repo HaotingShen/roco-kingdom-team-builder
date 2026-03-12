@@ -784,8 +784,7 @@ retry_grace:ip:{ip}:{team_hash}:{language}              # Anonymous IP grace (la
 ### Rate Limiting
 
 ```
-rate_limit:analysis:{ip}:{team_hash}          # Per-team rate limit
-rate_limit:global:{ip}                        # Global IP rate limit
+ratelimit:analysis:{ip}:{team_hash}          # Per-team rate limit (1min TTL)
 ```
 
 ### LLM Cache
