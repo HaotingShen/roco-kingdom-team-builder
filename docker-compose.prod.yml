@@ -66,6 +66,7 @@ services:
     environment:
       - DATABASE_URL=${UMAMI_DATABASE_URL}
       - APP_SECRET=${UMAMI_APP_SECRET}
+      - NODE_TLS_REJECT_UNAUTHORIZED=0
 
 volumes:
   redis-data:
