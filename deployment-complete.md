@@ -136,7 +136,7 @@ With your $200 credit, that covers roughly the first 8-12 months (depending on w
   │  │  Routes to Internet Gateway       │  │ Private Subnet  (1b)  │  │
   │  │                                   │  │ No internet route     │  │
   │  │  ┌─────────────────────────────┐  │  │                       │  │
-  │  │  │  EC2  t3.micro  (1.8)       │  │  │  ┌─────────────────┐  │  │
+  │  │  │  EC2  t3.small  (1.8)       │  │  │  ┌─────────────────┐  │  │
   │  │  │  13.228.63.192 (Elastic IP) │  │  │  │ RDS PostgreSQL  │  │  │
   │  │  │  IAM role: rktb-ec2-role    │  │  │  │ db.t3.micro(1.6)│  │  │
   │  │  │  SG: rktb-ec2-sg            │  │  │  │ SG: rktb-rds-sg │  │  │
@@ -1116,7 +1116,7 @@ volumes:
   What Phase 3 builds — software stack inside EC2:
 
   ┌────────────────────────────────────────────────────────────┐
-  │  EC2 t3.micro  (13.228.63.192)                             │
+  │  EC2 t3.small  (13.228.63.192)                             │
   │                                                            │
   │  ┌─────────────────────────────────────────────────────┐   │
   │  │ Nginx  (port 80)                          [3.2]     │   │
