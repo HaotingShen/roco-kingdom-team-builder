@@ -58,5 +58,14 @@ services:
       timeout: 5s
       retries: 3
 
+  umami:
+    image: ghcr.io/umami-software/umami:postgresql-latest
+    restart: always
+    ports:
+      - "127.0.0.1:3000:3000"
+    environment:
+      - DATABASE_URL=${UMAMI_DATABASE_URL}
+      - APP_SECRET=${UMAMI_APP_SECRET}
+
 volumes:
   redis-data:
