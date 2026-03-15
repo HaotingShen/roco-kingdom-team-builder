@@ -1,0 +1,422 @@
+================================================================================
+TYPE & TRAIT CHECK REPORT
+Generated: 2026-03-13 21:25:06
+Scope: EXACT_SINGLE rows in data_stats_traits_formal.xlsx
+================================================================================
+
+────────────────────────────────────────────────────────────────────────────────
+SECTION 1 — TYPE MISMATCHES  (0 found)
+────────────────────────────────────────────────────────────────────────────────
+  ✓ All types match.
+
+────────────────────────────────────────────────────────────────────────────────
+SECTION 2 — TRAIT NAME CHANGES  (0 found)
+────────────────────────────────────────────────────────────────────────────────
+  ✓ No trait name changes.
+
+────────────────────────────────────────────────────────────────────────────────
+SECTION 3 — TRAIT DESCRIPTION CHANGES  (73 found)
+────────────────────────────────────────────────────────────────────────────────
+
+  Row   2  春花兔  (Bloomhare)
+  Trait: 系统发育  (Phylogenesis)
+    JSON  : 溢出的生命和能量会随机给予场下的精灵。
+    Excel : 获得能量或生命时，会将等量的能量或生命随机分配给场下的精灵。
+
+  Row   3  粉耳星兔  (Pinkabbit)
+  Trait: 双向光速  (Dual Lightspeed)
+    JSON  : 在场时，所有回合结束时的效果触发2次。
+    Excel : 在场时，所有回合结束时效果，触发次数+1。
+
+  Row   4  落陨星兔  (Meteorabbit)
+  Trait: 陨落  (Fallen)
+    JSON  : 在场时，双方回合结束时触发的效果不会触发。
+    Excel : 在场时，双方回合结束时触发的效果，触发次数-1。
+
+  Row   5  贝古斯  (Beguron)
+  Trait: 贪心算法  (Greedy Algorithm)
+    JSON  : 4号位技能获得传动，且使用后使敌方获得6层灼烧。
+    Excel : 1号位技能获得传劲1，且使用后使敌方获得6层灼烧。
+
+  Row   6  小皮球  (Joltball)
+  Trait: 星地善良  (Stellar Kindness)
+    JSON  : 若场上的己方精灵能量等于0，自己立即替换此精灵。
+    Excel : 回合结束时，若场上的己方精灵能量等于0，自己立即替换此精灵。
+
+  Row   7  夜枭  (Nightowl)
+  Trait: 搜刮  (Scavenge)
+    JSON  : 敌方每使用1次【聚能】技能或替换精灵，自己入场时获得魔攻+20%。
+    Excel : 敌方每使用1次【聚能】技能或更换精灵，自己入场时获得魔攻+20%。
+
+  Row   9  窃光蚊  (Lumileech)
+  Trait: 血型吸引  (Blood Type Attraction)
+    JSON  : 敌方每携带1种系别的技能，自己攻击时威力+10。
+    Excel : 敌方每携带1种系列的技能，自己攻击时威力+10。
+
+  Row  10  月牙雪熊  (Cresnowbear)
+  Trait: 月牙雪糕  (Crescent Ice Cream)
+    JSON  : 使用攻击技能时，敌方每层冻结视为1层额外星陨。
+    Excel : 使用攻击技能时，敌方每层冻结视为1层额外星痕印记。
+
+  Row  11  利灯鱼  (Sharpglow)
+  Trait: 对流  (Convection)
+    JSON  : 自身的能耗增加变为能耗降低；能耗降低变为能耗增加。
+    Excel : 自己的能耗增加变为能耗降低；能耗降低变为能耗增加。
+
+  Row  13  熔岩布丁  (Lava Pudding)
+  Trait: 美拉德反应  (Maillard Reaction)
+    JSON  : 离场时，下个入场精灵获得双攻+20%并免疫灼烧。
+    Excel : 离场后，更换入场的精灵获得双攻+20%且免疫灼烧。
+
+  Row  14  椰浆布丁  (Coconut Pudding)
+  Trait: 吉利丁片  (Gelatin Sheet)
+    JSON  : 离场时，下个入场精灵获得双防+20%并免疫冻结。
+    Excel : 离场后，更换入场的精灵获得双防+20%且免疫冻结。
+
+  Row  15  抹茶布丁  (Matcha Pudding)
+  Trait: 茶多酚  (Tea Polyphenol)
+    JSON  : 离场时，下个入场精灵回复20%生命并免疫寄生。
+    Excel : 离场后，更换入场的精灵回复20%生命且免疫寄生。
+
+  Row  16  疾光千兽  (Lumirilion)
+  Trait: 月光审判  (Moonlight Judgment)
+    JSON  : 对首领血脉的精灵造成伤害+100%。
+    Excel : 攻击时，若敌方血脉是首领血脉，技能威力+100%。
+
+  Row  21  画间法师手  (Arthand)
+  Trait: 灰色肖像  (Gray Portrait)
+    JSON  : 攻击会使敌方已有的减益层数+3。
+    Excel : 攻击会摧毁敌方已有的减益层数+3。
+
+  Row  23  捕尘长绒  (Dustcatcher)
+  Trait: 扫拖一体  (Sweep and Mop)
+    JSON  : 回合结束时驱散敌方1层印记，获得1次随机奉献。
+    Excel : 回合结束时驱散敌方1层印记，且驱散后己方队伍获得1次碰机奉献。
+
+  Row  24  龙息帕尔  (Dracopal)
+  Trait: 付给恶魔的赎价  (Price Paid to the Devil)
+    JSON  : 自己被击败或击败敌方精灵时，均额外损失1点魔力。
+    Excel : 击败敌方精灵时，敌方额外损失1点魔力。被敌方精灵击败时，自己额外损失1点魔力。
+
+  Row  25  厉毒修萝  (Toxilure)
+  Trait: 侵蚀  (Corrosion)
+    JSON  : 敌方每拥有1层中毒效果，自己获得连击数+1。
+    Excel : 敌方每有1层中毒效果，自己获得连击数+1。
+
+  Row  26  寂灭骨龙  (Oblividrake)
+  Trait: 不朽  (Immortality)
+    JSON  : 力竭3回合后复活。
+    Excel : 力量2回合后复活。
+
+  Row  27  泥吼牙  (Mudhowl)
+  Trait: 无差别过滤  (Indiscriminate Filter)
+    JSON  : 在场时，所有精灵连击数固定为3。
+    Excel : 在场时，所有精灵连击数固定为2。
+
+  Row  29  铠甲虫  (Armobeetle)
+  Trait: 坚韧铠甲  (Resilient Armor)
+    JSON  : 每受到1次攻击伤害，获得1次随机奉献。
+    Excel : 每受到1次攻击伤害，己方队伍获得1次随机奉献。
+
+  Row  31  秩序鱿墨  (Ordicquid)
+  Trait: 绝对秩序  (Absolute Order)
+    JSON  : 受到非敌方系别的技能威力-50%。
+    Excel : 受到非敌方系列的技能攻击时伤害-50%。
+
+  Row  34  深蓝鲸  (Deepblue)
+  Trait: 倾轧  (Compounding Force)
+    JSON  : 获得技能能耗增益时，获得的层数翻倍。
+    Excel : 携带的技能受能耗变化效果的影响翻倍。
+
+  Row  36  绒光优优  (Glowyou)
+  Trait: 哨兵  (Sentinel)
+    JSON  : 回合开始时若敌方技能足够击败自己，获得速度+50，行动后脱离。
+    Excel : 回合开始时若敌方能足量击败自己，自己获得速度+50，行动后脱离。
+
+  Row  39  立方人  (Cubanoid)
+  Trait: 盲拧  (Blindfold Shuffle)
+    JSON  : 技能顺序每回合打乱，4号位的技能能耗-2。
+    Excel : 回合开始时，技能顺序打乱，4号位的技能能耗-4。
+
+  Row  40  帕帕斯卡  (Papaska)
+  Trait: 翼轴  (Wing Axis)
+    JSON  : 1号位技能获得迅捷和传动。
+    Excel : 1号位技能获得迅捷和传动1。
+
+  Row  47  闪电鳗鱼  (Volteel)
+  Trait: 生物电  (Bioelectricity)
+    JSON  : 电系技能获得迸发：能耗-2。
+    Excel : 携带的电系技能获得迸发：能耗-2。
+
+  Row  51  龙鱼  (Dragofin)
+  Trait: 洄游  (Anadromous)
+    JSON  : 每进入蓄力状态，获得全技能能耗永久-1。
+    Excel : 每次进入蓄力状态，获得全技能能耗永久-1。
+
+  Row  54  声波缇塔  (Sonatita)
+  Trait: 向心力  (Centripetal Force)
+    JSON  : 若1号位技能为该精灵未使用过的技能，该技能威力+40。
+    Excel : 1号和2号位技能获得传动1和威力+30。
+
+  Row  60  翼龙  (Wingdrake)
+  Trait: 暴食  (Gluttony)
+    JSON  : 龙系技能获得迅捷。
+    Excel : 携带的龙系技能获得迅捷。
+
+  Row  61  波多西  (Bodosi)
+  Trait: 定向精炼  (Directed Refinement)
+    JSON  : 己方精灵每释放1次防御技能，入场时本系技能威力提升10%。
+    Excel : 己方精灵每使用1次防御技能，自己入场时机械系和地面系技能威力+10%。
+
+  Row  63  烈火守护  (Blazeguard)
+  Trait: 蒸汽膨胀  (Steam Expansion)
+    JSON  : 己方精灵每使用1次火系技能，自己入场时全技能威力+10。
+    Excel : 己方精灵每使用1次火系技能，自己入场时获得全技能威力+10。
+
+  Row  64  恶魔红钻  (Dreadrill)
+  Trait: 振奋虫心  (Rousing Swarmheart)
+    JSON  : 主动击败敌方后，获得5次随机奉献。
+    Excel : 主动击败敌方后，己方队伍获得5次随机奉献。
+
+  Row  68  酷拉  (Kulra)
+  Trait: 噼啪！  (Crackle!)
+    JSON  : 入场首回合，所选技能使用次数+1。
+    Excel : 入场后首次行动，所选技能使用次数+1。
+
+  Row  70  鳗尾兽  (Eeltaur)
+  Trait: 铃兰晚钟  (Dusk Lily Chime)
+    JSON  : 首次入场时，失去自己50%当前生命。
+    Excel : 首次入场时，失去自己一半的当前生命。
+
+  Row  72  白发路路  (Whitlu)
+  Trait: 营养液泡  (Nutrient Bubble)
+    JSON  : 获得的增益层数+2。
+    Excel : 获得增益时，额外获得层数+2。
+
+  Row  79  花影羚羊  (Bloomshade)
+  Trait: 碰瓷  (Bait and Claim)
+    JSON  : 自己使用恶系技能后，敌方失去3能量。
+    Excel : 自己使用恶系技能后，敌方失去2能量。
+
+  Row  80  幻影灵菇  (Myclshade)
+  Trait: 毒蘑菇  (Poison Mushroom)
+    JSON  : 回合结束时，偷取所有敌方精灵1能量。
+    Excel : 回合结束时，偷取敌方场上所有精灵1能量。
+
+  Row  83  叮叮恶魔  (Stingmora)
+  Trait: 渴求  (Craving)
+    JSON  : 获得50%吸血。
+    Excel : 入场时获得50%吸血。
+
+  Row  86  幽影树  (Shadowwood)
+  Trait: 小偷小摸  (Pickpocket)
+    JSON  : 入场时偷取所有敌方精灵2点能量。
+    Excel : 入场时偷取所有敌方精灵2能量。
+
+  Row  87  卷胡巨獭  (Curloxen)
+  Trait: 保守派  (Conservatism)
+    JSON  : 总技能能耗小于3时，自己获得双防+80%。
+    Excel : 总技能能耗小于4时，自己获得双防+80%。
+
+  Row  89  奇丽花  (Chiliflower)
+  Trait: 养分重吸收  (Nutrient Reabsorption)
+    JSON  : 回合结束时，获得4点能量。
+    Excel : 回合结束时，回复3能量。
+
+  Row  92  蹦床松鼠  (Bouncequel)
+  Trait: 囤积  (Hoarding)
+    JSON  : 自身每有1能量，获得双防+10%。
+    Excel : 每有1能量，获得双防+10%。
+
+  Row  93  嘟嘟锅  (DuduPan)
+  Trait: 复方汤剂  (Compound Decoction)
+    JSON  : 中毒效果触发次数+1。
+    Excel : 回合结束时，中毒效果触发次数+1。
+
+  Row  95  兽花蕾  (Beastbud)
+  Trait: 稀兽花宝  (Rarebeast Blossom)
+    JSON  : 根据自身的血脉，入场时获得不同效果。普血脉：全技能威力+30；草血脉：回复20%生命；火血脉：敌方获得6层灼烧；水血脉：技能能耗-2；光血脉：自身提升80%魔攻；地血脉：降低敌方60点速度且技能连击数-3；冰血脉：敌方获得2层冻结；龙血脉：降低敌方80%魔防；电血脉：自身提升80点速度；毒血脉：敌方获得3层中毒；虫血脉：降低敌方70%物防；武血脉：自身提升80%物攻；翼血脉：技能连击数+2；萌血脉：降低敌方60%双攻；幽血脉：敌方失去3点能量；恶血脉：自身获得50%吸血；机械血脉：自身提升60%双防；幻血脉：敌方获得2层星陨。
+    Excel : 根据自己的血脉，入场时获得不同效果。
+
+  Row  99  蒲公英娃娃  (Dandellet)
+  Trait: 勇敢  (Bravery)
+    JSON  : 自己携带的能耗大于3的技能，威力+40%。
+    Excel : 携带的能耗大于3的技能，威力+40%。
+
+  Row 100  菊花梨  (Chrysapear)
+  Trait: 无忧无虑  (Carefree)
+    JSON  : 萌化可以无限获得。
+    Excel : 可获得的弱化层数不受限制。
+
+  Row 102  瞌睡王  (Drowsire)
+  Trait: 慢热型  (Slow Starter)
+    JSON  : 初始能量为0，入场前己方精灵每成功应对1次，回复5点能量。
+    Excel : 初始能量为0，入场前己方精灵每成功应对1次，回复5能量。
+
+  Row 104  翠顶夫人  (Verdame)
+  Trait: 洁癖  (Clean Freak)
+    JSON  : 离场后，下个入场的精灵继承自己增益和减益。
+    Excel : 离场后，自己的增益和减益会被更换入场的精灵继承。
+
+  Row 106  花魁蜂后  (Blossomqueen)
+  Trait: 虫群鼓舞  (Swarm Inspiration)
+    JSON  : 队伍中每有1只其他的虫系精灵，入场时获得攻防速+10%。
+    Excel : 队伍中每有1只其他的虫系精灵，自己入场时获得攻速+10%。
+
+  Row 107  朔夜伊芙  (Nyve)
+  Trait: 嫁祸  (Scapegoat)
+    JSON  : 队伍中每有1只力竭的精灵，入场时获得30%吸血。
+    Excel : 自己每失去25%生命，连击数+2。
+
+  Row 108  黑羽夫人  (Noirdame)
+  Trait: 贪婪  (Greed)
+    JSON  : 在场时，敌方增益和减益会被敌方下个入场的精灵继承。
+    Excel : 敌方精灵离场后，其增益和减益会被更换入场的精灵继承。
+
+  Row 109  锤头鹳  (Hammerstork)
+  Trait: 快锤  (Quick Hammer)
+    JSON  : 能耗小于3的技能，获得迅捷。
+    Excel : 携带的能耗小于3的技能，获得迅捷。
+
+  Row 110  魔草巫灵  (Verdshaman)
+  Trait: 木桶戏法  (Barrel Trick)
+    JSON  : 离场后，己方下个上场的精灵以木桶状态登场。
+    Excel : 离场后，更换入场的精灵以木桶状态登场。
+
+  Row 111  记忆石  (Memostone)
+  Trait: 不移  (Unwavering)
+    JSON  : 无额外效果的攻击技能的技能能耗-2。
+    Excel : 携带的无额外效果的攻击技能，威力+30%。
+
+  Row 114  花衣蝶  (Bloomvail)
+  Trait: 花精灵  (Floral Sprite)
+    JSON  : 回合结束时，获得1次随机奉献。
+    Excel : 回合结束时，己方队伍获得1次随机奉献。
+
+  Row 115  魔眷鸟  (Pactwing)
+  Trait: 自由飘  (Free Drift)
+    JSON  : 自身每有1层萌化，获得连击数+2。
+    Excel : 自己每有1层萌化，获得连击数+2。
+
+  Row 118  仪式巨像  (Ritualoss)
+  Trait: 观星  (Stargazing)
+    JSON  : 敌方每有1层星陨，自己技能威力+10%。
+    Excel : 敌方每有1层星图印记，自己的地系技能威力+15%。
+
+  Row 119  白金独角兽  (Platinicorn)
+  Trait: 目空  (Contempt)
+    JSON  : 非光系技能威力+25%。
+    Excel : 携带的非光系技能，威力+25%。
+
+  Row 121  黑猫巫师  (Hexacat)
+  Trait: 预警  (Premonition)
+    JSON  : 若敌方技能足够击败自己，回合开始时自己获得速度+50。
+    Excel : 若敌方技能能够击败自己，回合开始时自己获得速度+50。
+
+  Row 124  怖哭菇  (Wailshroom)
+  Trait: 吸积盘  (Accretion Disk)
+    JSON  : 回合结束时，敌方获得2层星陨。
+    Excel : 回合结束时，敌方获得2层星痕印记。
+
+  Row 125  恶魔狼  (Demonwolf)
+  Trait: 悲悯  (Mercy)
+    JSON  : 队伍中每有1只力竭的精灵，入场时获得双攻+20%。
+    Excel : 己方队伍中每有1只力竭的精灵，自己获得双攻+30%。
+
+  Row 126  电企鹅  (Voltguin)
+  Trait: 超负荷  (Overload)
+    JSON  : 攻击技能获得迸发：敌方全技能能耗+1。
+    Excel : 攻击技能获得迸发：敌方获得全技能能耗+1。
+
+  Row 129  雪灵  (Snowsprite)
+  Trait: 冰封  (Icebound)
+    JSON  : 自身在场时，敌方全技能能耗+1。
+    Excel : 在场时，敌方全技能能耗+1。
+
+  Row 130  雪影娃娃  (Snowshadoll)
+  Trait: 捉迷藏  (Hide and Seek)
+    JSON  : 使敌方获得冻结时，也会使其获得技能能耗+1。
+    Excel : 使敌方获得冻结时，也会使其获得全技能能耗+1。
+
+  Row 132  尖嘴狐仙  (Mystifox)
+  Trait: 灵魂灼伤  (Soul Scorch)
+    JSON  : 冰系技能使敌方获得4层灼烧，火系技能使敌方获得2层冻结。
+    Excel : 冰系技能能使敌方获得4层灼烧，火系技能能使敌方获得2层冻结。
+
+  Row 133  圣羽翼王  (Lioseraph)
+  Trait: 飓风  (Hurricane)
+    JSON  : 其他翼系精灵使用过技能后，自己携带的相同技能获得迅捷。
+    Excel : 对本精灵的技能，若其他翼系精灵携带相同技能，则获得迅捷。被敌方精灵击败时，自己额外损失1点魔力。
+
+  Row 137  公平鸽  (Fairdove)
+  Trait: 衡量  (Fair Measure)
+    JSON  : 敌方增益会分享给自己，自己减益会分享给敌方。入场时也会触发该效果。
+    Excel : 入场时，复制敌方的增益。在场时，若敌方获得增益自己也会获得。
+
+  Row 144  卷毛鸭  (Curlfowl)
+  Trait: 得寸进尺  (Inch by Inch)
+    JSON  : 处于水系环境中时，获得双攻+100%。
+    Excel : 天气为雨天，或处于其他水系环境中时，获得双攻+100%。
+
+  Row 146  圆号鱼  (Hornarel)
+  Trait: 泛音列  (Overtone Row)
+    JSON  : 使用状态技能后，敌方获得【聒噪】技能的效果。
+    Excel : 使用状态技能后，敌方获得【聒噪】技能的效果，持续3回合。
+
+  Row 147  卡洛儿  (Carlor)
+  Trait: 守护者  (Guardian)
+    JSON  : 己方精灵每有1层萌化，自己获得全技能能耗-2。
+    Excel : 己方其他精灵每有1层弱化，自己入场时全技能能耗-1。
+
+  Row 152  火羽  (Pyraile)
+  Trait: 急性子  (Hasty)
+    JSON  : 先于敌方行动后，技能威力+10。
+    Excel : 每次连击赋予敌方2层灼烧。
+
+  Row 153  凡鹰  (Fanyx)
+  Trait: 先锋  (Pioneer)
+    JSON  : 迅捷效果可以触发两次。
+    Excel : 进入战斗后普通系技能变为翼系。
+
+  Row 156  卡拉波斯  (Kalaboss)
+  Trait: 悬一线  (Hang by a Thread)
+    JSON  : 首次受到致命伤害时，保留1生命值。
+    Excel : 首次受到致命伤害时，保留1生命值，眩晕敌方一回合。
+
+────────────────────────────────────────────────────────────────────────────────
+SECTION 4 — UNKNOWN TRAITS (in Excel but not in traits.json)  (6 found)
+────────────────────────────────────────────────────────────────────────────────
+
+  Row  17  绒仙子  (Fluffairy)
+    Trait name (ZH) : 缤纷星光
+    Description     : 攻击时，若敌方血脉是非本系的系列血脉，技能威力+100%。
+
+  Row 101  伊贝粉粉  (Ebayflora)
+    Trait name (ZH) : 腐蚀循环
+    Description     : 每回复1能量，同时回复5%生命。
+
+  Row 122  影狸  (Shadepelt)
+    Trait name (ZH) : 下黑手
+    Description     : 敌方精灵离场后，更换入场的精灵获得5层中毒。
+
+  Row 131  权杖-V  (Scepter V)
+    Trait name (ZH) : 机械要式
+    Description     : 自己携带的技能每回合位置变化时，该技能能耗-1。
+
+  Row 145  海豹船长  (Seaptain)
+    Trait name (ZH) : 身经百炼
+    Description     : 己方精灵每应对1次，自己入场时水系和武系技能威力+20%。
+
+  Row 154  格斗小八  (Fighto Eight)
+    Trait name (ZH) : 格斗小八
+    Description     : 入场时，若敌方本回合换宠，全属性提升100%。
+
+────────────────────────────────────────────────────────────────────────────────
+SUMMARY
+────────────────────────────────────────────────────────────────────────────────
+  Rows fully OK             : 48
+  Type mismatches           : 0
+  Trait name changes        : 0
+  Trait description changes : 73
+  Unknown traits            : 6
+  Total issues              : 79

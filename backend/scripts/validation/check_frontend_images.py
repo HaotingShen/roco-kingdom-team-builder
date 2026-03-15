@@ -29,9 +29,9 @@ MOVES_DATA = BACKEND_DATA / "moves.json"
 MAGIC_ITEMS_DATA = BACKEND_DATA / "magic_items.json"
 
 MONSTER_IMAGE_DIRS = [
-    FRONTEND_PUBLIC / "monsters" / "180",
-    FRONTEND_PUBLIC / "monsters" / "270",
-    FRONTEND_PUBLIC / "monsters" / "360",
+    FRONTEND_PUBLIC / "monster-images" / "180",
+    FRONTEND_PUBLIC / "monster-images" / "270",
+    FRONTEND_PUBLIC / "monster-images" / "360",
 ]
 MOVE_ICONS_DIR = FRONTEND_PUBLIC / "move-icons"
 MAGIC_ITEMS_DIR = FRONTEND_PUBLIC / "magic-items"

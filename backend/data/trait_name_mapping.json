@@ -74,7 +74,7 @@
   "夺目": "Dazzle",
   "共鸣": "Resonance",
   "无忧无虑": "Carefree",
-  "黑手": "Underhand",
+  "下黑手": "Underhand",
   "毒牙": "Toxic Fangs",
   "吸积盘": "Accretion Disk",
   "间歇式训练": "Interval Training",
@@ -183,9 +183,10 @@
   "贪心算法": "Greedy Algorithm",
   "超负荷": "Overload",
   "奔波命": "Restless Fate",
-  "混乱鱿彩": "Chaotic Ink",
+  "涂鸦": "Graffiti",
   "绝对秩序": "Absolute Order",
   "哨兵": "Sentinel",
   "月牙雪糕": "Crescent Ice Cream",
-  "先锋": "Pioneer"
+  "先锋": "Pioneer",
+  "张弛有度": "Work-Life Balance"
 }

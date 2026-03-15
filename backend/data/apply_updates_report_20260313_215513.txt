@@ -1,0 +1,1301 @@
+================================================================================
+APPLY UPDATES REPORT  [APPLIED]
+Generated: 2026-03-13 21:55:13
+================================================================================
+
+────────────────────────────────────────────────────────────────────────────────
+SECTION 1 — BASE STAT CHANGES  (127 monster(s))
+────────────────────────────────────────────────────────────────────────────────
+
+  春花兔  (Bloomhare)
+    HP      :          128  →  79
+    Phy Atk :          101  →  85
+    Mag Atk :          112  →  95
+    Phy Def :          140  →  103
+    Mag Def :          125  →  90
+
+  粉耳星兔  (Pinkabbit)
+    HP      :          103  →  100
+    Phy Atk :           80  →  79
+    Mag Atk :          162  →  148
+    Phy Def :           79  →  73
+    Mag Def :          126  →  127
+
+  落陨星兔  (Meteorabbit)
+    HP      :           85  →  93
+    Phy Atk :           63  →  61
+    Mag Atk :          142  →  125
+    Phy Def :           94  →  87
+    Mag Def :          137  →  141
+
+  贝古斯  (Beguron)
+    Phy Atk :           78  →  76
+    Mag Atk :          149  →  130
+    Phy Def :          104  →  85
+    Mag Def :          178  →  163
+
+  小皮球  (Joltball)
+    HP      :          113  →  116
+    Phy Atk :           67  →  68
+    Mag Atk :          161  →  127
+    Phy Def :           86  →  71
+    Mag Def :          114  →  126
+
+  夜枭  (Nightowl)
+    HP      :          132  →  117
+    Phy Atk :           29  →  10
+    Mag Atk :          124  →  61
+    Phy Def :          105  →  90
+    Mag Def :          105  →  106
+
+  燃薪虫  (Embermite)
+    HP      :          138  →  135
+    Phy Atk :          143  →  120
+    Mag Atk :           54  →  48
+    Phy Def :          112  →  103
+    Mag Def :           91  →  73
+
+  窃光蚊  (Lumileech)
+    HP      :          112  →  93
+    Phy Atk :          135  →  104
+    Mag Atk :          135  →  104
+    Phy Def :           90  →  63
+    Mag Def :           90  →  113
+
+  月牙雪熊  (Cresnowbear)
+    HP      :          113  →  126
+    Phy Atk :           84  →  97
+    Mag Atk :           29  →  39
+    Phy Def :          132  →  141
+    Mag Def :           95  →  103
+
+  利灯鱼  (Sharpglow)
+    HP      :          139  →  128
+    Phy Atk :           61  →  68
+    Mag Atk :          162  →  138
+    Phy Def :           78  →  71
+    Mag Def :           96  →  116
+
+  陨星虫  (Meteorid)
+    HP      :          103  →  81
+    Phy Atk :          101  →  78
+    Mag Atk :          101  →  78
+    Phy Def :           89  →  76
+    Mag Def :          111  →  96
+
+  熔岩布丁  (Lava Pudding)
+    HP      :          138  →  128
+    Phy Atk :           96  →  87
+    Mag Atk :           35  →  33
+    Phy Def :          120  →  112
+    Mag Def :           90  →  84
+
+  椰浆布丁  (Coconut Pudding)
+    HP      :          142  →  133
+    Phy Atk :           40  →  34
+    Mag Atk :          105  →  89
+    Phy Def :           74  →  81
+    Mag Def :           96  →  105
+
+  抹茶布丁  (Matcha Pudding)
+    Phy Atk :           37  →  32
+    Mag Atk :          118  →  101
+    Phy Def :          101  →  94
+    Mag Def :          105  →  98
+
+  疾光千兽  (Lumirilion)
+    HP      :          113  →  104
+    Phy Atk :          170  →  146
+    Mag Atk :           70  →  67
+    Phy Def :          100  →  112
+
+  绒仙子  (Fluffairy)
+    HP      :           89  →  96
+    Phy Atk :           84  →  71
+    Mag Atk :           86  →  73
+    Phy Def :           92  →  81
+    Mag Def :          132  →  133
+
+  古卷匣魔像  (Scriptgolem)
+    HP      :          113  →  114
+    Phy Atk :          129  →  109
+    Mag Atk :          129  →  109
+    Phy Def :          137  →  134
+    Mag Def :           92  →  89
+
+  古卷执政官  (Scriptarchon)
+    HP      :          126  →  111
+    Phy Atk :          139  →  125
+    Mag Atk :          139  →  125
+    Phy Def :           88  →  80
+    Mag Def :          132  →  122
+
+  画间沉铁兽  (Artiron)
+    HP      :          110  →  100
+    Phy Atk :          186  →  160
+    Mag Atk :           77  →  67
+    Phy Def :          108  →  100
+    Mag Def :           83  →  76
+
+  画间法师手  (Arthand)
+    HP      :          109  →  101
+    Phy Atk :           60  →  53
+    Mag Atk :          150  →  131
+    Phy Def :          101  →  94
+    Mag Def :          128  →  120
+
+  食尘短绒  (Dusteater)
+    HP      :          119  →  109
+    Phy Atk :          138  →  105
+    Mag Atk :           53  →  37
+    Phy Def :          134  →  113
+    Mag Def :          115  →  97
+
+  捕尘长绒  (Dustcatcher)
+    HP      :          116  →  106
+    Phy Atk :          135  →  100
+    Mag Atk :           51  →  34
+    Phy Def :          140  →  116
+    Mag Def :          119  →  99
+
+  龙息帕尔  (Dracopal)
+    HP      :          121  →  130
+    Phy Atk :          125  →  127
+    Mag Atk :           54  →  57
+    Phy Def :          124  →  131
+    Mag Def :           80  →  87
+
+  厉毒修萝  (Toxilure)
+    HP      :           89  →  84
+    Phy Atk :           93  →  80
+    Mag Atk :           27  →  21
+    Phy Def :          107  →  101
+    Mag Def :           79  →  74
+
+  寂灭骨龙  (Oblividrake)
+    HP      :          142  →  92
+    Phy Atk :          175  →  116
+    Mag Atk :           70  →  41
+    Phy Def :          120  →  87
+    Mag Def :           92  →  65
+
+  泥吼牙  (Mudhowl)
+    HP      :          136  →  124
+    Phy Atk :          135  →  112
+    Mag Atk :           50  →  41
+    Phy Def :          119  →  109
+    Mag Def :           96  →  88
+
+  圣剑-X  (Sacred Blade X)
+    HP      :          199  →  174
+    Phy Atk :          172  →  144
+    Mag Atk :          165  →  139
+    Phy Def :          188  →  173
+    Mag Def :          188  →  173
+
+  铠甲虫  (Armobeetle)
+    HP      :          137  →  122
+    Phy Atk :          111  →  88
+    Mag Atk :           48  →  39
+    Phy Def :          133  →  121
+    Mag Def :           85  →  77
+
+  混乱鱿彩  (Chaocquid)
+    HP      :          146  →  129
+    Phy Atk :          130  →  105
+    Mag Atk :           51  →  42
+    Phy Def :          143  →  131
+    Mag Def :          109  →  99
+
+  秩序鱿墨  (Ordicquid)
+    HP      :           81  →  78
+    Phy Atk :          138  →  120
+    Mag Atk :           45  →  39
+    Phy Def :          132  →  124
+    Mag Def :          120  →  113
+
+  格兰球  (Gransphere)
+    HP      :          124  →  108
+    Phy Atk :           64  →  52
+    Mag Atk :          153  →  124
+    Phy Def :           89  →  80
+    Mag Def :          124  →  112
+
+  深蓝鲸  (Deepblue)
+    HP      :          141  →  129
+    Phy Atk :           46  →  40
+    Mag Atk :          138  →  115
+    Phy Def :          127  →  119
+    Mag Def :          143  →  135
+
+  噼啪鸟  (Cracklewing)
+    HP      :           82  →  78
+    Phy Atk :          144  →  116
+    Mag Atk :          136  →  109
+    Phy Def :           90  →  85
+    Mag Def :           90  →  85
+
+  绒光优优  (Glowyou)
+    HP      :          109  →  101
+    Phy Atk :           51  →  43
+    Mag Atk :          131  →  111
+    Phy Def :          113  →  105
+    Mag Def :          140  →  130
+
+  武者鸡  (Warroost)
+    HP      :          135  →  121
+    Phy Atk :          169  →  144
+    Mag Atk :           67  →  58
+    Phy Def :          100  →  92
+    Mag Def :           77  →  70
+
+  绅士鸡  (Gentleroost)
+    HP      :          120  →  108
+    Phy Atk :          142  →  132
+    Mag Atk :          142  →  132
+    Phy Def :          100  →  92
+    Mag Def :           94  →  87
+
+  立方人  (Cubanoid)
+    HP      :          115  →  103
+    Phy Atk :          168  →  135
+    Mag Atk :           67  →  54
+    Phy Def :          143  →  127
+    Mag Def :          114  →  101
+
+  帕帕斯卡  (Papaska)
+    HP      :          122  →  110
+    Phy Atk :           83  →  68
+    Mag Atk :           14  →  10
+    Phy Def :          108  →  99
+    Mag Def :           92  →  84
+
+  红绒十字  (Crossvelvet)
+    HP      :          136  →  112
+    Phy Atk :           52  →  47
+    Mag Atk :          137  →  122
+    Phy Def :          101  →  100
+    Mag Def :          128  →  127
+
+  冰钻布鲁斯  (Frostblus)
+    HP      :           84  →  73
+    Phy Atk :           68  →  101
+    Mag Atk :           15  →  27
+    Phy Def :          124  →  114
+    Mag Def :           96  →  88
+
+  火焰猿  (Flamaru)
+    HP      :          173  →  167
+    Phy Atk :          184  →  162
+    Mag Atk :           77  →  72
+    Phy Def :          148  →  143
+    Mag Def :          115  →  111
+
+  裘卡  (Qiuka)
+    HP      :           81  →  73
+    Phy Atk :          108  →  93
+    Mag Atk :           97  →  83
+    Phy Def :           70  →  65
+    Mag Def :           87  →  81
+
+  琉璃水母  (Glass Jelly)
+    HP      :          143  →  134
+    Phy Atk :           42  →  37
+    Mag Atk :          101  →  85
+    Phy Def :           99  →  93
+    Mag Def :          143  →  136
+
+  闪电鳗鱼  (Volteel)
+    HP      :           95  →  85
+    Phy Atk :          124  →  115
+    Mag Atk :          124  →  115
+    Phy Def :          112  →  104
+    Mag Def :          120  →  112
+
+  龙鱼  (Dragofin)
+    HP      :           83  →  75
+    Phy Atk :          130  →  116
+    Mag Atk :          138  →  123
+    Phy Def :          118  →  112
+    Mag Def :          122  →  116
+
+  高脚鹬  (Tallstilt)
+    HP      :          105  →  94
+    Phy Atk :           69  →  63
+    Mag Atk :           69  →  63
+    Phy Def :          120  →  112
+    Mag Def :           94  →  87
+
+  声波缇塔  (Sonatita)
+    HP      :          103  →  92
+    Phy Atk :          158  →  124
+    Mag Atk :           62  →  48
+    Phy Def :          132  →  122
+    Mag Def :          101  →  92
+
+  爵士鹿  (Jazzhart)
+    HP      :           99  →  92
+    Phy Atk :          116  →  99
+    Mag Atk :           41  →  34
+    Phy Def :          116  →  108
+    Mag Def :           85  →  79
+
+  翼龙  (Wingdrake)
+    HP      :           90  →  83
+    Phy Atk :          107  →  114
+    Mag Atk :           22  →  31
+    Phy Def :           98  →  91
+    Mag Def :           86  →  79
+
+  波多西  (Bodosi)
+    HP      :           65  →  106
+    Phy Atk :           89  →  122
+    Mag Atk :           51  →  43
+    Phy Def :          150  →  136
+    Mag Def :          128  →  116
+
+  里拉鳐  (Liraray)
+    HP      :          128  →  118
+    Phy Atk :           99  →  82
+    Mag Atk :          105  →  89
+    Phy Def :          108  →  103
+    Mag Def :          153  →  147
+
+  烈火守护  (Blazeguard)
+    HP      :          128  →  113
+    Phy Atk :          172  →  90
+    Mag Atk :           67  →  25
+    Phy Def :          130  →  118
+    Mag Def :          103  →  93
+
+  恶魔红钻  (Dreadrill)
+    HP      :          109  →  100
+    Phy Atk :          169  →  147
+    Mag Atk :          159  →  137
+    Phy Def :          100  →  93
+    Mag Def :           80  →  74
+
+  迷迷箱怪  (Mystiboxer)
+    HP      :          113  →  138
+    Phy Atk :          152  →  129
+    Mag Atk :          152  →  129
+    Phy Def :          164  →  153
+    Mag Def :          164  →  153
+
+  荆棘电环  (Thornring)
+    HP      :          115  →  106
+    Phy Atk :           95  →  81
+    Mag Atk :           95  →  81
+    Phy Def :           92  →  85
+    Mag Def :           90  →  84
+
+  酷拉  (Kulra)
+    HP      :           92  →  83
+    Phy Atk :          113  →  100
+    Mag Atk :          113  →  100
+    Phy Def :           84  →  78
+    Mag Def :          104  →  97
+
+  伊兰亚龙  (Yireidrake)
+    HP      :          125  →  112
+    Phy Atk :           88  →  91
+    Mag Atk :          198  →  190
+    Phy Def :           88  →  69
+    Mag Def :          123  →  99
+
+  鳗尾兽  (Eeltaur)
+    HP      :          320  →  290
+    Phy Atk :          112  →  91
+    Mag Atk :          112  →  91
+    Phy Def :          151  →  138
+    Mag Def :          124  →  113
+
+  梦想三三  (Dreamsan)
+    HP      :           92  →  81
+    Phy Atk :          135  →  117
+    Mag Atk :          124  →  107
+    Phy Def :          121  →  113
+    Mag Def :          121  →  113
+
+  白发路路  (Whitlu)
+    HP      :          100  →  86
+    Phy Atk :          118  →  100
+    Mag Atk :          127  →  107
+    Phy Def :          122  →  113
+    Mag Def :          143  →  132
+
+  流浪鼠  (Wanderat)
+    HP      :           98  →  90
+    Phy Atk :           54  →  46
+    Mag Atk :          136  →  116
+    Phy Def :           91  →  84
+    Mag Def :          121  →  112
+
+  魔力猫  (Magikat)
+    HP      :          114  →  106
+    Phy Atk :          105  →  96
+    Mag Atk :          105  →  96
+    Phy Def :           98  →  94
+    Mag Def :          104  →  99
+    Speed   :           90  →  55
+
+  火神  (Flameon)
+    HP      :          124  →  117
+    Phy Atk :          156  →  139
+    Mag Atk :           67  →  61
+    Phy Def :          100  →  94
+    Mag Def :           77  →  72
+
+  水灵  (Aquava)
+    HP      :          138  →  125
+    Phy Atk :           61  →  58
+    Mag Atk :          143  →  127
+    Phy Def :           96  →  94
+    Mag Def :          135  →  132
+
+  花影羚羊  (Bloomshade)
+    HP      :          121  →  112
+    Phy Atk :          123  →  111
+    Mag Atk :           52  →  48
+    Phy Def :          122  →  120
+    Mag Def :           83  →  81
+
+  幻影灵菇  (Myclshade)
+    HP      :          129  →  111
+    Phy Atk :           96  →  98
+    Mag Atk :           96  →  98
+    Phy Def :           93  →  103
+    Mag Def :          124  →  136
+
+  布克棱岩  (Bricklore)
+    HP      :          135  →  120
+    Phy Atk :          165  →  135
+    Mag Atk :           59  →  49
+    Phy Def :          173  →  159
+    Mag Def :          163  →  150
+
+  叮叮恶魔  (Stingmora)
+    HP      :          120  →  108
+    Phy Atk :          147  →  140
+    Mag Atk :           54  →  55
+    Phy Def :           80  →  73
+    Mag Def :           60  →  54
+
+  幽影树  (Shadowwood)
+    HP      :           98  →  111
+    Phy Atk :          116  →  96
+    Mag Atk :          116  →  96
+    Phy Def :           57  →  65
+    Mag Def :          112  →  123
+
+  卷胡巨獭  (Curloxen)
+    HP      :          140  →  121
+    Phy Atk :          116  →  96
+    Mag Atk :          116  →  96
+    Phy Def :          110  →  101
+    Mag Def :          110  →  101
+
+  奇丽花  (Chiliflower)
+    HP      :          129  →  112
+    Phy Atk :          138  →  115
+    Mag Atk :          138  →  115
+    Phy Def :          132  →  121
+    Mag Def :          104  →  95
+
+  音速犬  (Sonichound)
+    HP      :           93  →  85
+    Phy Atk :          149  →  128
+    Mag Atk :           53  →  46
+    Phy Def :          108  →  101
+    Mag Def :           88  →  82
+
+  蹦床松鼠  (Bouncequel)
+    HP      :          151  →  114
+    Phy Atk :          123  →  84
+    Mag Atk :          117  →  79
+    Phy Def :          154  →  111
+    Mag Def :          123  →  87
+
+  嘟嘟锅  (DuduPan)
+    HP      :          148  →  137
+    Phy Atk :           43  →  36
+    Mag Atk :          122  →  102
+    Phy Def :           97  →  89
+    Mag Def :          113  →  104
+
+  兽花蕾  (Beastbud)
+    HP      :           88  →  70
+    Phy Atk :          101  →  79
+    Mag Atk :          104  →  82
+    Phy Def :           81  →  70
+    Mag Def :          111  →  97
+
+  巨噬针鼹  (Megaspinex)
+    HP      :          183  →  158
+    Phy Atk :          151  →  93
+    Mag Atk :           73  →  41
+    Phy Def :          134  →  117
+    Mag Def :           80  →  68
+
+  电球咩咩  (Sparkorb)
+    HP      :          101  →  78
+    Phy Atk :           79  →  82
+    Mag Atk :           79  →  82
+    Phy Def :           83  →  91
+    Mag Def :           87  →  95
+
+  蒲公英娃娃  (Dandellet)
+    HP      :          131  →  111
+    Phy Atk :          129  →  123
+    Mag Atk :          124  →  117
+    Phy Def :          141  →  129
+    Mag Def :          107  →  97
+
+  菊花梨  (Chrysapear)
+    HP      :          137  →  106
+    Phy Atk :           63  →  49
+    Mag Atk :          149  →  116
+    Phy Def :           95  →  77
+    Mag Def :          139  →  115
+
+  伊贝粉粉  (Ebayflora)
+    HP      :          121  →  106
+    Phy Atk :          109  →  91
+    Mag Atk :          107  →  89
+    Phy Def :          104  →  95
+    Mag Def :          104  →  95
+
+  瞌睡王  (Drowsire)
+    HP      :          160  →  144
+    Phy Atk :          188  →  157
+    Mag Atk :           75  →  64
+    Phy Def :          147  →  135
+    Mag Def :          121  →  110
+
+  翠顶夫人  (Verdame)
+    HP      :          137  →  125
+    Phy Atk :          110  →  95
+    Mag Atk :          100  →  86
+    Phy Def :          147  →  138
+    Mag Def :          105  →  97
+
+  花魁蜂后  (Blossomqueen)
+    HP      :          166  →  145
+    Phy Atk :           65  →  54
+    Mag Atk :           59  →  49
+    Phy Def :           49  →  45
+    Mag Def :           49  →  45
+    Speed   :           38  →  44
+
+  朔夜伊芙  (Nyve)
+    HP      :          102  →  100
+    Phy Atk :          119  →  115
+    Mag Atk :          108  →  105
+    Phy Def :          106  →  104
+    Mag Def :           87  →  85
+
+  黑羽夫人  (Noirdame)
+    HP      :          144  →  132
+    Phy Atk :          107  →  93
+    Mag Atk :          101  →  87
+    Phy Def :          139  →  130
+    Mag Def :           96  →  90
+
+  锤头鹳  (Hammerstork)
+    HP      :          107  →  111
+    Phy Atk :           71  →  67
+    Mag Atk :           69  →  65
+    Phy Def :           89  →  91
+    Mag Def :           71  →  72
+
+  魔草巫灵  (Verdshaman)
+    HP      :          111  →  99
+    Phy Atk :           51  →  43
+    Mag Atk :          135  →  112
+    Phy Def :          119  →  109
+    Mag Def :          150  →  139
+
+  记忆石  (Memostone)
+    HP      :          130  →  112
+    Phy Atk :          151  →  108
+    Mag Atk :          138  →  97
+    Phy Def :          154  →  141
+    Mag Def :           88  →  79
+
+  罗隐  (Loyen)
+    HP      :          121  →  107
+    Phy Atk :          186  →  159
+    Mag Atk :           88  →  78
+    Phy Def :          120  →  112
+    Mag Def :           76  →  70
+
+  咔咔鸟  (Kacranor)
+    HP      :          107  →  97
+    Phy Atk :          107  →  114
+    Mag Atk :          104  →  110
+    Phy Def :          108  →  101
+    Mag Def :           96  →  89
+
+  花衣蝶  (Bloomvail)
+    HP      :          149  →  122
+    Phy Atk :           74  →  67
+    Mag Atk :           79  →  72
+    Phy Def :           92  →  84
+    Mag Def :           98  →  94
+
+  魔眷鸟  (Pactwing)
+    HP      :           92  →  87
+    Phy Atk :          129  →  113
+    Mag Atk :           39  →  34
+    Phy Def :          100  →  94
+    Mag Def :           94  →  88
+
+  彩蝶鲨  (Prismashark)
+    HP      :          100  →  90
+    Phy Atk :           60  →  77
+    Mag Atk :           60  →  77
+    Phy Def :          112  →  105
+    Mag Def :          112  →  105
+
+  巨灵石  (Titanstone)
+    HP      :          108  →  95
+    Phy Atk :          117  →  99
+    Mag Atk :          117  →  99
+    Phy Def :          137  →  126
+    Mag Def :           78  →  70
+
+  仪式巨像  (Ritualoss)
+    HP      :          122  →  106
+    Phy Atk :          125  →  90
+    Mag Atk :          132  →  95
+    Phy Def :          125  →  115
+    Mag Def :          130  →  119
+
+  白金独角兽  (Platinicorn)
+    HP      :          110  →  99
+    Phy Atk :           70  →  61
+    Mag Atk :          186  →  161
+    Phy Def :           84  →  77
+    Mag Def :          100  →  92
+
+  黑猫巫师  (Hexacat)
+    HP      :          178  →  152
+    Phy Atk :           97  →  91
+    Mag Atk :          187  →  163
+    Phy Def :           79  →  67
+    Mag Def :          136  →  119
+    Speed   :           87  →  70
+
+  影狸  (Shadepelt)
+    HP      :          105  →  97
+    Phy Atk :          118  →  109
+    Mag Atk :          113  →  105
+    Phy Def :          112  →  105
+    Mag Def :           75  →  70
+
+  古啦多  (Gulardo)
+    HP      :           93  →  79
+    Phy Atk :          106  →  88
+    Mag Atk :          106  →  88
+    Phy Def :          148  →  136
+    Mag Def :          119  →  110
+
+  怖哭菇  (Wailshroom)
+    HP      :          123  →  124
+    Phy Atk :           90  →  63
+    Mag Atk :           97  →  69
+    Phy Def :           93  →  50
+    Mag Def :          135  →  100
+
+  恶魔狼  (Demonwolf)
+    HP      :          123  →  115
+    Phy Atk :          119  →  114
+    Phy Def :           98  →  91
+    Mag Def :           69  →  63
+
+  电企鹅  (Voltguin)
+    HP      :          101  →  94
+    Phy Atk :           63  →  56
+    Mag Atk :          144  →  126
+    Phy Def :           79  →  73
+    Mag Def :          116  →  109
+
+  雪巨人  (Snowgian)
+    HP      :          168  →  162
+    Phy Atk :          197  →  174
+    Mag Atk :           85  →  79
+    Phy Def :          143  →  139
+    Mag Def :          107  →  104
+
+  獠牙猪  (Tuskhog)
+    HP      :          137  →  123
+    Phy Atk :          135  →  119
+    Mag Atk :           44  →  41
+    Phy Def :          120  →  110
+    Mag Def :          111  →  101
+
+  雪灵  (Snowsprite)
+    HP      :           91  →  94
+    Phy Atk :          118  →  112
+    Mag Atk :          118  →  112
+    Phy Def :          104  →  105
+    Mag Def :          104  →  105
+
+  雪影娃娃  (Snowshadoll)
+    HP      :          147  →  130
+    Phy Atk :          116  →  103
+    Mag Atk :          111  →  98
+    Phy Def :           69  →  66
+    Mag Def :          135  →  130
+
+  权杖-V  (Scepter V)
+    HP      :          120  →  103
+    Phy Atk :           92  →  105
+    Mag Atk :           84  →  97
+    Phy Def :          114  →  136
+    Mag Def :          114  →  136
+
+  尖嘴狐仙  (Mystifox)
+    HP      :          129  →  115
+    Phy Atk :          120  →  87
+    Mag Atk :          120  →  87
+    Phy Def :           92  →  84
+    Mag Def :          116  →  107
+
+  圣羽翼王  (Lioseraph)
+    HP      :           95  →  132
+    Phy Atk :           88  →  109
+    Mag Atk :           88  →  109
+    Phy Def :           96  →  128
+    Mag Def :           96  →  83
+
+  针叶巡林  (Needleranger)
+    HP      :          111  →  105
+    Phy Atk :          159  →  139
+    Mag Atk :           63  →  57
+    Phy Def :          134  →  128
+    Mag Def :          106  →  100
+
+  炽心勇狮  (Heartblaze)
+    HP      :          153  →  137
+    Phy Atk :           60  →  51
+    Mag Atk :          132  →  111
+    Phy Def :           97  →  88
+    Mag Def :          142  →  130
+
+  游蛇魔使  (Serphex)
+    HP      :          104  →  105
+    Phy Atk :          116  →  110
+    Mag Atk :          111  →  104
+    Phy Def :          102  →  103
+    Mag Def :          102  →  103
+
+  公平鸽  (Fairdove)
+    HP      :          125  →  113
+    Phy Atk :          104  →  93
+    Mag Atk :          104  →  93
+    Phy Def :          126  →  125
+    Mag Def :          126  →  125
+
+  怒目怂猫  (Furycat)
+    HP      :          107  →  92
+    Phy Atk :          154  →  132
+    Mag Atk :          148  →  126
+    Phy Def :          120  →  111
+    Mag Def :          103  →  95
+
+  芋香巨角蛛  (Yamhorntitan)
+    HP      :          125  →  92
+    Phy Atk :          105  →  61
+    Mag Atk :          105  →  61
+    Phy Def :           98  →  91
+    Mag Def :           98  →  91
+
+  嗜波螺  (Wavevor)
+    HP      :          129  →  112
+    Phy Atk :          118  →  98
+    Mag Atk :          118  →  98
+    Phy Def :          158  →  146
+    Mag Def :          120  →  110
+
+  九幽菇  (Nethermush)
+    HP      :          171  →  149
+    Phy Atk :          123  →  102
+    Mag Atk :          116  →  95
+    Phy Def :          128  →  116
+    Mag Def :          105  →  95
+
+  斑枭  (Spotowl)
+    HP      :           99  →  89
+    Phy Atk :          129  →  112
+    Mag Atk :          129  →  112
+    Phy Def :           96  →  89
+    Mag Def :          108  →  100
+
+  卷毛鸭  (Curlfowl)
+    HP      :          125  →  116
+    Phy Atk :          116  →  98
+    Mag Atk :           36  →  29
+    Phy Def :           90  →  83
+    Mag Def :           69  →  63
+
+  海豹船长  (Seaptain)
+    HP      :          103  →  90
+    Phy Atk :          128  →  113
+    Mag Atk :          123  →  109
+    Phy Def :          120  →  111
+    Mag Def :           84  →  77
+
+  圆号鱼  (Hornarel)
+    HP      :          148  →  136
+    Phy Atk :           15  →  34
+    Mag Atk :           74  →  95
+    Phy Def :           70  →  95
+    Mag Def :           83  →  110
+
+  卡洛儿  (Carlor)
+    HP      :          129  →  114
+    Phy Atk :           99  →  102
+    Mag Atk :          104  →  107
+    Phy Def :           83  →  82
+    Mag Def :          104  →  124
+
+  火羽  (Pyraile)
+    HP      :           89  →  92
+    Phy Atk :          108  →  115
+    Mag Atk :           97  →  106
+    Phy Def :          100  →  93
+    Mag Def :          100  →  93
+
+  凡鹰  (Fanyx)
+    HP      :            0  →  78
+    Phy Atk :            0  →  128
+    Mag Atk :            0  →  124
+    Phy Def :            0  →  86
+    Mag Def :            0  →  86
+    Speed   :            0  →  125
+    Atk Style :         Both  →  Physical
+
+  格斗小八  (Fighto Eight)
+    HP      :          135  →  136
+    Phy Atk :          128  →  135
+    Mag Atk :           72  →  50
+    Phy Def :          112  →  104
+    Mag Def :           91  →  84
+    Speed   :           66  →  56
+
+  格斗小六  (Fighto Six)
+    HP      :           65  →  76
+    Phy Atk :          145  →  144
+    Mag Atk :           75  →  63
+    Phy Def :          119  →  118
+    Mag Def :           92  →  88
+
+  卡拉波斯  (Kalaboss)
+    HP      :          127  →  123
+    Phy Atk :          128  →  134
+    Mag Atk :           72  →  50
+    Phy Def :           83  →  75
+    Mag Def :           66  →  60
+
+────────────────────────────────────────────────────────────────────────────────
+SECTION 2 — TRAIT DESCRIPTION CHANGES  (78 trait(s))
+────────────────────────────────────────────────────────────────────────────────
+
+  Trait: 系统发育  (Phylogenesis)
+  Used by: 春花兔
+    Old : 溢出的生命和能量会随机给予场下的精灵。
+    New : 获得能量或生命时，会将等量的能量或生命随机分配给场下的精灵。
+
+  Trait: 双向光速  (Dual Lightspeed)
+  Used by: 粉耳星兔
+    Old : 在场时，所有回合结束时的效果触发2次。
+    New : 在场时，所有回合结束时效果，触发次数+1。
+
+  Trait: 陨落  (Fallen)
+  Used by: 落陨星兔
+    Old : 在场时，双方回合结束时触发的效果不会触发。
+    New : 在场时，双方回合结束时触发的效果，触发次数-1。
+
+  Trait: 贪心算法  (Greedy Algorithm)
+  Used by: 贝古斯
+    Old : 4号位技能获得传动，且使用后使敌方获得6层灼烧。
+    New : 1号位技能获得传劲1，且使用后使敌方获得6层灼烧。
+
+  Trait: 星地善良  (Stellar Kindness)
+  Used by: 小皮球
+    Old : 若场上的己方精灵能量等于0，自己立即替换此精灵。
+    New : 回合结束时，若场上的己方精灵能量等于0，自己立即替换此精灵。
+
+  Trait: 搜刮  (Scavenge)
+  Used by: 夜枭
+    Old : 敌方每使用1次【聚能】技能或替换精灵，自己入场时获得魔攻+20%。
+    New : 敌方每使用1次【聚能】技能或更换精灵，自己入场时获得魔攻+20%。
+
+  Trait: 血型吸引  (Blood Type Attraction)
+  Used by: 窃光蚊
+    Old : 敌方每携带1种系别的技能，自己攻击时威力+10。
+    New : 敌方每携带1种系列的技能，自己攻击时威力+10。
+
+  Trait: 月牙雪糕  (Crescent Ice Cream)
+  Used by: 月牙雪熊
+    Old : 使用攻击技能时，敌方每层冻结视为1层额外星陨。
+    New : 使用攻击技能时，敌方每层冻结视为1层额外星痕印记。
+
+  Trait: 对流  (Convection)
+  Used by: 利灯鱼
+    Old : 自身的能耗增加变为能耗降低；能耗降低变为能耗增加。
+    New : 自己的能耗增加变为能耗降低；能耗降低变为能耗增加。
+
+  Trait: 美拉德反应  (Maillard Reaction)
+  Used by: 熔岩布丁
+    Old : 离场时，下个入场精灵获得双攻+20%并免疫灼烧。
+    New : 离场后，更换入场的精灵获得双攻+20%且免疫灼烧。
+
+  Trait: 吉利丁片  (Gelatin Sheet)
+  Used by: 椰浆布丁
+    Old : 离场时，下个入场精灵获得双防+20%并免疫冻结。
+    New : 离场后，更换入场的精灵获得双防+20%且免疫冻结。
+
+  Trait: 茶多酚  (Tea Polyphenol)
+  Used by: 抹茶布丁
+    Old : 离场时，下个入场精灵回复20%生命并免疫寄生。
+    New : 离场后，更换入场的精灵回复20%生命且免疫寄生。
+
+  Trait: 月光审判  (Moonlight Judgment)
+  Used by: 疾光千兽
+    Old : 对首领血脉的精灵造成伤害+100%。
+    New : 攻击时，若敌方血脉是首领血脉，技能威力+100%。
+
+  Trait: 绒粉星光  (Velvet Stardust)  ⚠ UNKNOWN TRAIT NAME IN EXCEL — used current trait
+  Used by: 绒仙子
+    Old : 若敌方血脉是非本系的系别血脉，对其造成伤害+100%。
+    New : 攻击时，若敌方血脉是非本系的系列血脉，技能威力+100%。
+
+  Trait: 灰色肖像  (Gray Portrait)
+  Used by: 画间法师手
+    Old : 攻击会使敌方已有的减益层数+3。
+    New : 攻击会摧毁敌方已有的减益层数+3。
+
+  Trait: 扫拖一体  (Sweep and Mop)
+  Used by: 捕尘长绒
+    Old : 回合结束时驱散敌方1层印记，获得1次随机奉献。
+    New : 回合结束时驱散敌方1层印记，且驱散后己方队伍获得1次碰机奉献。
+
+  Trait: 付给恶魔的赎价  (Price Paid to the Devil)
+  Used by: 龙息帕尔
+    Old : 自己被击败或击败敌方精灵时，均额外损失1点魔力。
+    New : 击败敌方精灵时，敌方额外损失1点魔力。被敌方精灵击败时，自己额外损失1点魔力。
+
+  Trait: 侵蚀  (Corrosion)
+  Used by: 厉毒修萝
+    Old : 敌方每拥有1层中毒效果，自己获得连击数+1。
+    New : 敌方每有1层中毒效果，自己获得连击数+1。
+
+  Trait: 不朽  (Immortality)
+  Used by: 寂灭骨龙
+    Old : 力竭3回合后复活。
+    New : 力量2回合后复活。
+
+  Trait: 无差别过滤  (Indiscriminate Filter)
+  Used by: 泥吼牙
+    Old : 在场时，所有精灵连击数固定为3。
+    New : 在场时，所有精灵连击数固定为2。
+
+  Trait: 坚韧铠甲  (Resilient Armor)
+  Used by: 铠甲虫
+    Old : 每受到1次攻击伤害，获得1次随机奉献。
+    New : 每受到1次攻击伤害，己方队伍获得1次随机奉献。
+
+  Trait: 绝对秩序  (Absolute Order)
+  Used by: 秩序鱿墨
+    Old : 受到非敌方系别的技能威力-50%。
+    New : 受到非敌方系列的技能攻击时伤害-50%。
+
+  Trait: 倾轧  (Compounding Force)
+  Used by: 深蓝鲸
+    Old : 获得技能能耗增益时，获得的层数翻倍。
+    New : 携带的技能受能耗变化效果的影响翻倍。
+
+  Trait: 哨兵  (Sentinel)
+  Used by: 绒光优优
+    Old : 回合开始时若敌方技能足够击败自己，获得速度+50，行动后脱离。
+    New : 回合开始时若敌方能足量击败自己，自己获得速度+50，行动后脱离。
+
+  Trait: 盲拧  (Blindfold Shuffle)
+  Used by: 立方人
+    Old : 技能顺序每回合打乱，4号位的技能能耗-2。
+    New : 回合开始时，技能顺序打乱，4号位的技能能耗-4。
+
+  Trait: 翼轴  (Wing Axis)
+  Used by: 帕帕斯卡
+    Old : 1号位技能获得迅捷和传动。
+    New : 1号位技能获得迅捷和传动1。
+
+  Trait: 生物电  (Bioelectricity)
+  Used by: 闪电鳗鱼
+    Old : 电系技能获得迸发：能耗-2。
+    New : 携带的电系技能获得迸发：能耗-2。
+
+  Trait: 洄游  (Anadromous)
+  Used by: 龙鱼
+    Old : 每进入蓄力状态，获得全技能能耗永久-1。
+    New : 每次进入蓄力状态，获得全技能能耗永久-1。
+
+  Trait: 向心力  (Centripetal Force)
+  Used by: 声波缇塔
+    Old : 若1号位技能为该精灵未使用过的技能，该技能威力+40。
+    New : 1号和2号位技能获得传动1和威力+30。
+
+  Trait: 暴食  (Gluttony)
+  Used by: 翼龙
+    Old : 龙系技能获得迅捷。
+    New : 携带的龙系技能获得迅捷。
+
+  Trait: 定向精炼  (Directed Refinement)
+  Used by: 波多西
+    Old : 己方精灵每释放1次防御技能，入场时本系技能威力提升10%。
+    New : 己方精灵每使用1次防御技能，自己入场时机械系和地面系技能威力+10%。
+
+  Trait: 蒸汽膨胀  (Steam Expansion)
+  Used by: 烈火守护
+    Old : 己方精灵每使用1次火系技能，自己入场时全技能威力+10。
+    New : 己方精灵每使用1次火系技能，自己入场时获得全技能威力+10。
+
+  Trait: 振奋虫心  (Rousing Swarmheart)
+  Used by: 恶魔红钻
+    Old : 主动击败敌方后，获得5次随机奉献。
+    New : 主动击败敌方后，己方队伍获得5次随机奉献。
+
+  Trait: 噼啪！  (Crackle!)
+  Used by: 酷拉
+    Old : 入场首回合，所选技能使用次数+1。
+    New : 入场后首次行动，所选技能使用次数+1。
+
+  Trait: 铃兰晚钟  (Dusk Lily Chime)
+  Used by: 鳗尾兽
+    Old : 首次入场时，失去自己50%当前生命。
+    New : 首次入场时，失去自己一半的当前生命。
+
+  Trait: 营养液泡  (Nutrient Bubble)
+  Used by: 白发路路
+    Old : 获得的增益层数+2。
+    New : 获得增益时，额外获得层数+2。
+
+  Trait: 碰瓷  (Bait and Claim)
+  Used by: 花影羚羊
+    Old : 自己使用恶系技能后，敌方失去3能量。
+    New : 自己使用恶系技能后，敌方失去2能量。
+
+  Trait: 毒蘑菇  (Poison Mushroom)
+  Used by: 幻影灵菇
+    Old : 回合结束时，偷取所有敌方精灵1能量。
+    New : 回合结束时，偷取敌方场上所有精灵1能量。
+
+  Trait: 渴求  (Craving)
+  Used by: 叮叮恶魔
+    Old : 获得50%吸血。
+    New : 入场时获得50%吸血。
+
+  Trait: 小偷小摸  (Pickpocket)
+  Used by: 幽影树
+    Old : 入场时偷取所有敌方精灵2点能量。
+    New : 入场时偷取所有敌方精灵2能量。
+
+  Trait: 保守派  (Conservatism)
+  Used by: 卷胡巨獭
+    Old : 总技能能耗小于3时，自己获得双防+80%。
+    New : 总技能能耗小于4时，自己获得双防+80%。
+
+  Trait: 养分重吸收  (Nutrient Reabsorption)
+  Used by: 奇丽花
+    Old : 回合结束时，获得4点能量。
+    New : 回合结束时，回复3能量。
+
+  Trait: 囤积  (Hoarding)
+  Used by: 蹦床松鼠
+    Old : 自身每有1能量，获得双防+10%。
+    New : 每有1能量，获得双防+10%。
+
+  Trait: 复方汤剂  (Compound Decoction)
+  Used by: 嘟嘟锅
+    Old : 中毒效果触发次数+1。
+    New : 回合结束时，中毒效果触发次数+1。
+
+  Trait: 稀兽花宝  (Rarebeast Blossom)
+  Used by: 兽花蕾
+    Old : 根据自身的血脉，入场时获得不同效果。普血脉：全技能威力+30；草血脉：回复20%生命；火血脉：敌方获得6层灼烧；水血脉：技能能耗-2；光血脉：自身提升80%魔攻；地血脉：降低敌方60点速度且技能连击数-3；冰血脉：敌方获得2层冻结；龙血脉：降低敌方80%魔防；电血脉：自身提升80点速度；毒血脉：敌方获得3层中毒；虫血脉：降低敌方70%物防；武血脉：自身提升80%物攻；翼血脉：技能连击数+2；萌血脉：降低敌方60%双攻；幽血脉：敌方失去3点能量；恶血脉：自身获得50%吸血；机械血脉：自身提升60%双防；幻血脉：敌方获得2层星陨。
+    New : 根据自己的血脉，入场时获得不同效果。
+
+  Trait: 勇敢  (Bravery)
+  Used by: 蒲公英娃娃
+    Old : 自己携带的能耗大于3的技能，威力+40%。
+    New : 携带的能耗大于3的技能，威力+40%。
+
+  Trait: 无忧无虑  (Carefree)
+  Used by: 菊花梨
+    Old : 萌化可以无限获得。
+    New : 可获得的弱化层数不受限制。
+
+  Trait: 腐植循环  (Humus Cycle)  ⚠ UNKNOWN TRAIT NAME IN EXCEL — used current trait
+  Used by: 伊贝粉粉
+    Old : 每回复1点能量，同时回复5%生命。
+    New : 每回复1能量，同时回复5%生命。
+
+  Trait: 慢热型  (Slow Starter)
+  Used by: 瞌睡王
+    Old : 初始能量为0，入场前己方精灵每成功应对1次，回复5点能量。
+    New : 初始能量为0，入场前己方精灵每成功应对1次，回复5能量。
+
+  Trait: 洁癖  (Clean Freak)
+  Used by: 翠顶夫人
+    Old : 离场后，下个入场的精灵继承自己增益和减益。
+    New : 离场后，自己的增益和减益会被更换入场的精灵继承。
+
+  Trait: 虫群鼓舞  (Swarm Inspiration)
+  Used by: 花魁蜂后
+    Old : 队伍中每有1只其他的虫系精灵，入场时获得攻防速+10%。
+    New : 队伍中每有1只其他的虫系精灵，自己入场时获得攻速+10%。
+
+  Trait: 嫁祸  (Scapegoat)
+  Used by: 朔夜伊芙
+    Old : 队伍中每有1只力竭的精灵，入场时获得30%吸血。
+    New : 自己每失去25%生命，连击数+2。
+
+  Trait: 贪婪  (Greed)
+  Used by: 黑羽夫人
+    Old : 在场时，敌方增益和减益会被敌方下个入场的精灵继承。
+    New : 敌方精灵离场后，其增益和减益会被更换入场的精灵继承。
+
+  Trait: 快锤  (Quick Hammer)
+  Used by: 锤头鹳
+    Old : 能耗小于3的技能，获得迅捷。
+    New : 携带的能耗小于3的技能，获得迅捷。
+
+  Trait: 木桶戏法  (Barrel Trick)
+  Used by: 魔草巫灵
+    Old : 离场后，己方下个上场的精灵以木桶状态登场。
+    New : 离场后，更换入场的精灵以木桶状态登场。
+
+  Trait: 不移  (Unwavering)
+  Used by: 记忆石
+    Old : 无额外效果的攻击技能的技能能耗-2。
+    New : 携带的无额外效果的攻击技能，威力+30%。
+
+  Trait: 花精灵  (Floral Sprite)
+  Used by: 花衣蝶
+    Old : 回合结束时，获得1次随机奉献。
+    New : 回合结束时，己方队伍获得1次随机奉献。
+
+  Trait: 自由飘  (Free Drift)
+  Used by: 魔眷鸟
+    Old : 自身每有1层萌化，获得连击数+2。
+    New : 自己每有1层萌化，获得连击数+2。
+
+  Trait: 观星  (Stargazing)
+  Used by: 仪式巨像
+    Old : 敌方每有1层星陨，自己技能威力+10%。
+    New : 敌方每有1层星图印记，自己的地系技能威力+15%。
+
+  Trait: 目空  (Contempt)
+  Used by: 白金独角兽
+    Old : 非光系技能威力+25%。
+    New : 携带的非光系技能，威力+25%。
+
+  Trait: 预警  (Premonition)
+  Used by: 黑猫巫师
+    Old : 若敌方技能足够击败自己，回合开始时自己获得速度+50。
+    New : 若敌方技能能够击败自己，回合开始时自己获得速度+50。
+
+  Trait: 黑手  (Underhand)  ⚠ UNKNOWN TRAIT NAME IN EXCEL — used current trait
+  Used by: 影狸
+    Old : 敌方入场时获得3层中毒。
+    New : 敌方精灵离场后，更换入场的精灵获得5层中毒。
+
+  Trait: 吸积盘  (Accretion Disk)
+  Used by: 怖哭菇
+    Old : 回合结束时，敌方获得2层星陨。
+    New : 回合结束时，敌方获得2层星痕印记。
+
+  Trait: 悲悯  (Mercy)
+  Used by: 恶魔狼
+    Old : 队伍中每有1只力竭的精灵，入场时获得双攻+20%。
+    New : 己方队伍中每有1只力竭的精灵，自己获得双攻+30%。
+
+  Trait: 超负荷  (Overload)
+  Used by: 电企鹅
+    Old : 攻击技能获得迸发：敌方全技能能耗+1。
+    New : 攻击技能获得迸发：敌方获得全技能能耗+1。
+
+  Trait: 冰封  (Icebound)
+  Used by: 雪灵
+    Old : 自身在场时，敌方全技能能耗+1。
+    New : 在场时，敌方全技能能耗+1。
+
+  Trait: 捉迷藏  (Hide and Seek)
+  Used by: 雪影娃娃
+    Old : 使敌方获得冻结时，也会使其获得技能能耗+1。
+    New : 使敌方获得冻结时，也会使其获得全技能能耗+1。
+
+  Trait: 机械变式  (Mechanical Variation)  ⚠ UNKNOWN TRAIT NAME IN EXCEL — used current trait
+  Used by: 权杖-V
+    Old : 自己携带的技能位置变化时，该技能能耗-1。
+    New : 自己携带的技能每回合位置变化时，该技能能耗-1。
+
+  Trait: 灵魂灼伤  (Soul Scorch)
+  Used by: 尖嘴狐仙
+    Old : 冰系技能使敌方获得4层灼烧，火系技能使敌方获得2层冻结。
+    New : 冰系技能能使敌方获得4层灼烧，火系技能能使敌方获得2层冻结。
+
+  Trait: 飓风  (Hurricane)
+  Used by: 圣羽翼王
+    Old : 其他翼系精灵使用过技能后，自己携带的相同技能获得迅捷。
+    New : 对本精灵的技能，若其他翼系精灵携带相同技能，则获得迅捷。被敌方精灵击败时，自己额外损失1点魔力。
+
+  Trait: 衡量  (Fair Measure)
+  Used by: 公平鸽
+    Old : 敌方增益会分享给自己，自己减益会分享给敌方。入场时也会触发该效果。
+    New : 入场时，复制敌方的增益。在场时，若敌方获得增益自己也会获得。
+
+  Trait: 得寸进尺  (Inch by Inch)
+  Used by: 卷毛鸭
+    Old : 处于水系环境中时，获得双攻+100%。
+    New : 天气为雨天，或处于其他水系环境中时，获得双攻+100%。
+
+  Trait: 泛音列  (Overtone Row)
+  Used by: 圆号鱼
+    Old : 使用状态技能后，敌方获得【聒噪】技能的效果。
+    New : 使用状态技能后，敌方获得【聒噪】技能的效果，持续3回合。
+
+  Trait: 守护者  (Guardian)
+  Used by: 卡洛儿
+    Old : 己方精灵每有1层萌化，自己获得全技能能耗-2。
+    New : 己方其他精灵每有1层弱化，自己入场时全技能能耗-1。
+
+  Trait: 急性子  (Hasty)
+  Used by: 火羽
+    Old : 先于敌方行动后，技能威力+10。
+    New : 每次连击赋予敌方2层灼烧。
+
+  Trait: 先锋  (Pioneer)
+  Used by: 凡鹰
+    Old : 迅捷效果可以触发两次。
+    New : 进入战斗后普通系技能变为翼系。
+
+  Trait: 受身  (Ukemi)  ⚠ UNKNOWN TRAIT NAME IN EXCEL — used current trait
+  Used by: 格斗小八
+    Old : 防御技能应对成功时，速度永久+40。
+    New : 入场时，若敌方本回合换宠，全属性提升100%。
+
+  Trait: 悬一线  (Hang by a Thread)
+  Used by: 卡拉波斯
+    Old : 首次受到致命伤害时，保留1生命值。
+    New : 首次受到致命伤害时，保留1生命值，眩晕敌方一回合。
+
+────────────────────────────────────────────────────────────────────────────────
+SUMMARY
+────────────────────────────────────────────────────────────────────────────────
+  Monsters with stat changes     : 127
+  Monsters with no stat change   : 0
+  Traits with description change : 78
+  Traits with no change          : 49

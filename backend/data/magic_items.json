@@ -65,11 +65,11 @@
   },
   {
     "name": "Willpower Enhancement",
-    "description": "Can be applied to any monster except those with Leader legacy type. Replaces the first move in monster's move list with the 'Willpower Impact' move for 1 turn. The move has type the same as the monster's legacy type. Cooldown is 3 turns.",
+    "description": "Can be applied to any monster except those with Leader legacy type. Replaces the first move in monster's move list with the 'Willpower Impact' move for 1 turn. The move has type the same as the monster's legacy type. Cooldown is 3 turns. Can be used up to 2 times per battle.",
     "localized": {
       "zh": {
         "name": "愿力强化",
-        "description": "对任意血脉的精灵使用（首领血脉除外），使用后技能栏第一个技能本回合被替换为【愿力冲击】技能，技能属性与当前精灵的血脉一致。效果持续1回合，冷却时间3回合。"
+        "description": "对任意血脉的精灵使用（首领血脉除外），使用后技能栏第一个技能本回合被替换为【愿力冲击】技能，技能属性与当前精灵的血脉一致。效果持续1回合，冷却时间3回合，每场战斗最多使用2次。"
       }
     },
     "effect_code": "ENHANCE_SPELL",

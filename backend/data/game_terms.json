@@ -1,11 +1,11 @@
 [
   {
     "key": "Marks",
-    "description": "A status effect that applies to an entire team, not just a single monster. Mark effects persist even when monsters are switched out. Each side can only have one positive mark and one negative mark at a time.",
+    "description": "A status effect that applies to an entire team, not just a single monster. Marks do not disappear when a monster leaves the field, and newly switched-in monsters inherit the mark's effect. Each side can only have one positive mark and one negative mark at a time.",
     "localized": {
       "zh": {
         "name": "印记",
-        "description": "常驻在全队的效果，不仅仅作用于单个精灵。印记在精灵被替换下场时不会消失。每一方同时只能存在1种正面印记和负面印记。"
+        "description": "常驻在全队的效果，不仅仅作用于单个精灵。精灵下场后印记不会消失，新入场的精灵会继承印记效果。每一方同时只能存在1种正面印记和负面印记。"
       }
     }
   },
@@ -15,7 +15,7 @@
     "localized": {
       "zh": {
         "name": "减速印记",
-        "description": "印记，速度每层-10。"
+        "description": "印记效果，速度每层-10。"
       }
     }
   },
@@ -25,17 +25,17 @@
     "localized": {
       "zh": {
         "name": "光合印记",
-        "description": "印记，回合结束时每层恢复1点能量。"
+        "description": "印记效果，回合结束时每层恢复1点能量。"
       }
     }
   },
   {
     "key": "Attack Mark",
-    "description": "Marks: Attack-type move power +10 for each stack.",
+    "description": "Marks: All move's power +10 for each stack.",
     "localized": {
       "zh": {
         "name": "攻击印记",
-        "description": "印记，每层使攻击技能威力+10。"
+        "description": "印记效果，每层使全技能威力+10。"
       }
     }
   },
@@ -45,7 +45,7 @@
     "localized": {
       "zh": {
         "name": "蓄电印记",
-        "description": "印记，入场首回合技能威力+10。"
+        "description": "印记效果，入场首回合技能威力+10。"
       }
     }
   },
@@ -55,17 +55,17 @@
     "localized": {
       "zh": {
         "name": "湿润印记",
-        "description": "印记，每层湿润印记使所有技能能耗-1。"
+        "description": "印记效果，每层使全技能能耗-1。"
       }
     }
   },
   {
     "key": "Windrise Mark",
-    "description": "Marks: When acting first, damage +20% for each stack, lasts 1 turn only.",
+    "description": "Marks: When acting first, move power +20%.",
     "localized": {
       "zh": {
         "name": "风起印记",
-        "description": "印记，先手攻击时，每层使伤害提升20%，仅生效1回合。"
+        "description": "印记效果，先手攻击时，本次技能威力+20%。"
       }
     }
   },
@@ -75,7 +75,7 @@
     "localized": {
       "zh": {
         "name": "迟缓印记",
-        "description": "印记，后手攻击时，每层使伤害提升30%。"
+        "description": "印记效果，后手攻击时，每层使伤害提升30%。"
       }
     }
   },
@@ -85,17 +85,27 @@
     "localized": {
       "zh": {
         "name": "降灵印记",
-        "description": "印记，精灵入场时（所有情况），每层失去1能量。"
+        "description": "印记效果，精灵入场时（所有情况），每层失去1能量。"
       }
     }
   },
   {
     "key": "Dragonbite Mark",
-    "description": "Marks: When using a move that costs 3 energy, gain Attack +30%.",
+    "description": "Marks: After using a move that costs 3 energy, gain Attack +30%.",
     "localized": {
       "zh": {
         "name": "龙噬印记",
-        "description": "印记，释放3能耗技能时，获得双攻+30%。"
+        "description": "印记效果，释放3能耗技能后，获得双攻+30%。"
+      }
+    }
+  },
+  {
+    "key": "Momentum Mark",
+    "description": "Marks: All Attack-type moves' power +30% and energy cost +1.",
+    "localized": {
+      "zh": {
+        "name": "蓄势印记",
+        "description": "印记效果，全攻击技能威力+30%，且能耗+1。"
       }
     }
   },
@@ -105,7 +115,7 @@
     "localized": {
       "zh": {
         "name": "中毒印记",
-        "description": "印记，回合结束时，造成3%（向下取整）毒属性伤害，受到属性克制影响。"
+        "description": "印记效果，回合结束时，造成3%（向下取整）毒属性伤害，受到属性克制影响。"
       }
     }
   },
@@ -115,7 +125,7 @@
     "localized": {
       "zh": {
         "name": "棘刺印记",
-        "description": "印记，精灵入场时（所有情况），每层造成6%最大生命值伤害。"
+        "description": "印记效果，精灵入场时（所有情况），每层造成6%最大生命值伤害。"
       }
     }
   },
@@ -125,7 +135,7 @@
     "localized": {
       "zh": {
         "name": "星陨",
-        "description": "印记，造成技能伤害后，消除所有星陨层数，每层星陨造成30威力的魔法伤害。"
+        "description": "印记效果，造成技能伤害后，消除所有星陨层数，每层星陨造成30威力的魔法伤害。"
       }
     }
   },
@@ -195,27 +205,27 @@
     "localized": {
       "zh": {
         "name": "雨天",
-        "description": "水系环境，双方水系技能威力提升50%。"
+        "description": "水系环境，天气为雨天时，双方水系技能威力提升50%。"
       }
     }
   },
   {
     "key": "Sandstorm",
-    "description": "Ground-type environment. Both sides' Ground-type move energy cost is halved.",
+    "description": "Ground-type environment. When the weather is Sandstorm, both sides' Ground-type move energy cost is halved.",
     "localized": {
       "zh": {
         "name": "沙暴",
-        "description": "地系环境，双方地系技能能耗减半。"
+        "description": "地系环境，天气为沙暴时，双方地系技能能耗减半。"
       }
     }
   },
   {
     "key": "Blizzard",
-    "description": "Ice-type environment. Both sides gain 1 stack of Freeze each turn.",
+    "description": "Ice-type environment. When the weather is Blizzard, both sides gain 2 stacks of Freeze at the end of each turn. (Ice-type monsters are immune to this effect.)",
     "localized": {
       "zh": {
         "name": "暴风雪",
-        "description": "冰系环境，双方每回合获得1层冻结。"
+        "description": "冰系环境，天气为暴风雪时，双方每回合结束时获得2层冻结。（冰系精灵免疫此效果）"
       }
     }
   },
@@ -301,11 +311,11 @@
   },
   {
     "key": "Transmission",
-    "description": "At the end of the turn, for every move with Transmission, all moves with Transmission shift down one slot in the move list, in order. Moves below them move up to take their previous positions. When multiple moves have Transmission, all such moves are shifted together, maintaining their original order relative to each other.",
+    "description": "At the start of the turn, moves with 'Transmission X' will move down X Slot, and this effect can stack.",
     "localized": {
       "zh": {
         "name": "传动",
-        "description": "回合结束时，带有传动效果的技能会向下移动一个位置，并将原先下面那个技能向上顶到传动技能原先的位置。当有多个技能同时带有传动效果时，所有这些技能会一起移动，并保持它们之间的原始顺序。"
+        "description": "回合开始时，带有“传动X”的技能会向下移动X个位置，该效果可叠加。"
       }
     }
   },
@@ -421,31 +431,31 @@
   },
   {
     "key": "Counter Attack",
-    "description": "When the opponent uses an Attack-type move against the user, this move counters successfully. An extra effect is triggered, and next turn Priority +1.",
+    "description": "When the opponent uses an Attack-type move against the user, this move counters successfully. A counter effect is triggered, and next turn Priority +1.",
     "localized": {
       "zh": {
         "name": "应对攻击",
-        "description": "目标对自身释放攻击类技能时，本技能应对成功，触发额外效果，且下回合先手+1。"
+        "description": "目标对自身释放攻击类技能时，本技能应对成功，且触发应对效果。"
       }
     }
   },
   {
     "key": "Counter Defense",
-    "description": "When the opponent uses a Defense-type move, this move counters successfully. An extra effect is triggered, and the energy cost of this move is refunded.",
+    "description": "When the opponent uses a Defense-type move, this move counters successfully. A counter effect is triggered, and the energy cost of this move is refunded.",
     "localized": {
       "zh": {
         "name": "应对防御",
-        "description": "目标释放防御类技能时，本技能应对成功，触发额外效果，且返还本次消耗的能量。"
+        "description": "目标释放防御类技能时，本技能应对成功，且触发应对效果。"
       }
     }
   },
   {
     "key": "Counter Status",
-    "description": "When the opponent uses a Status-type move, this move counters successfully. An extra effect is triggered, and this move's power +50%.",
+    "description": "When the opponent uses a Status-type move, this move counters successfully. A counter effect is triggered, and this move's power +50%.",
     "localized": {
       "zh": {
         "name": "应对状态",
-        "description": "目标释放状态类技能时，本技能应对成功，触发额外效果，且本次技能威力额外+50%。"
+        "description": "目标释放状态类技能时，本技能应对成功，且触发应对效果。"
       }
     }
   },
