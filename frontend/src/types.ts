@@ -230,9 +230,6 @@ export interface TeamOut {
   is_featured?: boolean;
   created_at?: string;
   updated_at?: string;
-  // Keys are user_monster.id as strings (JSON object keys are always strings).
-  // Only present on GET /teams/{id}; absent on other endpoints.
-  stale_move_ids?: Record<string, number[]>;
 }
 
 /* ---------- analysis DTOs (mirror backend schemas.py) ---------- */
