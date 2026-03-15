@@ -126,13 +126,13 @@ BATTLE_MECHANICS_ZH = """每位玩家携带6只精灵对战，每只精灵有6�
 
 所有技能分为三类：攻击类（物攻/魔攻）、防御类、状态类。存在"应对"系统：若敌方技能类别与本技能可应对类别匹配，则应对成功，本技能以最高优先级立即释放，忽略速度顺序。双方不可同时应对成功。未触发应对时按先手值判定顺序，先手值相同则速度高者先行动。主动更换始终优先于技能结算。
 
-应对关系：防御类技能自带应对攻击（应对成功获得先手+1）；部分状态类技能带应对防御（应对成功返还能量）；部分攻击类技能带应对状态（应对成功威力+50%）。这形成克制三角，预测对手技能类别选择应对是PvP关键策略。
+应对关系：防御类技能自带应对攻击；部分状态类技能带应对防御；部分攻击类技能带应对状态。这形成克制三角，预测对手技能类别选择应对是PvP关键策略。
 
 增益指提升攻击、防御、速度、技能威力、连击数、吸血或降低技能能耗；减益相反。技能中的"全技能威力/全技能能耗"影响该精灵当前所有技能。精灵离场时清除非永久性增减益和大多数状态效果（印记除外）。
 
 层数定义：当"层数"用于增益/减益时，以10为换算基准。百分比增减：每10% = 1层，如物攻+150% = +15层物攻。数值增减（非百分比且为10的倍数）：每10点 = 1层，如技能威力+20 = +2层技能威力。当"层数"用于状态/印记时，层数按状态本身叠加规则计算，不做上述换算。
 
-冷却定义：技能或血脉魔法在再次使用前必须经过的回合数。除非另有说明，所有防御类技能的冷却为1回合，而其他类别的技能通常没有冷却；血脉魔法中"愿力强化"的冷却为3回合，而其他血脉魔法为每场一次性使用。
+冷却定义：技能或血脉魔法在再次使用前必须经过的回合数。除非另有说明，所有防御类技能的冷却为1回合，而其他类别的技能通常没有冷却；血脉魔法中"愿力强化"的冷却为3回合且每场战斗最多使用2次，而其他血脉魔法为每场一次性使用。
 
 在进行队伍与精灵分析时，请默认对战结算遵循以上关于魔力值、力竭、能量、技能类别、应对系统、增减益、迅捷、先手与速度、层数定义、冷却定义及血脉魔法的规则。"""
 
@@ -148,13 +148,13 @@ Active switching executes before all move resolutions. When a monster enters via
 
 All moves fall into three categories: Attack-type (Physical/Magic Attack), Defense-type, Status-type. A "Counter" system exists: if the opponent's move category matches this move's counterable category, counter succeeds and this move resolves immediately with highest priority, ignoring speed order. Both sides cannot counter simultaneously. Without counter triggers, turn order is determined by priority value; if equal, higher speed acts first. Active switching always executes before move resolution.
 
-Counter relationships: All Defense moves have Counter Attack (successful counter grants Priority +1 next turn); some Status moves have Counter Defense (successful counter refunds energy cost); some Attack moves have Counter Status (successful counter grants +50% power). This forms a counter triangle—predicting opponent's move category to select counters is key PvP strategy.
+Counter relationships: All Defense moves have Counter Attack; some Status moves have Counter Defense; some Attack moves have Counter Status. This forms a counter triangle—predicting opponent's move category to select counters is key PvP strategy.
 
 Buffs increase Attack, Defense, Speed, move power, Combo count, Lifesteal, or decrease move energy cost; Debuffs do the opposite. "All Move Power/Move Energy Cost" affects all moves currently carried by that monster. When monsters leave the field, non-permanent buffs/debuffs and most of status effects are removed (except marks).
 
 Stack definition: When "stacks" are used for buffs/debuffs, convert using 10 as the base unit. For percentage changes, every 10% = 1 stack (e.g., Physical Attack +150% = +15 stacks of Physical Attack). For flat value changes (non-percentage and a multiple of 10), every 10 points = 1 stack (e.g., Move Power +20 = +2 stacks of Move Power). When "stacks" refer to status/mark effects, stacks follow their own stacking rules and do not use the above conversion.
 
-Cooldown definition: The number of turns that must pass before a move or magic item can be used again. Unless otherwise specified, all Defense-type moves have a 1-turn cooldown, while moves of other categories have no cooldown. For magic items, "Willpower Enhancement" has a 3-turn cooldown, while other magic item effects are single-use per battle.
+Cooldown definition: The number of turns that must pass before a move or magic item can be used again. Unless otherwise specified, all Defense-type moves have a 1-turn cooldown, while moves of other categories have no cooldown. For magic items, "Willpower Enhancement" has a 3-turn cooldown and can be used at most 2 times per battle, while other magic item effects are single-use per battle.
 
 When performing monster and team analysis, assume battle resolution follows the above rules regarding Life Points, defeated state, energy, move categories, counter system, buffs/debuffs, Quick Entry, priority and speed, stack definitions, cooldown definitions, and Magic Items."""
 
@@ -771,7 +771,7 @@ def build_trait_synergy_prompt(monster, trait, selected_moves, game_terms, refer
 1. 识别哪些技能与特性特别有协同作用。
 2. 对于你的建议:
     - 给出**恰好两条建议** (每条最多3-4句话)，**详细解释用户应该如何在不同对局情况下使用所选技能**：
-      * 区分哪些技能是通用型的（面对大多数精灵），哪些是特定情况才使用的
+      * 说明各技能的出手时机：哪些技能在大多数对局中都能稳定出手，哪些需要等待特定条件或局势
       * 说明哪些技能使用后可能获得关键收益（如建立优势、扭转战局），并评估其能耗
       * 给出具体的使用场景建议，包括可能的技能协同、防守/进攻应用，以及如何结合特性和能量管理来发挥最大效果
     - 给出**一条额外的建议** (3-4句话)，**分析技能配置的合理性**：
@@ -823,7 +823,7 @@ Instructions:
 1. Identify which moves are especially synergistic with the trait.
 2. For your recommendations:
     - Give **exactly two recommendations** (3-4 sentences each) that **explain in detail how to use the selected moves in different battle situations**:
-      * Distinguish which moves are versatile (against most monsters) vs situational (for specific scenarios)
+      * Explain when and why to use each move—covering moves that perform reliably across most matchups as well as those reserved for specific situations
       * Identify which moves can provide key benefits after use (e.g., establishing advantage, turning the tide) and assess their energy cost
       * Provide specific usage scenarios including possible move synergies, defensive/offensive applications, and how to maximize effectiveness through trait synergy and energy management
     - Give **one additional recommendation** (3-4 sentences) that **analyzes the moveset's composition**:
@@ -1080,7 +1080,7 @@ def build_team_synergy_prompt(user_monsters, monster_db_map, move_db_map, type_d
             if language == "zh":
                 willpower_enhancement_section = (
                     f"注意：队伍选择了「愿力强化」血脉魔法。此魔法可以被队内 {eligible_count} 个精灵使用（首领血脉除外）。\n"
-                    f"该魔法有3回合冷却时间，但在单场战斗中可以多次用于不同精灵。\n\n"
+                    f"该魔法有3回合冷却时间，每场战斗最多使用2次（可用于不同精灵）。\n\n"
                     f"使用后，该精灵的第1个技能在本回合被替换为「愿力冲击」：\n"
                     f"- 愿力冲击 (系别：根据使用精灵的血脉属性动态变化, 类别：物攻/魔攻, 能量消耗:2, 威力:80): "
                     f"造成物理/魔法伤害（取决于使用精灵的物攻和魔攻哪个更高），应对成功时本次威力提高150%，应对状态。\n\n"
@@ -1090,7 +1090,7 @@ def build_team_synergy_prompt(user_monsters, monster_db_map, move_db_map, type_d
             else:
                 willpower_enhancement_section = (
                     f"Note: The team has selected \"Willpower Enhancement\" magic item. This item can be used by {eligible_count} monsters in the team (except those with Leader legacy type). \n"
-                    f"The item has a 3-turn cooldown but can be used multiple times in a single battle on different monsters.\n\n"
+                    f"The item has a 3-turn cooldown and can be used at most 2 times per battle (can be used on different monsters).\n\n"
                     f"When used, the monster's 1st move is replaced with \"Willpower Impact\" for that turn:\n"
                     f"- Willpower Impact (Type: Dynamically matches user's legacy type, Category: Physical/Magic Attack, Energy Cost:2, Power:80): "
                     f"Deals physical or magic damage (based on user's higher attack stat). If this move counters successfully, power +150%. Counter Status.\n\n"
@@ -3547,6 +3547,25 @@ async def get_featured_teams(
     return teams
 
 
+def compute_stale_move_ids(db_team) -> dict[int, list[int]]:
+    """Return {user_monster.id: [stale_move_id, ...]} for moves no longer in the monster's pool."""
+    result = {}
+    for um in db_team.user_monsters:
+        valid_ids: set[int] = {m.id for m in um.monster.move_pool}
+        valid_ids |= {m.id for m in um.monster.move_stones}
+        for lm in um.monster.legacy_moves:
+            if lm.type_id == um.legacy_type_id:
+                valid_ids.add(lm.move_id)
+                break
+        stale = [
+            m.id for m in [um.move1, um.move2, um.move3, um.move4]
+            if m is not None and m.id not in valid_ids
+        ]
+        if stale:
+            result[um.id] = stale
+    return result
+
+
 @app.get("/teams/{team_id}", response_model=schemas.TeamOut, tags=["Teams"])
 def get_team(
     team_id: int,
@@ -3586,6 +3605,15 @@ def get_team(
             joinedload(models.Team.user_monsters)
                 .joinedload(models.UserMonster.talent),
             joinedload(models.Team.magic_item),
+            joinedload(models.Team.user_monsters)
+                .joinedload(models.UserMonster.monster)
+                .joinedload(models.Monster.move_pool),
+            joinedload(models.Team.user_monsters)
+                .joinedload(models.UserMonster.monster)
+                .joinedload(models.Monster.move_stones),
+            joinedload(models.Team.user_monsters)
+                .joinedload(models.UserMonster.monster)
+                .joinedload(models.Monster.legacy_moves),
         )
         .filter(models.Team.id == team_id)
         .first()
@@ -3600,7 +3628,9 @@ def get_team(
             detail="You do not have permission to access this team"
         )
 
-    return db_team
+    team_out = schemas.TeamOut.model_validate(db_team)
+    team_out.stale_move_ids = compute_stale_move_ids(db_team)
+    return team_out
 
 
 # -------- POST Endpoints --------

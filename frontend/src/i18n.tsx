@@ -345,6 +345,7 @@ const ui: Record<Lang, Dict> = {
       save: "Save",
       renameSuccess: "Team renamed successfully!",
       renameFailed: "Failed to rename team. Please try again.",
+      staleMoveWarning: "Some moves in this team are no longer learnable by the assigned monsters (highlighted below). Consider updating your team before analyzing.",
     },
     userMenu: {
       guest: "Guest",
@@ -934,6 +935,7 @@ const ui: Record<Lang, Dict> = {
       save: "保存",
       renameSuccess: "队伍重命名成功！",
       renameFailed: "重命名失败，请重试。",
+      staleMoveWarning: "该队伍中部分技能已不在对应精灵的可学习技能池中（见下方高亮），建议在分析前更新队伍配置。",
     },
     userMenu: {
       guest: "访客",

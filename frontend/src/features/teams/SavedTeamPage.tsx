@@ -215,6 +215,7 @@ export default function SavedTeamPage() {
   if (!q.data) return <div className="text-center text-zinc-500 h-64 flex items-center justify-center">{t("teams.notFound")}</div>;
   const team = q.data;
   const magicItemImg = magicItemImageUrl(team.magic_item);
+  const hasStaleMove = Object.values(team.stale_move_ids ?? {}).some(ids => ids.length > 0);
 
   return (
     <div className="space-y-4">
@@ -248,6 +249,13 @@ export default function SavedTeamPage() {
           <span className="font-bold">{pickName(team.magic_item as any, lang)}</span>
         </div>
       </div>
+
+      {hasStaleMove && (
+        <div className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800 flex items-start gap-2.5">
+          <span className="shrink-0 mt-0.5">⚠️</span>
+          <span>{t("teams.staleMoveWarning")}</span>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-4">
         {/* Monster cards */}
@@ -316,21 +324,25 @@ export default function SavedTeamPage() {
                   <div>
                     <div className="text-xs text-zinc-500 mb-1.5 font-medium">{t("builder.moves")}:</div>
                     <div className="grid grid-cols-2 gap-1.5 text-[13px]">
-                      {[um.move1, um.move2, um.move3, um.move4].map((move, i) => (
-                        <div key={i} className="flex items-center gap-1 bg-zinc-50 px-2 py-1.5 rounded">
-                          {typeIconUrl(move.move_type?.name || move.type?.name, 30) && (
-                            <img
-                              src={typeIconUrl(move.move_type?.name || move.type?.name, 30) || ""}
-                              alt=""
-                              width={22}
-                              height={22}
-                              className="flex-shrink-0"
-                              onError={(e) => (e.currentTarget.style.display = 'none')}
-                            />
-                          )}
-                          <span className="truncate text-zinc-700 font-medium">{pickName(move as any, lang)}</span>
-                        </div>
-                      ))}
+                      {[um.move1, um.move2, um.move3, um.move4].map((move, i) => {
+                        const isStale = (team.stale_move_ids?.[String(um.id)] ?? []).includes(move.id);
+                        return (
+                          <div key={i} className={`flex items-center gap-1 px-2 py-1.5 rounded ${isStale ? "bg-amber-50 border border-amber-200" : "bg-zinc-50"}`}>
+                            {typeIconUrl(move.move_type?.name || move.type?.name, 30) && (
+                              <img
+                                src={typeIconUrl(move.move_type?.name || move.type?.name, 30) || ""}
+                                alt=""
+                                width={22}
+                                height={22}
+                                className="flex-shrink-0"
+                                onError={(e) => (e.currentTarget.style.display = 'none')}
+                              />
+                            )}
+                            <span className={`truncate font-medium ${isStale ? "text-amber-700 line-through" : "text-zinc-700"}`}>{pickName(move as any, lang)}</span>
+                            {isStale && <span className="shrink-0 ml-auto text-amber-600 text-xs font-bold">!</span>}
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
 

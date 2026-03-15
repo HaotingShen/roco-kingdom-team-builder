@@ -453,6 +453,9 @@ class TeamOut(BaseModel):
     is_featured: bool = False
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
+    # Maps user_monster.id -> list of move IDs no longer in that monster's learnable pool.
+    # Only populated by GET /teams/{id}; all other endpoints return the default empty dict.
+    stale_move_ids: Dict[int, List[int]] = Field(default_factory=dict)
 
     model_config = ConfigDict(from_attributes=True)
 
