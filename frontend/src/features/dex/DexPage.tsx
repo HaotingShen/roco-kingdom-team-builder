@@ -212,8 +212,8 @@ function MonstersTab() {
           </div>
         </div>
 
-        <div className="grid gap-y-3 gap-x-4 [grid-template-columns:max-content_1fr]">
-          <div className="self-center text-sm font-semibold text-zinc-700">{t("dex.typesLabel")}</div>
+        <div className="grid gap-y-3 gap-x-4 grid-cols-1 sm:[grid-template-columns:max-content_1fr]">
+          <div className="text-sm font-semibold text-zinc-700 sm:self-center">{t("dex.typesLabel")}</div>
           <div className="flex flex-wrap gap-2">
             <FilterButton
               active={selectedTypes.length === 0}
@@ -239,7 +239,7 @@ function MonstersTab() {
             ))}
           </div>
 
-          <div className="self-center text-sm font-semibold text-zinc-700">{t("dex.formsLabel")}</div>
+          <div className="text-sm font-semibold text-zinc-700 sm:self-center mt-2 sm:mt-0">{t("dex.formsLabel")}</div>
           <div className="flex flex-wrap items-center gap-2">
             <FilterButton active={filterVariant === "all"} onClick={() => setFilterVariant("all")}>
               {t("dex.form_all")}
@@ -522,8 +522,8 @@ function MovesTab() {
           </div>
         </div>
 
-        <div className="grid gap-y-3 gap-x-4 [grid-template-columns:max-content_1fr]">
-          <div className="self-center text-sm font-semibold text-zinc-700">{t("dex.skill_type")}</div>
+        <div className="grid gap-y-3 gap-x-4 grid-cols-1 sm:[grid-template-columns:max-content_1fr]">
+          <div className="text-sm font-semibold text-zinc-700 sm:self-center">{t("dex.skill_type")}</div>
           <div className="flex flex-wrap gap-2">
             <FilterButton active={typeId == null} onClick={() => setTypeId(null)}>
               {t("dex.form_all")}
@@ -550,7 +550,7 @@ function MovesTab() {
             </FilterButton>
           </div>
 
-          <div className="self-center text-sm font-semibold text-zinc-700">{t("dex.skill_category")}</div>
+          <div className="text-sm font-semibold text-zinc-700 sm:self-center mt-2 sm:mt-0">{t("dex.skill_category")}</div>
           <div className="flex flex-wrap gap-2">
             <FilterButton active={cat == null} onClick={() => setCat(null)}>
               {t("dex.form_all")}
