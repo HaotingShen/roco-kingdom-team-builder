@@ -4231,8 +4231,15 @@ async def _perform_team_analysis(
                 sub_type=schemas.TypeOut(**type_db_map[monster.sub_type_id].__dict__) if monster.sub_type_id else None,
                 leader_potential=getattr(monster, "leader_potential", False),
                 is_leader_form=monster.is_leader_form,
-                preferred_attack_style = getattr(monster, "preferred_attack_style", "Both"),
-                localized=monster.localized
+                preferred_attack_style=getattr(monster, "preferred_attack_style", "Both"),
+                localized=monster.localized,
+                base_hp=monster.base_hp,
+                base_phy_atk=monster.base_phy_atk,
+                base_mag_atk=monster.base_mag_atk,
+                base_phy_def=monster.base_phy_def,
+                base_mag_def=monster.base_mag_def,
+                base_spd=monster.base_spd,
+                evolves_from_id=getattr(monster, "evolves_from_id", None),
             )
 
         # Helper to create MoveOut with resolved properties

@@ -325,6 +325,13 @@ class MonsterLiteOut(BaseModel):
     is_leader_form: bool
     preferred_attack_style: AttackStyle
     localized: Dict
+    base_hp: int
+    base_phy_atk: int
+    base_mag_atk: int
+    base_phy_def: int
+    base_mag_def: int
+    base_spd: int
+    evolves_from_id: Optional[int] = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -334,15 +341,9 @@ class MonsterLiteOut(BaseModel):
 
 # Full version of MonsterOut
 class MonsterOut(MonsterLiteOut):
-    evolves_from_id: Optional[int] = None
+
     species: MonsterSpeciesOut
     trait: Optional[TraitOut] = None
-    base_hp: int
-    base_phy_atk: int
-    base_mag_atk: int
-    base_phy_def: int
-    base_mag_def: int
-    base_spd: int
     move_pool: List[MoveOut]
     move_stones: List[MoveOut] = []
     legacy_moves: List[LegacyMoveOut]

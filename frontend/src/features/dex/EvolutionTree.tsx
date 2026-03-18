@@ -9,15 +9,22 @@ interface EvolutionTreeProps {
   currentMonsterId: number;
   fromTab: string;
   fromBuilder: boolean;
+  back?: string;
 }
 
 export default function EvolutionTree({
   treeData,
   currentMonsterId,
   fromTab,
-  fromBuilder
+  fromBuilder,
+  back,
 }: EvolutionTreeProps) {
   const { lang } = useI18n();
+  const fwd = new URLSearchParams();
+  if (back) fwd.set("back", back);
+  else fwd.set("tab", fromTab);
+  if (fromBuilder) fwd.set("from", "builder");
+  const forwardQuery = fwd.toString();
 
   if (!treeData || !treeData.stages || treeData.stages.length <= 1) {
     return null;
@@ -37,8 +44,7 @@ export default function EvolutionTree({
                   key={monster.id}
                   monster={monster}
                   isCurrent={monster.id === currentMonsterId}
-                  fromTab={fromTab}
-                  fromBuilder={fromBuilder}
+                  forwardQuery={forwardQuery}
                   lang={lang}
                 />
               ))}
@@ -122,14 +128,12 @@ function EvolutionArrow({ isLeaderTransition }: { isLeaderTransition?: boolean }
 function MonsterEvolutionCard({
   monster,
   isCurrent,
-  fromTab,
-  fromBuilder,
+  forwardQuery,
   lang
 }: {
   monster: EvolutionStageMonster;
   isCurrent: boolean;
-  fromTab: string;
-  fromBuilder: boolean;
+  forwardQuery: string;
   lang: Lang;
 }) {
   const monsterName = pickName(monster as any, lang) || monster.name;
@@ -153,7 +157,7 @@ function MonsterEvolutionCard({
 
   return (
     <Link
-      to={`/dex/monsters/${targetId}?tab=${fromTab}${fromBuilder ? "&from=builder" : ""}`}
+      to={`/dex/monsters/${targetId}?${forwardQuery}`}
       className={`
         block rounded-lg border-2 bg-white p-2 transition-all duration-200 w-20 sm:w-24
         hover:shadow-lg hover:-translate-y-1

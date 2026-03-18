@@ -1,11 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { endpoints } from "@/lib/api";
-import type { MonsterLiteOut } from "@/types";
+import type { MonsterLiteOut, TypeOut } from "@/types";
 import useDebounce from "@/hooks/useDebounce";
 import { useI18n, pickName, useTypeIndex, localizeTypeName, pickFormName } from "@/i18n";
 import { MonsterImage } from "@/components/MonsterImage";
 import { QUERY_KEYS } from "@/lib/constants";
+import { typeIconUrl } from "@/lib/images";
 
 export default function MonsterPicker({
   onPick,
@@ -13,13 +14,31 @@ export default function MonsterPicker({
   onPick: (m: MonsterLiteOut) => void;
 }) {
   const [q, setQ] = useState("");
+  const [selectedTypeId, setSelectedTypeId] = useState<number | null>(null);
   const dq = useDebounce(q, 250);
   const { lang, t } = useI18n();
   const { index: typeIndex } = useTypeIndex();
 
+  const types = useQuery<TypeOut[]>({
+    queryKey: ["types-all"],
+    queryFn: () => endpoints.types().then((r) => r.data as TypeOut[]),
+    staleTime: Infinity,
+  });
+
+  // Exclude "Leader" type from filter buttons (same logic as DexPage)
+  const filterableTypes = (types.data ?? []).filter(
+    (tp) => tp.name.toLowerCase() !== "leader" && (tp.localized?.zh ?? "") !== "首领"
+  );
+
+  const queryParams = {
+    name: dq,
+    is_leader_form: false,
+    ...(selectedTypeId != null ? { type_id: selectedTypeId } : {}),
+  };
+
   const list = useQuery({
-    queryKey: QUERY_KEYS.MONSTER_LIST({ name: dq, is_leader_form: false }),
-    queryFn: () => endpoints.monsters({ name: dq, is_leader_form: false }).then((r) => r.data),
+    queryKey: QUERY_KEYS.MONSTER_LIST(queryParams),
+    queryFn: () => endpoints.monsters(queryParams).then((r) => r.data),
   });
 
   const items: MonsterLiteOut[] = list.data?.items ?? list.data ?? [];
@@ -41,6 +60,35 @@ export default function MonsterPicker({
           className="w-full h-10 rounded-lg border-2 border-zinc-300 pl-8 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-400 focus:border-transparent transition-all"
         />
       </div>
+
+      {/* Type filter buttons */}
+      {filterableTypes.length > 0 && (
+        <div className="flex flex-wrap gap-1">
+          {filterableTypes.map((tp) => {
+            const icon = typeIconUrl(tp.name, 30);
+            const label = localizeTypeName(tp.name, lang, typeIndex);
+            const isActive = selectedTypeId === tp.id;
+            return (
+              <button
+                key={tp.id}
+                onClick={() => setSelectedTypeId(isActive ? null : tp.id)}
+                title={label}
+                className={`h-8 w-8 rounded flex items-center justify-center transition-colors cursor-pointer ${
+                  isActive
+                    ? "bg-zinc-800 ring-2 ring-zinc-800 ring-offset-1"
+                    : "bg-zinc-100 hover:bg-zinc-200"
+                }`}
+              >
+                {icon ? (
+                  <img src={icon} alt={label} width={22} height={22} />
+                ) : (
+                  <span className="text-xs font-bold text-zinc-700">{tp.name.slice(0, 2)}</span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       <div className="grid grid-cols-2 gap-2 max-h-[60vh] overflow-auto">
         {items.map((m) => {

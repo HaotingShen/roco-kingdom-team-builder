@@ -89,6 +89,13 @@ export interface MonsterLiteOut extends Named {
   leader_potential?: boolean;
   is_leader_form?: boolean;
   preferred_attack_style?: AttackStyle;
+  base_hp: number;
+  base_phy_atk: number;
+  base_mag_atk: number;
+  base_phy_def: number;
+  base_mag_def: number;
+  base_spd: number;
+  evolves_from_id?: number | null;
 }
 
 export interface MonsterOut {

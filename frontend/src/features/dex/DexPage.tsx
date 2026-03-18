@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useRef } from "react";
 import type { ReactNode } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { endpoints } from "@/lib/api";
@@ -85,9 +85,29 @@ function Pill({
   );
 }
 
+const MONSTER_SORT_OPTIONS = [
+  { key: "base_hp",      labelKey: "labels.hp" },
+  { key: "base_phy_atk", labelKey: "labels.phyAtk" },
+  { key: "base_mag_atk", labelKey: "labels.magAtk" },
+  { key: "base_phy_def", labelKey: "labels.phyDef" },
+  { key: "base_mag_def", labelKey: "labels.magDef" },
+  { key: "base_spd",     labelKey: "labels.spd" },
+] as const;
+
+const VALID_MOVE_SORT_KEYS = ["energy_cost", "power"] as const;
+type MoveSortKey = typeof VALID_MOVE_SORT_KEYS[number];
+
+const MOVE_SORT_OPTIONS = [
+  { key: "energy_cost" as MoveSortKey, labelKey: "dex.sort_energy" },
+  { key: "power"       as MoveSortKey, labelKey: "dex.sort_power" },
+] as const;
+
 /* ===========================================================
    Monsters tab
    =========================================================== */
+
+const VALID_FORM_VARIANTS = ["all", "regional", "highest", "leader"] as const;
+type FormVariant = typeof VALID_FORM_VARIANTS[number];
 
 function MonstersTab() {
   const { lang, t } = useI18n();
@@ -98,9 +118,20 @@ function MonstersTab() {
   const [selectedTypes, setSelectedTypes] = useState<number[]>(
     () => (sp.get("types")?.split(",").map(Number).filter(Boolean) ?? [])
   );
-  const [filterVariant, setFilterVariant] = useState<"all" | "regional" | "leader">(
-    (sp.get("form") as any) || "all"
+  const [filterVariant, setFilterVariant] = useState<FormVariant>(() => {
+    const f = sp.get("form") as FormVariant;
+    return VALID_FORM_VARIANTS.includes(f) ? f : "all";
+  });
+  const validSortKeys = ["base_hp","base_phy_atk","base_mag_atk","base_phy_def","base_mag_def","base_spd"];
+  const [sortStat, setSortStat] = useState<string | null>(() => {
+    const s = sp.get("sort");
+    return s && validSortKeys.includes(s) ? s : null;
+  });
+  const [sortDir, setSortDir] = useState<"desc" | "asc">(() =>
+    sp.get("dir") === "asc" ? "asc" : "desc"
   );
+  const [sortOpen, setSortOpen] = useState(false);
+  const sortRef = useRef<HTMLDivElement>(null);
 
   const types = useQuery<TypeOut[]>({
     queryKey: ["types-all"],
@@ -111,6 +142,21 @@ function MonstersTab() {
     queryKey: ["dex-monsters"],
     queryFn: () => endpoints.monsters().then((r) => (r.data?.items ?? r.data) as MonsterLiteOut[]),
   });
+
+  // Compute highest (final) non-leader evolution IDs once per data fetch.
+  // A monster is "highest form" if no other non-leader monster evolves from it.
+  const highestFormIds = useMemo(() => {
+    const list = monsters.data ?? [];
+    const evolvedFromSet = new Set<number>();
+    list.forEach((m) => {
+      if (!m.is_leader_form && m.evolves_from_id != null) {
+        evolvedFromSet.add(m.evolves_from_id);
+      }
+    });
+    return new Set(
+      list.filter((m) => !m.is_leader_form && !evolvedFromSet.has(m.id)).map((m) => m.id)
+    );
+  }, [monsters.data]);
 
   const filtered = useMemo(() => {
     const list = monsters.data ?? [];
@@ -125,6 +171,7 @@ function MonstersTab() {
       }
       // form filters
       if (filterVariant === "regional" && (m.is_leader_form || !m.form || m.form.toLowerCase() === "default")) return false;
+      if (filterVariant === "highest" && !highestFormIds.has(m.id)) return false;
       if (filterVariant === "leader" && !m.is_leader_form) return false;
 
       // local search – SUPPORT EN & 中文 regardless of current UI language
@@ -142,7 +189,7 @@ function MonstersTab() {
       const hay = [nameEN, nameZH, formEN, formZH, mainEN, mainZH, subEN, subZH, leaderEN, leaderZH].join(" ");
       return hay.includes(keywords);
     });
-  }, [monsters.data, dq, selectedTypes, filterVariant]);
+  }, [monsters.data, dq, selectedTypes, filterVariant, highestFormIds]);
 
   // Always group leader forms by monster name to show only one card per species
   const displayList = useMemo(() => {
@@ -165,8 +212,21 @@ function MonstersTab() {
 
     // Combine grouped leaders with non-leaders, maintaining original order
     const groupedLeaders = Array.from(grouped.values());
-    return [...nonLeaders, ...groupedLeaders].sort((a, b) => (a as any).id - (b as any).id);
-  }, [filtered, lang]);
+    const combined = [...nonLeaders, ...groupedLeaders];
+
+    if (sortStat) {
+      return combined.sort((a, b) => {
+        const aVal: number | null = (a as any)[sortStat] ?? null;
+        const bVal: number | null = (b as any)[sortStat] ?? null;
+        if (aVal === null && bVal === null) return (a.name || "").localeCompare(b.name || "");
+        if (aVal === null) return 1;
+        if (bVal === null) return -1;
+        const diff = sortDir === "desc" ? bVal - aVal : aVal - bVal;
+        return diff !== 0 ? diff : (a.name || "").localeCompare(b.name || "");
+      });
+    }
+    return combined.sort((a, b) => (a as any).id - (b as any).id);
+  }, [filtered, lang, sortStat, sortDir]);
 
   const toggleType = (id: number) =>
     setSelectedTypes((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
@@ -193,15 +253,51 @@ function MonstersTab() {
     q ? next.set("q", q) : next.delete("q");
     selectedTypes.length ? next.set("types", selectedTypes.join(",")) : next.delete("types");
     filterVariant !== "all" ? next.set("form", filterVariant) : next.delete("form");
+    sortStat ? next.set("sort", sortStat) : next.delete("sort");
+    sortStat && sortDir === "asc" ? next.set("dir", "asc") : next.delete("dir");
     setSp(next, { replace: true });
-  }, [q, selectedTypes, filterVariant]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [q, selectedTypes, filterVariant, sortStat, sortDir]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // restore scroll position when returning from a monster detail page
+  useEffect(() => {
+    const saved = sessionStorage.getItem("dex_monster_scroll");
+    if (!saved) return;
+    const y = Number(saved);
+    let id2: number;
+    // Remove the key inside the rAF so that App.tsx's effect (which runs after this
+    // child effect) still sees the key and skips its own window.scrollTo(0,0).
+    const id1 = requestAnimationFrame(() => {
+      id2 = requestAnimationFrame(() => {
+        sessionStorage.removeItem("dex_monster_scroll");
+        window.scrollTo({ top: y, behavior: "instant" });
+      });
+    });
+    return () => { cancelAnimationFrame(id1); cancelAnimationFrame(id2); };
+  }, []);
+
+  // close sort dropdown on outside click (mobile)
+  useEffect(() => {
+    if (!sortOpen) return;
+    const handle = (e: MouseEvent) => {
+      if (sortRef.current && !sortRef.current.contains(e.target as Node)) {
+        setSortOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handle);
+    return () => document.removeEventListener("mousedown", handle);
+  }, [sortOpen]);
+
+  // full dex URL to pass as "back" param to monster detail page
+  const dexReturnParams = new URLSearchParams(sp);
+  dexReturnParams.set("tab", "monsters");
+  const dexReturnUrl = `/dex?${dexReturnParams.toString()}`;
 
   return (
     <div className="space-y-3">
       {/* Filters */}
       <div className="rounded-lg border border-zinc-200 bg-white shadow-sm p-4 space-y-4">
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="relative">
+        <div className="flex items-center gap-2">
+          <div className="relative flex-1 sm:flex-none">
             <input
               value={q}
               onChange={(e) => setQ(e.target.value)}
@@ -210,10 +306,56 @@ function MonstersTab() {
             />
             <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 text-lg">🔍</span>
           </div>
+          {/* Sort dropdown — mobile only */}
+          <div className="relative sm:hidden" ref={sortRef}>
+            <button
+              onClick={() => setSortOpen((v) => !v)}
+              className={`h-10 px-3 rounded-lg border text-sm font-medium inline-flex items-center gap-1.5 transition-all ${
+                sortStat
+                  ? "bg-zinc-800 text-white border-zinc-800"
+                  : "bg-white text-zinc-700 border-zinc-300 hover:border-zinc-400"
+              }`}
+            >
+              <span>↑↓</span>
+              <span>{t("dex.sortLabelMobile")}</span>
+            </button>
+            {sortOpen && (
+              <div className="absolute right-0 top-full mt-1 z-50 bg-white border border-zinc-200 rounded-lg shadow-lg overflow-hidden min-w-[140px]">
+                {MONSTER_SORT_OPTIONS.map((opt) => {
+                  const isActive = sortStat === opt.key;
+                  const label = t(opt.labelKey);
+                  return (
+                    <div
+                      key={opt.key}
+                      className={`flex items-center justify-between px-3 ${isActive ? "py-2 bg-zinc-100" : "py-3"}`}
+                    >
+                      <button
+                        className={`flex-1 text-left text-sm ${isActive ? "font-semibold text-zinc-900" : "text-zinc-700"}`}
+                        onClick={() => {
+                          if (isActive) { setSortStat(null); setSortDir("desc"); }
+                          else { setSortStat(opt.key); setSortDir("desc"); }
+                        }}
+                      >
+                        {label}
+                      </button>
+                      {isActive && (
+                        <button
+                          className="ml-2 w-8 h-8 flex items-center justify-center rounded text-zinc-700 hover:bg-zinc-200 text-base"
+                          onClick={() => setSortDir((d) => d === "desc" ? "asc" : "desc")}
+                        >
+                          {sortDir === "desc" ? "↓" : "↑"}
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="grid gap-y-3 gap-x-4 grid-cols-1 sm:[grid-template-columns:max-content_1fr]">
-          <div className="text-sm font-semibold text-zinc-700 sm:self-center">{t("dex.typesLabel")}</div>
+          <div className="text-sm font-semibold text-zinc-500 uppercase tracking-wide sm:text-zinc-700 sm:normal-case sm:tracking-normal sm:self-center sm:text-center">{t("dex.typesLabel")}</div>
           <div className="flex flex-wrap gap-2">
             <FilterButton
               active={selectedTypes.length === 0}
@@ -239,7 +381,7 @@ function MonstersTab() {
             ))}
           </div>
 
-          <div className="text-sm font-semibold text-zinc-700 sm:self-center mt-2 sm:mt-0">{t("dex.formsLabel")}</div>
+          <div className="text-sm font-semibold text-zinc-500 uppercase tracking-wide sm:text-zinc-700 sm:normal-case sm:tracking-normal sm:self-center sm:text-center mt-2 sm:mt-0">{t("dex.formsLabel")}</div>
           <div className="flex flex-wrap items-center gap-2">
             <FilterButton active={filterVariant === "all"} onClick={() => setFilterVariant("all")}>
               {t("dex.form_all")}
@@ -247,9 +389,44 @@ function MonstersTab() {
             <FilterButton active={filterVariant === "regional"} onClick={() => setFilterVariant("regional")}>
               {t("dex.form_regional")}
             </FilterButton>
+            <FilterButton active={filterVariant === "highest"} onClick={() => setFilterVariant("highest")}>
+              {t("dex.form_highest")}
+            </FilterButton>
             <FilterButton active={filterVariant === "leader"} onClick={() => setFilterVariant("leader")}>
               {t("dex.form_leader")}
             </FilterButton>
+          </div>
+
+          {/* Sort row — desktop only, inside same grid for column alignment */}
+          <div className="hidden sm:block text-sm font-semibold text-zinc-700 self-center text-center">{t("dex.sortLabel")}</div>
+          <div className="hidden sm:flex flex-wrap gap-2">
+            {MONSTER_SORT_OPTIONS.map((opt) => {
+              const isActive = sortStat === opt.key;
+              const label = t(opt.labelKey);
+              if (isActive) {
+                return (
+                  <div key={opt.key} className="inline-flex h-9 items-center rounded-full bg-zinc-800 text-white shadow-md text-sm font-medium overflow-hidden">
+                    <button
+                      className="pl-3 pr-1.5 h-full hover:bg-zinc-700 transition-colors"
+                      onClick={() => { setSortStat(null); setSortDir("desc"); }}
+                    >
+                      {label}
+                    </button>
+                    <button
+                      className="pr-3 pl-1 h-full hover:bg-zinc-700 transition-colors"
+                      onClick={() => setSortDir((d) => d === "desc" ? "asc" : "desc")}
+                    >
+                      {sortDir === "desc" ? "↓" : "↑"}
+                    </button>
+                  </div>
+                );
+              }
+              return (
+                <FilterButton key={opt.key} active={false} onClick={() => { setSortStat(opt.key); setSortDir("desc"); }}>
+                  {label}
+                </FilterButton>
+              );
+            })}
           </div>
         </div>
       </div>
@@ -284,7 +461,8 @@ function MonstersTab() {
                     return (
                       <Link
                         key={m.id}
-                        to={`/dex/monsters/${m.id}?tab=monsters`}
+                        to={`/dex/monsters/${m.id}?back=${encodeURIComponent(dexReturnUrl)}`}
+                        onClick={() => sessionStorage.setItem("dex_monster_scroll", String(window.scrollY))}
                         className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400"
                       >
                         <div className="text-sm font-semibold truncate text-zinc-800" title={title}>{title}</div>
@@ -373,6 +551,15 @@ function MovesTab() {
     return v === "OTHER" ? "OTHER" : Number(v);
   });
   const [cat, setCat] = useState<string | null>(sp.get("mcat") ?? null);
+  const [moveSortStat, setMoveSortStat] = useState<MoveSortKey | null>(() => {
+    const s = sp.get("msort") as MoveSortKey;
+    return VALID_MOVE_SORT_KEYS.includes(s) ? s : null;
+  });
+  const [moveSortDir, setMoveSortDir] = useState<"asc" | "desc">(() =>
+    sp.get("mdir") === "asc" ? "asc" : "desc"
+  );
+  const [moveSortOpen, setMoveSortOpen] = useState(false);
+  const moveSortRef = useRef<HTMLDivElement>(null);
 
   // Type color mapping for 19 types
   const typeColors: Record<string, string> = {
@@ -468,6 +655,24 @@ function MovesTab() {
     });
   }, [moves.data, dq, typeId, cat, otherTypeMoves]);
 
+  // Sort filtered moves — nulls always last regardless of direction
+  const displayList = useMemo(() => {
+    if (!moveSortStat) return filtered;
+    return [...filtered].sort((a, b) => {
+      const aVal = moveSortStat === "energy_cost"
+        ? (a.energy_cost ?? a.energy ?? null)
+        : (a.power ?? null);
+      const bVal = moveSortStat === "energy_cost"
+        ? (b.energy_cost ?? b.energy ?? null)
+        : (b.power ?? null);
+      if (aVal === null && bVal === null) return (pickName(a as any, "en") || a.name || "").localeCompare(pickName(b as any, "en") || b.name || "");
+      if (aVal === null) return 1;
+      if (bVal === null) return -1;
+      const diff = moveSortDir === "desc" ? bVal - aVal : aVal - bVal;
+      return diff !== 0 ? diff : (pickName(a as any, "en") || a.name || "").localeCompare(pickName(b as any, "en") || b.name || "");
+    });
+  }, [filtered, moveSortStat, moveSortDir]);
+
   const catOptions = [
     { key: "PHY_ATTACK", label: t("dex.cat_phy") },
     { key: "MAG_ATTACK", label: t("dex.cat_mag") },
@@ -477,7 +682,7 @@ function MovesTab() {
 
   // --- virtualization for moves grid (measureElement + padding spacers) ---
   const cols = useColumns("moves");
-  const rowCount = Math.ceil((filtered?.length ?? 0) / cols);
+  const rowCount = Math.ceil((displayList?.length ?? 0) / cols);
   const rowEstimate = 180;
 
   const rowVirt = useWindowVirtualizer({
@@ -503,15 +708,29 @@ function MovesTab() {
     q ? next.set("mq", q) : next.delete("mq");
     typeId !== null ? next.set("mtype", String(typeId)) : next.delete("mtype");
     cat ? next.set("mcat", cat) : next.delete("mcat");
+    moveSortStat ? next.set("msort", moveSortStat) : next.delete("msort");
+    moveSortStat && moveSortDir === "asc" ? next.set("mdir", "asc") : next.delete("mdir");
     setSp(next, { replace: true });
-  }, [q, typeId, cat]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [q, typeId, cat, moveSortStat, moveSortDir]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // close sort dropdown on outside click (mobile)
+  useEffect(() => {
+    if (!moveSortOpen) return;
+    const handle = (e: MouseEvent) => {
+      if (moveSortRef.current && !moveSortRef.current.contains(e.target as Node)) {
+        setMoveSortOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handle);
+    return () => document.removeEventListener("mousedown", handle);
+  }, [moveSortOpen]);
 
   return (
     <div className="space-y-3">
       {/* Filters */}
       <div className="rounded-lg border border-zinc-200 bg-white shadow-sm p-4 space-y-4">
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="relative">
+        <div className="flex items-center gap-2">
+          <div className="relative flex-1 sm:flex-none">
             <input
               value={q}
               onChange={(e) => setQ(e.target.value)}
@@ -520,10 +739,53 @@ function MovesTab() {
             />
             <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 text-lg">🔍</span>
           </div>
+          {/* Sort dropdown — mobile only */}
+          <div className="relative sm:hidden" ref={moveSortRef}>
+            <button
+              onClick={() => setMoveSortOpen((v) => !v)}
+              className={`h-10 px-3 rounded-lg border text-sm font-medium inline-flex items-center gap-1.5 transition-all ${
+                moveSortStat
+                  ? "bg-zinc-800 text-white border-zinc-800"
+                  : "bg-white text-zinc-700 border-zinc-300 hover:border-zinc-400"
+              }`}
+            >
+              <span>↑↓</span>
+              <span>{t("dex.sortLabelMobile")}</span>
+            </button>
+            {moveSortOpen && (
+              <div className="absolute right-0 top-full mt-1 z-50 bg-white border border-zinc-200 rounded-lg shadow-lg overflow-hidden min-w-[140px]">
+                {MOVE_SORT_OPTIONS.map((opt) => {
+                  const isActive = moveSortStat === opt.key;
+                  const label = t(opt.labelKey);
+                  return (
+                    <div key={opt.key} className={`flex items-center justify-between px-3 ${isActive ? "py-2 bg-zinc-100" : "py-3"}`}>
+                      <button
+                        className={`flex-1 text-left text-sm ${isActive ? "font-semibold text-zinc-900" : "text-zinc-700"}`}
+                        onClick={() => {
+                          if (isActive) { setMoveSortStat(null); setMoveSortDir("desc"); }
+                          else { setMoveSortStat(opt.key); setMoveSortDir("desc"); }
+                        }}
+                      >
+                        {label}
+                      </button>
+                      {isActive && (
+                        <button
+                          className="ml-2 w-8 h-8 flex items-center justify-center rounded text-zinc-700 hover:bg-zinc-200 text-base"
+                          onClick={() => setMoveSortDir((d) => d === "desc" ? "asc" : "desc")}
+                        >
+                          {moveSortDir === "desc" ? "↓" : "↑"}
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="grid gap-y-3 gap-x-4 grid-cols-1 sm:[grid-template-columns:max-content_1fr]">
-          <div className="text-sm font-semibold text-zinc-700 sm:self-center">{t("dex.skill_type")}</div>
+          <div className="text-sm font-semibold text-zinc-500 uppercase tracking-wide sm:text-zinc-700 sm:normal-case sm:tracking-normal sm:self-center sm:text-center">{t("dex.skill_type")}</div>
           <div className="flex flex-wrap gap-2">
             <FilterButton active={typeId == null} onClick={() => setTypeId(null)}>
               {t("dex.form_all")}
@@ -537,7 +799,7 @@ function MovesTab() {
                   onClick={() => setTypeId((prev) => (prev === tp.id ? null : tp.id))}
                 >
                   <span className="inline-flex items-center gap-0.5">
-                    {typeIconUrl(tp.name, 30) ? <img src={typeIconUrl(tp.name, 30)!} alt="" width={20} height={20} /> : null}
+                    {typeIconUrl(tp.name, 30) ? <img src={typeIconUrl(tp.name, 30)!} alt="" width={22} height={22} /> : null}
                     {pickName(tp as any, lang) || tp.name}
                   </span>
                 </FilterButton>
@@ -550,7 +812,7 @@ function MovesTab() {
             </FilterButton>
           </div>
 
-          <div className="text-sm font-semibold text-zinc-700 sm:self-center mt-2 sm:mt-0">{t("dex.skill_category")}</div>
+          <div className="text-sm font-semibold text-zinc-500 uppercase tracking-wide sm:text-zinc-700 sm:normal-case sm:tracking-normal sm:self-center sm:text-center mt-2 sm:mt-0">{t("dex.skill_category")}</div>
           <div className="flex flex-wrap gap-2">
             <FilterButton active={cat == null} onClick={() => setCat(null)}>
               {t("dex.form_all")}
@@ -565,13 +827,45 @@ function MovesTab() {
               </FilterButton>
             ))}
           </div>
+
+          {/* Sort row — desktop only, inside same grid for column alignment */}
+          <div className="hidden sm:block text-sm font-semibold text-zinc-700 self-center text-center">{t("dex.sortLabel")}</div>
+          <div className="hidden sm:flex flex-wrap gap-2">
+            {MOVE_SORT_OPTIONS.map((opt) => {
+              const isActive = moveSortStat === opt.key;
+              const label = t(opt.labelKey);
+              if (isActive) {
+                return (
+                  <div key={opt.key} className="inline-flex h-9 items-center rounded-full bg-zinc-800 text-white shadow-md text-sm font-medium overflow-hidden">
+                    <button
+                      className="pl-3 pr-1.5 h-full hover:bg-zinc-700 transition-colors"
+                      onClick={() => { setMoveSortStat(null); setMoveSortDir("desc"); }}
+                    >
+                      {label}
+                    </button>
+                    <button
+                      className="pr-3 pl-1 h-full hover:bg-zinc-700 transition-colors"
+                      onClick={() => setMoveSortDir((d) => d === "desc" ? "asc" : "desc")}
+                    >
+                      {moveSortDir === "desc" ? "↓" : "↑"}
+                    </button>
+                  </div>
+                );
+              }
+              return (
+                <FilterButton key={opt.key} active={false} onClick={() => { setMoveSortStat(opt.key); setMoveSortDir("desc"); }}>
+                  {label}
+                </FilterButton>
+              );
+            })}
+          </div>
         </div>
       </div>
 
       {/* Virtualized grid (window-based) with dynamic-measured rows + controlled inter-row gap */}
       {moves.isLoading ? (
         <div className="text-zinc-500">{t("common.loading")}</div>
-      ) : !filtered.length ? (
+      ) : !displayList.length ? (
         <div className="text-zinc-500">{t("dex.noResults")}</div>
       ) : (
         <div /* wrapper keeps the total scroll height */ style={{ height: rowVirt.getTotalSize() + 90, position: "relative" }}>
@@ -582,8 +876,8 @@ function MovesTab() {
           {vis.map((vi) => {
             const rowIndex = vi.index;
             const start = rowIndex * cols;
-            const end = Math.min(filtered.length, start + cols);
-            const rowMoves = filtered.slice(start, end);
+            const end = Math.min(displayList.length, start + cols);
+            const rowMoves = displayList.slice(start, end);
 
             return (
               <div
