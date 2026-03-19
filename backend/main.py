@@ -3419,9 +3419,17 @@ def get_traits(db: Session = Depends(get_db)):
     return db.query(models.Trait).order_by(models.Trait.id).all()
 
 
-@app.get("/types", response_model=List[schemas.TypeOut])
+@app.get("/types", response_model=List[schemas.TypeWithMatchupsOut])
 def get_types(db: Session = Depends(get_db)):
-    return db.query(models.Type).order_by(models.Type.id).all()
+    return (
+        db.query(models.Type)
+        .options(
+            joinedload(models.Type.vulnerable_to),
+            joinedload(models.Type.resistant_to),
+        )
+        .order_by(models.Type.id)
+        .all()
+    )
 
 
 @app.get("/personalities", response_model=List[schemas.PersonalityOut])

@@ -325,6 +325,11 @@ const ui: Record<Lang, Dict> = {
       evolutionChain: "Evolution Chain",
       stages: "stages",
       noMovesExplanation: "This monster's move pool has not been recorded yet.",
+      typeDefense: "Type Matchups",
+      weaknessTriple: "Takes 3× Damage",
+      weaknessDouble: "Takes 2× Damage",
+      resistHalf: "Takes 0.5× Damage",
+      resistQuarter: "Takes 0.25× Damage",
     },
     teams: {
       manageTeams: "Manage Your Teams",
@@ -919,6 +924,11 @@ const ui: Record<Lang, Dict> = {
       evolvedFrom: "进化自",
       noMovesAvailable: "暂无该精灵的技能数据。",
       noMovesExplanation: "该精灵的技能池尚未录入。",
+      typeDefense: "属性克制",
+      weaknessTriple: "受到3倍伤害",
+      weaknessDouble: "受到2倍伤害",
+      resistHalf: "受到0.5倍伤害",
+      resistQuarter: "受到0.25倍伤害",
     },
     teams: {
       manageTeams: "管理你的队伍",

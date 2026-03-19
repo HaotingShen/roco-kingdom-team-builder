@@ -31,9 +31,9 @@ export default function EvolutionTree({
   }
 
   return (
-    <div className="overflow-x-auto py-4">
-      {/* CRITICAL: items-center for vertical centering, justify-center for horizontal centering */}
-      <div className="flex items-center justify-center gap-2 sm:gap-3 min-w-min">
+    <div className="overflow-x-auto py-4 px-1">
+      {/* w-fit + mx-auto: centers when content fits, left-aligns when overflowing (no left-clip) */}
+      <div className="flex items-center gap-2 sm:gap-3 w-fit mx-auto">
         {treeData.stages.map((stage, stageIndex) => (
           <Fragment key={stage.depth}>
             {/* Stage Column - wrapped for vertical centering */}

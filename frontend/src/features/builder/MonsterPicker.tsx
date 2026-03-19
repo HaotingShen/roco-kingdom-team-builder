@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { useState } from "react";
 import { endpoints } from "@/lib/api";
 import type { MonsterLiteOut, TypeOut } from "@/types";
@@ -39,6 +39,7 @@ export default function MonsterPicker({
   const list = useQuery({
     queryKey: QUERY_KEYS.MONSTER_LIST(queryParams),
     queryFn: () => endpoints.monsters(queryParams).then((r) => r.data),
+    placeholderData: keepPreviousData,
   });
 
   const items: MonsterLiteOut[] = list.data?.items ?? list.data ?? [];

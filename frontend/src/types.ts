@@ -38,7 +38,13 @@ export type StatKey = typeof STAT_KEYS[number];
 
 /* ---------- core domain objects (localized via Named) ---------- */
 
-export interface TypeOut extends Named { id: ID; }
+export interface TypeOut extends Named {
+  id: ID;
+  /** Attacking type names that deal 2× to this type. Populated by /types endpoint only. */
+  vulnerable_to?: string[];
+  /** Attacking type names that deal 0.5× to this type. Populated by /types endpoint only. */
+  resistant_to?: string[];
+}
 
 export interface TraitOut extends Named {
   id: ID;

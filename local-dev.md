@@ -98,20 +98,14 @@ Frontend runs at `http://localhost:5173`.
 
 | Feature | Status locally | Why |
 |---|---|---|
-| Email (verification, password reset) | ❌ Won't send | SMTP credentials in `.env` are placeholders |
+| Email (verification, password reset) | ✅ Works | Resend SMTP credentials configured in `.env` — sends real emails from `noreply@rkteambuilder.com` |
 | CAPTCHA | ✅ Disabled | `CAPTCHA_ENABLED=false` in `.env` |
 | LLM analysis | ✅ Works | Gemini API key configured in `.env` |
 | Redis caching/quota | ✅ Works | Local Redis via Docker |
 | Authentication | ✅ Works | Local JWT with local secret key |
 | CloudFront caching | N/A | Not applicable locally |
-| Umami analytics | ⚠️ Sends to production | The `<script>` in `index.html` points to `analytics.rkteambuilder.com` — local dev visits are tracked in your real dashboard. To prevent this, go to `https://analytics.rkteambuilder.com`, click your username → **Ignore my visits** on this device. |
+| Umami analytics | ⚠️ Sends to production | The `<script>` in `index.html` points to `analytics.rkteambuilder.com` (fully deployed at `analytics.rkteambuilder.com`). Local dev visits are tracked in your real dashboard. To prevent this, go to `https://analytics.rkteambuilder.com`, click your username → **Ignore my visits** on this device. |
 
-> **Email workaround for local testing:** If you need to test email verification, manually set `is_verified=true` in your local DB:
-> ```sql
-> -- Connect to local DB
-> psql -U roco_user -d roco_db
-> UPDATE users SET is_verified = true WHERE email = 'your@email.com';
-> ```
 
 ---
 
@@ -291,19 +285,48 @@ After the pipeline succeeds:
 
 **Data-only changes (no new fields):**
 ```bash
-# 1. Update source data files in backend/scripts/importers/
-# 2. Re-seed locally to verify
-source ~/.venvs/rktb310/bin/activate
-python3 -m backend.scripts.importers.reset_and_reimport
+# 1. Edit the raw data JSON files in backend/data/ directly
+#    (monsters.json, moves.json, traits.json, monster_moves.json, etc.)
 
-# 3. Test locally at http://localhost:5173
-# 4. Push to main → CI deploys
-# 5. After deploy, re-seed production:
+# 2. Run validation to catch issues before importing
+source ~/.venvs/rktb310/bin/activate
+python3 backend/scripts/validation/run_all_checks.py
+
+# 3. Import into local DB to verify
+python3 -m backend.scripts.maintenance.update_game_data
+
+# 4. Test locally at http://localhost:5173
+# 5. Push to main → CI deploys
+# 6. After deploy, sync production DB:
 ssh -i ~/.ssh/rktb-key.pem ubuntu@13.228.63.192
-docker compose -f docker-compose.prod.yml exec backend python3 -m backend.scripts.importers.reset_and_reimport
+cd /home/ubuntu/rktb
+docker compose -f docker-compose.prod.yml exec backend python3 -m backend.scripts.maintenance.update_game_data
 ```
 
-> **Note:** The reimport script does NOT run automatically on deploy — you must trigger it manually on production every time game data changes. CI only handles code and migrations.
+> **Note:** `update_game_data` uses safe upserts — it never drops tables or deletes user data. Use `reset_and_reimport` **only in local dev** when you need a clean slate (it drops all tables including user teams).
+
+> **The importer does NOT run automatically on deploy** — you must trigger it manually on production every time game data changes. CI only handles code and migrations.
+
+**Bulk stat/trait updates from Excel (`data_stats_traits_formal.xlsx`):**
+
+The `update_stats_traits` pipeline reads the Excel source of truth and patches `monsters.json` and `traits.json` automatically.
+
+```bash
+source ~/.venvs/rktb310/bin/activate
+
+# Optional: check type/trait consistency first
+python3 -m backend.scripts.update_stats_traits.check_types_and_traits
+
+# Preview changes without writing anything
+python3 -m backend.scripts.update_stats_traits.apply_updates --dry-run
+
+# Apply changes (writes monsters.json + traits.json, creates timestamped backups)
+python3 -m backend.scripts.update_stats_traits.apply_updates
+
+# Then validate + import as normal
+python3 backend/scripts/validation/run_all_checks.py
+python3 -m backend.scripts.maintenance.update_game_data
+```
 
 **If you wrote a new script to generate or update the raw data files:**
 ```bash
@@ -311,18 +334,19 @@ docker compose -f docker-compose.prod.yml exec backend python3 -m backend.script
 source ~/.venvs/rktb310/bin/activate
 python3 -m backend.scripts.your_new_script
 
-# 2. Re-seed locally to verify the generated data looks correct
-python3 -m backend.scripts.importers.reset_and_reimport
+# 2. Validate and import locally to verify
+python3 backend/scripts/validation/run_all_checks.py
+python3 -m backend.scripts.maintenance.update_game_data
 
 # 3. Test locally at http://localhost:5173
 # 4. Push to main — commit both the script AND the updated data files
-#    CI deploys everything, production now has the updated data files
-# 5. Re-seed production to load the updated data
+# 5. Sync production DB
 ssh -i ~/.ssh/rktb-key.pem ubuntu@13.228.63.192
-docker compose -f docker-compose.prod.yml exec backend python3 -m backend.scripts.importers.reset_and_reimport
+cd /home/ubuntu/rktb
+docker compose -f docker-compose.prod.yml exec backend python3 -m backend.scripts.maintenance.update_game_data
 ```
 
-> **Why not run the script on production?** Since the script already updated the data files locally and you're committing those files, production gets the correct data via the normal deploy. No need to re-run the script on EC2 — just reimport.
+> **Why not run the script on production?** The script already updated the data files locally and you committed those files, so production gets the correct JSON via deploy. No need to re-run the script on EC2 — just run the importer.
 
 **If new fields are needed (schema change):**
 1. Update `backend/models.py` with new columns
@@ -333,8 +357,8 @@ docker compose -f docker-compose.prod.yml exec backend python3 -m backend.script
    alembic upgrade head
    ```
 3. Update importer scripts to populate the new fields
-4. Run reimport locally to verify
-5. Push to main → CI runs migrations automatically on deploy, then trigger reimport on production manually
+4. Run `update_game_data` locally to verify
+5. Push to main → CI runs migrations automatically on deploy, then trigger importer on production manually
 
 > **Branch or not?** Use a branch if you're editing importer scripts or models. For raw data file updates only (no logic changes), pushing directly to main is fine.
 
@@ -384,7 +408,81 @@ git push origin main
 
 ---
 
-## Part 6: If Something Goes Wrong
+## Part 6: Data Scripts Reference
+
+### Validation scripts (`backend/scripts/validation/`)
+
+```bash
+source ~/.venvs/rktb310/bin/activate
+
+# Run all checks at once (recommended before any data import)
+python3 backend/scripts/validation/run_all_checks.py
+
+# Individual checks:
+python3 backend/scripts/validation/check_local_consistency.py   # monsters.json vs other JSONs
+python3 backend/scripts/validation/check_source_correctness.py  # JSON vs Excel source of truth
+python3 backend/scripts/validation/check_frontend_images.py     # image files vs monsters/moves
+python3 backend/scripts/validation/count_table_records.py       # DB row counts
+```
+
+### Stats/trait update pipeline (`backend/scripts/update_stats_traits/`)
+
+Used to bulk-apply stat and trait updates from `data_stats_traits_formal.xlsx`:
+
+```bash
+# Check type/trait consistency between Excel and JSON
+python3 -m backend.scripts.update_stats_traits.check_types_and_traits
+
+# Preview stat/trait changes without writing files
+python3 -m backend.scripts.update_stats_traits.apply_updates --dry-run
+
+# Apply changes (patches monsters.json + traits.json, creates timestamped backups)
+python3 -m backend.scripts.update_stats_traits.apply_updates
+
+# Mark the Excel file with color-coded change indicators
+python3 -m backend.scripts.update_stats_traits.mark_excel
+```
+
+### Video stats extraction (`backend/scripts/video_extract/`)
+
+Extracts monster base stats from gameplay video using OCR:
+
+```bash
+# Place video.mp4 at project root, then:
+python3 -m backend.scripts.video_extract.extract_monster_stats
+# Output: stats_from_video.json (confirmed entries) + stats_review_queue.json (needs review)
+```
+
+### Other useful scripts
+
+```bash
+# Import name mapping changes back into moves.json / traits.json
+python3 -m backend.scripts.name_management.apply_move_name_changes
+python3 -m backend.scripts.name_management.apply_trait_name_changes
+
+# Clean up expired guest accounts
+python3 -m backend.scripts.cleanup_expired_guests
+```
+
+---
+
+## Part 7: Optional Environment Variables
+
+These are not required for basic local dev but are useful for tuning:
+
+| Variable | Default | Description |
+|---|---|---|
+| `ENABLE_REFERENCE_RESOLUTION` | `true` | When true, filters LLM prompts to only include game terms (moves, traits, etc.) actually referenced by the team — reduces token count and improves analysis focus |
+| `GEMINI_THINKING_BUDGET` | `24576` | Token budget for Gemini's thinking mode (512–24576). Higher = deeper reasoning, slower response |
+| `DEEPSEEK_TIMEOUT` | `200.0` | HTTP timeout in seconds for DeepSeek API calls |
+| `ANALYSIS_TEMPERATURE` | `0.7` | LLM sampling temperature for analysis |
+| `ANALYSIS_MAX_TOKENS` | `32768` | Max output tokens per analysis response |
+| `RETRY_GRACE_TTL` | `900` | Seconds a user can retry a failed analysis for free (default 15 min) |
+| `RETRY_GRACE_MAX_RETRIES` | `3` | Max free retries within the grace window |
+
+---
+
+## Part 8: If Something Goes Wrong
 
 ### Option A — Revert via git (safest, re-runs CI)
 
@@ -447,11 +545,20 @@ cd backend && pytest -v               # backend tests
 cd frontend && npm run typecheck      # TS check
 cd frontend && npm run lint           # lint
 
+# ── Game data update (local) ─────────────────────────────────
+python3 backend/scripts/validation/run_all_checks.py     # validate first
+python3 -m backend.scripts.maintenance.update_game_data  # import to local DB
+
 # ── Deploy ───────────────────────────────────────────────────
 git checkout main
 git merge feature/my-feature
 git push origin main                  # triggers auto-deploy
 # Watch: GitHub → Actions tab
+
+# ── Game data update (production, after deploy) ──────────────
+ssh -i ~/.ssh/rktb-key.pem ubuntu@13.228.63.192
+cd /home/ubuntu/rktb
+docker compose -f docker-compose.prod.yml exec backend python3 -m backend.scripts.maintenance.update_game_data
 
 # ── Production logs ──────────────────────────────────────────
 ssh -i ~/.ssh/rktb-key.pem ubuntu@13.228.63.192

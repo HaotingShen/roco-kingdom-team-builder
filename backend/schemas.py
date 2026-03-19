@@ -253,8 +253,33 @@ class TypeOut(BaseModel):
     id: int
     name: str
     localized: Dict
-    
+
     model_config = ConfigDict(from_attributes=True)
+
+
+class TypeWithMatchupsOut(BaseModel):
+    """TypeOut extended with defender matchup data for the /types endpoint."""
+    id: int
+    name: str
+    localized: Dict
+    vulnerable_to: List[str] = []   # attacking type names that deal 2× to this type
+    resistant_to: List[str] = []    # attacking type names that deal 0.5× to this type
+
+    model_config = ConfigDict(from_attributes=True)
+
+    @model_validator(mode='before')
+    @classmethod
+    def extract_type_names(cls, data: Any) -> Any:
+        if not isinstance(data, dict) and hasattr(data, 'id'):
+            return {
+                'id': data.id,
+                'name': data.name,
+                'localized': data.localized,
+                'vulnerable_to': [t.name for t in (getattr(data, 'vulnerable_to', None) or [])],
+                'resistant_to': [t.name for t in (getattr(data, 'resistant_to', None) or [])],
+            }
+        return data
+
 
 class TraitOut(BaseModel):
     id: int
