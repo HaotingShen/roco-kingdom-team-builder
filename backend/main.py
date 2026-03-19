@@ -3283,6 +3283,7 @@ def build_evolution_tree(monster_id: int, db: Session) -> dict | None:
 
     # 5. Build tree structure organized by stages
     stages_dict = defaultdict(list)
+    evolves_from_map = {m.id: m.evolves_from_id for m in monsters}
 
     for m in monsters:
         depth = depth_map[m.id]
@@ -3336,7 +3337,23 @@ def build_evolution_tree(monster_id: int, db: Session) -> dict | None:
                 "monsters": monsters_at_depth
             })
 
-    # 7. Calculate metadata
+    # 7. Sort monsters within each stage for consistent visual alignment.
+    #    Stage 0: sort by ID (deterministic insertion order).
+    #    Later stages: sort by parent's position in the previous stage so
+    #    same-form rows stay visually aligned across all evo columns, with
+    #    ID as tiebreaker for siblings that share the same parent.
+    if stages_list:
+        stages_list[0]["monsters"].sort(key=lambda m: m["id"])
+    for i in range(1, len(stages_list)):
+        prev_id_to_pos = {m["id"]: idx for idx, m in enumerate(stages_list[i - 1]["monsters"])}
+
+        def _sort_key(m, _prev=prev_id_to_pos, _ef=evolves_from_map):
+            parent_pos = _prev.get(_ef.get(m["id"]), 999)
+            return (parent_pos, m["id"])
+
+        stages_list[i]["monsters"].sort(key=_sort_key)
+
+    # 8. Calculate metadata
     max_depth = max(depth_map.values()) if depth_map else 0
     total_unique_monsters = sum(len(stage["monsters"]) for stage in stages_list)
 
