@@ -6574,7 +6574,7 @@
     "type": "Mechanical",
     "category": "Physical Attack",
     "energy_cost": 1,
-    "power": 55,
+    "power": 20,
     "description": "Deals physical damage, 2 Combo. If this move is at Slot 1 or Slot 3, Combo count +1. Transmission 1.",
     "has_counter": false,
     "localized": {
