@@ -350,12 +350,12 @@ class MonsterLiteOut(BaseModel):
     is_leader_form: bool
     preferred_attack_style: AttackStyle
     localized: Dict
-    base_hp: int
-    base_phy_atk: int
-    base_mag_atk: int
-    base_phy_def: int
-    base_mag_def: int
-    base_spd: int
+    base_hp: Optional[int] = None
+    base_phy_atk: Optional[int] = None
+    base_mag_atk: Optional[int] = None
+    base_phy_def: Optional[int] = None
+    base_mag_def: Optional[int] = None
+    base_spd: Optional[int] = None
     evolves_from_id: Optional[int] = None
 
     model_config = ConfigDict(from_attributes=True)
