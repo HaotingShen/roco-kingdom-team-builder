@@ -344,6 +344,24 @@ def record_analysis(ip: str, team_hash: str, limit_per_minutes: int = 2):
         logger.error(f"Sync Redis record analysis failed: {e}")
 
 
+async def clear_analysis_rate_limit_async(ip: str, team_hash: str) -> None:
+    """
+    Clear the per-team rate limit key so the user can retry immediately.
+
+    Called after a complete analysis failure (successful_calls == 0) so the user
+    is not penalized with a 60s cooldown when no quota was charged and no cache
+    entry was written.
+    """
+    try:
+        r = await get_rate_limit_redis()
+        if not r:
+            return
+        await r.delete(f"ratelimit:analysis:{ip}:{team_hash}")
+        logger.debug(f"Cleared analysis rate limit for ip={ip}, team={team_hash[:12]}...")
+    except Exception as e:
+        logger.error(f"Redis clear analysis rate limit failed: {e}")
+
+
 def get_rate_limit_message(language: str = "en") -> str:
     """
     Get localized rate limit error message for analysis endpoints.
