@@ -2494,7 +2494,7 @@
     "type": "Water",
     "category": "Magic Attack",
     "energy_cost": 5,
-    "power": 125,
+    "power": 110,
     "description": "Deals magic damage. After each use, this move's energy cost -1 permanently.",
     "has_counter": false,
     "localized": {
