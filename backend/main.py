@@ -615,7 +615,7 @@ def get_localized_move_category(move_category, language="en"):
         return category_map.get(language, category_map["en"]).get(category_key, "Unknown" if language == "en" else "未知")
     return "Unknown" if language == "en" else "未知"
 
-def build_trait_synergy_prompt(monster, trait, selected_moves, game_terms, referenced_moves, referenced_monsters, main_type, sub_type, type_db_map, language="en"):
+def build_trait_synergy_prompt(monster, trait, selected_moves, game_terms, referenced_moves, referenced_monsters, main_type, sub_type, type_db_map, trait_db_map, language="en"):
     # Use localized names and descriptions
     monster_name = get_localized_name(monster, language)
     trait_name = get_localized_name(trait, language)
@@ -4099,7 +4099,7 @@ async def _perform_team_analysis(
             language
         )
 
-        prompt = build_trait_synergy_prompt(base_monster, trait, resolved_moves_for_prompt, game_terms_per_monster, referenced_moves_per_monster, referenced_monsters_per_monster, main_type, sub_type, type_db_map, language)
+        prompt = build_trait_synergy_prompt(base_monster, trait, resolved_moves_for_prompt, game_terms_per_monster, referenced_moves_per_monster, referenced_monsters_per_monster, main_type, sub_type, type_db_map, trait_db_map, language)
 
         # Get monster name for logging
         monster_name = get_localized_name(base_monster, language)
