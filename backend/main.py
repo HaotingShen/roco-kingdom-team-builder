@@ -37,6 +37,7 @@ from backend.rate_limiter import (
     rate_limit_exceeded_handler,
     check_analysis_rate_limit_async,
     record_analysis_async,
+    clear_analysis_rate_limit_async,
     get_rate_limit_message,
     get_real_client_ip,
 )
@@ -4542,23 +4543,28 @@ async def analyze_team(
             # 3. IP daily cap (fallback when device_id missing, also abuse signal)
             if device_id == "unknown-device":
                 await check_ip_daily_cap(client_ip, effective_user)
+
+            # 4. Per-team rate limit (prevents same-team concurrent duplicate submissions)
+            # Grace users bypass this check — the 60s cooldown must not block free retries.
+            # record_analysis_async is called unconditionally below so the key is still set
+            # (blocking concurrent non-grace users on the same IP while grace runs).
+            if not await check_analysis_rate_limit_async(client_ip, team_hash):
+                logger.warning(
+                    f"Per-team rate limit exceeded for {client_ip} analyzing team {team_hash} in {req.language}"
+                )
+                raise HTTPException(
+                    status_code=429,
+                    detail=get_rate_limit_message(req.language)
+                )
         else:
             logger.info(
                 f"Retry grace active for {client_ip}:{team_hash}:{req.language} — "
                 f"bypassing quota checks"
             )
 
-        # 4. Per-team rate limit (prevents same-team concurrent duplicate submissions)
-        if not await check_analysis_rate_limit_async(client_ip, team_hash):
-            logger.warning(
-                f"Per-team rate limit exceeded for {client_ip} analyzing team {team_hash} in {req.language}"
-            )
-            raise HTTPException(
-                status_code=429,
-                detail=get_rate_limit_message(req.language)
-            )
-
-        # Record rate limit BEFORE analysis (prevents concurrent bypass)
+        # Record rate limit BEFORE analysis (always, even for grace users).
+        # Grace users skipped the check above but still set the key here so that
+        # concurrent non-grace users on the same IP are blocked while grace runs.
         # TTL=60s (1 min) is intentionally less than CloudFront's 120s origin timeout.
         # When CF times out and TanStack retries, the retry arrives at ~t=120s after the
         # rate limit keys have already expired. The retry then passes rate limit checks,
@@ -4579,6 +4585,13 @@ async def analyze_team(
             )
 
     result, all_succeeded, successful_calls, actual_llm_calls = await _perform_team_analysis(req.team, req.language, db)
+
+    # If the analysis completely failed (LLM was called but nothing succeeded), clear the
+    # rate limit key so the user can retry immediately without waiting for the 60s cooldown.
+    # No quota was charged and no cache entry was written, so there is nothing to protect.
+    # The distributed lock in get_or_compute still prevents concurrent duplicate LLM calls.
+    if not is_fully_cached and actual_llm_calls > 0 and successful_calls == 0:
+        await clear_analysis_rate_limit_async(client_ip, team_hash)
 
     # Post-analysis: quota recording and grace management
     if is_fully_cached:
@@ -4765,23 +4778,28 @@ async def analyze_team_by_id(
             # 3. IP daily cap (fallback when device_id missing, also abuse signal)
             if device_id == "unknown-device":
                 await check_ip_daily_cap(client_ip, effective_user)
+
+            # 4. Per-team rate limit (prevents same-team concurrent duplicate submissions)
+            # Grace users bypass this check — the 60s cooldown must not block free retries.
+            # record_analysis_async is called unconditionally below so the key is still set
+            # (blocking concurrent non-grace users on the same IP while grace runs).
+            if not await check_analysis_rate_limit_async(client_ip, team_hash):
+                logger.warning(
+                    f"Per-team rate limit exceeded for {client_ip} analyzing team {team_hash} (ID: {req.team_id}) in {req.language}"
+                )
+                raise HTTPException(
+                    status_code=429,
+                    detail=get_rate_limit_message(req.language)
+                )
         else:
             logger.info(
                 f"Retry grace active for {client_ip}:{team_hash}:{req.language} — "
                 f"bypassing quota checks"
             )
 
-        # 4. Per-team rate limit (prevents same-team concurrent duplicate submissions)
-        if not await check_analysis_rate_limit_async(client_ip, team_hash):
-            logger.warning(
-                f"Per-team rate limit exceeded for {client_ip} analyzing team {team_hash} (ID: {req.team_id}) in {req.language}"
-            )
-            raise HTTPException(
-                status_code=429,
-                detail=get_rate_limit_message(req.language)
-            )
-
-        # Record rate limit BEFORE analysis (prevents concurrent bypass)
+        # Record rate limit BEFORE analysis (always, even for grace users).
+        # Grace users skipped the check above but still set the key here so that
+        # concurrent non-grace users on the same IP are blocked while grace runs.
         # TTL=60s (1 min) — see comment in /team/analyze for rationale.
         logger.info(f"Recording analysis for {client_ip}:{team_hash}")
         await record_analysis_async(client_ip, team_hash, limit_per_minutes=1)
@@ -4798,6 +4816,13 @@ async def analyze_team_by_id(
             )
 
     result, all_succeeded, successful_calls, actual_llm_calls = await _perform_team_analysis(team_data, req.language, db)
+
+    # If the analysis completely failed (LLM was called but nothing succeeded), clear the
+    # rate limit key so the user can retry immediately without waiting for the 60s cooldown.
+    # No quota was charged and no cache entry was written, so there is nothing to protect.
+    # The distributed lock in get_or_compute still prevents concurrent duplicate LLM calls.
+    if not is_fully_cached and actual_llm_calls > 0 and successful_calls == 0:
+        await clear_analysis_rate_limit_async(client_ip, team_hash)
 
     # Post-analysis: quota recording and grace management
     if is_fully_cached:
