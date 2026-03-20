@@ -30,8 +30,8 @@ services:
       - ADMIN_EMAILS=${ADMIN_EMAILS:-}
       # Memory: limit glibc arenas to reduce fragmentation from large DeepSeek responses
       - MALLOC_ARENA_MAX=2
-    mem_limit: 2800m
-    memswap_limit: 2800m
+    mem_limit: 4000m
+    memswap_limit: 4000m
     volumes:
       - /home/ubuntu/rktb/logs:/app/backend/logs
     logging:
