@@ -7,7 +7,7 @@ import type { MonsterLiteOut, MoveOut, TypeOut, MagicItemOut } from "@/types";
 import PageTabs from "@/components/PageTabs";
 import useDebounce from "@/hooks/useDebounce";
 import { useSeoMeta } from "@/hooks/useSeoMeta";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useWindowVirtualizer } from "@tanstack/react-virtual";
 import { typeIconUrl, magicItemImageUrl, monsterImageFallbackChain } from "@/lib/images";
 
@@ -593,6 +593,15 @@ function MovesTab() {
     queryKey: ["dex-moves"],
     queryFn: () => endpoints.moves().then((r) => (r.data?.items ?? r.data) as LocalMove[]),
   });
+
+  // Pre-seed individual move cache so MoveDetailPage renders instantly (no skeleton)
+  const queryClient = useQueryClient();
+  useEffect(() => {
+    if (!moves.data) return;
+    moves.data.forEach((m) => {
+      queryClient.setQueryData(["move", String(m.id)], m);
+    });
+  }, [moves.data, queryClient]);
 
   // Define special "Other" type moves (universal moves for all monsters)
   const otherTypeMoves = useMemo(() => new Set(["Focus", "focus", "聚能", "Willpower Impact", "willpower impact", "愿力冲击"]), []);
