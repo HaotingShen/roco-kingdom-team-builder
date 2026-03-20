@@ -725,6 +725,26 @@ function MovesTab() {
     return () => document.removeEventListener("mousedown", handle);
   }, [moveSortOpen]);
 
+  // restore scroll position when returning from a move detail page
+  useEffect(() => {
+    const saved = sessionStorage.getItem("dex_move_scroll");
+    if (!saved) return;
+    const y = Number(saved);
+    let id2: number;
+    const id1 = requestAnimationFrame(() => {
+      id2 = requestAnimationFrame(() => {
+        sessionStorage.removeItem("dex_move_scroll");
+        window.scrollTo({ top: y, behavior: "instant" });
+      });
+    });
+    return () => { cancelAnimationFrame(id1); cancelAnimationFrame(id2); };
+  }, []);
+
+  // full dex URL to pass as "back" param to move detail page
+  const dexReturnParams = new URLSearchParams(sp);
+  dexReturnParams.set("tab", "moves");
+  const dexReturnUrl = `/dex?${dexReturnParams.toString()}`;
+
   return (
     <div className="space-y-3">
       {/* Filters */}
@@ -923,84 +943,90 @@ function MovesTab() {
                     const typeColorClass = typeName ? (typeColors[typeName] || "border-l-zinc-400") : "border-l-zinc-400";
 
                     return (
-                      <div
+                      <Link
                         key={m.id}
-                        className={`
-                          rounded-lg border border-zinc-200 bg-white p-3 shadow-sm
-                          border-l-4 ${typeColorClass}
-                          transition-all duration-200
-                          hover:shadow-md hover:-translate-y-0.5
-                        `}
+                        to={`/dex/moves/${m.id}?back=${encodeURIComponent(dexReturnUrl)}`}
+                        onClick={() => sessionStorage.setItem("dex_move_scroll", String(window.scrollY))}
+                        className="block focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 rounded-lg"
                       >
                         <div
-                          className="
-                            grid
-                            grid-cols-[70px_minmax(0,1fr)_40px_8px_50px_4px]
-                            sm:grid-cols-[80px_minmax(0,1fr)_40px_12px_50px_4px]
-                            md:grid-cols-[80px_minmax(0,1fr)_40px_20px_50px_8px]
-                            lg:grid-cols-[80px_minmax(0,1fr)_40px_28px_50px_12px]
-                            grid-rows-[auto_auto]
-                            items-start
-                            gap-2
-                            text-[13px] sm:text-sm
-                          "
+                          className={`
+                            rounded-lg border border-zinc-200 bg-white p-3 shadow-sm
+                            border-l-4 ${typeColorClass}
+                            transition-all duration-200
+                            hover:shadow-md hover:-translate-y-0.5
+                          `}
                         >
-                          {/* Image (spans both rows) */}
-                          <div className="row-[1/3] self-center h-[70px] w-[70px] sm:h-[80px] sm:w-[80px] rounded bg-zinc-100/60 overflow-hidden flex items-center justify-center">
-                            <img
-                              src={moveImg}
-                              alt={cname}
-                              width={80}
-                              height={80}
-                              className="h-full w-full object-contain"
-                              loading="lazy"
-                              onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
-                            />
-                          </div>
+                          <div
+                            className="
+                              grid
+                              grid-cols-[70px_minmax(0,1fr)_40px_8px_50px_4px]
+                              sm:grid-cols-[80px_minmax(0,1fr)_40px_12px_50px_4px]
+                              md:grid-cols-[80px_minmax(0,1fr)_40px_20px_50px_8px]
+                              lg:grid-cols-[80px_minmax(0,1fr)_40px_28px_50px_12px]
+                              grid-rows-[auto_auto]
+                              items-start
+                              gap-2
+                              text-[13px] sm:text-sm
+                            "
+                          >
+                            {/* Image (spans both rows) */}
+                            <div className="row-[1/3] self-center h-[70px] w-[70px] sm:h-[80px] sm:w-[80px] rounded bg-zinc-100/60 overflow-hidden flex items-center justify-center">
+                              <img
+                                src={moveImg}
+                                alt={cname}
+                                width={80}
+                                height={80}
+                                className="h-full w-full object-contain"
+                                loading="lazy"
+                                onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
+                              />
+                            </div>
 
-                          {/* Type icon + Move name (col 2) */}
-                          <div className="col-[2] self-center min-w-0">
-                            <div className="flex items-center gap-1 min-w-0">
-                              {typeImg ? (
-                                <img
-                                  src={typeImg}
-                                  alt=""
-                                  aria-hidden="true"
-                                  width={30}
-                                  height={30}
-                                  className="block shrink-0"
-                                />
-                              ) : null}
-                              <div className="font-medium whitespace-normal break-words min-w-0">
-                                {cname}
+                            {/* Type icon + Move name (col 2) */}
+                            <div className="col-[2] self-center min-w-0">
+                              <div className="flex items-center gap-1 min-w-0">
+                                {typeImg ? (
+                                  <img
+                                    src={typeImg}
+                                    alt=""
+                                    aria-hidden="true"
+                                    width={30}
+                                    height={30}
+                                    className="block shrink-0"
+                                  />
+                                ) : null}
+                                <div className="font-medium whitespace-normal break-words min-w-0">
+                                  {cname}
+                                </div>
                               </div>
                             </div>
-                          </div>
 
-                          {/* Energy icon + value (col 3) */}
-                          <div className="col-[3] self-center flex items-center justify-end gap-[6px]">
-                            <img src={energyImg} alt="" aria-hidden="true" width={15} height={15} />
-                            <span className="w-8 text-[13px] sm:text-sm text-left tabular-nums">{energy ?? "—"}</span>
-                          </div>
+                            {/* Energy icon + value (col 3) */}
+                            <div className="col-[3] self-center flex items-center justify-end gap-[6px]">
+                              <img src={energyImg} alt="" aria-hidden="true" width={15} height={15} />
+                              <span className="w-8 text-[13px] sm:text-sm text-left tabular-nums">{energy ?? "—"}</span>
+                            </div>
 
-                          {/* (col 4 is the spacer) */}
+                            {/* (col 4 is the spacer) */}
 
-                          {/* Category icon + power/label (col 5) */}
-                          <div className="col-[5] self-center flex items-center justify-end gap-x-[6px]">
-                            <img src={catImg} alt="" aria-hidden="true" width={15} height={15} />
-                            <span className="w-10 text-[13px] sm:text-sm text-left tabular-nums">
-                              {isDef ? t("dex.defense") : isSta ? t("dex.status") : (power ?? "—")}
-                            </span>
-                          </div>
+                            {/* Category icon + power/label (col 5) */}
+                            <div className="col-[5] self-center flex items-center justify-end gap-x-[6px]">
+                              <img src={catImg} alt="" aria-hidden="true" width={15} height={15} />
+                              <span className="w-10 text-[13px] sm:text-sm text-left tabular-nums">
+                                {isDef ? t("dex.defense") : isSta ? t("dex.status") : (power ?? "—")}
+                              </span>
+                            </div>
 
-                          {/* (col 6 is the end spacer) */}
+                            {/* (col 6 is the end spacer) */}
 
-                          {/* Description (row 2, spans full width from col 2 to end) */}
-                          <div className="row-[2/3] col-[2/-1] text-[13px] sm:text-sm text-zinc-600 pl-1">
-                            {desc}
+                            {/* Description (row 2, spans full width from col 2 to end) */}
+                            <div className="row-[2/3] col-[2/-1] text-[13px] sm:text-sm text-zinc-600 pl-1">
+                              {desc}
+                            </div>
                           </div>
                         </div>
-                      </div>
+                      </Link>
                     );
                   })}
                 </div>

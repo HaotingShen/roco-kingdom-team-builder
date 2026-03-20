@@ -364,6 +364,11 @@ class MonsterLiteOut(BaseModel):
     def _ser_attack_style(self, v: AttackStyle, _info):
         return v.value
 
+class MoveLearnersOut(BaseModel):
+    move_pool: List[MonsterLiteOut]
+    move_stones: List[MonsterLiteOut]
+    legacy: List[MonsterLiteOut]
+
 # Full version of MonsterOut
 class MonsterOut(MonsterLiteOut):
 

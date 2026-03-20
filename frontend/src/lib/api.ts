@@ -303,6 +303,7 @@ export const endpoints = {
   monsterById: (id: number | string) => api.get(`/monsters/${id}`),
   moves: (q?: Record<string, string | number | boolean>) => api.get("/moves", { params: q }),
   moveById: (id: number | string) => api.get(`/moves/${id}`),
+  moveLearners: (id: number | string) => api.get(`/moves/${id}/learners`),
   personalities: () => api.get("/personalities"),
   types: () => api.get("/types"),
   magicItems: () => api.get("/magic_items"),

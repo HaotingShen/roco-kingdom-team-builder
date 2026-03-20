@@ -104,6 +104,12 @@ export interface MonsterLiteOut extends Named {
   evolves_from_id?: number | null;
 }
 
+export interface MoveLearnersOut {
+  move_pool: MonsterLiteOut[];
+  move_stones: MonsterLiteOut[];
+  legacy: MonsterLiteOut[];
+}
+
 export interface MonsterOut {
   id: number;
   name: string;

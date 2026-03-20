@@ -3431,6 +3431,79 @@ def get_move_detail(move_id: int, db: Session = Depends(get_db)):
     return move
 
 
+@app.get("/moves/{move_id}/learners", response_model=schemas.MoveLearnersOut)
+def get_move_learners(move_id: int, db: Session = Depends(get_db)):
+    move = db.get(models.Move, move_id)
+    if not move:
+        raise HTTPException(status_code=404, detail="Move not found")
+
+    base_opts = [
+        joinedload(models.Monster.main_type),
+        joinedload(models.Monster.sub_type),
+        joinedload(models.Monster.default_legacy_type),
+    ]
+
+    # Only return highest-form non-leader monsters.
+    # A monster is "highest form" if no other non-leader monster evolves from it.
+    parent_ids_subq = (
+        db.query(models.Monster.evolves_from_id)
+        .filter(
+            models.Monster.evolves_from_id.isnot(None),
+            models.Monster.is_leader_form == False,
+        )
+        .subquery()
+    )
+    highest_form_filters = [
+        models.Monster.is_leader_form == False,
+        ~models.Monster.id.in_(parent_ids_subq),
+    ]
+
+    pool = (
+        db.query(models.Monster)
+        .join(models.monster_moves, models.Monster.id == models.monster_moves.c.monster_id)
+        .filter(
+            models.monster_moves.c.move_id == move_id,
+            models.monster_moves.c.is_move_stone == False,
+            *highest_form_filters,
+        )
+        .options(*base_opts)
+        .order_by(models.Monster.id)
+        .all()
+    )
+
+    stones = (
+        db.query(models.Monster)
+        .join(models.monster_moves, models.Monster.id == models.monster_moves.c.monster_id)
+        .filter(
+            models.monster_moves.c.move_id == move_id,
+            models.monster_moves.c.is_move_stone == True,
+            *highest_form_filters,
+        )
+        .options(*base_opts)
+        .order_by(models.Monster.id)
+        .all()
+    )
+
+    legacy_ids = [
+        row[0] for row in
+        db.query(models.LegacyMove.monster_id)
+        .filter(models.LegacyMove.move_id == move_id)
+        .all()
+    ]
+    legacy = (
+        db.query(models.Monster)
+        .filter(
+            models.Monster.id.in_(legacy_ids),
+            *highest_form_filters,
+        )
+        .options(*base_opts)
+        .order_by(models.Monster.id)
+        .all()
+    ) if legacy_ids else []
+
+    return {"move_pool": pool, "move_stones": stones, "legacy": legacy}
+
+
 @app.get("/traits", response_model=List[schemas.TraitOut])
 def get_traits(db: Session = Depends(get_db)):
     return db.query(models.Trait).order_by(models.Trait.id).all()

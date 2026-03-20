@@ -3,6 +3,7 @@
 @theme {
   --breakpoint-moves-md: 800px;   /* 2-col threshold for move cards and monster slots */
   --breakpoint-moves-lg: 1400px;  /* 3-col threshold for move cards and monster slots */
+  --breakpoint-desc: 425px;       /* move description layout threshold (MoveDetailPage) */
 }
 
 :root {
@@ -25,6 +26,12 @@
 }
 @media (max-width: 1024px) {
   :root { --sidebar-w: 10rem; }
+}
+
+/* Hide scrollbar visually while keeping scroll functionality */
+@utility scrollbar-hide {
+  scrollbar-width: none;
+  &::-webkit-scrollbar { display: none; }
 }
 
 /* Progress-bar helpers used by StatBars/EnergyBars */

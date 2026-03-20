@@ -3,6 +3,7 @@ import App from "./App";
 import BuilderPage from "./features/builder/BuilderPage";
 import DexPage from "./features/dex/DexPage";
 import MonsterDetailPage from "./features/dex/MonsterDetailPage";
+import MoveDetailPage from "./features/dex/MoveDetailPage";
 import SavedTeamPage from "./features/teams/SavedTeamPage";
 import TeamsListPage from "./features/teams/TeamsListPage";
 import LoginPage from "./features/auth/LoginPage";
@@ -24,6 +25,7 @@ const router = createBrowserRouter([
       { path: "build", element: <BuilderPage /> },
       { path: "dex", element: <DexPage /> },
       { path: "dex/monsters/:id", element: <MonsterDetailPage /> },
+      { path: "dex/moves/:id", element: <MoveDetailPage /> },
       { path: "teams", element: <TeamsListPage /> },
       { path: "teams/:id", element: <SavedTeamPage /> },
       { path: "auth/login", element: <LoginPage /> },
