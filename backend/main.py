@@ -3452,7 +3452,7 @@ def get_move_learners(move_id: int, db: Session = Depends(get_db)):
             models.Monster.evolves_from_id.isnot(None),
             models.Monster.is_leader_form == False,
         )
-        .subquery()
+        .scalar_subquery()
     )
     highest_form_filters = [
         models.Monster.is_leader_form == False,
