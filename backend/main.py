@@ -4185,6 +4185,13 @@ async def _perform_team_analysis(
         monster_name=None,  # Team-wide analysis, no specific monster
     ))
 
+    # Release the DB connection back to the pool before the LLM call.
+    # All required data is already loaded into local dicts (monster_db_map, move_db_map, etc.).
+    # ORM column attributes remain accessible on detached objects; no lazy relationships
+    # are accessed after this point. All post-LLM work is Redis-only — no DB writes needed.
+    # Calling db.close() twice (here + FastAPI generator finally) is a SQLAlchemy no-op.
+    db.close()
+
     # Gather all LLM results, capturing exceptions to handle errors gracefully
     llm_results = await asyncio.gather(*llm_tasks, return_exceptions=True)
 

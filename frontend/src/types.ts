@@ -95,12 +95,13 @@ export interface MonsterLiteOut extends Named {
   leader_potential?: boolean;
   is_leader_form?: boolean;
   preferred_attack_style?: AttackStyle;
-  base_hp: number;
-  base_phy_atk: number;
-  base_mag_atk: number;
-  base_phy_def: number;
-  base_mag_def: number;
-  base_spd: number;
+  // Backend declares these as Optional[int] — null is possible for monsters with missing data
+  base_hp: number | null;
+  base_phy_atk: number | null;
+  base_mag_atk: number | null;
+  base_phy_def: number | null;
+  base_mag_def: number | null;
+  base_spd: number | null;
   evolves_from_id?: number | null;
 }
 

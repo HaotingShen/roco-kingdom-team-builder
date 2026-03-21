@@ -6708,7 +6708,7 @@
     "name": "Gear Transfer",
     "type": "Mechanical",
     "category": "Status",
-    "energy_cost": 2,
+    "energy_cost": 1,
     "power": null,
     "description": "User gains Speed +80. If this move is at Slot 1 or Slot 3, user additionally gains Attack +100%. Transmission 1.",
     "has_counter": false,
