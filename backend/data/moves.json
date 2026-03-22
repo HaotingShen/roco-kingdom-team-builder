@@ -249,7 +249,7 @@
     "has_counter": false,
     "localized": {
       "zh": {
-        "name": "攻击场地",
+        "name": "主场优势",
         "description": "自己获得1层攻击印记。"
       }
     }
@@ -1434,8 +1434,8 @@
     "has_counter": false,
     "localized": {
       "zh": {
-        "name": "寄生种子",
-        "description": "敌方获得1层寄生。"
+        "name": "孢子",
+        "description": "赋予敌方1层寄生效果。"
       }
     }
   },
@@ -1539,7 +1539,7 @@
     "has_counter": false,
     "localized": {
       "zh": {
-        "name": "藤鞭",
+        "name": "刺藤",
         "description": "造成物伤，2连击。"
       }
     }
@@ -1676,6 +1676,21 @@
       "zh": {
         "name": "种子弹",
         "description": "造成物伤，自己回复1能量。"
+      }
+    }
+  },
+  {
+    "name": "Needle Shot",
+    "type": "Grass",
+    "category": "Physical Attack",
+    "energy_cost": 3,
+    "power": 80,
+    "description": "Deals physical damage.",
+    "has_counter": false,
+    "localized": {
+      "zh": {
+        "name": "针刺射击",
+        "description": "造成物伤。"
       }
     }
   },
@@ -2349,7 +2364,7 @@
     "has_counter": false,
     "localized": {
       "zh": {
-        "name": "湿润印记",
+        "name": "打湿",
         "description": "自己获得1层湿润印记。"
       }
     }
@@ -3255,6 +3270,36 @@
     }
   },
   {
+    "name": "Gravel Charge",
+    "type": "Ground",
+    "category": "Physical Attack",
+    "energy_cost": 3,
+    "power": 80,
+    "description": "Deals physical damage. Counter Status: opponent gains Physical Defense -80%.",
+    "has_counter": true,
+    "localized": {
+      "zh": {
+        "name": "砂石冲撞",
+        "description": "造成物伤，应对状态：敌方获得物防-80%。"
+      }
+    }
+  },
+  {
+    "name": "Charged Up",
+    "type": "Ground",
+    "category": "Status",
+    "energy_cost": 4,
+    "power": null,
+    "description": "Gains 1 stack of Momentum Mark.",
+    "has_counter": false,
+    "localized": {
+      "zh": {
+        "name": "蓄势待发",
+        "description": "自己获得1层蓄势印记。"
+      }
+    }
+  },
+  {
     "name": "Blizzard",
     "type": "Ice",
     "category": "Physical Attack",
@@ -3849,7 +3894,7 @@
     "has_counter": false,
     "localized": {
       "zh": {
-        "name": "龙之舞",
+        "name": "龙吟",
         "description": "蓄力，自己获得双攻+100%和速度+60。"
       }
     }
@@ -4509,7 +4554,7 @@
     "has_counter": false,
     "localized": {
       "zh": {
-        "name": "溶解液",
+        "name": "腐蚀酸液",
         "description": "造成魔伤，敌方获得2层中毒。"
       }
     }
@@ -4905,6 +4950,21 @@
     }
   },
   {
+    "name": "Swarm Impact",
+    "type": "Bug",
+    "category": "Physical Attack",
+    "energy_cost": 3,
+    "power": 80,
+    "description": "Deals physical damage. If the opponent switches monster this turn, this move's power +50 and ignores opponent's type resistance.",
+    "has_counter": false,
+    "localized": {
+      "zh": {
+        "name": "草虫冲击",
+        "description": "造成物伤，若敌方本回合更换精灵，本次威力+50且无视敌方系别抵抗。"
+      }
+    }
+  },
+  {
     "name": "Burst Rush",
     "type": "Fighting",
     "category": "Physical Attack",
@@ -5265,6 +5325,21 @@
     }
   },
   {
+    "name": "Spinning Kick",
+    "type": "Fighting",
+    "category": "Physical Attack",
+    "energy_cost": 3,
+    "power": 80,
+    "description": "Deals physical damage. If the opponent switches monster this turn, this move's power is doubled.",
+    "has_counter": false,
+    "localized": {
+      "zh": {
+        "name": "回旋踢",
+        "description": "造成物伤，若敌方本回合更换精灵，本次技能威力翻倍。"
+      }
+    }
+  },
+  {
     "name": "Eye of the Storm",
     "type": "Flying",
     "category": "Status",
@@ -5529,7 +5604,7 @@
     "has_counter": false,
     "localized": {
       "zh": {
-        "name": "羽毛舞",
+        "name": "飞羽",
         "description": "迅捷，驱散敌方一种增益。"
       }
     }
@@ -6189,7 +6264,7 @@
     "has_counter": false,
     "localized": {
       "zh": {
-        "name": "冲击",
+        "name": "诋毁",
         "description": "对敌方精灵造成物理伤害。"
       }
     }
@@ -6708,7 +6783,7 @@
     "name": "Gear Transfer",
     "type": "Mechanical",
     "category": "Status",
-    "energy_cost": 2,
+    "energy_cost": 1,
     "power": null,
     "description": "User gains Speed +80. If this move is at Slot 1 or Slot 3, user additionally gains Attack +100%. Transmission 1.",
     "has_counter": false,

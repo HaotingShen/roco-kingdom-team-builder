@@ -143,6 +143,8 @@ def transform_monster_moves():
         chinese_name = monster['localized']['zh']['name']
         moveset_key = monster['moveset_key']
         chinese_to_moveset_key[chinese_name] = moveset_key
+        # Also allow direct lookup by moveset_key for form-specific names
+        chinese_to_moveset_key[moveset_key] = moveset_key
 
         # Track order of first appearance
         if moveset_key not in moveset_key_order:

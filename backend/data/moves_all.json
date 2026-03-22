@@ -17,7 +17,7 @@
     "attribute": "龙",
     "power": "150",
     "description": "蓄力，造成物伤，应对状态：本次技能威力翻倍",
-    "beizhu": null
+    "beizhu": "2"
   },
   {
     "id": 3,
@@ -41,7 +41,7 @@
   },
   {
     "id": 5,
-    "name": "龙之舞",
+    "name": "龙吟",
     "energy_consumption": "3",
     "category": "状态",
     "attribute": "龙",
@@ -65,7 +65,7 @@
     "energy_consumption": "1",
     "category": "魔攻",
     "attribute": "龙",
-    "power": "50",
+    "power": "55",
     "description": "造成魔伤，应对状态：下次技能无需蓄力",
     "beizhu": null
   },
@@ -107,7 +107,7 @@
     "attribute": "龙",
     "power": "100",
     "description": "对敌方精灵造成物理伤害。",
-    "beizhu": null
+    "beizhu": "2"
   },
   {
     "id": 12,
@@ -315,7 +315,7 @@
     "energy_consumption": "4",
     "category": "物攻",
     "attribute": "虫",
-    "power": "90",
+    "power": "95",
     "description": "造成物伤，驱散敌方所有印记，应对状态：改为偷取印记。",
     "beizhu": null
   },
@@ -332,7 +332,7 @@
   {
     "id": 34,
     "name": "赤子之心",
-    "energy_consumption": "6",
+    "energy_consumption": "2",
     "category": "状态",
     "attribute": "萌",
     "power": "--",
@@ -366,7 +366,7 @@
     "category": "物攻",
     "attribute": "萌",
     "power": "30",
-    "description": "造成物伤，2连击，自己每有1层萌化，本次技能连击数翻1倍。",
+    "description": "造成物伤，1连击，双方携带的所有精灵每有1层萌化,本次技能连击数+1",
     "beizhu": null
   },
   {
@@ -376,7 +376,7 @@
     "category": "防御",
     "attribute": "萌",
     "power": "--",
-    "description": "减伤70%，应对攻击：敌方获得1层萌化。",
+    "description": "减伤90%，应对攻击：敌方获得1层萌化。",
     "beizhu": null
   },
   {
@@ -397,7 +397,7 @@
     "attribute": "萌",
     "power": "40",
     "description": "对敌方精灵造成物理伤害。",
-    "beizhu": null
+    "beizhu": "2"
   },
   {
     "id": 41,
@@ -412,7 +412,7 @@
   {
     "id": 42,
     "name": "反弹",
-    "energy_consumption": "5",
+    "energy_consumption": "4",
     "category": "状态",
     "attribute": "萌",
     "power": "--",
@@ -431,7 +431,7 @@
   },
   {
     "id": 44,
-    "name": "甜心护盾",
+    "name": "甜心续航",
     "energy_consumption": "3",
     "category": "状态",
     "attribute": "萌",
@@ -482,11 +482,11 @@
   {
     "id": 49,
     "name": "生日蛋糕",
-    "energy_consumption": "2",
+    "energy_consumption": "4",
     "category": "状态",
     "attribute": "萌",
     "power": "--",
-    "description": "自己获得萌化：全技能能耗永久-4。",
+    "description": "驱除自己的减益,自己的增益翻倍",
     "beizhu": null
   },
   {
@@ -506,7 +506,7 @@
     "category": "状态",
     "attribute": "草",
     "power": "--",
-    "description": "2连击，每次连击自己获得魔攻+50%。",
+    "description": "2连击，每次连击自己获得魔攻+60%。",
     "beizhu": null
   },
   {
@@ -526,7 +526,7 @@
     "category": "防御",
     "attribute": "草",
     "power": "--",
-    "description": "减伤70%，应对攻击：自己获得物防+40%。",
+    "description": "减伤80%，应对攻击：自己获得物防+70%。",
     "beizhu": null
   },
   {
@@ -601,7 +601,7 @@
   },
   {
     "id": 61,
-    "name": "寄生种子",
+    "name": "孢子",
     "energy_consumption": "3",
     "category": "状态",
     "attribute": "草",
@@ -626,7 +626,7 @@
     "category": "防御",
     "attribute": "草",
     "power": "--",
-    "description": "减伤70%，应对攻击：回复3能量。",
+    "description": "减伤80%，应对攻击：回复3能量。",
     "beizhu": null
   },
   {
@@ -645,7 +645,7 @@
     "energy_consumption": "4",
     "category": "物攻",
     "attribute": "草",
-    "power": "85",
+    "power": "90",
     "description": "造成物伤，应对状态：自己回复50%生命和5能量。",
     "beizhu": null
   },
@@ -656,12 +656,12 @@
     "category": "状态",
     "attribute": "草",
     "power": "--",
-    "description": "自己获得技能威力+30，应对防御：改为威力+70。",
+    "description": "自己获得技能威力+30，应对防御：改为威力+60。",
     "beizhu": null
   },
   {
     "id": 67,
-    "name": "藤鞭",
+    "name": "刺藤",
     "energy_consumption": "3",
     "category": "物攻",
     "attribute": "草",
@@ -706,7 +706,7 @@
     "category": "状态",
     "attribute": "草",
     "power": "--",
-    "description": "获得4能量，并获得魔攻+80%。",
+    "description": "获得4能量，并获得魔攻+70%。",
     "beizhu": null
   },
   {
@@ -831,7 +831,7 @@
   },
   {
     "id": 84,
-    "name": "羽毛舞",
+    "name": "飞羽",
     "energy_consumption": "0",
     "category": "状态",
     "attribute": "翼",
@@ -895,7 +895,7 @@
     "energy_consumption": "2",
     "category": "物攻",
     "attribute": "翼",
-    "power": "70",
+    "power": "75",
     "description": "造成物伤，应对状态：回合结束使敌方紧急脱离。",
     "beizhu": null
   },
@@ -947,7 +947,7 @@
     "attribute": "翼",
     "power": "--",
     "description": "减伤50%，迅捷，应对攻击。",
-    "beizhu": null
+    "beizhu": ""
   },
   {
     "id": 96,
@@ -965,7 +965,7 @@
     "energy_consumption": "5",
     "category": "物攻",
     "attribute": "翼",
-    "power": "60",
+    "power": "70",
     "description": "造成物伤，迅捷，应对状态：本次技能威力变为1.5倍。",
     "beizhu": null
   },
@@ -975,7 +975,7 @@
     "energy_consumption": "3",
     "category": "物攻",
     "attribute": "翼",
-    "power": "70",
+    "power": "75",
     "description": "造成物伤，若先于敌方攻击，本次技能威力+50%。",
     "beizhu": null
   },
@@ -1025,7 +1025,7 @@
     "energy_consumption": "3",
     "category": "魔攻",
     "attribute": "电",
-    "power": "80",
+    "power": "90",
     "description": "造成魔伤，应对状态：回合结束时使敌方精灵返场。",
     "beizhu": null
   },
@@ -1045,7 +1045,7 @@
     "energy_consumption": "2",
     "category": "魔攻",
     "attribute": "电",
-    "power": "60",
+    "power": "70",
     "description": "造成魔伤，自身获得速度+30",
     "beizhu": null
   },
@@ -1067,7 +1067,7 @@
     "attribute": "电",
     "power": "50",
     "description": "造成魔伤，进发：本级能使用次数+1。",
-    "beizhu": null
+    "beizhu": "2"
   },
   {
     "id": 108,
@@ -1182,11 +1182,11 @@
   {
     "id": 119,
     "name": "雷暴",
-    "energy_consumption": "5",
+    "energy_consumption": "1",
     "category": "魔攻",
     "attribute": "电",
-    "power": "80",
-    "description": "造成魔伤，进发：本技能获得所有生效过的进发效果。",
+    "power": "55",
+    "description": "造成魔伤，进发：本技能获得所有生效过的进发效果,每获得一种,本技能能耗+1,威力+10",
     "beizhu": null
   },
   {
@@ -1206,7 +1206,7 @@
     "category": "防御",
     "attribute": "电",
     "power": "--",
-    "description": "减伤60%，应对攻击：下回合所选技能使用次数+1。",
+    "description": "减伤70%，应对攻击：下回合所选技能使用次数+1。",
     "beizhu": null
   },
   {
@@ -1265,7 +1265,7 @@
     "energy_consumption": "2",
     "category": "魔攻",
     "attribute": "火",
-    "power": "100",
+    "power": "95",
     "description": "造成高额魔法伤害，自己获得物防-40%。",
     "beizhu": null
   },
@@ -1297,7 +1297,7 @@
     "attribute": "火",
     "power": "--",
     "description": "自己获得双攻+130%和双防-40%。",
-    "beizhu": ""
+    "beizhu": null
   },
   {
     "id": 132,
@@ -1346,7 +1346,7 @@
     "category": "防御",
     "attribute": "火",
     "power": "--",
-    "description": "减伤70%，应对攻击：敌方获得4层灼烧。",
+    "description": "减伤70%，应对攻击：敌方获得6层灼烧。",
     "beizhu": null
   },
   {
@@ -1395,7 +1395,7 @@
     "energy_consumption": "1",
     "category": "物攻",
     "attribute": "火",
-    "power": "35",
+    "power": "40",
     "description": "造成物伤，应对状态：本次技能威力变为4倍。",
     "beizhu": null
   },
@@ -1475,7 +1475,7 @@
     "energy_consumption": "3",
     "category": "魔攻",
     "attribute": "火",
-    "power": "45",
+    "power": "55",
     "description": "造成魔伤，敌方获得4层灼烧，应对状态：本次技能威力和赋予灼烧翻倍。",
     "beizhu": null
   },
@@ -1487,7 +1487,7 @@
     "attribute": "火",
     "power": "75",
     "description": "造成魔伤，敌方获得6层灼烧。",
-    "beizhu": null
+    "beizhu": "2"
   },
   {
     "id": 151,
@@ -1507,7 +1507,7 @@
     "attribute": "火",
     "power": "--",
     "description": "驱散双方所有印记，每驱散1层，敌方获得5层灼烧。",
-    "beizhu": null
+    "beizhu": "2"
   },
   {
     "id": 153,
@@ -1527,15 +1527,15 @@
     "attribute": "火",
     "power": "40",
     "description": "对敌方精灵造成魔法伤害。",
-    "beizhu": null
+    "beizhu": "2"
   },
   {
     "id": 155,
     "name": "持续高温",
-    "energy_consumption": "3",
+    "energy_consumption": "2",
     "category": "魔攻",
     "attribute": "火",
-    "power": "85",
+    "power": "70",
     "description": "造成魔伤，应对状态：下次攻击技能威力翻倍",
     "beizhu": null
   },
@@ -1567,7 +1567,7 @@
     "attribute": "火",
     "power": "40",
     "description": "对敌方精灵造成物理伤害。",
-    "beizhu": null
+    "beizhu": "2"
   },
   {
     "id": 159,
@@ -1605,7 +1605,7 @@
     "energy_consumption": "6",
     "category": "魔攻",
     "attribute": "水",
-    "power": "100",
+    "power": "60",
     "description": "造成魔伤，本技能能耗每-1，威力+10",
     "beizhu": null
   },
@@ -1671,7 +1671,7 @@
   },
   {
     "id": 169,
-    "name": "湿润印记",
+    "name": "打湿",
     "energy_consumption": "4",
     "category": "状态",
     "attribute": "水",
@@ -1725,7 +1725,7 @@
     "energy_consumption": "5",
     "category": "魔攻",
     "attribute": "水",
-    "power": "125",
+    "power": "110",
     "description": "造成魔伤，每次使用后，本技能能耗永久-1。",
     "beizhu": null
   },
@@ -1745,7 +1745,7 @@
     "energy_consumption": "4",
     "category": "物攻",
     "attribute": "水",
-    "power": "105",
+    "power": "115",
     "description": "造成物伤，应对状态：本技能能耗永久-4。",
     "beizhu": null
   },
@@ -1765,7 +1765,7 @@
     "energy_consumption": "7",
     "category": "魔攻",
     "attribute": "水",
-    "power": "140",
+    "power": "150",
     "description": "造成魔伤，应对状态：本技能能耗永久-6。",
     "beizhu": null
   },
@@ -1781,12 +1781,12 @@
   },
   {
     "id": 180,
-    "name": "求雨",
-    "energy_consumption": "8",
+    "name": "落雨",
+    "energy_consumption": "5",
     "category": "状态",
     "attribute": "水",
     "power": "--",
-    "description": "将天气改为雨天。本技能受能耗降低效果的影响翻倍。",
+    "description": "将天气改为雨天。持续8回合",
     "beizhu": null
   },
   {
@@ -1807,7 +1807,7 @@
     "attribute": "水",
     "power": "120",
     "description": "对敌方精灵造成魔法伤害。",
-    "beizhu": null
+    "beizhu": "2"
   },
   {
     "id": 183,
@@ -1842,7 +1842,7 @@
   {
     "id": 186,
     "name": "盐水浴",
-    "energy_consumption": "1",
+    "energy_consumption": "2",
     "category": "状态",
     "attribute": "水",
     "power": "--",
@@ -1915,7 +1915,7 @@
     "energy_consumption": "2",
     "category": "物攻",
     "attribute": "毒",
-    "power": "20",
+    "power": "25",
     "description": "造成物伤，敌方获得2层中毒应对状态：改为获得6层。",
     "beizhu": null
   },
@@ -1971,7 +1971,7 @@
   },
   {
     "id": 199,
-    "name": "溶解液",
+    "name": "腐蚀酸液",
     "energy_consumption": "2",
     "category": "魔攻",
     "attribute": "毒",
@@ -2036,7 +2036,7 @@
     "category": "防御",
     "attribute": "武",
     "power": "--",
-    "description": "减伤70%，应对攻击：获得全技能威力+20。",
+    "description": "减伤70%，应对攻击：获得全技能威力+40。",
     "beizhu": null
   },
   {
@@ -2075,7 +2075,7 @@
     "energy_consumption": "3",
     "category": "物攻",
     "attribute": "武",
-    "power": "50",
+    "power": "65",
     "description": "造成物伤，应对状态：本次技能威力变为5倍。",
     "beizhu": null
   },
@@ -2085,7 +2085,7 @@
     "energy_consumption": "2",
     "category": "物攻",
     "attribute": "武",
-    "power": "60",
+    "power": "65",
     "description": "造成物伤，应对状态：自己获得物攻+100%。",
     "beizhu": null
   },
@@ -2135,7 +2135,7 @@
     "energy_consumption": "2",
     "category": "物攻",
     "attribute": "武",
-    "power": "25",
+    "power": "35",
     "description": "造成物伤，应对状态：本次技能威力变为10倍。",
     "beizhu": null
   },
@@ -2165,7 +2165,7 @@
     "energy_consumption": "3",
     "category": "物攻",
     "attribute": "武",
-    "power": "30",
+    "power": "35",
     "description": "造成物伤，2连击，应对状态：本技能改为6连击。",
     "beizhu": null
   },
@@ -2185,7 +2185,7 @@
     "energy_consumption": "3",
     "category": "物攻",
     "attribute": "武",
-    "power": "75",
+    "power": "85",
     "description": "造成物伤，应对状态：本次技能威力变为2倍。",
     "beizhu": null
   },
@@ -2205,7 +2205,7 @@
     "energy_consumption": "2",
     "category": "物攻",
     "attribute": "武",
-    "power": "70",
+    "power": "75",
     "description": "造成物伤，应对状态：额外打断被应对技能。",
     "beizhu": null
   },
@@ -2225,7 +2225,7 @@
     "energy_consumption": "3",
     "category": "物攻",
     "attribute": "武",
-    "power": "85",
+    "power": "90",
     "description": "造成物伤，应对状态：额外造成打断，回复该技能能耗的能量。",
     "beizhu": null
   },
@@ -2252,10 +2252,10 @@
   {
     "id": 227,
     "name": "磁暴",
-    "energy_consumption": "3",
+    "energy_consumption": "2",
     "category": "魔攻",
     "attribute": "机械",
-    "power": "95",
+    "power": "70",
     "description": "造成魔伤，传动。",
     "beizhu": null
   },
@@ -2267,7 +2267,7 @@
     "attribute": "机械",
     "power": "55",
     "description": "造成物伤，1连击。",
-    "beizhu": null
+    "beizhu": "2"
   },
   {
     "id": 229,
@@ -2277,16 +2277,16 @@
     "attribute": "机械",
     "power": "40",
     "description": "对敌方精灵造成物理伤害。",
-    "beizhu": null
+    "beizhu": "2"
   },
   {
     "id": 230,
     "name": "啮合传递",
-    "energy_consumption": "2",
+    "energy_consumption": "1",
     "category": "状态",
     "attribute": "机械",
     "power": "--",
-    "description": "自己获得速度+100，本技能位于1号位时能耗-2，传动。",
+    "description": "自己获得速度+100，本技能位于1号位或3号位时额外获得物攻+100%，传动1。",
     "beizhu": null
   },
   {
@@ -2302,30 +2302,30 @@
   {
     "id": 232,
     "name": "齿轮切开",
-    "energy_consumption": "6",
+    "energy_consumption": "5",
     "category": "物攻",
     "attribute": "机械",
-    "power": "145",
+    "power": "130",
     "description": "造成物伤，传动。",
     "beizhu": null
   },
   {
     "id": 233,
     "name": "离子震荡",
-    "energy_consumption": "1",
+    "energy_consumption": "3",
     "category": "魔攻",
     "attribute": "机械",
-    "power": "55",
+    "power": "90",
     "description": "造成魔伤，传动。",
     "beizhu": null
   },
   {
     "id": 234,
     "name": "金属噪音",
-    "energy_consumption": "2",
+    "energy_consumption": "3",
     "category": "魔攻",
     "attribute": "机械",
-    "power": "80",
+    "power": "100",
     "description": "对敌方精灵造成魔法伤害。",
     "beizhu": null
   },
@@ -2337,7 +2337,7 @@
     "attribute": "机械",
     "power": "60",
     "description": "造成物伤，每变化1次位置，本技能威力永久+20。",
-    "beizhu": null
+    "beizhu": "2"
   },
   {
     "id": 236,
@@ -2355,7 +2355,7 @@
     "energy_consumption": "3",
     "category": "物攻",
     "attribute": "机械",
-    "power": "80",
+    "power": "70",
     "description": "造成物伤，本技能位于4号位时威力+80，传动。",
     "beizhu": null
   },
@@ -2385,7 +2385,7 @@
     "energy_consumption": "1",
     "category": "物攻",
     "attribute": "机械",
-    "power": "55",
+    "power": "45",
     "description": "造成物伤，传动。",
     "beizhu": null
   },
@@ -2415,7 +2415,7 @@
     "energy_consumption": "1",
     "category": "魔攻",
     "attribute": "普通",
-    "power": "25",
+    "power": "60",
     "description": "造成魔伤，1连击。",
     "beizhu": null
   },
@@ -2435,9 +2435,9 @@
     "energy_consumption": "7",
     "category": "物攻",
     "attribute": "普通",
-    "power": "120",
+    "power": "135",
     "description": "造成物伤，回合结束时，本技能能耗永久-1。",
-    "beizhu": null
+    "beizhu": ""
   },
   {
     "id": 246,
@@ -2445,9 +2445,9 @@
     "energy_consumption": "3",
     "category": "魔攻",
     "attribute": "普通",
-    "power": "60",
-    "description": "造成魔伤，释放后若能量耗尽，本次攻击威力+100。",
-    "beizhu": null
+    "power": "65",
+    "description": "造成魔伤，释放后若能量耗尽，本次攻击威力+110。",
+    "beizhu": ""
   },
   {
     "id": 247,
@@ -2455,9 +2455,9 @@
     "energy_consumption": "2",
     "category": "物攻",
     "attribute": "普通",
-    "power": "55",
+    "power": "65",
     "description": "造成物伤，若敌方能量小于等于2，造成5倍伤害。",
-    "beizhu": null
+    "beizhu": ""
   },
   {
     "id": 248,
@@ -2495,7 +2495,7 @@
     "energy_consumption": "3",
     "category": "物攻",
     "attribute": "普通",
-    "power": "100",
+    "power": "110",
     "description": "对敌方精灵造成物理伤害。",
     "beizhu": null
   },
@@ -2511,7 +2511,7 @@
   },
   {
     "id": 253,
-    "name": "攻击场地",
+    "name": "主场优势",
     "energy_consumption": "3",
     "category": "状态",
     "attribute": "普通",
@@ -2525,18 +2525,18 @@
     "energy_consumption": "3",
     "category": "物攻",
     "attribute": "普通",
-    "power": "90",
-    "description": "造成物伤，本技能能耗每+1，威力+45。",
+    "power": "100",
+    "description": "造成物伤，本技能能耗每+1，威力+50。",
     "beizhu": null
   },
   {
     "id": 255,
     "name": "聒噪",
-    "energy_consumption": "1",
+    "energy_consumption": "3",
     "category": "状态",
     "attribute": "普通",
     "power": "--",
-    "description": "敌方获得全攻击技能能耗+3。",
+    "description": "敌方获得全攻击技能能耗+3。持续3回合",
     "beizhu": null
   },
   {
@@ -2552,7 +2552,7 @@
   {
     "id": 257,
     "name": "激怒",
-    "energy_consumption": "2",
+    "energy_consumption": "3",
     "category": "状态",
     "attribute": "普通",
     "power": "--",
@@ -2565,7 +2565,7 @@
     "energy_consumption": "2",
     "category": "物攻",
     "attribute": "普通",
-    "power": "55",
+    "power": "65",
     "description": "造成物伤，若上回合使用状态技能，本次技能威力+50。",
     "beizhu": null
   },
@@ -2575,9 +2575,9 @@
     "energy_consumption": "3",
     "category": "魔攻",
     "attribute": "普通",
-    "power": "100",
+    "power": "110",
     "description": "对敌方精灵造成魔法伤害。",
-    "beizhu": null
+    "beizhu": ""
   },
   {
     "id": 260,
@@ -2615,7 +2615,7 @@
     "energy_consumption": "2",
     "category": "物攻",
     "attribute": "普通",
-    "power": "20",
+    "power": "30",
     "description": "造成物伤，2连击，应对状态：本次连击数翻倍",
     "beizhu": null
   },
@@ -2625,7 +2625,7 @@
     "energy_consumption": "4",
     "category": "魔攻",
     "attribute": "普通",
-    "power": "20",
+    "power": "25",
     "description": "造成魔伤，5连击。",
     "beizhu": null
   },
@@ -2635,7 +2635,7 @@
     "energy_consumption": "1",
     "category": "物攻",
     "attribute": "普通",
-    "power": "60",
+    "power": "65",
     "description": "对敌方精灵造成物理伤害。",
     "beizhu": null
   },
@@ -2665,7 +2665,7 @@
     "energy_consumption": "3",
     "category": "物攻",
     "attribute": "普通",
-    "power": "70",
+    "power": "80",
     "description": "造成物伤，每应对成功1次，本技能威力永久+90。",
     "beizhu": null
   },
@@ -2685,7 +2685,7 @@
     "energy_consumption": "3",
     "category": "物攻",
     "attribute": "普通",
-    "power": "80",
+    "power": "90",
     "description": "造成物伤。每次使用后，本技能威力永久+40。",
     "beizhu": null
   },
@@ -2695,7 +2695,7 @@
     "energy_consumption": "3",
     "category": "魔攻",
     "attribute": "普通",
-    "power": "30",
+    "power": "50",
     "description": "造成魔伤，2连击。",
     "beizhu": null
   },
@@ -2705,9 +2705,9 @@
     "energy_consumption": "3",
     "category": "物攻",
     "attribute": "普通",
-    "power": "60",
+    "power": "80",
     "description": "造成物伤，若上回合应对成功，本次技能威力+240。",
-    "beizhu": null
+    "beizhu": ""
   },
   {
     "id": 273,
@@ -2745,7 +2745,7 @@
     "energy_consumption": "2",
     "category": "物攻",
     "attribute": "普通",
-    "power": "80",
+    "power": "90",
     "description": "对敌方精灵造成物理伤害。",
     "beizhu": null
   },
@@ -2765,7 +2765,7 @@
     "energy_consumption": "3",
     "category": "物攻",
     "attribute": "普通",
-    "power": "65",
+    "power": "85",
     "description": "造成物伤，应对状态：本次技能威力变为3倍。",
     "beizhu": null
   },
@@ -2775,7 +2775,7 @@
     "energy_consumption": "2",
     "category": "魔攻",
     "attribute": "普通",
-    "power": "50",
+    "power": "70",
     "description": "造成魔伤，应对状态：本次技能威力变为3倍。",
     "beizhu": null
   },
@@ -2785,8 +2785,8 @@
     "energy_consumption": "6",
     "category": "物攻",
     "attribute": "普通",
-    "power": "135",
-    "description": "造成物伤，若释放本技能击败敌方，回复6能量。",
+    "power": "150",
+    "description": "造成物伤，若使用本技能击败敌方，回复6能量。",
     "beizhu": null
   },
   {
@@ -2815,9 +2815,9 @@
     "energy_consumption": "6",
     "category": "魔攻",
     "attribute": "普通",
-    "power": "120",
+    "power": "130",
     "description": "造成魔伤，每使用1次其他普通系技能，本技能能耗永久-2。",
-    "beizhu": null
+    "beizhu": ""
   },
   {
     "id": 284,
@@ -2825,7 +2825,7 @@
     "energy_consumption": "3",
     "category": "物攻",
     "attribute": "普通",
-    "power": "30",
+    "power": "35",
     "description": "造成物伤，3连击。",
     "beizhu": null
   },
@@ -2845,7 +2845,7 @@
     "energy_consumption": "4",
     "category": "魔攻",
     "attribute": "普通",
-    "power": "120",
+    "power": "130",
     "description": "对敌方精灵造成魔法伤害。",
     "beizhu": null
   },
@@ -2865,7 +2865,7 @@
     "energy_consumption": "2",
     "category": "物攻",
     "attribute": "普通",
-    "power": "100",
+    "power": "110",
     "description": "造成物伤，每次使用后，本技能能耗永久+1。",
     "beizhu": null
   },
@@ -2875,7 +2875,7 @@
     "energy_consumption": "5",
     "category": "魔攻",
     "attribute": "普通",
-    "power": "140",
+    "power": "155",
     "description": "对敌方精灵造成魔法伤害。",
     "beizhu": null
   },
@@ -2885,7 +2885,7 @@
     "energy_consumption": "0",
     "category": "物攻",
     "attribute": "普通",
-    "power": "30",
+    "power": "35",
     "description": "造成物伤，自己回复1能量。",
     "beizhu": null
   },
@@ -2895,7 +2895,7 @@
     "energy_consumption": "3",
     "category": "魔攻",
     "attribute": "普通",
-    "power": "65",
+    "power": "75",
     "description": "造成魔伤，1连击，应对状态：本技能变为3连击。",
     "beizhu": null
   },
@@ -2905,7 +2905,7 @@
     "energy_consumption": "2",
     "category": "魔攻",
     "attribute": "普通",
-    "power": "70",
+    "power": "80",
     "description": "造成魔伤，应对状态：额外打断被应对技能",
     "beizhu": null
   },
@@ -2922,11 +2922,11 @@
   {
     "id": 294,
     "name": "有效预防",
-    "energy_consumption": "2",
+    "energy_consumption": "1",
     "category": "防御",
     "attribute": "普通",
     "power": "--",
-    "description": "减伤70%，应对攻击：回复能量，回复值等于本技能能耗的2倍。",
+    "description": "减伤50%，应对攻击：下一次行动获得先手+1。",
     "beizhu": null
   },
   {
@@ -2976,8 +2976,8 @@
     "category": "防御",
     "attribute": "普通",
     "power": "--",
-    "description": "减伤70%，应对攻击：期间自己每次受到伤害，获得双攻+20%。",
-    "beizhu": null
+    "description": "减伤80%，应对攻击：期间自己每次受到伤害，获得双攻+40%。",
+    "beizhu": ""
   },
   {
     "id": 300,
@@ -2985,7 +2985,7 @@
     "energy_consumption": "3",
     "category": "物攻",
     "attribute": "普通",
-    "power": "140",
+    "power": "155",
     "description": "造成物理伤害，先手-1。",
     "beizhu": null
   },
@@ -2995,7 +2995,7 @@
     "energy_consumption": "5",
     "category": "物攻",
     "attribute": "普通",
-    "power": "140",
+    "power": "155",
     "description": "对敌方精灵造成物理伤害。",
     "beizhu": null
   },
@@ -3015,7 +3015,7 @@
     "energy_consumption": "2",
     "category": "物攻",
     "attribute": "普通",
-    "power": "50",
+    "power": "55",
     "description": "造成物理伤害，先手+1。",
     "beizhu": null
   },
@@ -3045,7 +3045,7 @@
     "energy_consumption": "3",
     "category": "魔攻",
     "attribute": "普通",
-    "power": "60",
+    "power": "70",
     "description": "造成魔伤，驱散双方所有印记。",
     "beizhu": null
   },
@@ -3065,9 +3065,9 @@
     "energy_consumption": "0",
     "category": "物攻",
     "attribute": "普通",
-    "power": "40",
+    "power": "45",
     "description": "对敌方精灵造成物理伤害。",
-    "beizhu": null
+    "beizhu": ""
   },
   {
     "id": 309,
@@ -3075,7 +3075,7 @@
     "energy_consumption": "1",
     "category": "魔攻",
     "attribute": "普通",
-    "power": "60",
+    "power": "65",
     "description": "对敌方精灵造成魔法伤害。",
     "beizhu": null
   },
@@ -3085,9 +3085,9 @@
     "energy_consumption": "6",
     "category": "魔攻",
     "attribute": "普通",
-    "power": "150",
+    "power": "165",
     "description": "对敌方精灵造成魔法伤害。",
-    "beizhu": null
+    "beizhu": ""
   },
   {
     "id": 311,
@@ -3112,7 +3112,7 @@
   {
     "id": 313,
     "name": "摇篮曲",
-    "energy_consumption": "3",
+    "energy_consumption": "5",
     "category": "状态",
     "attribute": "普通",
     "power": "--",
@@ -3125,7 +3125,7 @@
     "energy_consumption": "4",
     "category": "魔攻",
     "attribute": "普通",
-    "power": "105",
+    "power": "115",
     "description": "造成魔伤，驱散敌方5层增益。",
     "beizhu": null
   },
@@ -3155,7 +3155,7 @@
     "energy_consumption": "3",
     "category": "物攻",
     "attribute": "普通",
-    "power": "55",
+    "power": "60",
     "description": "造成物理伤害，先手+1，迸发：本次技能威力+30。",
     "beizhu": null
   },
@@ -3165,7 +3165,7 @@
     "energy_consumption": "4",
     "category": "物攻",
     "attribute": "普通",
-    "power": "120",
+    "power": "130",
     "description": "对敌方精灵造成物理伤害。",
     "beizhu": null
   },
@@ -3185,7 +3185,7 @@
     "energy_consumption": "2",
     "category": "魔攻",
     "attribute": "普通",
-    "power": "80",
+    "power": "90",
     "description": "对敌方精灵造成魔法伤害。",
     "beizhu": null
   },
@@ -3207,7 +3207,7 @@
     "attribute": "恶",
     "power": "120",
     "description": "造成大量物伤，自己获得物攻-50%，应对状态：改为获得物攻+50%。",
-    "beizhu": null
+    "beizhu": ""
   },
   {
     "id": 323,
@@ -3267,7 +3267,7 @@
     "attribute": "恶",
     "power": "85",
     "description": "造成魔伤，敌方每有1只力竭精灵，本次技能威力+30。",
-    "beizhu": null
+    "beizhu": "2"
   },
   {
     "id": 329,
@@ -3306,7 +3306,7 @@
     "category": "状态",
     "attribute": "恶",
     "power": "--",
-    "description": "脱离，应对防御：额外使敌方攻击技能能耗+6。",
+    "description": "脱离，应对防御：额外使敌方攻击技能能耗+4。",
     "beizhu": null
   },
   {
@@ -3321,7 +3321,7 @@
   },
   {
     "id": 334,
-    "name": "冲击",
+    "name": "诋毁",
     "energy_consumption": "2",
     "category": "物攻",
     "attribute": "恶",
@@ -3345,7 +3345,7 @@
     "energy_consumption": "2",
     "category": "物攻",
     "attribute": "恶",
-    "power": "60",
+    "power": "65",
     "description": "造成物伤，吸血100%。",
     "beizhu": null
   },
@@ -3375,7 +3375,7 @@
     "energy_consumption": "4",
     "category": "物攻",
     "attribute": "恶",
-    "power": "140",
+    "power": "135",
     "description": "造成物伤，若生命高于50%，使用后自己获得双攻-50%。",
     "beizhu": null
   },
@@ -3397,7 +3397,7 @@
     "attribute": "恶",
     "power": "30",
     "description": "造成物伤，自己回复1能量。",
-    "beizhu": null
+    "beizhu": ""
   },
   {
     "id": 342,
@@ -3545,14 +3545,14 @@
     "energy_consumption": "2",
     "category": "魔攻",
     "attribute": "幽",
-    "power": "30",
+    "power": "40",
     "description": "造成魔伤，若敌方能量等于0，造成20倍伤害。",
     "beizhu": null
   },
   {
     "id": 358,
     "name": "恶作剧",
-    "energy_consumption": "0",
+    "energy_consumption": "1",
     "category": "状态",
     "attribute": "幽",
     "power": "--",
@@ -3595,7 +3595,7 @@
     "energy_consumption": "3",
     "category": "物攻",
     "attribute": "幽",
-    "power": "85",
+    "power": "80",
     "description": "造成物伤，应对状态：使敌方失去6能量。",
     "beizhu": null
   },
@@ -3635,7 +3635,7 @@
     "energy_consumption": "2",
     "category": "魔攻",
     "attribute": "幻",
-    "power": "60",
+    "power": "65",
     "description": "造成魔伤，应对状态：敌方获得3层星陨",
     "beizhu": null
   },
@@ -3672,7 +3672,7 @@
   {
     "id": 370,
     "name": "二律背反",
-    "energy_consumption": "3",
+    "energy_consumption": "4",
     "category": "状态",
     "attribute": "幻",
     "power": "--",
@@ -3742,10 +3742,10 @@
   {
     "id": 377,
     "name": "多维击打",
-    "energy_consumption": "3",
+    "energy_consumption": "4",
     "category": "魔攻",
     "attribute": "幻",
-    "power": "20",
+    "power": "15",
     "description": "造成魔伤，1连击，敌方每有1层星陨，本次技能连击数+1。",
     "beizhu": null
   },
@@ -3827,7 +3827,7 @@
     "attribute": "地",
     "power": "80",
     "description": "造成伤害，敌方获得连击数-3",
-    "beizhu": null
+    "beizhu": ""
   },
   {
     "id": 386,
@@ -3866,17 +3866,17 @@
     "category": "防御",
     "attribute": "地",
     "power": "--",
-    "description": "减伤80%，应对攻击：防御技能冷却-1。",
+    "description": "减伤90%，应对攻击：防御技能冷却-1。",
     "beizhu": null
   },
   {
     "id": 391,
     "name": "刺盾",
-    "energy_consumption": "3",
+    "energy_consumption": "2",
     "category": "防御",
     "attribute": "地",
     "power": "--",
-    "description": "减伤70%，应对攻击：敌方获得物攻-50%。",
+    "description": "减伤70%，应对攻击：敌方获得物攻-70%。",
     "beizhu": null
   },
   {
@@ -3885,7 +3885,7 @@
     "energy_consumption": "3",
     "category": "物攻",
     "attribute": "地",
-    "power": "85",
+    "power": "95",
     "description": "造成物伤，应对状态：额外打断被应对技能。",
     "beizhu": null
   },
@@ -3911,22 +3911,22 @@
   },
   {
     "id": 395,
-    "name": "裂石",
+    "name": "砂石冲撞",
     "energy_consumption": "3",
     "category": "物攻",
     "attribute": "地",
-    "power": "85",
+    "power": "80",
     "description": "造成物伤，应对状态：敌方获得物防-80%。",
-    "beizhu": null
+    "beizhu": ""
   },
   {
     "id": 396,
     "name": "流沙",
-    "energy_consumption": "1",
+    "energy_consumption": "2",
     "category": "状态",
     "attribute": "地",
     "power": "--",
-    "description": "敌方2回合无法更换精灵，应对防御：敌方获得双防-50%。",
+    "description": "敌方3回合无法更换精灵，应对防御：敌方获得双防-60%。",
     "beizhu": null
   },
   {
@@ -3986,7 +3986,7 @@
     "category": "防御",
     "attribute": "地",
     "power": "--",
-    "description": "减伤80%，若上次使用攻击技则本技能能耗-2，应对攻击。",
+    "description": "减伤90%，若上次使用攻击技则本技能能耗-2，应对攻击。",
     "beizhu": null
   },
   {
@@ -3997,16 +3997,16 @@
     "attribute": "地",
     "power": "190",
     "description": "对敌方精灵造成物理伤害。",
-    "beizhu": null
+    "beizhu": ""
   },
   {
     "id": 404,
     "name": "沙涌",
-    "energy_consumption": "10",
+    "energy_consumption": "7",
     "category": "状态",
     "attribute": "地",
     "power": "--",
-    "description": "将天气改为沙暴(天气为沙暴时，双方的地系技能能耗减半。)，每过1回合，本技能能耗永久-1。",
+    "description": "将天气改为沙暴(天气为沙暴时，双方的地系技能能耗减半。)，持续8回合",
     "beizhu": null
   },
   {
@@ -4047,16 +4047,16 @@
     "attribute": "地",
     "power": "--",
     "description": "自己获得物防+160%和魔防-60%。",
-    "beizhu": null
+    "beizhu": ""
   },
   {
     "id": 409,
-    "name": "泥沼",
+    "name": "蓄势待发",
     "energy_consumption": "4",
     "category": "状态",
     "attribute": "地",
     "power": "--",
-    "description": "自己获得1层迟缓印记(印记，全攻击技能威力+30%，且能耗+1。)。",
+    "description": "自己获得1层蓄势印记(印记，全攻击技能威力+30%，且能耗+1。)。",
     "beizhu": null
   },
   {
@@ -4095,8 +4095,8 @@
     "energy_consumption": "5",
     "category": "物攻",
     "attribute": "地",
-    "power": "70",
-    "description": "造成物伤，自己获得物防+60%，应对状态：本次技能威力翻倍，且物防额外+60%。",
+    "power": "80",
+    "description": "造成物伤，自己获得物防+70%，应对状态：本次技能威力翻倍，且物防额外+70%。",
     "beizhu": null
   },
   {
@@ -4185,7 +4185,7 @@
     "energy_consumption": "4",
     "category": "物攻",
     "attribute": "冰",
-    "power": "100",
+    "power": "105",
     "description": "造成物伤，应对状态：额外使敌方获得全技能能耗+3。",
     "beizhu": null
   },
@@ -4195,7 +4195,7 @@
     "energy_consumption": "7",
     "category": "魔攻",
     "attribute": "冰",
-    "power": "100",
+    "power": "90",
     "description": "造成魔伤，敌方获得全技能能耗+2。",
     "beizhu": null
   },
@@ -4206,7 +4206,7 @@
     "category": "防御",
     "attribute": "冰",
     "power": "--",
-    "description": "减伤70%，应对攻击：敌方获得2层冻结。",
+    "description": "减伤80%，应对攻击：敌方获得2层冻结。",
     "beizhu": null
   },
   {
@@ -4226,7 +4226,7 @@
     "category": "魔攻",
     "attribute": "冰",
     "power": "70",
-    "description": "造成魔伤，敌方获得魔防-40%。",
+    "description": "造成魔伤，敌方获得魔防-50%。",
     "beizhu": null
   },
   {
@@ -4315,18 +4315,18 @@
     "energy_consumption": "3",
     "category": "物攻",
     "attribute": "冰",
-    "power": "80",
+    "power": "90",
     "description": "造成物伤，敌方获得速度-30。",
     "beizhu": null
   },
   {
     "id": 436,
     "name": "冬至",
-    "energy_consumption": "15",
+    "energy_consumption": "7",
     "category": "状态",
     "attribute": "冰",
     "power": "--",
-    "description": "将天气改为暴风雪(天气为暴风雪时，双方每回合获得1层冻结。)。本技能能耗降低，降低值等于敌方技能总能耗。",
+    "description": "将天气改为暴风雪(天气为暴风雪时，双方每回合获得2层冻结。冰系精灵免疫)。持续8回合",
     "beizhu": null
   },
   {
@@ -4442,11 +4442,11 @@
   {
     "id": 448,
     "name": "镜像反射",
-    "energy_consumption": "2",
+    "energy_consumption": "1",
     "category": "防御",
     "attribute": "光",
     "power": "--",
-    "description": "减伤80%，应对攻击：本技能变为被应对的技能。",
+    "description": "减伤70%，应对攻击：本技能变为被应对的技能。",
     "beizhu": null
   },
   {
@@ -4537,7 +4537,7 @@
     "attribute": "龙",
     "power": "120",
     "description": "对敌方精灵造成物理伤害。",
-    "beizhu": null
+    "beizhu": "2"
   },
   {
     "id": 458,
@@ -4547,7 +4547,7 @@
     "attribute": "龙",
     "power": "140",
     "description": "对敌方精灵造成物理伤害。",
-    "beizhu": null
+    "beizhu": "2"
   },
   {
     "id": 459,
@@ -4562,7 +4562,7 @@
   {
     "id": 460,
     "name": "吓退",
-    "energy_consumption": "3",
+    "energy_consumption": "2",
     "category": "防御",
     "attribute": "普通",
     "power": "--",
@@ -4617,7 +4617,7 @@
     "attribute": "龙",
     "power": "--",
     "description": "减伤60%，本技能可以在蓄力状态下使用，应对攻击：下次技能无需蓄力。",
-    "beizhu": null
+    "beizhu": "2"
   },
   {
     "id": 467,
@@ -4635,18 +4635,18 @@
     "energy_consumption": "3",
     "category": "魔攻",
     "attribute": "毒",
-    "power": "70",
+    "power": "75",
     "description": "造成魔伤，敌方每有1层中毒效果，本次技能威力+10，应对状态：敌方获得2层中毒。",
-    "beizhu": null
+    "beizhu": ""
   },
   {
     "id": 469,
     "name": "疾风连袭",
-    "energy_consumption": "4",
+    "energy_consumption": "0",
     "category": "状态",
     "attribute": "翼",
     "power": "--",
-    "description": "使用所有携带的迅捷技能，并将这些技能的能耗加至本技能。迅捷。",
+    "description": "释放自己释放过的迅捷技能，其能耗之和的二分之一加至本技能能耗，每次使用后能耗+1。",
     "beizhu": null
   },
   {
@@ -4656,7 +4656,7 @@
     "category": "防御",
     "attribute": "幽",
     "power": "--",
-    "description": "减伤60%，应对攻击：敌方失去3能量。",
+    "description": "减伤70%，应对攻击：敌方失去3能量。",
     "beizhu": null
   },
   {
@@ -4677,6 +4677,66 @@
     "attribute": "火",
     "power": "60",
     "description": "造成魔伤，驱散敌方所有印记。",
+    "beizhu": null
+  },
+  {
+    "id": 473,
+    "name": "针刺射击",
+    "energy_consumption": "3",
+    "category": "物攻",
+    "attribute": "草",
+    "power": "80",
+    "description": "未知",
+    "beizhu": null
+  },
+  {
+    "id": 474,
+    "name": "回旋踢",
+    "energy_consumption": "3",
+    "category": "物攻",
+    "attribute": "武",
+    "power": "80",
+    "description": "造成物伤,若敌方本回合更换精灵,本次技能威力翻倍",
+    "beizhu": null
+  },
+  {
+    "id": 475,
+    "name": "草虫冲击",
+    "energy_consumption": "3",
+    "category": "物攻",
+    "attribute": "虫",
+    "power": "80",
+    "description": "造成物伤,若敌方本回合更换精灵,本次威力+50且无视敌方系别抵抗",
+    "beizhu": null
+  },
+  {
+    "id": 476,
+    "name": "裂石",
+    "energy_consumption": "3",
+    "category": "物攻",
+    "attribute": "地",
+    "power": "95",
+    "description": "造成物伤,应对状态:敌方获得物防-80%",
+    "beizhu": null
+  },
+  {
+    "id": 477,
+    "name": "除厄",
+    "energy_consumption": "2",
+    "category": "魔攻",
+    "attribute": "火",
+    "power": "60",
+    "description": "造成魔伤,驱散自己的减益",
+    "beizhu": null
+  },
+  {
+    "id": 478,
+    "name": "阳火增辉",
+    "energy_consumption": "3",
+    "category": "魔攻",
+    "attribute": "火",
+    "power": "75",
+    "description": "造成魔伤,每次击败敌方,本技能威力永久翻倍",
     "beizhu": null
   }
 ]
