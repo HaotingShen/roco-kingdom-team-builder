@@ -1898,5 +1898,15 @@
         "description": "周末时自己获得双攻+40%，其他时间获得双防+40%。"
       }
     }
+  },
+  {
+    "name": "Heaven's Sight",
+    "description": "When attacking, if the opponent's legacy type is Corruption, move power +100%.",
+    "localized": {
+      "zh": {
+        "name": "天通地明",
+        "description": "攻击时，若敌方血脉是污染血脉，技能威力+100%。"
+      }
+    }
   }
 ]
