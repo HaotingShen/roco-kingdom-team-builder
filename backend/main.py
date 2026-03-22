@@ -3400,7 +3400,7 @@ def get_moves(
     move_type_id: Optional[int] = Query(None),
     move_category: Optional[schemas.MoveCategory] = Query(None),
     has_counter: Optional[bool] = Query(None),
-    limit: int = Query(468, ge=1, le=468),
+    limit: int = Query(500, ge=1, le=500),
     offset: int = Query(0, ge=0),
 ):
     query = db.query(models.Move).options(
