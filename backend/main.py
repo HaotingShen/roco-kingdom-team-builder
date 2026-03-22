@@ -3985,6 +3985,8 @@ async def _perform_team_analysis(
         .options(
             joinedload(models.Type.effective_against),
             joinedload(models.Type.weak_against),
+            joinedload(models.Type.vulnerable_to),
+            joinedload(models.Type.resistant_to),
         )
         .all()
     }
@@ -4187,8 +4189,8 @@ async def _perform_team_analysis(
 
     # Release the DB connection back to the pool before the LLM call.
     # All required data is already loaded into local dicts (monster_db_map, move_db_map, etc.).
-    # ORM column attributes remain accessible on detached objects; no lazy relationships
-    # are accessed after this point. All post-LLM work is Redis-only — no DB writes needed.
+    # ORM column attributes remain accessible on detached objects. All relationships accessed
+    # post-LLM (e.g. vulnerable_to, resistant_to, move_type) must be eagerly loaded above.
     # Calling db.close() twice (here + FastAPI generator finally) is a SQLAlchemy no-op.
     db.close()
 
