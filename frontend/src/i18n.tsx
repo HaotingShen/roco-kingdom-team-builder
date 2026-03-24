@@ -677,6 +677,7 @@ const ui: Record<Lang, Dict> = {
       feedback: "Feedback",
       qqGroup: "QQ Group: 628740135",
       wechatGroup: "WeChat: QR code available in the QQ group files",
+      business: "Business inquiries: business@rkteambuilder.com or message via QQ/WeChat group privately",
     },
   },
   zh: {
@@ -1285,6 +1286,7 @@ const ui: Record<Lang, Dict> = {
       feedback: "意见反馈",
       qqGroup: "QQ交流群：628740135",
       wechatGroup: "微信群：二维码见QQ群文件",
+      business: "商务合作：business@rkteambuilder.com 或加QQ/微信群私聊",
     },
   },
 };
