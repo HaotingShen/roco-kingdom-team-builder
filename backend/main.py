@@ -4,15 +4,12 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import RedirectResponse
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.middleware import SlowAPIMiddleware
-from sqlalchemy.orm import Session, sessionmaker, joinedload
-from sqlalchemy import create_engine, or_, and_, cast, String, func, text
+from sqlalchemy.orm import Session, joinedload
+from sqlalchemy import or_, and_, cast, String, func, text
 from backend.config import (
-    DATABASE_URL,
     LLM_PROVIDER,
     ALLOWED_ORIGINS,
     LOG_LEVEL,
-    DB_POOL_SIZE,
-    DB_MAX_OVERFLOW,
     ENABLE_REFERENCE_RESOLUTION,
     ENVIRONMENT,
     REDIS_URL,
@@ -26,6 +23,7 @@ from backend.config import (
     DEVICE_ID_COOKIE_MAX_AGE,
     ADMIN_EMAILS,
 )
+from backend.database import get_db, SessionLocal
 from typing import Optional, List, Literal
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal, ROUND_HALF_UP
@@ -367,20 +365,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-engine = create_engine(
-    DATABASE_URL,
-    pool_size=DB_POOL_SIZE,
-    max_overflow=DB_MAX_OVERFLOW,
-)
-SessionLocal = sessionmaker(bind=engine)
-
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
 
 # === TOP-LEVEL HELPER FUNCTIONS ===
 
