@@ -74,6 +74,19 @@ export default function TeamShareModal({ open, onClose, team, currentUsername }:
     setImagesReady(false);
   }, [shareData]);
 
+  // On return from another app, reset any stuck isExporting state. On iOS the
+  // tab can be frozen mid-export (canvas.toBlob callback not fired), leaving
+  // isExporting=true permanently. The canvas is also redrawn by TeamCard's own
+  // visibilitychange handler, so we don't need to reset imagesReady here.
+  useEffect(() => {
+    if (!open) return;
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') setIsExporting(false);
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  }, [open]);
+
   const doExport = useCallback(async (): Promise<Blob | null> => {
     const canvas = exportCanvasRef.current;
     if (!canvas) return null;

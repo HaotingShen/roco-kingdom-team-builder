@@ -795,6 +795,24 @@ export default function TeamCard({ data, shareUrl, showQr = true, lang, note, on
     return () => { mounted.current = false; };
   }, [draw]);
 
+  // Redraw when returning from another app — iOS may clear the canvas backing
+  // store while the tab is frozen/backgrounded. Uses the same mounted-flag
+  // pattern as the main draw effect to cancel stale in-progress redraws.
+  useEffect(() => {
+    let lastMounted: { current: boolean } | null = null;
+    const onVisible = () => {
+      if (document.visibilityState !== 'visible') return;
+      if (lastMounted) lastMounted.current = false;
+      lastMounted = { current: true };
+      draw(lastMounted);
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisible);
+      if (lastMounted) lastMounted.current = false;
+    };
+  }, [draw]);
+
   return (
     <div style={{ position: 'relative', width: '960px', height: '720px' }}>
       <canvas
