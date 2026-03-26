@@ -605,13 +605,16 @@ export default function MonsterDetailPage() {
             </Link>
           </div>
         </div>
-        <MovesList list={which === "legacy" ? legacyMoves : which === "stones" ? moveStones : movePool} />
+        <MovesList
+          list={which === "legacy" ? legacyMoves : which === "stones" ? moveStones : movePool}
+          backUrl={`/dex/monsters/${id}?${forwardQuery}&moves=${which}`}
+        />
       </section>
     </div>
   );
 }
 
-function MovesList({ list }: { list: any[] }) {
+function MovesList({ list, backUrl }: { list: any[]; backUrl: string }) {
   const { lang, t } = useI18n();
 
   // Show warning if no moves available
@@ -684,10 +687,11 @@ function MovesList({ list }: { list: any[] }) {
         const typeColorClass = typeName ? (typeColors[typeName] || "border-l-zinc-400") : "border-l-zinc-400";
 
         return (
-          <div
+          <Link
             key={m.id}
+            to={`/dex/moves/${m.id}?back=${encodeURIComponent(backUrl)}`}
             className={`
-              rounded-lg border border-zinc-200 bg-white p-3 shadow-sm
+              block rounded-lg border border-zinc-200 bg-white p-3 shadow-sm
               border-l-4 ${typeColorClass}
               transition-all duration-200
               hover:shadow-md hover:-translate-y-0.5
@@ -761,7 +765,7 @@ function MovesList({ list }: { list: any[] }) {
                 {desc}
               </div>
             </div>
-          </div>
+          </Link>
         );
       })}
       {!list?.length && <div className="text-zinc-500">{t("dex.noResults")}</div>}

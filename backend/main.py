@@ -4,15 +4,12 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import RedirectResponse
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.middleware import SlowAPIMiddleware
-from sqlalchemy.orm import Session, sessionmaker, joinedload
-from sqlalchemy import create_engine, or_, and_, cast, String, func, text
+from sqlalchemy.orm import Session, joinedload
+from sqlalchemy import or_, and_, cast, String, func, text
 from backend.config import (
-    DATABASE_URL,
     LLM_PROVIDER,
     ALLOWED_ORIGINS,
     LOG_LEVEL,
-    DB_POOL_SIZE,
-    DB_MAX_OVERFLOW,
     ENABLE_REFERENCE_RESOLUTION,
     ENVIRONMENT,
     REDIS_URL,
@@ -26,6 +23,7 @@ from backend.config import (
     DEVICE_ID_COOKIE_MAX_AGE,
     ADMIN_EMAILS,
 )
+from backend.database import get_db, SessionLocal
 from typing import Optional, List, Literal
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal, ROUND_HALF_UP
@@ -367,20 +365,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-engine = create_engine(
-    DATABASE_URL,
-    pool_size=DB_POOL_SIZE,
-    max_overflow=DB_MAX_OVERFLOW,
-)
-SessionLocal = sessionmaker(bind=engine)
-
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
 
 # === TOP-LEVEL HELPER FUNCTIONS ===
 
@@ -3400,7 +3384,7 @@ def get_moves(
     move_type_id: Optional[int] = Query(None),
     move_category: Optional[schemas.MoveCategory] = Query(None),
     has_counter: Optional[bool] = Query(None),
-    limit: int = Query(468, ge=1, le=468),
+    limit: int = Query(500, ge=1, le=500),
     offset: int = Query(0, ge=0),
 ):
     query = db.query(models.Move).options(
@@ -3452,7 +3436,7 @@ def get_move_learners(move_id: int, db: Session = Depends(get_db)):
             models.Monster.evolves_from_id.isnot(None),
             models.Monster.is_leader_form == False,
         )
-        .subquery()
+        .scalar_subquery()
     )
     highest_form_filters = [
         models.Monster.is_leader_form == False,
@@ -3985,6 +3969,8 @@ async def _perform_team_analysis(
         .options(
             joinedload(models.Type.effective_against),
             joinedload(models.Type.weak_against),
+            joinedload(models.Type.vulnerable_to),
+            joinedload(models.Type.resistant_to),
         )
         .all()
     }
@@ -4184,6 +4170,13 @@ async def _perform_team_analysis(
         context="team_synergy",
         monster_name=None,  # Team-wide analysis, no specific monster
     ))
+
+    # Release the DB connection back to the pool before the LLM call.
+    # All required data is already loaded into local dicts (monster_db_map, move_db_map, etc.).
+    # ORM column attributes remain accessible on detached objects. All relationships accessed
+    # post-LLM (e.g. vulnerable_to, resistant_to, move_type) must be eagerly loaded above.
+    # Calling db.close() twice (here + FastAPI generator finally) is a SQLAlchemy no-op.
+    db.close()
 
     # Gather all LLM results, capturing exceptions to handle errors gracefully
     llm_results = await asyncio.gather(*llm_tasks, return_exceptions=True)

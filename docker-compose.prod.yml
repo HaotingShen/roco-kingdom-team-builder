@@ -28,10 +28,13 @@ services:
       - SMTP_FROM_EMAIL=noreply@rkteambuilder.com
       - SMTP_FROM_NAME=RK Team Builder
       - ADMIN_EMAILS=${ADMIN_EMAILS:-}
+      # DB connection pool: 2 workers × (12 + 13) = 50 max connections, well within RDS limit of 80
+      - DB_POOL_SIZE=12
+      - DB_MAX_OVERFLOW=13
       # Memory: limit glibc arenas to reduce fragmentation from large DeepSeek responses
       - MALLOC_ARENA_MAX=2
-    mem_limit: 2800m
-    memswap_limit: 2800m
+    mem_limit: 4000m
+    memswap_limit: 4000m
     volumes:
       - /home/ubuntu/rktb/logs:/app/backend/logs
     logging:
