@@ -47,7 +47,7 @@ export default function ImportPage() {
     if (!el || !decoded) return;
     const obs = new ResizeObserver((entries) => {
       const entry = entries[0];
-      if (entry) setScale(entry.contentRect.width / 960);
+      if (entry) setScale(entry.contentRect.width / 1280);
     });
     obs.observe(el);
     return () => obs.disconnect();
@@ -215,7 +215,7 @@ export default function ImportPage() {
           style={{ width: '100%', height: `${720 * scale}px`, overflow: 'hidden', position: 'relative', borderRadius: '8px' }}
         >
           <div style={{
-            width: '960px', height: '720px',
+            width: '1280px', height: '720px',
             transform: `scale(${scale})`,
             transformOrigin: 'top left',
             position: 'absolute', top: 0, left: 0,

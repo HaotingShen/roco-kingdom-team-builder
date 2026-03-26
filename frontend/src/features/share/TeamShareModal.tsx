@@ -51,7 +51,7 @@ export default function TeamShareModal({ open, onClose, team, currentUsername }:
     if (!el) return;
     const obs = new ResizeObserver((entries) => {
       const entry = entries[0];
-      if (entry) setScale(entry.contentRect.width / 960);
+      if (entry) setScale(entry.contentRect.width / 1280);
     });
     obs.observe(el);
     return () => obs.disconnect();
@@ -189,7 +189,7 @@ export default function TeamShareModal({ open, onClose, team, currentUsername }:
             style={{ width: '100%', height: `${720 * scale}px`, overflow: 'hidden', position: 'relative', borderRadius: '8px' }}
           >
             <div style={{
-              width: '960px', height: '720px',
+              width: '1280px', height: '720px',
               transform: `scale(${scale})`,
               transformOrigin: 'top left',
               position: 'absolute', top: 0, left: 0,
@@ -248,7 +248,7 @@ export default function TeamShareModal({ open, onClose, team, currentUsername }:
                 if (isComposingRef.current) {
                   setNote(e.target.value);
                 } else {
-                  setNote(e.target.value.slice(0, 150));
+                  setNote(e.target.value.slice(0, 100));
                 }
               }}
               onCompositionStart={() => {
@@ -259,13 +259,13 @@ export default function TeamShareModal({ open, onClose, team, currentUsername }:
               onCompositionEnd={e => {
                 isComposingRef.current = false;
                 setIsComposing(false);
-                setNote(e.currentTarget.value.slice(0, 150));
+                setNote(e.currentTarget.value.slice(0, 100));
               }}
               placeholder={t('share.notePlaceholder') ?? 'Add a note about your team…'}
               rows={2}
               className="w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm text-zinc-800 placeholder:text-zinc-400 resize-none focus:outline-none focus:ring-2 focus:ring-zinc-300"
             />
-            <p className="text-right text-xs text-zinc-400">{committedNoteLength}/150</p>
+            <p className="text-right text-xs text-zinc-400">{committedNoteLength}/100</p>
           </div>
 
           {/* Action buttons */}

@@ -6,44 +6,46 @@ import { monsterImageFallbackChain, typeIconUrl, magicItemImageUrl, moveIconUrl 
 
 // ─── Layout constants ─────────────────────────────────────────────────────────
 
-const W = 960, H = 720;
+const W = 1280, H = 720;  // 16:9
 
 // Left zone (3 × 2 monster grid)
 const LFT_X = 12;
-const LFT_W = 664;
+const LFT_W = 886;
 
 // Right sidebar
-const SB_X   = LFT_X + LFT_W + 8;  // 684
-const SB_W   = W - SB_X - 4;       // 272
-const SB_PAD = 12;
+const SB_X   = LFT_X + LFT_W + 4;  // 902
+const SB_W   = W - SB_X - 4;       // 374
+const SB_PAD = 18;
 
 // Grid: 2 columns × 3 rows
-// COL_W = (664 − 6) / 2 = 329
-// ROW_H and ROW_GAP_Y are language-dependent — computed inside renderCard.
-//   ZH: ROW_GAP_Y=28 → ROW_H=216  (original spacing, unmodified)
-//   EN: ROW_GAP_Y=7  → ROW_H=230  (tighter gaps to fit the extra legacy row)
+// COL_W = (886 − 6) / 2 = 440
+// ROW_H is language-dependent (different font/pill sizes) — computed inside renderCard.
+// ROW_GAP_Y=16 for both languages: 8+3×224+2×16+8=720 ✓
+//   ZH: ROW_H=224  (20px name, PILL_H=30, CHIP_H=26)
+//   EN: ROW_H=224  (18px name, PILL_H=28, CHIP_H=24 — legacy inline same as ZH)
 const GRID_COLS  = 2;
 const GRID_ROWS  = 3;
 const COL_GAP    = 6;
 const ROWS_TOP   = 8;
-const COL_W      = (LFT_W - (GRID_COLS - 1) * COL_GAP) / GRID_COLS;   // 329
+const COL_W      = (LFT_W - (GRID_COLS - 1) * COL_GAP) / GRID_COLS;   // 440
 
 // Per-cell: accent stripe + portrait column
 const STRIPE_W    = 4;
 const PORT_PAD_L  = 7;   // gap between stripe and portrait
 const PORT_PAD_T  = 10;  // portrait top-offset within cell
-const PORT_SZ     = 88;  // sprite draw size (was 72)
+const PORT_SZ     = 88;  // sprite draw size
 
 // Per-cell: info text area (to the right of the portrait)
 // INFO_X_OFF = stripe + gap + portrait + gap = 4+7+88+8 = 107
 const INFO_X_OFF = STRIPE_W + PORT_PAD_L + PORT_SZ + 8;  // 107
-const INFO_W     = COL_W - INFO_X_OFF - 8;                // 214
+const INFO_W     = COL_W - INFO_X_OFF - 8;                // 325
 
-// Line y-offsets within info area (relative to cell_y)
-// Name  18px font → ~18px tall; gap 6 → type at 37
-// Types PILL_H=28        ; gap 6 → personality at 71
-// Pers  CHIP_H=24        ; gap 5 → talents at 100
-// Talent CHIP_H=24 ends at 124; move-divider=131; gap=7px ✓
+// Line y-offsets within info area (relative to cell_y) — ZH values; EN unchanged.
+// ZH: Name 20px font → bottom 33; gap 6 → type at 39
+//     Types PILL_H=30 → bottom 69; gap 6 → personality at 75
+//     Pers  CHIP_H=26 → bottom 101; gap 5 → talents at 106
+//     Talent CHIP_H=26 ends at 132; move-divider=139; band=144; ROW_H=224 ✓
+// EN: Name 18px, PILL_H=28, CHIP_H=24 — offsets below are EN/default values
 const LINE_NAME   = 13;
 const LINE_TYPE   = 37;   // 13 + 18(font) + 6(gap)
 const LINE_PERS   = 71;   // 37 + 28(pill) + 6(gap)
@@ -57,11 +59,11 @@ const MOVE_ICON_SZ  = 52;
 const MOVE_BAR_H    = 22;
 const MOVE_SLOT_H   = MOVE_ICON_SZ + MOVE_BAR_H;  // 74
 const MOVE_SIDE_PAD = 10;
-// MOVE_AVAIL_W = 329 − 4 − 2×10 = 305
-// MOVE_SLOT_W  = ⌊(305 − 3×5) / 4⌋ = ⌊290 / 4⌋ = 72
-const MOVE_AVAIL_W  = COL_W - STRIPE_W - 2 * MOVE_SIDE_PAD;   // 305
+// MOVE_AVAIL_W = 440 − 4 − 2×10 = 416
+// MOVE_SLOT_W  = ⌊(416 − 3×5) / 4⌋ = ⌊401 / 4⌋ = 100
+const MOVE_AVAIL_W  = COL_W - STRIPE_W - 2 * MOVE_SIDE_PAD;   // 416
 const MOVE_SLOT_GAP = 5;
-const MOVE_SLOT_W   = Math.floor((MOVE_AVAIL_W - 3 * MOVE_SLOT_GAP) / 4);  // 72
+const MOVE_SLOT_W   = Math.floor((MOVE_AVAIL_W - 3 * MOVE_SLOT_GAP) / 4);  // 100
 
 // Pill / chip heights
 const PILL_H = 28;   // fits 26px type icons
@@ -114,8 +116,8 @@ const TYPE_COLORS: Record<string, TC> = {
   grass:      { bg: '#14532d', text: '#86efac' },
   electric:   { bg: '#713f12', text: '#fde68a' },
   ice:        { bg: '#164e63', text: '#a5f3fc' },
-  dragon:     { bg: '#4c1d95', text: '#c4b5fd' },
-  dark:       { bg: '#1f2937', text: '#9ca3af' },
+  dragon:     { bg: '#4c1d95', text: '#fda4af' },
+  dark:       { bg: '#1f2937', text: '#f9a8d4' },
   ghost:      { bg: '#3b0764', text: '#d8b4fe' },
   fighting:   { bg: '#7c2d12', text: '#fdba74' },
   poison:     { bg: '#701a75', text: '#f0abfc' },
@@ -123,9 +125,9 @@ const TYPE_COLORS: Record<string, TC> = {
   flying:     { bg: '#0c4a6e', text: '#7dd3fc' },
   bug:        { bg: '#365314', text: '#a3e635' },
   normal:     { bg: '#1f2937', text: '#9ca3af' },
-  light:      { bg: '#44350a', text: '#fef08a' },
-  mechanical: { bg: '#1f2937', text: '#a0aec0' },
-  illusion:   { bg: '#831843', text: '#fbcfe8' },
+  light:      { bg: '#083344', text: '#cffafe' },
+  mechanical: { bg: '#1f2937', text: '#6ee7b7' },
+  illusion:   { bg: '#831843', text: '#c7d2fe' },
   cute:       { bg: '#831843', text: '#fbcfe8' },
   leader:     { bg: '#78350f', text: '#fcd34d' },
 };
@@ -384,22 +386,33 @@ function renderCard(
 ) {
   const { sprites, typeIcons, moveIcons, magicIcon, logoIcon } = assets;
 
-  // Language-dependent layout: ZH keeps original spacing; EN uses tighter row gaps
-  // to fit the extra legacy type row.
-  const ROW_GAP_Y      = lang === 'zh' ? 28 : 5;
+  // Row gap is the same for both languages now that legacy type is always shown
+  // inline on the type row (no dedicated EN legacy row).
+  const ROW_GAP_Y      = 16;
   const MOVE_BOT_PAD   = lang === 'zh' ? 6  : 2;
   const ROW_H          = (H - ROWS_TOP - 8 - (GRID_ROWS - 1) * ROW_GAP_Y) / GRID_ROWS;
   const MOVE_BAND_Y_OFF = ROW_H - MOVE_BOT_PAD - MOVE_SLOT_H;
 
+  // Info-area sizing: ZH enlarges name/pills/chips using space freed by smaller row gaps.
+  // EN keeps original sizes — it's already maxed out with the extra legacy type row.
+  // ZH stack (y offsets from cellY): name@13(20px)→33 gap6 type@39(PILL_H=30)→69
+  //   gap6 pers@75(CHIP_H=26)→101 gap5 talent@106→132 gap7 divider@139 band@144
+  //   ROW_H=224, ROW_GAP_Y=16: 8+3×224+2×16+8=720 ✓
+  const _PILL_H      = lang === 'zh' ? 30  : PILL_H;
+  const _CHIP_H      = lang === 'zh' ? 26  : CHIP_H;
+  const _LINE_TYPE   = lang === 'zh' ? 39  : LINE_TYPE;
+  const _LINE_PERS   = lang === 'zh' ? 75  : LINE_PERS;
+  const _LINE_TALENT = lang === 'zh' ? 106 : LINE_TALENT;
+
   // Font constants
-  const F_NAME    = '700 18px system-ui,-apple-system,sans-serif';
-  const F_BADGE   = '600 15px system-ui,-apple-system,sans-serif';
-  const F_CHIP    = '500 15px system-ui,-apple-system,sans-serif';
-  const F_LABEL   = '600 15px system-ui,-apple-system,sans-serif';
-  const F_MOVE    = '500 13px system-ui,-apple-system,sans-serif';
+  const F_NAME    = lang === 'zh' ? '700 20px system-ui,-apple-system,sans-serif' : '700 18px system-ui,-apple-system,sans-serif';
+  const F_BADGE   = lang === 'zh' ? '600 16px system-ui,-apple-system,sans-serif' : '600 15px system-ui,-apple-system,sans-serif';
+  const F_CHIP    = lang === 'zh' ? '500 17px system-ui,-apple-system,sans-serif' : '500 16px system-ui,-apple-system,sans-serif';
+  const F_LABEL   = lang === 'zh' ? '600 17px system-ui,-apple-system,sans-serif' : '600 16px system-ui,-apple-system,sans-serif';
+  const F_MOVE    = '500 15px system-ui,-apple-system,sans-serif';
   const F_TEAM_NM = '700 26px system-ui,-apple-system,sans-serif';
-  const F_SB_LBL  = '600 13px system-ui,-apple-system,sans-serif';
-  const F_SB_BODY = '400 16px system-ui,-apple-system,sans-serif';
+  const F_SB_LBL  = '600 15px system-ui,-apple-system,sans-serif';
+  const F_SB_BODY = '400 22px system-ui,-apple-system,sans-serif';
   const F_SEP     = '400 12px system-ui,-apple-system,sans-serif';
 
   const talentLabels = lang === 'zh' ? TALENT_LABELS_ZH : TALENT_LABELS_EN;
@@ -430,10 +443,14 @@ function renderCard(
     const infoX = cellX + INFO_X_OFF;
 
     // Name (+ optional form tag to the right)
+    // Both are drawn with textBaseline='bottom' at the same y so their glyph
+    // bottoms sit on the same line regardless of their different font sizes.
     const monName  = pickName(entry.monster, lang);
     const formName = pickFormName(entry.monster, lang);
-    const F_FORM   = '400 14px system-ui,-apple-system,sans-serif';
-    ctx.textBaseline = 'top';
+    const F_FORM   = '400 16px system-ui,-apple-system,sans-serif';
+    const nameEmPx = lang === 'zh' ? 20 : 18;  // em-size of F_NAME
+    const nameBaseY = cellY + LINE_NAME + nameEmPx;
+    ctx.textBaseline = 'bottom';
     if (formName) {
       const F_FORM_GAP = 8;  // gap between name and form tag
       ctx.font = F_FORM;
@@ -442,19 +459,19 @@ function renderCard(
       ctx.font = F_NAME;
       const truncName = trunc(ctx, monName, nameMaxW);
       ctx.fillStyle = C.text;
-      ctx.fillText(truncName, infoX, cellY + LINE_NAME);
+      ctx.fillText(truncName, infoX, nameBaseY);
       const nameW = ctx.measureText(truncName).width;
       ctx.font = F_FORM;
       ctx.fillStyle = C.textSub;
-      ctx.fillText(formName, infoX + nameW + F_FORM_GAP, cellY + LINE_NAME + 3);
+      ctx.fillText(formName, infoX + nameW + F_FORM_GAP, nameBaseY);
     } else {
       ctx.font = F_NAME;
       ctx.fillStyle = C.text;
-      ctx.fillText(trunc(ctx, monName, INFO_W), infoX, cellY + LINE_NAME);
+      ctx.fillText(trunc(ctx, monName, INFO_W), infoX, nameBaseY);
     }
 
     // Type badges
-    const typeY    = cellY + LINE_TYPE;
+    const typeY    = cellY + _LINE_TYPE;
     const mainName = entry.monster.main_type ? pickName(entry.monster.main_type, lang) : null;
     const subName  = entry.monster.sub_type  ? pickName(entry.monster.sub_type, lang)  : null;
     const mainIcon = entry.monster.main_type ? (typeIcons[entry.monster.main_type.name] ?? null) : null;
@@ -464,55 +481,35 @@ function renderCard(
     const TYPE_ICON_SZ = 26;
     let bx = infoX;
     if (mainName) {
-      bx = drawPill(ctx, bx, typeY, PILL_H, mainName, F_BADGE,
+      bx = drawPill(ctx, bx, typeY, _PILL_H, mainName, F_BADGE,
         hexAlpha(sc(entry.monster.main_type?.name), 0.30), tc(entry.monster.main_type?.name).text, 7, mainIcon, TYPE_ICON_SZ);
     }
     if (subName) {
       bx += 5;
-      bx = drawPill(ctx, bx, typeY, PILL_H, subName, F_BADGE,
+      bx = drawPill(ctx, bx, typeY, _PILL_H, subName, F_BADGE,
         hexAlpha(sc(entry.monster.sub_type?.name), 0.30), tc(entry.monster.sub_type?.name).text, 7, subIcon, TYPE_ICON_SZ);
     }
-    // EN needs a dedicated row for legacy because "Legacy: " + English type names overflow INFO_W.
-    // ZH stays on the same row (Chinese type names are short; it fits fine).
-    const legacyNewRow = lang === 'en' && !!entry.legacy_type;
-
-    // Legacy inline (ZH only): dot separator + label + icon on the type row
-    if (legIcon && !legacyNewRow) {
+    // Legacy inline: dot separator + label + icon on the type row (both ZH and EN)
+    if (legIcon) {
       bx += 8;
       ctx.font = F_SEP;
       ctx.fillStyle = C.textDim;
       ctx.textBaseline = 'middle';
-      ctx.fillText('·', bx, typeY + PILL_H / 2 + 1);
+      ctx.fillText('·', bx, typeY + _PILL_H / 2 + 1);
       bx += ctx.measureText('·').width + 5;
 
       const legLabel = labels.legacy;
       ctx.font = F_LABEL;
       ctx.fillStyle = C.legacyLabel;
-      ctx.fillText(legLabel, bx, typeY + PILL_H / 2 + 1);
+      ctx.fillText(legLabel, bx, typeY + _PILL_H / 2 + 1);
       bx += ctx.measureText(legLabel).width;
 
       const LEG_ICON_SZ = 29;
-      ctx.drawImage(legIcon, bx, typeY + (PILL_H - LEG_ICON_SZ) / 2, LEG_ICON_SZ, LEG_ICON_SZ);
+      ctx.drawImage(legIcon, bx, typeY + (_PILL_H - LEG_ICON_SZ) / 2, LEG_ICON_SZ, LEG_ICON_SZ);
     }
 
-    // Legacy new row (EN only): full-size row below type pills
-    // Type row ends at 65. Legacy row: 67→95 (PILL_H=28, 2px gap).
-    // Pers: 98→122. Talent: 125→149. Divider: 151. Move band: 156. ✓
-    if (legacyNewRow) {
-      const legRowY = cellY + 67;
-      ctx.font = F_LABEL;
-      ctx.fillStyle = C.legacyLabel;
-      ctx.textBaseline = 'middle';
-      ctx.fillText(labels.legacy, infoX, legRowY + PILL_H / 2 + 1);
-      const legLabelW = ctx.measureText(labels.legacy).width;
-      if (legIcon) {
-        ctx.drawImage(legIcon, infoX + legLabelW, legRowY + (PILL_H - TYPE_ICON_SZ) / 2, TYPE_ICON_SZ, TYPE_ICON_SZ);
-      }
-    }
-
-    // Dynamic row positions — EN with legacy row shifts pers/talent down.
-    const persLineY   = legacyNewRow ? 98  : LINE_PERS;
-    const talentLineY = legacyNewRow ? 125 : LINE_TALENT;
+    const persLineY   = _LINE_PERS;
+    const talentLineY = _LINE_TALENT;
 
     // ── Row: personality "性格：速度↑魔攻↓" ──────────────────────────────────
     const persLabel  = labels.personality;
@@ -522,12 +519,12 @@ function renderCard(
     ctx.font = F_LABEL;
     ctx.fillStyle = C.persLabel;
     ctx.textBaseline = 'middle';
-    ctx.fillText(persLabel, px, cellY + persLineY + CHIP_H / 2 + 1);
+    ctx.fillText(persLabel, px, cellY + persLineY + _CHIP_H / 2 + 1);
     px += ctx.measureText(persLabel).width;
 
     ctx.font = F_CHIP;
     ctx.fillStyle = C.persFg;
-    ctx.fillText(persEffect, px, cellY + persLineY + CHIP_H / 2 + 1);
+    ctx.fillText(persEffect, px, cellY + persLineY + _CHIP_H / 2 + 1);
 
     // ── Row: talents "个体值：速度 魔攻 …" (own line — no overflow risk) ───────
     const talentLabel = labels.talents;
@@ -535,7 +532,7 @@ function renderCard(
 
     ctx.font = F_LABEL;
     ctx.fillStyle = C.talentLabel;
-    ctx.fillText(talentLabel, px, cellY + talentLineY + CHIP_H / 2 + 1);
+    ctx.fillText(talentLabel, px, cellY + talentLineY + _CHIP_H / 2 + 1);
     px += ctx.measureText(talentLabel).width + 2;
 
     const boosts = [
@@ -547,10 +544,10 @@ function renderCard(
     if (investedIdx.length === 0) {
       ctx.font = F_CHIP;
       ctx.fillStyle = C.textMuted;
-      ctx.fillText('—', px, cellY + talentLineY + CHIP_H / 2 + 1);
+      ctx.fillText('—', px, cellY + talentLineY + _CHIP_H / 2 + 1);
     } else {
       investedIdx.forEach(bi => {
-        px = drawChip(ctx, px, cellY + talentLineY, CHIP_H, talentLabels[bi] ?? '', F_CHIP,
+        px = drawChip(ctx, px, cellY + talentLineY, _CHIP_H, talentLabels[bi] ?? '', F_CHIP,
           C.talentBg, C.talentFg);
         px += 3;
       });
@@ -620,7 +617,7 @@ function renderCard(
   let curY = 20;
 
   // ── Brand block ──────────────────────────────────────────────────────────
-  const LOGO_SZ = 40;
+  const LOGO_SZ = 48;
   if (logoIcon) ctx.drawImage(logoIcon, CX, curY, LOGO_SZ, LOGO_SZ);
   const brandTextX = CX + (logoIcon ? LOGO_SZ + 12 : 0);
   const brandName  = labels.brandName;
@@ -657,14 +654,14 @@ function renderCard(
   curY += Math.min(tnLines.length, 2) * 30 + 4;
 
   // Magic item row
-  const MI_SZ = 36;
+  const MI_SZ = 42;
   let miX = CX;
   if (magicIcon) { ctx.drawImage(magicIcon, miX, curY, MI_SZ, MI_SZ); miX += MI_SZ + 8; }
-  ctx.font = '500 17px system-ui,-apple-system,sans-serif';
+  ctx.font = '500 21px system-ui,-apple-system,sans-serif';
   ctx.fillStyle = C.text;
   ctx.textBaseline = 'middle';
   ctx.fillText(trunc(ctx, pickName(data.magic_item, lang), CW - (magicIcon ? MI_SZ + 8 : 0)), miX, curY + MI_SZ / 2 + 1);
-  curY += MI_SZ + 12;
+  curY += MI_SZ + 8;
 
   // Divider
   ctx.fillStyle = C.divider;
@@ -681,27 +678,27 @@ function renderCard(
     ctx.fillText(prefix, CX, curY);
     ctx.fillStyle = C.text;
     ctx.fillText(trunc(ctx, `@${data.shared_by}`, CW - pw), CX + pw, curY);
-    curY += 18 + 10;
+    curY += 24 + 10;
   }
 
   // ── Note section ─────────────────────────────────────────────────────────
   // Ensure breathing room above notes whether or not attribution was shown.
-  if (!data.shared_by) curY += 8;
+  if (!data.shared_by) curY += 16;
 
   // Pre-compute QR top so we can clip note lines before they overflow into it.
   const QR  = 180;
   const QBG = QR + 8;  // 4px padding each side
   const qrBgY = showQrSection
-    ? H - 12 - 18 - 6 - QBG  // label(18) + gap(6) + QR box(QBG) + bottom pad(12)
+    ? H - 12 - 18 - 6 - QBG  // label(16px + 2px buffer) + gap(6) + QR box(QBG) + bottom pad(12)
     : H - 16;
 
-  ctx.font = '400 16px system-ui,-apple-system,sans-serif';
+  ctx.font = '400 22px system-ui,-apple-system,sans-serif';
   ctx.fillStyle = C.textSub;
   const noteText  = (note?.trim()) || NOTE_FALLBACK[lang];
   const noteLines = wrapLines(ctx, noteText, CW);
-  const maxNoteLines = Math.max(1, Math.floor((qrBgY - curY - 8) / 22));
+  const maxNoteLines = Math.max(1, Math.floor((qrBgY - curY - 8) / 30));
   noteLines.slice(0, maxNoteLines).forEach((line, li) => {
-    ctx.fillText(line, CX, curY + li * 22);
+    ctx.fillText(line, CX, curY + li * 30);
   });
 
   // ── QR code section — bottom-anchored ────────────────────────────────────
@@ -714,7 +711,7 @@ function renderCard(
     rrect(ctx, qrBgX, qrBgY, QBG, QBG, 6);
     ctx.drawImage(qrCanvas, qrBgX + 4, qrBgY + 4, QR, QR);
 
-    ctx.font = '500 14px system-ui,-apple-system,sans-serif';
+    ctx.font = '500 16px system-ui,-apple-system,sans-serif';
     ctx.fillStyle = C.textSub;
     ctx.textBaseline = 'top';
     ctx.textAlign = 'center';
@@ -759,9 +756,10 @@ export default function TeamCard({ data, shareUrl, showQr = true, lang, note, on
     const canvas = canvasRef?.current ?? internalRef.current;
     if (!canvas) return;
 
-    // Scale canvas buffer by devicePixelRatio for crisp HiDPI rendering.
-    // Cap at 2× to avoid oversized buffers on 3× devices.
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    // Always render at 2× regardless of device pixel ratio so the exported PNG
+    // is consistently 2560×1440 on every device. The QRCodeCanvas is already
+    // pre-rendered at 360px (2× logical) to match this buffer exactly.
+    const dpr = 2;
 
     // Only resize the buffer when dimensions actually change — assigning
     // canvas.width/height clears the canvas immediately, which would cause a
@@ -814,10 +812,10 @@ export default function TeamCard({ data, shareUrl, showQr = true, lang, note, on
   }, [draw]);
 
   return (
-    <div style={{ position: 'relative', width: '960px', height: '720px' }}>
+    <div style={{ position: 'relative', width: '1280px', height: '720px' }}>
       <canvas
         ref={canvasRef ?? internalRef}
-        style={{ display: 'block', width: '960px', height: '720px' }}
+        style={{ display: 'block', width: '1280px', height: '720px' }}
       />
       {showQrSection && (
         <div

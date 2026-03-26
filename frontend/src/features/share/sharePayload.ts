@@ -41,7 +41,7 @@ export function encodeSharePayload(team: TeamOut, includeUsername?: string, note
     })),
   };
   if (includeUsername) payload.u = includeUsername;
-  if (note) payload.no = note.trim().slice(0, 150);
+  if (note) payload.no = note.trim().slice(0, 100);
   return toBase64Url(JSON.stringify(payload));
 }
 
