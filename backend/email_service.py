@@ -10,6 +10,7 @@ Uses aiosmtplib for async SMTP to avoid blocking the event loop.
 Falls back to logging if SMTP is not configured (development mode).
 """
 
+import asyncio
 import aiosmtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -60,34 +61,39 @@ async def send_email(to_email: str, subject: str, html_body: str, text_body: str
         msg.attach(MIMEText(text_body, 'plain', 'utf-8'))
     msg.attach(MIMEText(html_body, 'html', 'utf-8'))
 
-    try:
-        if SMTP_USE_TLS:
-            # STARTTLS on port 587 (most common)
-            await aiosmtplib.send(
-                msg,
-                hostname=SMTP_HOST,
-                port=SMTP_PORT,
-                username=SMTP_USER,
-                password=SMTP_PASSWORD,
-                start_tls=True
-            )
-        else:
-            # Direct SSL on port 465
-            await aiosmtplib.send(
-                msg,
-                hostname=SMTP_HOST,
-                port=SMTP_PORT,
-                username=SMTP_USER,
-                password=SMTP_PASSWORD,
-                use_tls=True
-            )
+    for attempt in range(2):
+        try:
+            if SMTP_USE_TLS:
+                # STARTTLS on port 587 (most common)
+                await aiosmtplib.send(
+                    msg,
+                    hostname=SMTP_HOST,
+                    port=SMTP_PORT,
+                    username=SMTP_USER,
+                    password=SMTP_PASSWORD,
+                    start_tls=True
+                )
+            else:
+                # Direct SSL on port 465
+                await aiosmtplib.send(
+                    msg,
+                    hostname=SMTP_HOST,
+                    port=SMTP_PORT,
+                    username=SMTP_USER,
+                    password=SMTP_PASSWORD,
+                    use_tls=True
+                )
 
-        logger.info(f"Email sent to {to_email}: {subject}")
-        return True
+            logger.info(f"Email sent to {to_email}: {subject}")
+            return True
 
-    except Exception as e:
-        logger.error(f"Failed to send email to {to_email}: {e}")
-        return False
+        except Exception as e:
+            if attempt == 0 and "421" in str(e):
+                logger.warning(f"Transient 421 from Resend SMTP for {to_email}, retrying in 3s")
+                await asyncio.sleep(3)
+                continue
+            logger.error(f"Failed to send email to {to_email}: {e}")
+            return False
 
 
 async def send_verification_email(to_email: str, token: str, language: str = "en") -> bool:
