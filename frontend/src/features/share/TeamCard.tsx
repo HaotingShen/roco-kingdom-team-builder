@@ -692,7 +692,7 @@ function renderCard(
   const QR  = 180;
   const QBG = QR + 8;  // 4px padding each side
   const qrBgY = showQrSection
-    ? H - 12 - 15 - 6 - QBG  // label(15) + gap(6) + QR box(QBG) + bottom pad(12)
+    ? H - 12 - 18 - 6 - QBG  // label(18) + gap(6) + QR box(QBG) + bottom pad(12)
     : H - 16;
 
   ctx.font = '400 16px system-ui,-apple-system,sans-serif';
@@ -714,7 +714,7 @@ function renderCard(
     rrect(ctx, qrBgX, qrBgY, QBG, QBG, 6);
     ctx.drawImage(qrCanvas, qrBgX + 4, qrBgY + 4, QR, QR);
 
-    ctx.font = '500 11px system-ui,-apple-system,sans-serif';
+    ctx.font = '500 14px system-ui,-apple-system,sans-serif';
     ctx.fillStyle = C.textSub;
     ctx.textBaseline = 'top';
     ctx.textAlign = 'center';
