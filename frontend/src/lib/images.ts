@@ -69,6 +69,13 @@ export function monsterImageFallbackChain(monster: any, size: 180 | 270 | 360 = 
  * @param monster - Monster object
  * @returns srcset string for use in <img srcSet={...} />
  */
+export function moveIconUrl(move: any): string | null {
+  const zh = move?.localized?.zh;
+  const cnName = typeof zh === 'object' && typeof zh?.name === 'string' ? zh.name.trim() : null;
+  if (cnName) return `/move-icons/${encodeURIComponent(cnName)}.png`;
+  return null;
+}
+
 export function monsterImageSrcSet(monster: any): string {
   const sizes: (180 | 270 | 360)[] = [180, 270, 360];
   const srcSets: string[] = [];

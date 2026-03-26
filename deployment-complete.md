@@ -2321,6 +2321,28 @@ Register a new account on `https://rkteambuilder.com` and confirm the verificati
 
 ---
 
+### 6.5 Business Contact Email (Cloudflare Email Routing)
+
+`business@rkteambuilder.com` is set up as a forwarding alias via **Cloudflare Email Routing** (free). Emails sent to it are forwarded to `shenhaoting@gmail.com`.
+
+**How it was set up:**
+1. Cloudflare Dashboard → `rkteambuilder.com` → **Email** → **Email Routing** → Enable
+2. Cloudflare added 3 MX records and 1 TXT record to the root domain (`@`) — no conflict with Resend's records which are on the `send` subdomain
+3. Created custom address: `business@rkteambuilder.com` → destination: `shenhaoting@gmail.com`
+
+**DNS records added by Cloudflare Email Routing:**
+| Type | Name | Value | Priority |
+|------|------|-------|----------|
+| MX | `@` | `route1.mx.cloudflare.net.` | 16 |
+| MX | `@` | `route2.mx.cloudflare.net.` | 8 |
+| MX | `@` | `route3.mx.cloudflare.net.` | 67 |
+| TXT | `cf2024-1._domainkey` | *(Cloudflare DKIM key)* | — |
+| TXT | `@` | `v=spf1 include:_spf.mx.cloudflare.net ~all` | — |
+
+**Note:** This is receive-only. Replies go out from Gmail (`shenhaoting@gmail.com`), not from `business@rkteambuilder.com`. The address is displayed in the site footer for business inquiries.
+
+---
+
 ## Phase 7: First Deployment & Data Import
 
 ### 7.1 Initial Deploy
@@ -2643,6 +2665,202 @@ The backend uses DeepSeek (`LLM_PROVIDER=deepseek`) for LLM analysis in producti
 5. Redeploy
 
 **Note:** Different models may produce different response quality. Test thoroughly after switching.
+
+---
+
+## Phase 11: Automated Monitoring & Alerting
+
+Two-tier automated monitoring using EC2 cron jobs + Resend email (already on Pro plan). No additional AWS cost beyond the IAM policy addition.
+
+### Architecture
+
+| Layer | Frequency | What it does |
+|-------|-----------|--------------|
+| Hourly error alert | Every hour (0 * * * *) | Detects new backend errors, sends immediate email |
+| Daily health digest | 21:30 UTC daily (30 21 * * *) | Comprehensive 24h health report |
+
+### Files Created (`ops/monitoring/`)
+
+| File | Deployed to EC2 at | Purpose |
+|------|-------------------|---------|
+| `check_errors_hourly.sh` | `/home/ubuntu/` | Hourly cron: alerts on new backend errors |
+| `daily_digest.sh` | `/home/ubuntu/` | Cron wrapper: fetches SSM key, calls digest script |
+| `daily_digest.py` | `/home/ubuntu/` | Builds and sends the daily health digest email |
+| `logrotate.conf` | `/etc/logrotate.d/rktb` | Rotates docker_stats.log (daily/7d) and monitor/restart logs (weekly/4w) |
+| `deploy.sh` | Local only | One-command deploy: scp scripts + configure EC2 cron + logrotate |
+
+### How to Deploy Monitoring Scripts
+
+```bash
+# From local project root
+bash ops/monitoring/deploy.sh
+```
+
+This SCPs scripts to EC2 and idempotently adds cron entries. If cron entries already exist, they are skipped.
+
+### How to Update After Changes
+
+```bash
+bash ops/monitoring/deploy.sh   # re-scp and re-configure
+```
+
+### EC2 Cron Jobs (ubuntu's crontab)
+
+```
+0 * * * *    /home/ubuntu/check_errors_hourly.sh >> /home/ubuntu/rktb/logs/monitor.log 2>&1
+30 21 * * *  /home/ubuntu/daily_digest.sh
+```
+
+### 11.1 Hourly Error Check (`check_errors_hourly.sh`)
+
+**What it does:**
+1. Checks if the backend container is running; sends "container DOWN" alert if not
+2. Fetches last 65 min of logs via `docker compose logs --since 65m` (65 min overlap avoids edge-of-hour gaps)
+3. Greps for `- ERROR -`, `| ERROR:`, and `Traceback (most recent call last)`
+4. Deduplicates via MD5 hash of normalized error lines (timestamps, IPs, IDs stripped before hashing)
+5. Hashes stored in `~/.rktb_seen_errors` with epoch timestamp, purged after 25 hours
+6. Only sends email for errors not seen in the past 25 hours
+7. Logs activity to `/home/ubuntu/rktb/logs/monitor.log`
+
+**Key design decisions:**
+- **65-minute window** prevents missing errors at the edge of an hour (e.g., 12:59 error caught by 13:00 run)
+- **25-hour dedup** prevents the same persistent error from flooding your inbox across multiple cron runs
+- **`User-Agent: curl/7.81.0`** required in all Resend API calls — Cloudflare blocks Python's default `Python-urllib/3.x` user-agent with HTTP 403
+
+### 11.2 Daily Health Digest (`daily_digest.py`)
+
+**What it does:** Sends a rich HTML email at 21:30 UTC with:
+- Summary bar: error count, warning count, analyses, cache hits
+- Container health (current memory + CPU for all 3 containers)
+- Backend memory 24h trend: min / avg / max / growth (parsed from `docker_stats.log`)
+- Analysis activity: fresh LLM analyses / cache hits / partial failures
+- Auth activity: failed logins / locked accounts
+- Background jobs: daily restart status, guests cleaned up, prompt logs purged
+- Prompt logs & disk: files saved today, logs/ disk usage, docker_stats.log size
+- Top 5 error patterns (grouped and deduplicated)
+- Top 5 warning patterns
+
+**Why CloudWatch, not `docker compose logs`:**
+
+The `awslogs` Docker logging driver only buffers ~1–1.5h locally (small ring buffer). `docker compose logs` only returns this local buffer. For true 24h coverage, queries go to CloudWatch `filter-log-events` API. The digest makes 9 targeted CloudWatch queries, each with a filter pattern so only matching events are transferred (fast + low cost).
+
+**CloudWatch queries made:**
+- `"ERROR"` — all error lines
+- `"WARNING"` — all warning lines
+- `"Team analysis took"` — fresh LLM analyses
+- `"All cache keys found"` — cache hits
+- `"Partial analysis success"` — partial failures
+- `"Failed login attempt"` — auth failures
+- `"Account locked"` — lockouts
+- `"Guest cleanup"` — guest cleanup job results
+- `"Prompt log cleanup"` — prompt log cleanup job results
+
+**Important:** CloudWatch filter patterns cannot contain colons in quoted strings — use `'"Guest cleanup"'` not `'"Guest cleanup: deleted"'` (causes `InvalidParameterException`).
+
+**Timing:** Runs at 21:30 UTC, 30 minutes after the daily `docker compose restart backend` at 21:00 UTC. This ensures the restart's memory reset is captured in today's report.
+
+### 11.3 IAM Permission Added
+
+Added `CloudWatchLogsRead` SID to `rktb-ec2-role`'s inline policy `rktb-ec2-perms`:
+
+```json
+{
+  "Sid": "CloudWatchLogsRead",
+  "Effect": "Allow",
+  "Action": [
+    "logs:GetLogEvents",
+    "logs:FilterLogEvents",
+    "logs:DescribeLogStreams"
+  ],
+  "Resource": "arn:aws:logs:ap-southeast-1:273130558025:log-group:/rktb/backend:*"
+}
+```
+
+Scoped strictly to the `/rktb/backend` log group. The existing `CloudWatchLogsWrite` SID (formerly `CloudWatchLogs`) covers log ingestion; this new SID adds read-only access needed by `daily_digest.py`.
+
+### 11.4 Log Rotation (`logrotate.conf`)
+
+Installed to `/etc/logrotate.d/rktb` on EC2:
+
+| Log file | Rotation | Retention | Notes |
+|----------|----------|-----------|-------|
+| `docker_stats.log` | Daily | 7 days compressed | `copytruncate` required — logger process has file open continuously |
+| `logs/monitor.log` | Weekly | 4 weeks compressed | — |
+| `logs/restart.log` | Weekly | 4 weeks compressed | — |
+
+All blocks use `su ubuntu ubuntu` directive because the files are owned by `ubuntu`, not root.
+
+### 11.5 Known Issues & Workarounds
+
+| Issue | Root cause | Workaround |
+|-------|-----------|------------|
+| Python urllib blocked by Cloudflare with HTTP 403 | Cloudflare blocks `Python-urllib/3.x` user-agent | Set `User-Agent: curl/7.81.0` in all Resend API calls |
+| CloudWatch queries timing out | Fetching all logs at once transfers too much data | Use targeted filter patterns; each query has 30s subprocess timeout |
+| CloudWatch InvalidParameterException | Colons in quoted filter patterns | Use `'"Guest cleanup"'` not `'"Guest cleanup: deleted"'` |
+| `docker compose logs` only shows ~1h | awslogs driver ring buffer is small | Use CloudWatch `filter-log-events` for true 24h coverage |
+| Logrotate "insecure permissions" error | Files in non-root home dir | Add `su ubuntu ubuntu` directive to each logrotate block |
+
+---
+
+## Phase 12: RDS Connection Pool Fix
+
+### Problem
+
+1,018 daily `500 Internal Server Error` responses traced to RDS connection exhaustion during China peak hours.
+
+**Root cause:** Default pool settings were too large:
+- `pool_size=10` + `max_overflow=20` per worker = 30 connections per worker
+- 2 uvicorn workers × 30 = **60 max connections**
+- RDS `max_connections` limit = 80, with ~3 reserved = **77 usable**
+- 60 connections left only 17 headroom — exhausted during peak load
+
+**Error in CloudWatch logs:**
+```
+psycopg2.OperationalError: FATAL: remaining connection slots are reserved for roles with privileges of the "rds_reserved" role
+```
+
+### Prior Partial Fix
+
+Commit `da9ec93` (March 21) added `db.close()` before LLM calls in `_perform_team_analysis()` to release DB connections earlier (LLM calls can take 30–60s). This reduced the hold time but did not fix the pool ceiling math.
+
+### Full Fix (commit `90d5a8d`, March 24)
+
+Added to `docker-compose.prod.yml` backend environment:
+```yaml
+- DB_POOL_SIZE=5
+- DB_MAX_OVERFLOW=10
+```
+
+New math: **2 workers × (5 + 10) = 30 max connections** — well within RDS limit of 77, leaving 47 headroom.
+
+Values read from env vars in `backend/config.py`:
+```python
+DB_POOL_SIZE = int(os.getenv("DB_POOL_SIZE", "10"))
+DB_MAX_OVERFLOW = int(os.getenv("DB_MAX_OVERFLOW", "20"))
+```
+
+Applied to SQLAlchemy engine in `backend/database.py` — no code changes needed, only the env vars in `docker-compose.prod.yml`.
+
+### Side Effects Assessed
+
+- **More wait under extreme load:** If all 30 connections are busy, new requests wait in queue (SQLAlchemy default timeout: 30s → raises `TimeoutError`). Under normal production load this is fine; the pool was previously oversized.
+- **No functional change:** Pool pre-ping (`pool_pre_ping=True`) still validates connections before use. Connection recycling behavior unchanged.
+- **Safe deployment:** `docker-compose.prod.yml` change takes effect on next deploy. The `docker compose restart backend` does NOT re-read compose env changes — a full `docker compose up -d` (triggered by GitHub Actions deploy) is required.
+
+### Deployment Method (Feature Branch Safety)
+
+Fix was applied from `feature/team-share` branch without affecting feature branch work:
+
+```bash
+git stash                          # Save feature branch changes
+git checkout main
+# Edit docker-compose.prod.yml
+git add docker-compose.prod.yml
+git commit -m "Reduce DB pool size to 30 total connections to prevent RDS exhaustion"
+git push origin main               # Triggers GitHub Actions deploy
+git checkout feature/team-share
+git stash pop                      # Restore feature branch changes
+```
 
 ---
 

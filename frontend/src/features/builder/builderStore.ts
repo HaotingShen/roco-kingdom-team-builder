@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { ID, UserMonsterCreate, TeamCreate, TalentUpsert, TeamAnalysisOut, TeamOut, TeamUpdate } from "@/types";
+import type { ID, UserMonsterCreate, TeamCreate, TalentUpsert, TeamAnalysisOut, TeamOut, TeamUpdate, ShareDecodeResponse } from "@/types";
 
 const emptyTalent: TalentUpsert = { hp_boost:0, phy_atk_boost:0, mag_atk_boost:0, phy_def_boost:0, mag_def_boost:0, spd_boost:0 };
 function emptySlot(): UserMonsterCreate & { id?: ID } {
@@ -37,6 +37,7 @@ type BuilderState = {
   toUpdatePayload: () => TeamUpdate | null;       // when teamId is known
 
   loadFromTeam: (team: TeamOut) => void;          // pull saved team into builder
+  loadFromImport: (data: ShareDecodeResponse) => void;  // load a decoded share payload (no DB IDs)
   clearTeamId: () => void;
 
   analysis: TeamAnalysisOut | null;
@@ -129,6 +130,33 @@ export const useBuilderStore = create<BuilderState>()(
         return { teamId: team.id, name: team.name ?? "My Team", magic_item_id: team.magic_item?.id ?? null, slots, analysis: null };
       }),
 
+      loadFromImport: (data) => set(() => {
+        const slots: (UserMonsterCreate & { id?: ID })[] = data.monsters.slice(0, 6).map((m): (UserMonsterCreate & { id?: ID }) => ({
+          id: undefined,  // no DB UserMonster record for an unsaved import
+          monster_id: m.monster.id,
+          personality_id: m.personality.id,
+          legacy_type_id: m.legacy_type.id,
+          move1_id: m.move_valid[0] ? (m.moves[0]?.id ?? 0) : 0,
+          move2_id: m.move_valid[1] ? (m.moves[1]?.id ?? 0) : 0,
+          move3_id: m.move_valid[2] ? (m.moves[2]?.id ?? 0) : 0,
+          move4_id: m.move_valid[3] ? (m.moves[3]?.id ?? 0) : 0,
+          talent: {
+            hp_boost: m.talent.hp_boost, phy_atk_boost: m.talent.phy_atk_boost,
+            mag_atk_boost: m.talent.mag_atk_boost, phy_def_boost: m.talent.phy_def_boost,
+            mag_def_boost: m.talent.mag_def_boost, spd_boost: m.talent.spd_boost,
+          },
+        }));
+        while (slots.length < 6) slots.push(emptySlot());
+        return {
+          teamId: null,
+          isFeaturedTeam: false,
+          name: data.team_name || 'Imported Team',
+          magic_item_id: data.magic_item?.id ?? null,
+          slots,
+          analysis: null,
+        };
+      }),
+
       clearTeamId: () => set({ teamId: null, isFeaturedTeam: false }),
 
       analysis: null,
@@ -150,9 +178,10 @@ export const useBuilderStore = create<BuilderState>()(
     {
       name: "builder-draft",
       version: 1,
-      // Only persist team-building data (game entity IDs + team name).
-      // Exclude: teamId (DB record link), slot .id (UserMonster record IDs),
-      //          analysis (user-specific), isAnalyzing (transient UI state).
+      // Persist team-building data only. teamId is intentionally excluded —
+      // persisting it causes stale state (Update button / failing share) after
+      // logout or session expiry. Slot DB IDs are also stripped for the same reason.
+      // Exclude: analysis (user-specific), isAnalyzing (transient UI state).
       partialize: (state) => ({
         name: state.name,
         magic_item_id: state.magic_item_id,

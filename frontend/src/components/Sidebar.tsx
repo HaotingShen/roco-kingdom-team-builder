@@ -38,7 +38,7 @@ export default function Sidebar() {
   const { t } = useI18n();
   return (
     <aside
-      className="hidden lg:block fixed left-0 top-0 h-full border-r border-zinc-200 bg-white"
+      className="hidden lg:flex flex-col fixed left-0 top-0 h-full border-r border-zinc-200 bg-white"
       style={{ width: "var(--sidebar-w)" }}
     >
       {/* Brand area */}
@@ -60,6 +60,25 @@ export default function Sidebar() {
           {t("sidebar.feedback")}
         </NavLink>
       </nav>
+
+      {/* Sponsored ad — bottom of sidebar */}
+      {false && <div className="mt-auto p-2">
+        <a
+          href="#"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="block rounded-lg overflow-hidden border border-zinc-100 hover:opacity-90 transition-opacity"
+          title="广告"
+        >
+          <img
+            src="/ad-images/pc.jpg"
+            alt="广告"
+            className="w-full h-auto block"
+            draggable="false"
+          />
+        </a>
+        <p className="text-center text-[10px] text-zinc-300 mt-1">广告</p>
+      </div>}
     </aside>
   );
 }

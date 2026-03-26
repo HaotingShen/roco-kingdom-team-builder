@@ -15,6 +15,7 @@ import ConfirmEmailChangePage from "./features/auth/ConfirmEmailChangePage";
 import AdminPage from "./features/admin/AdminPage";
 import SettingsPage from "./features/auth/SettingsPage";
 import FeedbackPage from "./features/feedback/FeedbackPage";
+import ImportPage from "./features/share/ImportPage";
 
 const router = createBrowserRouter([
   {
@@ -36,7 +37,8 @@ const router = createBrowserRouter([
       { path: "auth/confirm-email", element: <ConfirmEmailChangePage /> },
       { path: "settings", element: <SettingsPage /> },
       { path: "admin", element: <AdminPage /> },
-      { path: "feedback", element: <FeedbackPage /> }
+      { path: "feedback", element: <FeedbackPage /> },
+      { path: "import", element: <ImportPage /> }
     ]
   }
 ]);

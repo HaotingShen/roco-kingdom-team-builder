@@ -342,6 +342,8 @@ export const endpoints = {
     api.get("/quota/status", { params: { team_id, language: language || "en" } }),
 
   getFeaturedTeams: () => api.get("/teams/featured"),
+
+  decodeSharePayload: (t: string) => api.get("/share/decode", { params: { t } }),
 };
 
 

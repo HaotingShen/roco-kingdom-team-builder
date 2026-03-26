@@ -4,9 +4,11 @@ import { useState, useEffect } from "react";
 import { endpoints } from "@/lib/api";
 import { QUERY_KEYS } from "@/lib/constants";
 import { useBuilderStore } from "../builder/builderStore";
+import { useAuthStore } from "@/features/auth/authStore";
 import type { TeamOut, FullSavedAnalysisOut } from "@/types";
 import { pickName, pickFormName, useI18n, type Lang } from "@/i18n";
 import { monsterImageFallbackChain, typeIconUrl, magicItemImageUrl } from "@/lib/images";
+import TeamShareModal from "@/features/share/TeamShareModal";
 import { useSeoMeta } from "@/hooks/useSeoMeta";
 import { formatRowEffects } from "@/lib/personality";
 
@@ -110,6 +112,8 @@ export default function SavedTeamPage() {
   const isAnalyzing = useBuilderStore(s => s.isAnalyzing);
   const setIsAnalyzing = useBuilderStore(s => s.setIsAnalyzing);
   const qc = useQueryClient();
+  const { user } = useAuthStore();
+  const [shareOpen, setShareOpen] = useState(false);
 
   // Query for saved analysis
   const savedAnalysisQuery = useQuery<FullSavedAnalysisOut>({
@@ -399,6 +403,14 @@ export default function SavedTeamPage() {
           </button>
 
           <button
+            className="w-full h-10 border-2 border-zinc-300 rounded-lg hover:bg-zinc-50 cursor-pointer
+                       font-medium transition-colors"
+            onClick={() => setShareOpen(true)}
+          >
+            {t("teams.share") ?? "Share"}
+          </button>
+
+          <button
             className={`w-full h-10 rounded-lg cursor-pointer font-medium transition-colors
                        ${analyze.isPending || isAnalyzing ? "bg-zinc-300 text-zinc-600 cursor-not-allowed" : "bg-zinc-900 text-white hover:bg-zinc-800"}`}
             onClick={onAnalyze}
@@ -458,6 +470,15 @@ export default function SavedTeamPage() {
           )}
         </aside>
       </div>
+
+      {team && (
+        <TeamShareModal
+          open={shareOpen}
+          onClose={() => setShareOpen(false)}
+          team={team}
+          currentUsername={user && !user.is_guest ? user.username : undefined}
+        />
+      )}
     </div>
   );
 }

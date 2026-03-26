@@ -743,6 +743,25 @@ class FeedbackRequest(BaseModel):
     website: str = Field("", description="Honeypot — must be empty")
 
 
+class SharedMonsterData(BaseModel):
+    """One monster's data in a decoded share payload."""
+    monster: MonsterLiteOut
+    personality: PersonalityOut
+    legacy_type: TypeOut
+    moves: List[Optional[MoveOut]]   # null if move deleted from DB
+    talent: TalentOut
+    move_valid: List[bool]           # length 4; False = move exists but no longer in pool
+
+
+class ShareDecodeResponse(BaseModel):
+    """Response from GET /share/decode — fully resolved share payload."""
+    team_name: str
+    shared_by: Optional[str] = None  # username if user opted in, else null
+    note: Optional[str] = None       # custom note if included in payload, else null
+    magic_item: MagicItemOut
+    monsters: List[SharedMonsterData]
+
+
 class AdminDeleteUserRequest(BaseModel):
     """Request to delete a user (admin action)."""
     reason: Optional[str] = Field(None, max_length=255)

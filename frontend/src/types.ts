@@ -419,3 +419,22 @@ export interface SaveAnalysisRequest {
   analysis_data: TeamAnalysisOut;
   is_from_cache?: boolean;
 }
+
+/* ---------- share / import models ---------- */
+
+export interface SharedMonsterData {
+  monster: MonsterLiteOut;
+  personality: PersonalityOut;
+  legacy_type: TypeOut;
+  moves: (MoveOut | null)[];   // null if move deleted from DB
+  talent: TalentOut;
+  move_valid: boolean[];       // length 4
+}
+
+export interface ShareDecodeResponse {
+  team_name: string;
+  shared_by: string | null;
+  note: string | null;
+  magic_item: MagicItemOut;
+  monsters: SharedMonsterData[];
+}

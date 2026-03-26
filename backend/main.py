@@ -5957,3 +5957,153 @@ async def submit_feedback(
 
     logger.info(f"Feedback submitted: category={data.category}, from={user_info}")
     return {"message": "Feedback received."}
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Share
+# ─────────────────────────────────────────────────────────────────────────────
+
+@app.get("/share/decode", response_model=schemas.ShareDecodeResponse, tags=["Share"])
+@limiter.limit("30/minute")
+async def decode_share(request: Request, t: str, db: Session = Depends(get_db)):
+    """
+    Decode a base64url team share payload and resolve all IDs to full objects.
+
+    - No authentication required
+    - Rate limited: 30 requests/minute per IP
+    - Returns 422 for invalid payloads or removed game data
+    """
+    import base64, json as _json
+
+    # Guard against absurdly large payloads before any DB work
+    if len(t) > 2048:
+        raise HTTPException(status_code=422, detail="Invalid share link format")
+
+    # Decode base64url → UTF-8 string → JSON
+    try:
+        padded = t + '=' * (-len(t) % 4)
+        payload = _json.loads(base64.urlsafe_b64decode(padded).decode('utf-8'))
+    except Exception:
+        raise HTTPException(status_code=422, detail="Invalid share link format")
+
+    # Structural validation
+    try:
+        if not isinstance(payload, dict):
+            raise ValueError
+        monsters_raw = payload.get("m", [])
+        if (
+            payload.get("v") != 1
+            or not isinstance(payload.get("n"), str)
+            or not isinstance(payload.get("mi"), int)
+            or not isinstance(monsters_raw, list)
+            or len(monsters_raw) != 6
+        ):
+            raise ValueError
+        for m_data in monsters_raw:
+            if not isinstance(m_data, dict):
+                raise ValueError
+            mv = m_data.get("mv", [])
+            if (
+                not isinstance(m_data.get("id"), int)
+                or not isinstance(m_data.get("p"), int)
+                or not isinstance(m_data.get("lt"), int)
+                or not isinstance(mv, list)
+                or len(mv) != 4
+                or not all(isinstance(x, int) for x in mv)
+            ):
+                raise ValueError
+    except ValueError:
+        raise HTTPException(status_code=422, detail="Invalid share link format")
+
+    # Talent validation — prevents 500 from Pydantic model_validator on crafted payloads
+    allowed_boosts = {0, 7, 8, 9, 10}
+    for m_data in monsters_raw:
+        t_vals = m_data.get("t", [])
+        if not isinstance(t_vals, list) or len(t_vals) != 6:
+            raise HTTPException(status_code=422, detail="Invalid share link format")
+        if not all(isinstance(v, int) and v in allowed_boosts for v in t_vals):
+            raise HTTPException(status_code=422, detail="Invalid share link format")
+        non_zero = sum(1 for v in t_vals if v != 0)
+        if non_zero < 1:
+            raise HTTPException(status_code=422, detail="Invalid share link format")
+
+    team_name = str(payload["n"]).strip()[:16]
+    shared_by: Optional[str] = str(payload["u"]).strip()[:32] if payload.get("u") else None
+    note: Optional[str] = str(payload["no"]).strip()[:150] if payload.get("no") else None
+    magic_item_id: int = payload["mi"]
+
+    # Resolve magic item
+    magic_item = db.query(models.MagicItem).filter(models.MagicItem.id == magic_item_id).first()
+    if not magic_item:
+        raise HTTPException(status_code=422, detail="This team references game data that is no longer available")
+
+    resolved_monsters: list[schemas.SharedMonsterData] = []
+
+    for m_data in monsters_raw:
+        monster_id: int = m_data["id"]
+        personality_id: int = m_data["p"]
+        legacy_type_id: int = m_data["lt"]
+        move_ids: list[int] = m_data["mv"]
+        t_vals: list[int] = m_data["t"]
+
+        # Resolve monster
+        monster = db.query(models.Monster).filter(models.Monster.id == monster_id).first()
+        if not monster:
+            raise HTTPException(status_code=422, detail="This team references game data that is no longer available")
+
+        # Resolve personality
+        personality = db.query(models.Personality).filter(models.Personality.id == personality_id).first()
+        if not personality:
+            raise HTTPException(status_code=422, detail="This team references game data that is no longer available")
+
+        # Resolve legacy type
+        legacy_type = db.query(models.Type).filter(models.Type.id == legacy_type_id).first()
+        if not legacy_type:
+            raise HTTPException(status_code=422, detail="This team references game data that is no longer available")
+
+        # Build valid move-ID sets (pool + stones + legacy)
+        move_pool_ids = {m.id for m in monster.move_pool}
+        move_stone_ids = {m.id for m in monster.move_stones}
+        legacy_move_ids = {
+            lm.move_id
+            for lm in db.query(models.LegacyMove).filter(models.LegacyMove.monster_id == monster.id).all()
+        }
+        all_valid_ids = move_pool_ids | move_stone_ids | legacy_move_ids
+
+        # Resolve each move; flag validity
+        resolved_moves: list[Optional[models.Move]] = []
+        move_valid: list[bool] = []
+        for mid in move_ids:
+            move_obj = db.query(models.Move).filter(models.Move.id == mid).first()
+            if move_obj is None:
+                # Move deleted from DB entirely
+                raise HTTPException(status_code=422, detail="This team references game data that is no longer available")
+            resolved_moves.append(move_obj)
+            move_valid.append(mid in all_valid_ids)
+
+        talent = schemas.TalentOut(
+            id=0,  # synthetic sentinel — not a real DB talent ID
+            hp_boost=t_vals[0],
+            phy_atk_boost=t_vals[1],
+            mag_atk_boost=t_vals[2],
+            phy_def_boost=t_vals[3],
+            mag_def_boost=t_vals[4],
+            spd_boost=t_vals[5],
+        )
+
+        resolved_monsters.append(schemas.SharedMonsterData(
+            monster=schemas.MonsterLiteOut.model_validate(monster),
+            personality=schemas.PersonalityOut.model_validate(personality),
+            legacy_type=schemas.TypeOut.model_validate(legacy_type),
+            moves=[schemas.MoveOut.model_validate(m) for m in resolved_moves],
+            talent=talent,
+            move_valid=move_valid,
+        ))
+
+    return schemas.ShareDecodeResponse(
+        team_name=team_name,
+        shared_by=shared_by,
+        note=note,
+        magic_item=schemas.MagicItemOut.model_validate(magic_item),
+        monsters=resolved_monsters,
+    )

@@ -5,8 +5,10 @@ import MonsterCard from "@/components/MonsterCard";
 import CustomSelect from "@/components/CustomSelect";
 import AnalysisResults from "@/components/AnalysisResults";
 import SaveTeamModal from "@/components/SaveTeamModal";
+import TeamShareModal from "@/features/share/TeamShareModal";
 import type { MagicItemOut, UserMonsterCreate, TeamCreate, TeamAnalysisOut, TeamOut, TeamUpdate, FullSavedAnalysisOut } from "@/types";
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useRef } from "react";
+import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import MonsterInspector from "./MonsterInspector";
 import { useI18n, pickName } from "@/i18n";
@@ -271,6 +273,24 @@ export default function BuilderPage() {
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [attemptedAction, setAttemptedAction] = useState<'analyze' | 'save' | null>(null);
+  const [shareOpen, setShareOpen] = useState(false);
+  const [shareConfirmOpen, setShareConfirmOpen] = useState(false);
+  const [shareCreateConfirmOpen, setShareCreateConfirmOpen] = useState(false);
+  const [pendingShareTeam, setPendingShareTeam] = useState<TeamOut | null>(null);
+  // Ref flag: when true, the next createTeam.onSuccess opens the share modal
+  const saveAndShareMode = useRef(false);
+  // Ref flag: when true, the next updateTeam.onSuccess opens the share modal
+  const updateAndShareMode = useRef(false);
+  // Ref for the error banner — used to scroll it into view when a new error appears
+  const serverErrRef = useRef<HTMLDivElement>(null);
+
+  // Open share modal when a "Save & Share" save completes
+  useEffect(() => {
+    if (pendingShareTeam) {
+      setShareOpen(true);
+      setPendingShareTeam(null);
+    }
+  }, [pendingShareTeam]);
   const showFieldErrors = attemptedAction !== null;
   const { lang, t } = useI18n();
   useSeoMeta({
@@ -343,6 +363,14 @@ export default function BuilderPage() {
     staleTime: 30000, // Cache for 30 seconds
   });
 
+  // Query for the saved team (used by the Share button)
+  const savedTeamQuery = useQuery<TeamOut>({
+    queryKey: QUERY_KEYS.TEAM_DETAIL(teamId!),
+    queryFn: () => endpoints.getTeam(teamId!).then(r => r.data),
+    enabled: !!teamId,
+    staleTime: 60_000,
+  });
+
   // Compute if current analysis matches saved analysis
   const isAnalysisAlreadySaved = useMemo(() => {
     if (!analysis || !savedAnalysisQuery.data?.analysis_data) return false;
@@ -365,10 +393,60 @@ export default function BuilderPage() {
           : nameError!
     : null;
 
+  // True when builder state differs from the last DB-saved version of this team
+  const isDirty = useMemo(() => {
+    if (!teamId || !savedTeamQuery.data) return false;
+    const saved = savedTeamQuery.data;
+    if ((name ?? '') !== (saved.name ?? '')) return true;
+    if (magic_item_id !== saved.magic_item?.id) return true;
+    const savedMons = saved.user_monsters ?? [];
+    for (let i = 0; i < 6; i++) {
+      const slot = slots[i];
+      const mon = savedMons[i];
+      const slotHas = !!slot?.monster_id;
+      const monHas = !!mon;
+      if (slotHas !== monHas) return true;
+      if (!slotHas && !monHas) continue;
+      if (slot!.monster_id !== mon!.monster.id) return true;
+      if (slot!.personality_id !== mon!.personality.id) return true;
+      if (slot!.legacy_type_id !== mon!.legacy_type.id) return true;
+      if (slot!.move1_id !== mon!.move1.id) return true;
+      if (slot!.move2_id !== mon!.move2.id) return true;
+      if (slot!.move3_id !== mon!.move3.id) return true;
+      if (slot!.move4_id !== mon!.move4.id) return true;
+      const tl = slot!.talent; const st = mon!.talent;
+      if (tl.hp_boost !== st.hp_boost || tl.phy_atk_boost !== st.phy_atk_boost ||
+          tl.mag_atk_boost !== st.mag_atk_boost || tl.phy_def_boost !== st.phy_def_boost ||
+          tl.mag_def_boost !== st.mag_def_boost || tl.spd_boost !== st.spd_boost) return true;
+    }
+    return false;
+  }, [teamId, savedTeamQuery.data, name, magic_item_id, slots]);
+
   // Auto-reset field error highlights once the attempted action's conditions are fully met
   useEffect(() => {
     if (attemptedAction && teamIsReady) setAttemptedAction(null);
   }, [attemptedAction, teamIsReady]);
+
+  // Incremented each time showError() is called; used as the scroll-trigger
+  // so the effect re-fires even when the same message is repeated.
+  const [errorScrollTick, setErrorScrollTick] = useState(0);
+
+  // Helper: set error and request a scroll into view.
+  // Using a separate tick counter avoids flicker from clearing then re-setting the same string.
+  const showError = (msg: string) => {
+    setServerErr(msg);
+    setErrorScrollTick((n) => n + 1);
+  };
+
+  // Scroll error banner into view only when it's off-screen (e.g. share button in header triggers an error below)
+  useEffect(() => {
+    if (errorScrollTick === 0 || !serverErrRef.current) return;
+    const rect = serverErrRef.current.getBoundingClientRect();
+    const isVisible = rect.top >= 0 && rect.bottom <= window.innerHeight;
+    if (!isVisible) {
+      serverErrRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }, [errorScrollTick]);
 
   /* ---------- analyze ---------- */
   const analyze = useMutation({
@@ -378,7 +456,7 @@ export default function BuilderPage() {
       setIsAnalyzing(true);
     },
     onError: (err) => {
-      setServerErr(extractErrorMessage(err));
+      showError(extractErrorMessage(err));
       setIsAnalyzing(false);
     },
     onSuccess: (data) => {
@@ -420,18 +498,18 @@ export default function BuilderPage() {
       qc.invalidateQueries({ queryKey: ["savedAnalysis", teamId, lang] });
     },
     onError: (err: any) => {
-      setServerErr(err?.response?.data?.detail || t("builder.failedToSave"));
+      showError(err?.response?.data?.detail || t("builder.failedToSave"));
     },
   });
 
   const onAnalyze = () => {
     if (isAnalyzing) {
-      setServerErr(t("builder.analysisInProgress"));
+      showError(t("builder.analysisInProgress"));
       return;
     }
     if (!teamIsReady) {
       setAttemptedAction('analyze');
-      setServerErr(t(teamErrorKey!));
+      showError(t(teamErrorKey!));
       return;
     }
     // Clear previous analysis results immediately when user clicks analyze
@@ -449,20 +527,29 @@ export default function BuilderPage() {
       setServerOk(null);
       // Check if it's a 401 error (user not authenticated)
       if (err?.response?.status === 401) {
-        // Show the save modal instead of raw error message
+        // Don't reset saveAndShareMode — flag must survive for the onGuestCreated retry path
+        // (anonymous → Save & Share → 401 → create guest → retry createTeam → onSuccess opens share modal)
         setShowSaveModal(true);
         setServerErr(null);  // Clear any existing error
       } else {
-        setServerErr(extractErrorMessage(err));
+        saveAndShareMode.current = false;
+        showError(extractErrorMessage(err));
       }
     },
     onSuccess: (team) => {
       setServerErr(null);
       setServerOk(t("builder.savedMsg"));           // persistent until closed
       useBuilderStore.setState({ teamId: team.id }); // keep id for future updates
+      // Seed the cache immediately so the share modal can render without waiting
+      // for the invalidation refetch to complete (avoids modal not opening on first share).
+      qc.setQueryData(QUERY_KEYS.TEAM_DETAIL(team.id), team);
       qc.invalidateQueries({ queryKey: QUERY_KEYS.TEAMS });
       qc.invalidateQueries({ queryKey: QUERY_KEYS.TEAM_DETAIL(team.id) });
       qc.invalidateQueries({ queryKey: QUERY_KEYS.QUOTA });
+      if (saveAndShareMode.current) {
+        saveAndShareMode.current = false;
+        setPendingShareTeam(team);
+      }
     },
   });
 
@@ -471,13 +558,22 @@ export default function BuilderPage() {
       endpoints.updateTeam(id, body).then((r) => r.data as TeamOut),
     onError: (err) => {
       setServerOk(null);
-      setServerErr(extractErrorMessage(err));
+      updateAndShareMode.current = false;
+      showError(extractErrorMessage(err));
     },
     onSuccess: (_updatedTeam, variables) => {
       setServerErr(null);
-      setServerOk(t("builder.updatedMsg"));         // persistent until closed
+      // Seed the cache immediately so the share modal can render without waiting
+      // for the invalidation refetch to complete (same pattern as createTeam).
+      qc.setQueryData(QUERY_KEYS.TEAM_DETAIL(variables.id), _updatedTeam);
       qc.invalidateQueries({ queryKey: QUERY_KEYS.TEAMS });
       qc.invalidateQueries({ queryKey: QUERY_KEYS.TEAM_DETAIL(variables.id) });
+      if (updateAndShareMode.current) {
+        updateAndShareMode.current = false;
+        setPendingShareTeam(_updatedTeam);  // triggers share modal via useEffect
+      } else {
+        setServerOk(t("builder.updatedMsg"));
+      }
     },
   });
 
@@ -487,7 +583,7 @@ export default function BuilderPage() {
       adminEndpoints.createFeaturedTeam(payload).then((r) => r.data as TeamOut),
     onError: (err: any) => {
       setServerOk(null);
-      setServerErr(extractErrorMessage(err));
+      showError(extractErrorMessage(err));
     },
     onSuccess: (team) => {
       setServerErr(null);
@@ -501,7 +597,7 @@ export default function BuilderPage() {
       adminEndpoints.updateFeaturedTeam(id, body).then((r) => r.data as TeamOut),
     onError: (err: any) => {
       setServerOk(null);
-      setServerErr(extractErrorMessage(err));
+      showError(extractErrorMessage(err));
     },
     onSuccess: () => {
       setServerErr(null);
@@ -510,29 +606,36 @@ export default function BuilderPage() {
   });
 
   const onSaveAsFeatured = () => {
-    if (!teamIsReady) { setAttemptedAction('save'); setServerErr(t(teamErrorKey!)); return; }
+    if (!teamIsReady) { setAttemptedAction('save'); showError(t(teamErrorKey!)); return; }
     setAttemptedAction(null);
-    try { saveFeatured.mutate(toPayload()); } catch (e: any) { setServerErr(e.message); }
+    try { saveFeatured.mutate(toPayload()); } catch (e: any) { showError(e.message); }
   };
 
   const onUpdateFeatured = () => {
-    if (!teamIsReady || !teamId) { setAttemptedAction('save'); setServerErr(t(teamErrorKey!)); return; }
+    if (!teamIsReady || !teamId) { setAttemptedAction('save'); showError(t(teamErrorKey!)); return; }
     const body = toUpdatePayload();
-    if (!body) { setServerErr("Cannot update: team is incomplete."); return; }
+    if (!body) { showError("Cannot update: team is incomplete."); return; }
     setAttemptedAction(null);
     updateFeatured.mutate({ id: teamId, body });
   };
 
   const onSaveNew = async () => {
+    // Capture and immediately reset the share-mode flag so early returns
+    // never leave it stuck as true.
+    const isSaveAndShare = saveAndShareMode.current;
+    saveAndShareMode.current = false;
+
     // Completeness check runs first for everyone (including anonymous users)
     if (!teamIsReady) {
       setAttemptedAction('save');
-      setServerErr(t(teamErrorKey!));
+      showError(t(teamErrorKey!));
       return;
     }
 
-    // If user is not logged in, show the save modal
+    // If user is not logged in, show the save modal.
+    // Restore the share flag so onGuestCreated → createTeam.mutate can pick it up.
     if (!user) {
+      saveAndShareMode.current = isSaveAndShare;
       setShowSaveModal(true);
       return;
     }
@@ -541,7 +644,7 @@ export default function BuilderPage() {
 
     // Check team limit before attempting save
     if (isAtTeamLimit) {
-      setServerErr(t("quota.teamLimitReached", { limit: quota?.teams_limit ?? 0 }));
+      showError(t("quota.teamLimitReached", { limit: quota?.teams_limit ?? 0 }));
       return;
     }
 
@@ -558,17 +661,23 @@ export default function BuilderPage() {
       );
 
       if (duplicate) {
-        setServerErr(t("builder.v_duplicateTeamName", { name: trimmedName }));
+        if (isSaveAndShare) {
+          showError(t("builder.v_duplicateTeamNameShare", { name: trimmedName }));
+        } else {
+          showError(t("builder.v_duplicateTeamName", { name: trimmedName }));
+        }
         return;
       }
 
+      // Restore flag only when we're actually going to save
+      saveAndShareMode.current = isSaveAndShare;
       createTeam.mutate(toPayload());
     } catch (e: any) {
       // 401 errors from fetchQuery (listTeams) should show modal
       if (e?.response?.status === 401) {
         setShowSaveModal(true);
       } else {
-        setServerErr(e?.message || t("builder.incompleteTeamMsg"));
+        showError(e?.message || t("builder.incompleteTeamMsg"));
       }
     }
   };
@@ -576,9 +685,14 @@ export default function BuilderPage() {
   const onUpdateExisting = async () => {
     if (!teamId) return; // hidden if no teamId anyway
 
+    // Capture and immediately reset the share-mode flag so early returns
+    // never leave it stuck as true (same pattern as onSaveNew).
+    const isUpdateAndShare = updateAndShareMode.current;
+    updateAndShareMode.current = false;
+
     if (!teamIsReady) {
       setAttemptedAction('save');
-      setServerErr(t(teamErrorKey!));
+      showError(t(teamErrorKey!));
       return;
     }
 
@@ -597,18 +711,21 @@ export default function BuilderPage() {
       );
 
       if (duplicate) {
-        setServerErr(t("builder.v_duplicateTeamName", { name: trimmedName }));
+        showError(t("builder.v_duplicateTeamName", { name: trimmedName }));
         return;
       }
 
       const body = toUpdatePayload();
       if (!body) {
-        setServerErr(t("builder.incompleteTeamMsg"));
+        showError(t("builder.incompleteTeamMsg"));
         return;
       }
+
+      // Restore flag only when we're actually going to mutate
+      updateAndShareMode.current = isUpdateAndShare;
       updateTeam.mutate({ id: teamId, body });
     } catch (e: any) {
-      setServerErr(e?.message || t("builder.incompleteTeamMsg"));
+      showError(e?.message || t("builder.incompleteTeamMsg"));
     }
   };
 
@@ -648,7 +765,7 @@ export default function BuilderPage() {
             </div>
             <button
               onClick={() => navigate('/auth/login')}
-              className="h-9 px-4 bg-amber-600 text-white text-sm font-medium rounded-lg hover:bg-amber-700 transition-colors shrink-0"
+              className="h-9 px-4 bg-amber-600 text-white text-sm font-medium rounded-lg hover:bg-amber-700 transition-colors shrink-0 cursor-pointer"
             >
               {t("userMenu.login")}
             </button>
@@ -663,6 +780,56 @@ export default function BuilderPage() {
             <div className="flex items-center gap-2 px-1">
               <div className="h-6 w-1 bg-gradient-to-b from-zinc-800 to-zinc-600 rounded-full" />
               <h2 className="text-lg font-semibold text-zinc-800">{t("builder.teamComposition") || "Team Composition"}</h2>
+              <div className="flex-1" />
+              {/* Share button — always clickable; inactive states show a toast instead */}
+              {(() => {
+                const shareReady = (teamId && !savedTeamQuery.isError ? (!savedTeamQuery.isLoading && !!savedTeamQuery.data) : teamIsReady) && !isAnalyzing;
+                return (
+                <button
+                  onClick={() => {
+                    if (isAnalyzing) {
+                      toast.info(t("builder.shareAnalyzing") ?? "Please wait for the analysis to finish.");
+                      return;
+                    }
+                    if (teamId && savedTeamQuery.isLoading) {
+                      toast.info(t("builder.shareLoading") ?? "Loading team data, please wait a moment.");
+                      return;
+                    }
+                    if (teamId && !savedTeamQuery.isError) {
+                      if (isDirty) {
+                        if (!teamIsReady) {
+                          toast.info(teamErrorKey ? (t(teamErrorKey) ?? "") : "");
+                          return;
+                        }
+                        setShareConfirmOpen(true);
+                        return;
+                      }
+                      if (savedTeamQuery.data) setShareOpen(true);
+                    } else {
+                      if (!teamIsReady) {
+                        toast.info(teamErrorKey ? (t(teamErrorKey) ?? "") : "");
+                        return;
+                      }
+                      setShareCreateConfirmOpen(true);
+                    }
+                  }}
+                  className={`inline-flex items-center gap-1.5 h-8 px-3 rounded-md text-xs font-semibold
+                             transition-colors cursor-pointer
+                             ${shareReady
+                               ? "bg-indigo-50 text-indigo-600 border border-indigo-200 hover:bg-indigo-100 hover:border-indigo-300 hover:text-indigo-700"
+                               : "bg-zinc-100 text-zinc-400 border border-zinc-200"}`}
+                  title={t("teams.share") ?? "Share"}
+                >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" />
+                  <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" /><line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+                </svg>
+                <span>
+                  {t("teams.share") ?? "Share"}
+                </span>
+                </button>
+                );
+              })()}
             </div>
 
             {/* grid */}
@@ -973,7 +1140,7 @@ export default function BuilderPage() {
 
           {/* closable messages */}
           {serverErr && (
-            <div className="rounded-lg border-2 border-red-300 bg-gradient-to-r from-red-50 to-red-100 text-red-700 p-4 text-sm flex items-start justify-between shadow-md animate-in slide-in-from-top duration-300">
+            <div ref={serverErrRef} className="rounded-lg border-2 border-red-300 bg-gradient-to-r from-red-50 to-red-100 text-red-700 p-4 text-sm flex items-start justify-between shadow-md animate-in slide-in-from-top duration-300">
               <div className="flex items-start gap-3">
                 <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-red-500 text-white text-xs font-bold shrink-0 mt-[1px]">!</span>
                 <div className="pr-4">{serverErr}</div>
@@ -1036,7 +1203,7 @@ export default function BuilderPage() {
     {/* Save Team Modal - shown when anonymous user tries to save */}
     <SaveTeamModal
       isOpen={showSaveModal}
-      onClose={() => setShowSaveModal(false)}
+      onClose={() => { setShowSaveModal(false); saveAndShareMode.current = false; }}
       onGuestCreated={() => {
         // After guest account created, retry saving the team
         // Small delay to ensure auth state is updated
@@ -1047,6 +1214,84 @@ export default function BuilderPage() {
         }, 100);
       }}
     />
+
+    {/* Share modal — opened from header share button */}
+    {(shareOpen && (savedTeamQuery.data || pendingShareTeam)) && (
+      <TeamShareModal
+        open={shareOpen}
+        onClose={() => setShareOpen(false)}
+        team={(pendingShareTeam ?? savedTeamQuery.data)!}
+        currentUsername={user && !user.is_guest ? user.username : undefined}
+      />
+    )}
+
+    {/* Unsaved-changes confirmation dialog for Share button */}
+    {shareConfirmOpen && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+        <div className="fixed inset-0 bg-black/50" onClick={() => setShareConfirmOpen(false)} />
+        <div className="relative bg-white rounded-xl shadow-xl w-full max-w-sm p-6 flex flex-col gap-4">
+          <h3 className="text-base font-semibold text-zinc-800">
+            {t("builder.shareUnsavedTitle") ?? "Unsaved changes"}
+          </h3>
+          <p className="text-sm text-zinc-600 leading-relaxed">
+            {t("builder.shareUnsavedDescBefore") ?? `Clicking "Update & Share" will save your changes to `}
+            <strong className="text-zinc-800">「{savedTeamQuery.data?.name || name || ""}」</strong>
+            {t("builder.shareUnsavedDescAfter") ?? ` before sharing. To share this as a new team instead, cancel and save it as a new team first.`}
+          </p>
+          <div className="flex gap-3 justify-end">
+            <button
+              onClick={() => setShareConfirmOpen(false)}
+              className="h-9 px-4 rounded-lg text-sm font-medium border border-zinc-300 text-zinc-600 hover:bg-zinc-50 transition-colors cursor-pointer"
+            >
+              {t("common.cancel") ?? "Cancel"}
+            </button>
+            <button
+              onClick={() => {
+                setShareConfirmOpen(false);
+                updateAndShareMode.current = true;
+                onUpdateExisting();
+              }}
+              className="h-9 px-4 rounded-lg text-sm font-medium bg-indigo-600 text-white hover:bg-indigo-700 transition-colors cursor-pointer"
+            >
+              {t("builder.updateAndShare") ?? "Update & Share"}
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {/* Create & Share confirmation dialog — shown when sharing an unsaved team */}
+    {shareCreateConfirmOpen && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+        <div className="fixed inset-0 bg-black/50" onClick={() => setShareCreateConfirmOpen(false)} />
+        <div className="relative bg-white rounded-xl shadow-xl w-full max-w-sm p-6 flex flex-col gap-4">
+          <h3 className="text-base font-semibold text-zinc-800">
+            {t("builder.shareCreateTitle") ?? "Save before sharing"}
+          </h3>
+          <p className="text-sm text-zinc-600 leading-relaxed">
+            {t("builder.shareCreateDesc") ?? "Your team isn't saved yet. Clicking \"Create & Share\" will save it to your account and then open the share panel."}
+          </p>
+          <div className="flex gap-3 justify-end">
+            <button
+              onClick={() => setShareCreateConfirmOpen(false)}
+              className="h-9 px-4 rounded-lg text-sm font-medium border border-zinc-300 text-zinc-600 hover:bg-zinc-50 transition-colors cursor-pointer"
+            >
+              {t("common.cancel") ?? "Cancel"}
+            </button>
+            <button
+              onClick={() => {
+                setShareCreateConfirmOpen(false);
+                saveAndShareMode.current = true;
+                onSaveNew();
+              }}
+              className="h-9 px-4 rounded-lg text-sm font-medium bg-indigo-600 text-white hover:bg-indigo-700 transition-colors cursor-pointer"
+            >
+              {t("builder.createAndShare") ?? "Create & Share"}
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
   </DndContext>
   );
 }
