@@ -6100,6 +6100,9 @@ async def decode_share(request: Request, t: str, db: Session = Depends(get_db)):
             move_valid=move_valid,
         ))
 
+    invalid_count = sum(1 for m in resolved_monsters for v in m.move_valid if not v)
+    logger.info(f"Share decoded: team='{team_name}' shared_by={shared_by!r} invalid_moves={invalid_count}")
+
     return schemas.ShareDecodeResponse(
         team_name=team_name,
         shared_by=shared_by,
