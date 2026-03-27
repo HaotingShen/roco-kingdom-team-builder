@@ -4057,6 +4057,13 @@ async def _perform_team_analysis(
 
             referenced_monsters_per_monster = [monster_db_map[mon_id] for mon_id in sorted(resolved_refs_per_monster.monsters) if mon_id in monster_db_map]
 
+            # Load traits of referenced monsters that aren't already in trait_db_map
+            missing_ref_mon_trait_ids = {m.trait_id for m in referenced_monsters_per_monster} - set(trait_db_map.keys())
+            if missing_ref_mon_trait_ids:
+                logger.debug(f"Loading {len(missing_ref_mon_trait_ids)} traits for referenced monsters: {sorted(missing_ref_mon_trait_ids)}")
+                for trait_obj in db.query(models.Trait).filter(models.Trait.id.in_(missing_ref_mon_trait_ids)).all():
+                    trait_db_map[trait_obj.id] = trait_obj
+
             # Load any referenced traits that aren't already in trait_db_map
             missing_trait_ids_per_monster = resolved_refs_per_monster.traits - set(trait_db_map.keys())
             if missing_trait_ids_per_monster:
@@ -4138,6 +4145,13 @@ async def _perform_team_analysis(
                 monster_db_map[monster.id] = monster
 
         referenced_monsters_team = [monster_db_map[mon_id] for mon_id in sorted(resolved_refs_team.monsters) if mon_id in monster_db_map]
+
+        # Load traits of referenced monsters that aren't already in trait_db_map
+        missing_ref_mon_trait_ids_team = {m.trait_id for m in referenced_monsters_team} - set(trait_db_map.keys())
+        if missing_ref_mon_trait_ids_team:
+            logger.info(f"Loading {len(missing_ref_mon_trait_ids_team)} traits for referenced monsters (team): {sorted(missing_ref_mon_trait_ids_team)}")
+            for trait_obj in db.query(models.Trait).filter(models.Trait.id.in_(missing_ref_mon_trait_ids_team)).all():
+                trait_db_map[trait_obj.id] = trait_obj
 
         # Load any referenced traits that aren't already in trait_db_map
         missing_trait_ids_team = resolved_refs_team.traits - set(trait_db_map.keys())
