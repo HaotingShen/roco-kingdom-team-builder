@@ -730,7 +730,7 @@ const ui: Record<Lang, Dict> = {
     footer: {
       disclaimer: "This is an unofficial fan-made tool and is not affiliated with Tencent or the Roco Kingdom franchise.",
       feedback: "Feedback",
-      qqGroup: "QQ Group: 628740135",
+      qqGroup: "QQ Group: 1095291201",
       wechatGroup: "WeChat: QR code available in the QQ group files",
       business: "Business inquiries: business@rkteambuilder.com or message via QQ/WeChat group privately",
     },
@@ -1394,7 +1394,7 @@ const ui: Record<Lang, Dict> = {
     footer: {
       disclaimer: "本站为玩家社区制作的非官方工具，与腾讯及洛克王国官方无关。",
       feedback: "意见反馈",
-      qqGroup: "QQ交流群：628740135",
+      qqGroup: "QQ交流群：1095291201",
       wechatGroup: "微信群：二维码见QQ群文件",
       business: "商务合作：business@rkteambuilder.com 或加QQ/微信群私聊",
     },

@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { NavLink } from "react-router-dom";
 import { useI18n } from "@/i18n";
 
@@ -36,6 +37,7 @@ function BrandLockup() {
 
 export default function Sidebar() {
   const { t } = useI18n();
+  const [adDismissed, setAdDismissed] = useState(false);
   return (
     <aside
       className="hidden lg:flex lg:flex-col fixed left-0 top-0 h-full border-r border-zinc-200 bg-white"
@@ -62,21 +64,30 @@ export default function Sidebar() {
       </nav>
 
       {/* Ad banner */}
-      <div className="mt-auto p-3 pb-4">
-        <a
-          href="https://www.pzds.com/goodsList/3000/6/headerSearch"
-          target="_blank"
-          rel="noopener noreferrer"
-          onClick={() => window.umami?.track("ad-click-pzds")}
-        >
-          <img
-            src="/ad-images/pc.jpg"
-            alt="广告"
-            className="w-full rounded"
-            style={{ filter: "saturate(0.5)" }}
-          />
-        </a>
-      </div>
+      {!adDismissed && (
+        <div className="mt-auto p-3 pb-4 relative">
+          <button
+            onClick={() => setAdDismissed(true)}
+            className="absolute top-1 right-1 z-10 w-5 h-5 flex items-center justify-center rounded-full bg-zinc-200 hover:bg-zinc-300 text-zinc-500 hover:text-zinc-700 text-xs leading-none cursor-pointer"
+            aria-label="Close ad"
+          >
+            ×
+          </button>
+          <a
+            href="https://www.pzds.com/goodsList/3000/6/headerSearch"
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => window.umami?.track("ad-click-pzds")}
+          >
+            <img
+              src="/ad-images/pc.jpg"
+              alt="广告"
+              className="w-full rounded"
+              style={{ filter: "saturate(0.5)" }}
+            />
+          </a>
+        </div>
+      )}
 
     </aside>
   );
