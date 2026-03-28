@@ -67,6 +67,7 @@ export default function Sidebar() {
           href="https://www.pzds.com/goodsList/3000/6/headerSearch"
           target="_blank"
           rel="noopener noreferrer"
+          onClick={() => window.umami?.track("ad-click-pzds")}
         >
           <img
             src="/ad-images/pc.jpg"
