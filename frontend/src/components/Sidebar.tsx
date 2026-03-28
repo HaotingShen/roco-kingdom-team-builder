@@ -38,7 +38,7 @@ export default function Sidebar() {
   const { t } = useI18n();
   return (
     <aside
-      className="hidden lg:block fixed left-0 top-0 h-full border-r border-zinc-200 bg-white"
+      className="hidden lg:flex lg:flex-col fixed left-0 top-0 h-full border-r border-zinc-200 bg-white"
       style={{ width: "var(--sidebar-w)" }}
     >
       {/* Brand area */}
@@ -60,6 +60,22 @@ export default function Sidebar() {
           {t("sidebar.feedback")}
         </NavLink>
       </nav>
+
+      {/* Ad banner */}
+      <div className="mt-auto p-3 pb-4">
+        <a
+          href="https://www.pzds.com/goodsList/3000/6/headerSearch"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <img
+            src="/ad-images/pc.jpg"
+            alt="广告"
+            className="w-full rounded"
+            style={{ filter: "saturate(0.5)" }}
+          />
+        </a>
+      </div>
 
     </aside>
   );
