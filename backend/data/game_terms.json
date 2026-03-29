@@ -1,5 +1,6 @@
 [
   {
+    "sort_order": 0,
     "key": "Marks",
     "description": "A status effect that applies to an entire team, not just a single monster. Marks do not disappear when a monster leaves the field, and newly switched-in monsters inherit the mark's effect. Each side can only have one positive mark and one negative mark at a time.",
     "localized": {
@@ -10,6 +11,7 @@
     }
   },
   {
+    "sort_order": 1,
     "key": "Slow Mark",
     "description": "Marks: Speed -10 per stack.",
     "localized": {
@@ -20,6 +22,7 @@
     }
   },
   {
+    "sort_order": 2,
     "key": "Photosynthesis Mark",
     "description": "Marks: Recover 1 energy per stack at the end of each turn.",
     "localized": {
@@ -30,6 +33,7 @@
     }
   },
   {
+    "sort_order": 3,
     "key": "Attack Mark",
     "description": "Marks: All move's power +10 for each stack.",
     "localized": {
@@ -40,6 +44,7 @@
     }
   },
   {
+    "sort_order": 4,
     "key": "Charge Mark",
     "description": "Marks: On the first turn after entering the battlefield, move power +10.",
     "localized": {
@@ -50,6 +55,7 @@
     }
   },
   {
+    "sort_order": 5,
     "key": "Moist Mark",
     "description": "Marks: All moves' energy cost -1 for each stack.",
     "localized": {
@@ -60,6 +66,7 @@
     }
   },
   {
+    "sort_order": 6,
     "key": "Windrise Mark",
     "description": "Marks: When acting first, move power +20%.",
     "localized": {
@@ -70,6 +77,7 @@
     }
   },
   {
+    "sort_order": 7,
     "key": "Sluggish Mark",
     "description": "Marks: When acting last, damage +30% for each stack.",
     "localized": {
@@ -80,6 +88,7 @@
     }
   },
   {
+    "sort_order": 8,
     "key": "Spirit Mark",
     "description": "Marks: When a monster enters the battlefield (in all situations), lose 1 energy per stack.",
     "localized": {
@@ -90,6 +99,7 @@
     }
   },
   {
+    "sort_order": 9,
     "key": "Dragonbite Mark",
     "description": "Marks: After using a move that costs 3 energy, gain Attack +30%.",
     "localized": {
@@ -100,6 +110,7 @@
     }
   },
   {
+    "sort_order": 10,
     "key": "Momentum Mark",
     "description": "Marks: All Attack-type moves' power +30% and energy cost +1.",
     "localized": {
@@ -110,6 +121,7 @@
     }
   },
   {
+    "sort_order": 11,
     "key": "Poison Mark",
     "description": "Marks: At the end of each turn, deal Poison-type damage equal to 3% (rounded down) of max HP. The damage amount is affected by type effectiveness.",
     "localized": {
@@ -120,6 +132,7 @@
     }
   },
   {
+    "sort_order": 12,
     "key": "Spike Mark",
     "description": "Marks: When a monster enters the battlefield (in all situations), deal damage equal to 6% of max HP per stack.",
     "localized": {
@@ -130,6 +143,7 @@
     }
   },
   {
+    "sort_order": 13,
     "key": "Starfall Mark",
     "description": "Marks: After dealing move damage, remove all stacks of Starfall Mark. Each stack deals 30 power of magic damage.",
     "localized": {
@@ -140,6 +154,7 @@
     }
   },
   {
+    "sort_order": 14,
     "key": "Leech",
     "description": "At the end of each turn, each stack absorbs 6% of max HP from the target. All stacks are removed when the monster is switched out.",
     "localized": {
@@ -150,6 +165,7 @@
     }
   },
   {
+    "sort_order": 15,
     "key": "Poison",
     "description": "At the end of each turn, inflict Poison-type damage equal to 3% (rounded down) of max HP per stack. The damage is affected by type effectiveness. All stacks are removed when the monster is switched out.",
     "localized": {
@@ -160,6 +176,7 @@
     }
   },
   {
+    "sort_order": 16,
     "key": "Freeze",
     "description": "Each stack freezes 5% of the target's max HP, making it unusable. If the remaining HP falls below the frozen amount, the monster is defeated. This effect persists even after switching out.",
     "localized": {
@@ -170,6 +187,7 @@
     }
   },
   {
+    "sort_order": 17,
     "key": "Burn",
     "description": "At the end of each turn, inflict Fire-type damage equal to 2% of max HP per stack, affected by type effectiveness. The number of stacks is halved (rounded up) at the end of each turn, with a minimum reduction of 1 stack. All stacks are removed when the monster is switched out.",
     "localized": {
@@ -180,6 +198,7 @@
     }
   },
   {
+    "sort_order": 18,
     "key": "Regression",
     "description": "Reverts the monster to the previous stage of its evolutionary chain, lowering its base stats to that stage while retaining all unlocked traits; if already at the lowest stage, it cannot regress further, and effects that require Regression will not activate at the lowest stage. Regression can stack: each time Regression is applied, it adds 1 stack until reaching the lowest stage. Regression is categorized as a debuff, but some moves may grant additional buffs when Regression is applied. By default, damage resolves first, then Regression is applied.",
     "localized": {
@@ -190,6 +209,7 @@
     }
   },
   {
+    "sort_order": 19,
     "key": "Devotion",
     "description": "When a move with the Devotion effect is used, it grants an enhancement to all monsters' 'Bite' and 'Bug Swarm' moves. These enhancements can stack, and all active Devotion effects apply at the same time. A random Devotion enhancement includes: move power +20, attacks inflict 2 stacks of Poison, Lifesteal +20%, Combo count +1, and move energy cost -2.",
     "localized": {
@@ -200,6 +220,7 @@
     }
   },
   {
+    "sort_order": 20,
     "key": "Rain",
     "description": "Water-type environment. Both sides' Water-type move power +50%.",
     "localized": {
@@ -210,6 +231,7 @@
     }
   },
   {
+    "sort_order": 21,
     "key": "Sandstorm",
     "description": "Ground-type environment. When the weather is Sandstorm, both sides' Ground-type move energy cost is halved.",
     "localized": {
@@ -220,6 +242,7 @@
     }
   },
   {
+    "sort_order": 22,
     "key": "Blizzard",
     "description": "Ice-type environment. When the weather is Blizzard, both sides gain 2 stacks of Freeze at the end of each turn. (Ice-type monsters are immune to this effect.)",
     "localized": {
@@ -230,6 +253,7 @@
     }
   },
   {
+    "sort_order": 23,
     "key": "Poison Effect",
     "description": "This includes both the Poison and Poison Mark effects.",
     "localized": {
@@ -240,6 +264,7 @@
     }
   },
   {
+    "sort_order": 24,
     "key": "Burst",
     "description": "When acting for the first time after entering the battlefield, gain an extra effect.",
     "localized": {
@@ -250,6 +275,7 @@
     }
   },
   {
+    "sort_order": 25,
     "key": "Barrel Status",
     "description": "The monster's appearance changes to a barrel, temporarily removing its type. When the monster uses a move, the Barrel status is removed, and the original form is restored.",
     "localized": {
@@ -260,6 +286,7 @@
     }
   },
   {
+    "sort_order": 26,
     "key": "Stun",
     "description": "The monster cannot act under this effect.",
     "localized": {
@@ -270,6 +297,7 @@
     }
   },
   {
+    "sort_order": 27,
     "key": "Charge",
     "description": "This turn, the monster charges up and spends energy, becoming immune to all Leave Field effects. Next turn, user can only use a move that has been charged, use Focus, or switch out. If Focus is used during the charging turn, the charge status remains.",
     "localized": {
@@ -280,6 +308,7 @@
     }
   },
   {
+    "sort_order": 28,
     "key": "Charge Extension",
     "description": "Allows the monster to continue Charge for one more turn. The charged move can be used one additional time.",
     "localized": {
@@ -290,6 +319,7 @@
     }
   },
   {
+    "sort_order": 29,
     "key": "Quick Entry",
     "description": "When a monster is actively switched in (not as a result of another monster's defeat), it immediately uses the first available move with this effect and sufficient energy. The turn order for this move is determined by the Speed of the two monsters on the battlefield. However, if this move's Counter effect triggers, it is resolved using Counter's priority rules instead.",
     "localized": {
@@ -300,6 +330,7 @@
     }
   },
   {
+    "sort_order": 30,
     "key": "Overload",
     "description": "The selected move is performed twice, consuming 1 stack of Overload.",
     "localized": {
@@ -310,16 +341,18 @@
     }
   },
   {
+    "sort_order": 31,
     "key": "Transmission",
     "description": "At the start of the turn, moves with 'Transmission X' will move down X Slot, and this effect can stack.",
     "localized": {
       "zh": {
         "name": "传动",
-        "description": "回合开始时，带有“传动X”的技能会向下移动X个位置，该效果可叠加。"
+        "description": "回合开始时，带有\"传动X\"的技能会向下移动X个位置，该效果可叠加。"
       }
     }
   },
   {
+    "sort_order": 32,
     "key": "Interrupt",
     "description": "Interrupts the opponent's move this turn. Opponent's move is not executed and the interrupted move's energy cost is refunded to the opponent.",
     "localized": {
@@ -330,6 +363,7 @@
     }
   },
   {
+    "sort_order": 33,
     "key": "Lifesteal",
     "description": "When dealing damage, recover HP equal to a percentage of the damage dealt.",
     "localized": {
@@ -340,6 +374,7 @@
     }
   },
   {
+    "sort_order": 34,
     "key": "Defeated",
     "description": "The monster is defeated and cannot be used.",
     "localized": {
@@ -350,6 +385,7 @@
     }
   },
   {
+    "sort_order": 35,
     "key": "Life Point",
     "description": "Each player has 4 Life Points at the start of the battle. Generally, when a monster is defeated, the player loses 1 Life Point. Some traits can have different effects on Life Points. If a player runs out of Life Points, they lose the battle.",
     "localized": {
@@ -360,6 +396,7 @@
     }
   },
   {
+    "sort_order": 36,
     "key": "Move Power",
     "description": "Modifiers to Move Power apply to the base power of all moves the monster currently has. Modifiers can stack, with each stack increasing or decreasing the total effect. All modifications are removed when the monster leaves the battlefield.",
     "localized": {
@@ -370,6 +407,7 @@
     }
   },
   {
+    "sort_order": 37,
     "key": "Move Energy Cost",
     "description": "Modifiers to Move Energy Cost apply to the amount of energy required to use each move the monster currently has. Modifiers can stack, with each stack increasing or decreasing the total effect. All modifications are removed when the monster leaves the battlefield.",
     "localized": {
@@ -380,6 +418,7 @@
     }
   },
   {
+    "sort_order": 38,
     "key": "Same-type Moves",
     "description": "Moves whose type matches at least one of the monster's own types. For example, if a monster is Water/Grass, then both Water-type and Grass-type moves are considered same-type moves.",
     "localized": {
@@ -390,6 +429,7 @@
     }
   },
   {
+    "sort_order": 39,
     "key": "Cooldown",
     "description": "The number of turns that must pass before a move or magic item can be used again. Unless otherwise specified, all Defense-type moves have a 1-turn cooldown, while moves of other categories have no cooldown. For magic items, Willpower Enhancement has a 3-turn cooldown, while other magic item effects are single-use per battle.",
     "localized": {
@@ -400,6 +440,7 @@
     }
   },
   {
+    "sort_order": 40,
     "key": "Combo",
     "description": "Perform x consecutive attacks, where x is the number of hits. Each hit uses the move's base power.",
     "localized": {
@@ -410,6 +451,7 @@
     }
   },
   {
+    "sort_order": 41,
     "key": "Priority",
     "description": "The order in which moves are executed. Moves with higher priority ignore speed differences between the two monsters and are executed first. If priority values are the same, the monster with higher speed acts first.",
     "localized": {
@@ -420,6 +462,7 @@
     }
   },
   {
+    "sort_order": 42,
     "key": "Slot",
     "description": "Refers to the move in the xth position, counting from top to bottom.",
     "localized": {
@@ -430,6 +473,7 @@
     }
   },
   {
+    "sort_order": 43,
     "key": "Counter Attack",
     "description": "When the opponent uses an Attack-type move against the user, this move counters successfully. A counter effect is triggered, and next turn Priority +1.",
     "localized": {
@@ -440,6 +484,7 @@
     }
   },
   {
+    "sort_order": 44,
     "key": "Counter Defense",
     "description": "When the opponent uses a Defense-type move, this move counters successfully. A counter effect is triggered, and the energy cost of this move is refunded.",
     "localized": {
@@ -450,6 +495,7 @@
     }
   },
   {
+    "sort_order": 45,
     "key": "Counter Status",
     "description": "When the opponent uses a Status-type move, this move counters successfully. A counter effect is triggered, and this move's power +50%.",
     "localized": {
@@ -460,6 +506,7 @@
     }
   },
   {
+    "sort_order": 46,
     "key": "Counter",
     "description": "If, during the turn, the opponent uses a move of a type that this move is designated to counter, Counter succeeds. When Counter succeeds, this move is immediately triggered and used with priority before other moves.",
     "localized": {
@@ -470,6 +517,7 @@
     }
   },
   {
+    "sort_order": 47,
     "key": "Emergency Exit",
     "description": "Return to the bench, then another monster is randomly selected to enter the battlefield. The new monster is immune to this effect.",
     "localized": {
@@ -480,6 +528,7 @@
     }
   },
   {
+    "sort_order": 48,
     "key": "Exit",
     "description": "Return to the bench, then the player manually selects another monster to enter the battlefield. The new monster is immune to this effect.",
     "localized": {
@@ -490,6 +539,7 @@
     }
   },
   {
+    "sort_order": 49,
     "key": "Leave Field",
     "description": "Leave the battlefield by actively switching out or triggering an Exit effect (not including leaving due to monster defeat).",
     "localized": {
@@ -500,6 +550,7 @@
     }
   },
   {
+    "sort_order": 50,
     "key": "Re-Enter",
     "description": "Return to the bench, then immediately re-enter the battlefield. This counts as the first entry for this monster. The new monster is immune to this effect.",
     "localized": {
@@ -510,6 +561,7 @@
     }
   },
   {
+    "sort_order": 51,
     "key": "Buffs",
     "description": "Effects that increase Attack, Defense, Speed, move power, Combo count, Lifesteal, or decrease a move's energy cost.",
     "localized": {
@@ -520,6 +572,7 @@
     }
   },
   {
+    "sort_order": 52,
     "key": "Debuffs",
     "description": "Effects that include Leech, Freeze, Burn, Poison, Regression, and effects that decrease Attack, Defense, Speed, move power, Combo count, or increase move energy cost.",
     "localized": {

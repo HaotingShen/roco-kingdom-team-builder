@@ -394,6 +394,7 @@ class GameTermOut(BaseModel):
     key: str
     description: str
     localized: Dict
+    sort_order: int = 0
 
     model_config = ConfigDict(from_attributes=True)
 

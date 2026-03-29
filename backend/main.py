@@ -3519,7 +3519,7 @@ def get_magic_items(db: Session = Depends(get_db)):
 
 @app.get("/game_terms", response_model=List[schemas.GameTermOut])
 def get_game_terms(db: Session = Depends(get_db)):
-    return db.query(models.GameTerm).order_by(models.GameTerm.id).all()
+    return db.query(models.GameTerm).order_by(models.GameTerm.sort_order, models.GameTerm.id).all()
 
 
 @app.get("/species", response_model=List[schemas.MonsterSpeciesOut])
