@@ -2873,3 +2873,63 @@ git stash pop                      # Restore feature branch changes
 | `docker-compose.prod.yml` | Production compose file (runs on EC2) |
 | `docker-compose.yml` | Local development compose file (optional) |
 | `.github/workflows/deploy.yml` | CI/CD pipeline: test → build → deploy |
+
+---
+
+## Phase 13: DB Connection Pool — Full Resolution (2026-03-29)
+
+### Problem History
+QueuePool exhaustion errors recurred multiple times during China peak hours despite pool size increases. Three separate root causes were discovered and fixed iteratively:
+
+**Root Cause 1 — Pool too small (March 24)**
+Initial pool_size=5+10=15/worker was too conservative. Iteratively increased to 12+13=25/worker.
+
+**Root Cause 2 — Duplicate SQLAlchemy engine (March 27, commit 968188d)**
+`main.py` had its own `engine + SessionLocal + get_db()` separate from `database.py`. Every request consumed 2 connections (one per engine). Real max = 2 engines × 25/worker × 2 workers = 100, exceeding RDS limit of 77.
+Fix: Removed duplicate engine from `main.py`, imported `get_db` and `SessionLocal` from `backend.database`. FastAPI's dependency injection caches same function → 1 connection per request.
+
+**Root Cause 3 — Umami shares same RDS instance (March 29, commit f926bfb)**
+Umami analytics uses `UMAMI_DATABASE_URL` pointing to same RDS host (`rktb-postgres.cnwseow4y66l...`), just different database (`umami`). Its connections count against the same `max_connections=80` limit. Prisma default pool = 9 connections, silently consuming slots unaccounted for in backend math.
+
+### Final Configuration
+
+**docker-compose.prod.yml (backend):**
+```yaml
+- DB_POOL_SIZE=10
+- DB_MAX_OVERFLOW=20
+```
+
+**SSM — UMAMI_DATABASE_URL** (updated manually from local machine, not EC2):
+```
+postgresql://...rds.amazonaws.com:5432/umami?sslmode=require&connection_limit=5
+```
+
+**Connection budget:**
+```
+RDS max_connections = 80
+RDS reserved        =  3
+Usable              = 77
+
+Backend:  1 engine × (10+20)/worker × 2 workers = 60
+Umami:    capped at 5 via connection_limit param
+System:   ~8 (background workers + rdsadmin)
+Total:    73  ← safely under 77
+```
+
+**Scaling note:** If uvicorn workers ever increase to 3, reduce to `DB_POOL_SIZE=8, DB_MAX_OVERFLOW=16` (24/worker × 3 = 72).
+
+### Important Ops Notes
+- EC2 IAM role (`rktb-ec2-role`) has `ssm:GetParameter` only — SSM writes must run from local machine
+- `sed -i` edits to `docker-compose.prod.yml` on EC2 are overwritten on next deploy (deploy.sh pulls fresh copy from S3). Always commit pool changes to git and push.
+- To update Umami's connection limit in future: update SSM locally, then on EC2: `export UMAMI_DATABASE_URL=$(aws ssm get-parameter ...)` and `docker compose up -d umami`
+
+---
+
+## Phase 14: Email SMTP Retry Fix (2026-03-27, commit cb8f06f)
+
+Resend SMTP returns `421 Too many connected clients` during China peak registration hours when many users register simultaneously.
+
+**Fix:** `backend/email_service.py` — retry once after 3s sleep on 421 error.
+- Transparent to users: all 5 email endpoints return success regardless of email result
+- No quota impact: quota is consumed before `send_email()` is called
+- Non-421 failures still fail immediately on first attempt (no behavior change)

@@ -231,3 +231,25 @@ curl -I https://analytics.rkteambuilder.com
 curl -I https://analytics.rkteambuilder.com/script.js
 # Expected: HTTP/2 200 with content-type: application/javascript
 ```
+
+---
+
+## Post-deploy: Connection Pool Cap (added 2026-03-29)
+
+Umami shares the same RDS instance as the backend. Its Prisma connection pool defaults to 9 connections (CPU cores × 2 + 1), which silently consumes slots from the shared `max_connections=80` limit.
+
+**Fix:** append `&connection_limit=5` to `UMAMI_DATABASE_URL` in SSM, then restart umami.
+
+```bash
+# Run from local machine (EC2 role lacks ssm:PutParameter)
+aws ssm put-parameter --name /rktb/prod/UMAMI_DATABASE_URL \
+  --value "postgresql://...?sslmode=require&connection_limit=5" \
+  --type SecureString --overwrite --region ap-southeast-1
+
+# Then on EC2
+export UMAMI_DATABASE_URL=$(aws ssm get-parameter --name /rktb/prod/UMAMI_DATABASE_URL \
+  --with-decryption --query Parameter.Value --output text --region ap-southeast-1)
+docker compose -f docker-compose.prod.yml up -d umami
+```
+
+5 connections is sufficient — Umami is a single Node.js process and rarely needs more than 2 concurrent DB connections.
