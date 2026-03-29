@@ -28,9 +28,11 @@ services:
       - SMTP_FROM_EMAIL=noreply@rkteambuilder.com
       - SMTP_FROM_NAME=RK Team Builder
       - ADMIN_EMAILS=${ADMIN_EMAILS:-}
-      # DB connection pool: 2 workers × (12 + 13) = 50 max connections, well within RDS limit of 80
-      - DB_POOL_SIZE=12
-      - DB_MAX_OVERFLOW=13
+      # DB connection pool: 2 workers × (10 + 20) = 60 max connections
+      # Umami also uses same RDS instance (capped at 5 via connection_limit in SSM)
+      # Total RDS usage: 60 backend + 5 umami + 8 system = 73, under RDS limit of 77
+      - DB_POOL_SIZE=10
+      - DB_MAX_OVERFLOW=20
       # Memory: limit glibc arenas to reduce fragmentation from large DeepSeek responses
       - MALLOC_ARENA_MAX=2
     mem_limit: 4000m
