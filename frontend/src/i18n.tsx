@@ -1394,7 +1394,7 @@ const ui: Record<Lang, Dict> = {
     footer: {
       disclaimer: "本站为玩家社区制作的非官方工具，与腾讯及洛克王国官方无关。",
       feedback: "意见反馈",
-      qqGroup: "QQ交流群：1095291201",
+      qqGroup: "QQ交流2群：1095291201",
       wechatGroup: "微信群：二维码见QQ群文件",
       business: "商务合作：business@rkteambuilder.com 或加QQ/微信群私聊",
     },
