@@ -734,6 +734,11 @@ const ui: Record<Lang, Dict> = {
       wechatGroup: "WeChat: QR code available in the QQ group files",
       business: "Business inquiries: business@rkteambuilder.com or message via QQ/WeChat group privately",
     },
+    announcement: {
+      gotIt: "Got it",
+      dismiss: "Dismiss",
+      importantNotice: "Important Notice",
+    },
   },
   zh: {
     common: {
@@ -1397,6 +1402,11 @@ const ui: Record<Lang, Dict> = {
       qqGroup: "QQ交流2群：1095291201",
       wechatGroup: "微信群：二维码见QQ群文件",
       business: "商务合作：business@rkteambuilder.com 或加QQ/微信群私聊",
+    },
+    announcement: {
+      gotIt: "知道了",
+      dismiss: "关闭",
+      importantNotice: "重要通知",
     },
   },
 };

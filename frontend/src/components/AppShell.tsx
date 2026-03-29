@@ -2,6 +2,7 @@ import Sidebar from "./Sidebar";
 import Topbar from "./Topbar";
 import Footer from "./Footer";
 import BottomNav from "./BottomNav";
+import AnnouncementSystem from "./AnnouncementSystem";
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   return (
@@ -9,6 +10,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       <Sidebar />
       <div className="flex-1 lg:ml-sidebar min-w-0 flex flex-col pb-16 lg:pb-0">
         <Topbar />
+        <AnnouncementSystem />
         <main className="p-4 flex-1">{children}</main>
         <Footer />
       </div>
