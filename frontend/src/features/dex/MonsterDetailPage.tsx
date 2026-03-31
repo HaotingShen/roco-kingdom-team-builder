@@ -10,6 +10,7 @@ import { typeIconUrl, monsterImageFallbackChain } from "@/lib/images";
 import { useMonsterNavigation } from "./useMonsterNavigation";
 import { QUERY_KEYS, LEGACY_TYPES_ORDER } from "@/lib/constants";
 import EvolutionTree from "./EvolutionTree";
+import RichDescription from "@/components/RichDescription";
 
 /* ---------- helpers ---------- */
 
@@ -473,7 +474,7 @@ export default function MonsterDetailPage() {
                       </span>
                     </div>
                     <div className="text-sm text-amber-800 leading-relaxed">
-                      {pickDesc(trait as any, lang) || trait.description || ""}
+                      <RichDescription text={pickDesc(trait as any, lang) || trait.description || ""} />
                     </div>
                   </div>
                 </div>
@@ -762,7 +763,7 @@ function MovesList({ list, backUrl }: { list: any[]; backUrl: string }) {
 
               {/* Description (row 2, spans full width from col 2 to end) */}
               <div className="row-[2/3] col-[2/-1] text-[13px] sm:text-sm text-zinc-600 pl-1">
-                {desc}
+                <RichDescription text={desc} />
               </div>
             </div>
           </Link>

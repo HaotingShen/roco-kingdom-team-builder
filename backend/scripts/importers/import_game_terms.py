@@ -19,13 +19,15 @@ def load_game_terms():
                 key=item["key"],
                 description=item["description"],
                 localized=item["localized"],
-                sort_order=item["sort_order"]
+                sort_order=item["sort_order"],
+                tooltip_description=item.get("tooltip_description")
             ).on_conflict_do_update(
                 index_elements=["key"],
                 set_={
                     "description": item["description"],
                     "localized": item["localized"],
-                    "sort_order": item["sort_order"]
+                    "sort_order": item["sort_order"],
+                    "tooltip_description": item.get("tooltip_description")
                 }
             )
             session.execute(stmt)

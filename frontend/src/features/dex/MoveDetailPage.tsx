@@ -5,6 +5,7 @@ import { useI18n, pickName, pickDesc, pickFormName } from "@/i18n";
 import { useSeoMeta } from "@/hooks/useSeoMeta";
 import type { MoveOut, MonsterLiteOut, MoveLearnersOut, TypeOut } from "@/types";
 import { typeIconUrl, monsterImageFallbackChain } from "@/lib/images";
+import RichDescription from "@/components/RichDescription";
 
 /* ---------- helpers ---------- */
 
@@ -304,14 +305,14 @@ export default function MoveDetailPage() {
 
                 {/* Description inside right column — visible at 425px+ */}
                 {desc && (
-                  <p className="hidden desc:block text-sm text-zinc-600 leading-relaxed">{desc}</p>
+                  <p className="hidden desc:block text-sm text-zinc-600 leading-relaxed"><RichDescription text={desc} /></p>
                 )}
               </div>
             </div>
 
             {/* Description below full row — visible below 425px */}
             {desc && (
-              <p className="desc:hidden mt-2 text-sm text-zinc-600 leading-relaxed">{desc}</p>
+              <p className="desc:hidden mt-2 text-sm text-zinc-600 leading-relaxed"><RichDescription text={desc} /></p>
             )}
           </div>
         </div>

@@ -395,6 +395,7 @@ class GameTermOut(BaseModel):
     description: str
     localized: Dict
     sort_order: int = 0
+    tooltip_description: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True)
 

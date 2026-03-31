@@ -172,6 +172,7 @@ class GameTerm(Base):
     description: Mapped[str] = mapped_column(Text, nullable=False)
     localized: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
     sort_order: Mapped[int] = mapped_column(Integer, nullable=False, server_default="0")
+    tooltip_description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     __table_args__ = (
         Index("ix_game_terms_localized_gin", "localized", postgresql_using="gin"),
     )

@@ -431,7 +431,7 @@
   },
   {
     "name": "Rarebeast Blossom",
-    "description": "Gains different effects upon entering the battlefield based on its legacy type. Normal Legacy Type: gains Move Power +30; Grass Legacy Type: Restore 20% HP; Fire Legacy Type: Opponent gains 6 stacks of Burn; Water Legacy Type: Move Energy Cost -2; Light Legacy Type: Gains Magic Attack +80%; Ground Legacy Type: Opponent gains Speed -60 and Combo count -3; Ice Legacy Type: Opponent gains 2 stacks of Freeze; Dragon Legacy Type: Opponent gains Magic Defense -80%; Electric Legacy Type: Speed +80; Poison Legacy: Type Opponent gains 3 stacks of Poison; Bug Legacy Type: Opponent gains Physical Defense -70%; Fighting Legacy Type: Physical Attack +80%; Wing Legacy Type: Combo count +2; Cute Legacy Type: Opponent gains Attack -60%; Ghost Legacy Type: Opponent loses 3 energy; Dark Legacy Type: Gains 50% Lifesteal; Mechanical Legacy Type: Defense +60%; Illusion Legacy Type: Opponent gains 2 stacks of Starfall Mark.",
+    "description": "Gains different effects upon entering the battlefield based on its legacy type. Normal Legacy Type: gains Move Power +30; Grass Legacy Type: Restore 20% HP; Fire Legacy Type: Opponent gains 6 stacks of Burn; Water Legacy Type: Move Energy Cost -2; Light Legacy Type: Gains Magic Attack +80%; Ground Legacy Type: Opponent gains Speed -60 and Combo Count -3; Ice Legacy Type: Opponent gains 2 stacks of Freeze; Dragon Legacy Type: Opponent gains Magic Defense -80%; Electric Legacy Type: Speed +80; Poison Legacy: Type Opponent gains 3 stacks of Poison; Bug Legacy Type: Opponent gains Physical Defense -70%; Fighting Legacy Type: Physical Attack +80%; Wing Legacy Type: Combo Count +2; Cute Legacy Type: Opponent gains Attack -60%; Ghost Legacy Type: Opponent loses 3 energy; Dark Legacy Type: Gains 50% Lifesteal; Mechanical Legacy Type: Defense +60%; Illusion Legacy Type: Opponent gains 2 stacks of Starfall Mark.",
     "localized": {
       "zh": {
         "name": "稀兽花宝",
@@ -491,7 +491,7 @@
   },
   {
     "name": "Scapegoat",
-    "description": "For each 25% HP lost, gains Combo count +2.",
+    "description": "For each 25% HP lost, gains Combo Count +2.",
     "localized": {
       "zh": {
         "name": "嫁祸",
@@ -571,7 +571,7 @@
   },
   {
     "name": "Free Drift",
-    "description": "For each stack of Regression this monster has, gains Combo count +2.",
+    "description": "For each stack of Regression this monster has, gains Combo Count +2.",
     "localized": {
       "zh": {
         "name": "自由飘",
@@ -681,7 +681,7 @@
   },
   {
     "name": "Kaka Dash",
-    "description": "If acting before the opponent, gains Combo count +1 after action.",
+    "description": "If acting before the opponent, gains Combo Count +1 after action.",
     "localized": {
       "zh": {
         "name": "咔咔冲刺",
@@ -1131,7 +1131,7 @@
   },
   {
     "name": "Windrider Combo",
-    "description": "Each time this monster uses a Flying-type move, it gains a cumulative Combo count +1 bonus, which applies to all of its moves.",
+    "description": "Each time this monster uses a Flying-type move, it gains a cumulative Combo Count +1 bonus, which applies to all of its moves.",
     "localized": {
       "zh": {
         "name": "乘风连击",
@@ -1431,7 +1431,7 @@
   },
   {
     "name": "Corrosion",
-    "description": "For each Poison Effect stack on the opponent, this monster's moves gain Combo count +1.",
+    "description": "For each Poison Effect stack on the opponent, this monster's moves gain Combo Count +1.",
     "localized": {
       "zh": {
         "name": "侵蚀",
@@ -1471,7 +1471,7 @@
   },
   {
     "name": "Indiscriminate Filter",
-    "description": "While this monster is on the battlefield, monsters on both sides have Combo count 2.",
+    "description": "While this monster is on the battlefield, monsters on both sides have Combo Count 2.",
     "localized": {
       "zh": {
         "name": "无差别过滤",

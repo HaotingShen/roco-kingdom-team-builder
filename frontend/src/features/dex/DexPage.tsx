@@ -3,13 +3,15 @@ import type { ReactNode } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { endpoints } from "@/lib/api";
 import { useI18n, pickName, pickDesc, pickFormName } from "@/i18n";
-import type { MonsterLiteOut, MoveOut, TypeOut, MagicItemOut } from "@/types";
+import type { MonsterLiteOut, MoveOut, TypeOut, MagicItemOut, GameTermOut } from "@/types";
 import PageTabs from "@/components/PageTabs";
 import useDebounce from "@/hooks/useDebounce";
 import { useSeoMeta } from "@/hooks/useSeoMeta";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useWindowVirtualizer } from "@tanstack/react-virtual";
 import { typeIconUrl, magicItemImageUrl, monsterImageFallbackChain } from "@/lib/images";
+import { QUERY_KEYS } from "@/lib/constants";
+import RichDescription from "@/components/RichDescription";
 
 /* ---------------- helpers ---------------- */
 
@@ -1031,7 +1033,7 @@ function MovesTab() {
 
                             {/* Description (row 2, spans full width from col 2 to end) */}
                             <div className="row-[2/3] col-[2/-1] text-[13px] sm:text-sm text-zinc-600 pl-1">
-                              {desc}
+                              <RichDescription text={desc} />
                             </div>
                           </div>
                         </div>
@@ -1085,7 +1087,7 @@ function MagicItemsTab() {
             </div>
             <div className="min-w-0 flex-1">
               <div className="font-semibold text-zinc-800 truncate" title={nm}>{nm}</div>
-              <div className="text-sm text-zinc-600 mt-1 leading-relaxed">{desc}</div>
+              <div className="text-sm text-zinc-600 mt-1 leading-relaxed"><RichDescription text={desc} /></div>
             </div>
           </div>
         );
@@ -1100,19 +1102,17 @@ function MagicItemsTab() {
    Game Terms tab
    =========================================================== */
 
-type GameTerm = { id: number; key: string; name?: string; description?: string; localized?: any };
-
 function GameTermsTab() {
   const { lang, t } = useI18n();
-  const terms = useQuery<GameTerm[]>({
-    queryKey: ["dex-terms"],
-    queryFn: () => endpoints.gameTerms().then((r) => r.data as GameTerm[]),
+  const terms = useQuery<GameTermOut[]>({
+    queryKey: QUERY_KEYS.GAME_TERMS,
+    queryFn: () => endpoints.gameTerms().then((r) => r.data as GameTermOut[]),
   });
 
   return (
     <div className="grid gap-3 grid-cols-1 md:grid-cols-2">
       {(terms.data ?? []).map((g) => {
-        const label = pickName(g as any, lang) || g.name || g.key;
+        const label = pickName(g as any, lang) || g.key;
         const desc = pickDesc(g as any, lang) || g.description || "";
         return (
           <div key={g.id} className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm hover:shadow-md transition-all duration-200">

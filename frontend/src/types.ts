@@ -180,6 +180,22 @@ export interface MagicItemOut extends Named {
   effect_parameters?: any;
 }
 
+export interface GameTermOut {
+  id: ID;
+  key: string;
+  description: string;
+  localized?: {
+    zh?: {
+      name?: string;
+      description?: string;
+      tooltip_description?: string | null;
+    };
+    [k: string]: unknown;
+  };
+  sort_order: number;
+  tooltip_description?: string | null;
+}
+
 /* ---------- builder models ---------- */
 
 export interface TalentUpsert {

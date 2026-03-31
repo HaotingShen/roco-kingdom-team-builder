@@ -6,5 +6,21 @@
     "zh": "新功能：队伍分享上线！在构筑页面或队伍操作里点击分享，即可复制分享链接或导出队伍卡片！",
     "date": "2026-03-29",
     "expiresAt": "2026-04-06"
+  },
+  {
+    "id": "2026-03-31-tooltip",
+    "type": "info",
+    "en": "New: Game terms with underline in move and trait descriptions now have tooltips! Hover on them with mouse or tap on them with mobile to see the explanation.",
+    "zh": "新功能：技能、特性描述里带下划线的游戏术语，电脑悬停或手机点击一下就能快速查看说明啦！",
+    "date": "2026-03-31",
+    "expiresAt": "2026-04-06"
+  },
+  {
+    "id": "2026-03-31-move-update",
+    "type": "info",
+    "en": "Update: Move data has been updated to reflect the latest game content!",
+    "zh": "【更新】技能数据也已同步最新内容～",
+    "date": "2026-03-31",
+    "expiresAt": "2026-04-03"
   }
 ]

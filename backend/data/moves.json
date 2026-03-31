@@ -35,12 +35,12 @@
     "category": "Status",
     "energy_cost": 1,
     "power": null,
-    "description": "Opponent gains move energy cost +6 this turn.",
+    "description": "Opponent gains move energy cost +7 this turn. Lasts for 3 turns.",
     "has_counter": false,
     "localized": {
       "zh": {
         "name": "操控",
-        "description": "敌方本回合使用的技能能耗+6。"
+        "description": "敌方本回合使用的技能能耗+7，持续3回合。"
       }
     }
   },
@@ -50,7 +50,7 @@
     "category": "Physical Attack",
     "energy_cost": 2,
     "power": 40,
-    "description": "Deals physical damage. 1 Combo. Each time this move is used, this move's Combo count +1 permanently.",
+    "description": "Deals physical damage. 1 Combo. Each time this move is used, this move's Combo Count +1 permanently.",
     "has_counter": false,
     "localized": {
       "zh": {
@@ -64,7 +64,7 @@
     "type": "Normal",
     "category": "Physical Attack",
     "energy_cost": 7,
-    "power": 120,
+    "power": 135,
     "description": "Deals physical damage. At the end of each turn, this move's energy cost -1 permanently.",
     "has_counter": false,
     "localized": {
@@ -79,13 +79,13 @@
     "type": "Normal",
     "category": "Magic Attack",
     "energy_cost": 3,
-    "power": 60,
-    "description": "Deals magic damage. If energy is depleted after use, power +100 for this attack.",
+    "power": 65,
+    "description": "Deals magic damage. If energy is depleted after use, power +110 for this attack.",
     "has_counter": false,
     "localized": {
       "zh": {
         "name": "触底强击",
-        "description": "造成魔伤，释放后若能量耗尽，本次攻击威力+100。"
+        "description": "造成魔伤，使用后若能量耗尽，本次技能威力+110。"
       }
     }
   },
@@ -125,12 +125,12 @@
     "category": "Status",
     "energy_cost": 1,
     "power": null,
-    "description": "On the next action, Attack-type move power +70.",
+    "description": "Next attack, move power +70.",
     "has_counter": false,
     "localized": {
       "zh": {
         "name": "伺机而动",
-        "description": "下一次行动时，攻击技能威力+70。"
+        "description": "下一次攻击时，技能威力+70。"
       }
     }
   },
@@ -139,7 +139,7 @@
     "type": "Normal",
     "category": "Magic Attack",
     "energy_cost": 6,
-    "power": 150,
+    "power": 165,
     "description": "Deals magic damage to the opponent.",
     "has_counter": false,
     "localized": {
@@ -155,12 +155,12 @@
     "category": "Physical Attack",
     "energy_cost": 3,
     "power": 80,
-    "description": "Deals physical damage. If the opponent switches monsters this turn, this move's power +150.",
+    "description": "Deals physical damage. If the opponent switches monsters this turn, this move's power +100.",
     "has_counter": false,
     "localized": {
       "zh": {
         "name": "当头棒喝",
-        "description": "造成物伤，若敌方本回合替换精灵，本次技能威力+150。"
+        "description": "造成物伤，若敌方本回合更换精灵，本次技能威力+100。"
       }
     }
   },
@@ -169,7 +169,7 @@
     "type": "Normal",
     "category": "Physical Attack",
     "energy_cost": 3,
-    "power": 0,
+    "power": null,
     "description": "Deals physical damage. The lower the opponent's weight, the higher the power.",
     "has_counter": false,
     "localized": {
@@ -214,7 +214,7 @@
     "type": "Normal",
     "category": "Physical Attack",
     "energy_cost": 3,
-    "power": 100,
+    "power": 110,
     "description": "Deals physical damage to the opponent.",
     "has_counter": false,
     "localized": {
@@ -260,12 +260,12 @@
     "category": "Status",
     "energy_cost": 3,
     "power": null,
-    "description": "User's Magic Defense +150%.",
+    "description": "User's Magic Defense +170%.",
     "has_counter": false,
     "localized": {
       "zh": {
         "name": "鼓劲",
-        "description": "自己获得魔防+150%。"
+        "description": "自己获得魔防+170%。"
       }
     }
   },
@@ -273,14 +273,14 @@
     "name": "Noise",
     "type": "Normal",
     "category": "Status",
-    "energy_cost": 1,
+    "energy_cost": 3,
     "power": null,
-    "description": "Opponent gains Attack-type move energy cost +3.",
+    "description": "Opponent gains Attack-type move energy cost +3. Lasts for 3 turns.",
     "has_counter": false,
     "localized": {
       "zh": {
         "name": "聒噪",
-        "description": "敌方获得全攻击技能能耗+3。"
+        "description": "敌方获得全攻击技能能耗+3，持续3回合。"
       }
     }
   },
@@ -289,7 +289,7 @@
     "type": "Normal",
     "category": "Physical Attack",
     "energy_cost": 3,
-    "power": 140,
+    "power": 155,
     "description": "Deals physical damage. Priority -1.",
     "has_counter": false,
     "localized": {
@@ -318,14 +318,14 @@
     "name": "Enrage",
     "type": "Normal",
     "category": "Status",
-    "energy_cost": 2,
+    "energy_cost": 3,
     "power": null,
-    "description": "All of the opponent's moves, except the one used this turn, energy cost +4.",
+    "description": "All of the opponent's moves, except the one used this turn, energy cost +3. Lasts for 3 turns.",
     "has_counter": false,
     "localized": {
       "zh": {
         "name": "激怒",
-        "description": "敌方除本回合使用的技能，其他技能能耗+4。"
+        "description": "敌方除本回合使用的技能，其他技能能耗+3，持续3回合。"
       }
     }
   },
@@ -364,13 +364,13 @@
     "type": "Normal",
     "category": "Physical Attack",
     "energy_cost": 2,
-    "power": 55,
-    "description": "Deals physical damage. If a Status-type move was used last turn, this move's power +50.",
+    "power": 65,
+    "description": "Deals physical damage. If a Status-type move was used last turn, this move's power +55.",
     "has_counter": false,
     "localized": {
       "zh": {
         "name": "见招拆招",
-        "description": "造成物伤，若上回合使用状态技能，本次技能威力+50。"
+        "description": "造成物伤，若上回合使用状态技能，本次技能威力+55。"
       }
     }
   },
@@ -379,7 +379,7 @@
     "type": "Normal",
     "category": "Physical Attack",
     "energy_cost": 4,
-    "power": 120,
+    "power": 130,
     "description": "Deals physical damage to the opponent.",
     "has_counter": false,
     "localized": {
@@ -425,12 +425,12 @@
     "category": "Status",
     "energy_cost": 1,
     "power": null,
-    "description": "User's Speed +70. Counter Defense: User's Speed +140 instead.",
+    "description": "User gains Speed +80. Counter Defense: User gains Speed +160 instead.",
     "has_counter": true,
     "localized": {
       "zh": {
         "name": "快速移动",
-        "description": "自己获得速度+70，应对防御：改为速度+140。"
+        "description": "自己获得速度+80，应对防御：改为速度+160。"
       }
     }
   },
@@ -454,13 +454,13 @@
     "type": "Normal",
     "category": "Physical Attack",
     "energy_cost": 2,
-    "power": 20,
-    "description": "Deals physical damage. 2 Combo. Counter Status: Combo count is doubled this turn.",
+    "power": 30,
+    "description": "Deals physical damage. 2 Combo. Counter Status: This move's Combo Count is doubled this turn.",
     "has_counter": true,
     "localized": {
       "zh": {
         "name": "连续爪击",
-        "description": "造成物伤，2连击，应对状态：本次连击数翻倍。"
+        "description": "造成物伤，2连击，应对状态：本次技能连击数翻倍。"
       }
     }
   },
@@ -469,7 +469,7 @@
     "type": "Normal",
     "category": "Magic Attack",
     "energy_cost": 4,
-    "power": 20,
+    "power": 25,
     "description": "Deals magic damage. 5 Combo.",
     "has_counter": false,
     "localized": {
@@ -484,7 +484,7 @@
     "type": "Normal",
     "category": "Physical Attack",
     "energy_cost": 0,
-    "power": 40,
+    "power": 45,
     "description": "Deals physical damage to the opponent.",
     "has_counter": false,
     "localized": {
@@ -500,12 +500,12 @@
     "category": "Magic Attack",
     "energy_cost": 4,
     "power": 30,
-    "description": "Deals magic damage. 3 Combo. If the opponent switches monsters this turn, Combo count +4.",
+    "description": "Deals magic damage. 3 Combo. If the opponent switches monsters this turn, Combo Count +4.",
     "has_counter": false,
     "localized": {
       "zh": {
         "name": "埋伏",
-        "description": "造成魔伤，3连击，若敌方本回合替换精灵，本次技能连击数+4。"
+        "description": "造成魔伤，3连击，若敌方本回合更换精灵，本次技能连击数+3。"
       }
     }
   },
@@ -514,7 +514,7 @@
     "type": "Normal",
     "category": "Physical Attack",
     "energy_cost": 1,
-    "power": 60,
+    "power": 65,
     "description": "Deals physical damage to the opponent.",
     "has_counter": false,
     "localized": {
@@ -550,7 +550,7 @@
     "localized": {
       "zh": {
         "name": "魔能爆",
-        "description": "造成魔伤，释放时消耗所有能量，消耗越多，伤害越高。"
+        "description": "造成魔伤，使用时消耗所有能量，消耗越高，伤害越高。"
       }
     }
   },
@@ -574,7 +574,7 @@
     "type": "Normal",
     "category": "Physical Attack",
     "energy_cost": 3,
-    "power": 70,
+    "power": 80,
     "description": "Deals physical damage. Each time this monster performs a successful Counter, this move's power +90 permanently.",
     "has_counter": true,
     "localized": {
@@ -589,13 +589,13 @@
     "type": "Normal",
     "category": "Physical Attack",
     "energy_cost": 3,
-    "power": 90,
-    "description": "Deals physical damage. Each time this move's energy cost increases by 1, its power +45.",
+    "power": 100,
+    "description": "Deals physical damage. Each time this move's energy cost increases by 1, its power +50.",
     "has_counter": false,
     "localized": {
       "zh": {
         "name": "逆袭",
-        "description": "造成物伤，本技能能耗每+1，威力+45。"
+        "description": "造成物伤，本技能能耗每+1，威力+50。"
       }
     }
   },
@@ -604,7 +604,7 @@
     "type": "Normal",
     "category": "Magic Attack",
     "energy_cost": 1,
-    "power": 60,
+    "power": 65,
     "description": "Deals magic damage to the opponent.",
     "has_counter": false,
     "localized": {
@@ -634,13 +634,13 @@
     "type": "Normal",
     "category": "Physical Attack",
     "energy_cost": 3,
-    "power": 80,
-    "description": "Deals physical damage. Each time this move is used, its power +40 permanently.",
+    "power": 90,
+    "description": "Deals physical damage. Each time this move is used, its power +45 permanently.",
     "has_counter": false,
     "localized": {
       "zh": {
         "name": "迫近攻击",
-        "description": "造成物伤。每次使用后，本技能威力永久+40。"
+        "description": "造成物伤。每次使用后，本技能威力永久+45。"
       }
     }
   },
@@ -649,13 +649,13 @@
     "type": "Normal",
     "category": "Physical Attack",
     "energy_cost": 3,
-    "power": 60,
-    "description": "Deals physical damage. If a successful Counter was performed last turn, this move's power +240.",
+    "power": 80,
+    "description": "Deals physical damage. If a successful Counter was performed last turn, this move's power +180.",
     "has_counter": true,
     "localized": {
       "zh": {
         "name": "气势一击",
-        "description": "造成物伤，若上回合应对成功，本次技能威力+240。"
+        "description": "造成物伤，若上回合应对成功，本次技能威力+180。"
       }
     }
   },
@@ -664,7 +664,7 @@
     "type": "Normal",
     "category": "Magic Attack",
     "energy_cost": 3,
-    "power": 60,
+    "power": 70,
     "description": "Deals magic damage. If this attack is not countered by a Defense-type move, dispels all marks from both sides.",
     "has_counter": false,
     "localized": {
@@ -695,7 +695,7 @@
     "category": "Status",
     "energy_cost": 2,
     "power": null,
-    "description": "Gains Combo count +3.",
+    "description": "Gains Combo Count +3.",
     "has_counter": false,
     "localized": {
       "zh": {
@@ -739,7 +739,7 @@
     "type": "Normal",
     "category": "Physical Attack",
     "energy_cost": 2,
-    "power": 80,
+    "power": 90,
     "description": "Deals physical damage to the opponent",
     "has_counter": false,
     "localized": {
@@ -770,12 +770,12 @@
     "category": "Defense",
     "energy_cost": 2,
     "power": null,
-    "description": "Damage taken -70%. Counter Attack: each time this monster is damaged, gains Attack +20%.",
+    "description": "Damage taken -80%. Counter Attack: each time this monster is damaged, gains Attack +40%.",
     "has_counter": true,
     "localized": {
       "zh": {
         "name": "嗜痛",
-        "description": "减伤70%，应对攻击：期间自己每次受到伤害，获得双攻+20%。"
+        "description": "减伤80%，应对攻击：期间自己每次受到伤害，获得双攻+40%。"
       }
     }
   },
@@ -784,7 +784,7 @@
     "type": "Normal",
     "category": "Physical Attack",
     "energy_cost": 3,
-    "power": 55,
+    "power": 60,
     "description": "Deals physical damage. Priority +1. Burst: move power +30.",
     "has_counter": false,
     "localized": {
@@ -814,7 +814,7 @@
     "type": "Normal",
     "category": "Magic Attack",
     "energy_cost": 2,
-    "power": 50,
+    "power": 70,
     "description": "Deals magic damage. Counter Status: move power x3.",
     "has_counter": true,
     "localized": {
@@ -844,13 +844,13 @@
     "type": "Normal",
     "category": "Physical Attack",
     "energy_cost": 6,
-    "power": 135,
+    "power": 150,
     "description": "Deals physical damage. If this move defeats the opponent, user restores 6 energy.",
     "has_counter": false,
     "localized": {
       "zh": {
         "name": "吞噬",
-        "description": "造成物伤，若释放本技能击败敌方，回复6能量。"
+        "description": "造成物伤，若使用本技能击败敌方，回复6能量。"
       }
     }
   },
@@ -875,12 +875,12 @@
     "category": "Defense",
     "energy_cost": 2,
     "power": null,
-    "description": "Damage taken -70%. Counter Attack: causes the opponent to Exit.",
+    "description": "Damage taken -60%. Counter Attack: causes the opponent to Exit.",
     "has_counter": true,
     "localized": {
       "zh": {
         "name": "吓退",
-        "description": "减伤70%，应对攻击：敌方脱离。"
+        "description": "减伤60%，应对攻击：敌方脱离。"
       }
     }
   },
@@ -904,7 +904,7 @@
     "type": "Normal",
     "category": "Magic Attack",
     "energy_cost": 4,
-    "power": 105,
+    "power": 115,
     "description": "Deals magic damage and dispels 5 stacks of Buffs from the opponent.",
     "has_counter": false,
     "localized": {
@@ -919,7 +919,7 @@
     "type": "Normal",
     "category": "Magic Attack",
     "energy_cost": 2,
-    "power": 80,
+    "power": 90,
     "description": "Deals magic damage to the opponent.",
     "has_counter": false,
     "localized": {
@@ -949,7 +949,7 @@
     "type": "Normal",
     "category": "Magic Attack",
     "energy_cost": 3,
-    "power": 100,
+    "power": 110,
     "description": "Deals magic damage to the opponent.",
     "has_counter": false,
     "localized": {
@@ -964,13 +964,13 @@
     "type": "Normal",
     "category": "Magic Attack",
     "energy_cost": 6,
-    "power": 120,
+    "power": 130,
     "description": "Deals magic damage. Each time another Normal-type move is used, this move's energy cost -2 permanently.",
     "has_counter": false,
     "localized": {
       "zh": {
         "name": "蓄能轰击",
-        "description": "造成魔伤，每使用1次其他普通系技能，本技能能耗永久-2。"
+        "description": "造成魔伤，每使用1次普通系技能，本技能能耗永久-2。"
       }
     }
   },
@@ -979,7 +979,7 @@
     "type": "Normal",
     "category": "Physical Attack",
     "energy_cost": 3,
-    "power": 30,
+    "power": 35,
     "description": "Deals physical damage. 3 Combo.",
     "has_counter": false,
     "localized": {
@@ -1009,7 +1009,7 @@
     "type": "Normal",
     "category": "Physical Attack",
     "energy_cost": 5,
-    "power": 140,
+    "power": 155,
     "description": "Deals physical damage to the opponent.",
     "has_counter": false,
     "localized": {
@@ -1024,7 +1024,7 @@
     "type": "Normal",
     "category": "Magic Attack",
     "energy_cost": 5,
-    "power": 140,
+    "power": 155,
     "description": "Deals magic damage to the opponent.",
     "has_counter": false,
     "localized": {
@@ -1055,7 +1055,7 @@
     "category": "Status",
     "energy_cost": 1,
     "power": null,
-    "description": "Opponent gains Combo count -4.",
+    "description": "Opponent gains Combo Count -4.",
     "has_counter": false,
     "localized": {
       "zh": {
@@ -1069,7 +1069,7 @@
     "type": "Normal",
     "category": "Physical Attack",
     "energy_cost": 3,
-    "power": 0,
+    "power": null,
     "description": "Deals physical damage. The higher the opponent's weight, the higher the power.",
     "has_counter": false,
     "localized": {
@@ -1084,7 +1084,7 @@
     "type": "Normal",
     "category": "Magic Attack",
     "energy_cost": 4,
-    "power": 120,
+    "power": 130,
     "description": "Deals magic damage to the opponent.",
     "has_counter": false,
     "localized": {
@@ -1159,7 +1159,7 @@
     "type": "Normal",
     "category": "Physical Attack",
     "energy_cost": 2,
-    "power": 100,
+    "power": 110,
     "description": "Deals physical damage. Each time this move is used, its energy cost +1 permanently.",
     "has_counter": false,
     "localized": {
@@ -1174,7 +1174,7 @@
     "type": "Normal",
     "category": "Physical Attack",
     "energy_cost": 0,
-    "power": 30,
+    "power": 35,
     "description": "Deals physical damage. User restores 1 energy.",
     "has_counter": false,
     "localized": {
@@ -1189,7 +1189,7 @@
     "type": "Normal",
     "category": "Magic Attack",
     "energy_cost": 3,
-    "power": 65,
+    "power": 75,
     "description": "Deals magic damage. 1 Combo. Counter Status: this move becomes 3 Combo.",
     "has_counter": true,
     "localized": {
@@ -1204,7 +1204,7 @@
     "type": "Normal",
     "category": "Magic Attack",
     "energy_cost": 2,
-    "power": 70,
+    "power": 80,
     "description": "Deals magic damage. Counter Status: additionally Interrupt the countered move.",
     "has_counter": true,
     "localized": {
@@ -1220,7 +1220,7 @@
     "category": "Physical Attack",
     "energy_cost": 3,
     "power": 30,
-    "description": "Deals physical damage. 1 Combo. Each time this move is used, Combo count +2 permanently.",
+    "description": "Deals physical damage. 1 Combo. Each time this move is used, Combo Count +2 permanently.",
     "has_counter": false,
     "localized": {
       "zh": {
@@ -1234,7 +1234,7 @@
     "type": "Grass",
     "category": "Physical Attack",
     "energy_cost": 4,
-    "power": 85,
+    "power": 90,
     "description": "Deals physical damage. Counter Status: user restores 50% HP and gains 5 energy.",
     "has_counter": true,
     "localized": {
@@ -1265,7 +1265,7 @@
     "category": "Status",
     "energy_cost": 1,
     "power": null,
-    "description": "User gains Combo count +3. Counter Defense: additionally triggers Interrupt, and opponent gains Stun next turn.",
+    "description": "User gains Combo Count +3. Counter Defense: additionally triggers Interrupt, and opponent gains Stun next turn.",
     "has_counter": true,
     "localized": {
       "zh": {
@@ -1295,12 +1295,12 @@
     "category": "Status",
     "energy_cost": 3,
     "power": null,
-    "description": "User gains Attack +130%.",
+    "description": "User gains Attack +140%.",
     "has_counter": false,
     "localized": {
       "zh": {
         "name": "丰饶",
-        "description": "自己获得物攻和魔攻+130%。"
+        "description": "自己获得物攻和魔攻+140%。"
       }
     }
   },
@@ -1370,12 +1370,12 @@
     "category": "Status",
     "energy_cost": 2,
     "power": null,
-    "description": "2 Combo. For each hit, user's Magic Attack +50%.",
+    "description": "2 Combo. For each hit, user gains Magic Attack +60%.",
     "has_counter": false,
     "localized": {
       "zh": {
         "name": "花炮",
-        "description": "2连击，每次连击自己获得魔攻+50%。"
+        "description": "2连击，每次连击自己获得魔攻+60%。"
       }
     }
   },
@@ -1430,12 +1430,12 @@
     "category": "Status",
     "energy_cost": 3,
     "power": null,
-    "description": "Applies 1 stack of Leech to the opponent.",
+    "description": "Opponent gains 1 stack of Leech.",
     "has_counter": false,
     "localized": {
       "zh": {
         "name": "孢子",
-        "description": "赋予敌方1层寄生效果。"
+        "description": "敌方获得1层寄生。"
       }
     }
   },
@@ -1460,7 +1460,7 @@
     "category": "Status",
     "energy_cost": 3,
     "power": null,
-    "description": "2 Combo. For each hit, user restores 5% HP and 1 energy. After use, this move's Combo count +1 permanently.",
+    "description": "2 Combo. For each hit, user restores 5% HP and 1 energy. After use, this move's Combo Count +1 permanently.",
     "has_counter": false,
     "localized": {
       "zh": {
@@ -1475,12 +1475,12 @@
     "category": "Defense",
     "energy_cost": 2,
     "power": null,
-    "description": "Damage taken -70%. Counter Attack: restores 3 energy.",
+    "description": "Damage taken -80%. Counter Attack: restores 3 energy.",
     "has_counter": true,
     "localized": {
       "zh": {
         "name": "蜡质膜",
-        "description": "减伤70%，应对攻击：回复3能量。"
+        "description": "减伤80%，应对攻击：回复3能量。"
       }
     }
   },
@@ -1490,12 +1490,12 @@
     "category": "Defense",
     "energy_cost": 3,
     "power": null,
-    "description": "Damage taken -70%. Counter Attack: restores 25% HP.",
+    "description": "Damage taken -80%. Counter Attack: restores 20% HP.",
     "has_counter": true,
     "localized": {
       "zh": {
         "name": "酶浓度调整",
-        "description": "减伤70%，应对攻击：自己回复20%生命。"
+        "description": "减伤80%，应对攻击：自己回复20%生命。"
       }
     }
   },
@@ -1520,12 +1520,12 @@
     "category": "Status",
     "energy_cost": 1,
     "power": null,
-    "description": "User gains Move Power +30. Counter Defense: gains Move Power +70 instead.",
+    "description": "User gains Move Power +30. Counter Defense: gains Move Power +60 instead.",
     "has_counter": true,
     "localized": {
       "zh": {
         "name": "盛开",
-        "description": "自己获得全技能威力+30，应对防御：改为全技能威力+70。"
+        "description": "自己获得全技能威力+30，应对防御：改为威力+60。"
       }
     }
   },
@@ -1595,12 +1595,12 @@
     "category": "Defense",
     "energy_cost": 2,
     "power": null,
-    "description": "Damage taken -70%. Counter Attack: user gains Physical Defense +40%.",
+    "description": "Damage taken -80%. Counter Attack: user gains Physical Defense +70%.",
     "has_counter": true,
     "localized": {
       "zh": {
         "name": "纤维化",
-        "description": "减伤70%，应对攻击：自己获得物防+40%。"
+        "description": "减伤80%，应对攻击：自己获得物防+70%。"
       }
     }
   },
@@ -1610,12 +1610,12 @@
     "category": "Status",
     "energy_cost": 2,
     "power": null,
-    "description": "Gains 4 energy. Magic Attack +80%.",
+    "description": "User restores 4 energy and gains Magic Attack +70%.",
     "has_counter": false,
     "localized": {
       "zh": {
         "name": "氧输送",
-        "description": "获得4能量，并获得魔攻+80%。"
+        "description": "自己回复4能量，并获得魔攻+70%。"
       }
     }
   },
@@ -1685,12 +1685,12 @@
     "category": "Physical Attack",
     "energy_cost": 3,
     "power": 80,
-    "description": "Deals physical damage.",
+    "description": "Deals physical damage. If the opponent switches monster this turn, user restores 7 energy.",
     "has_counter": false,
     "localized": {
       "zh": {
         "name": "针刺射击",
-        "description": "造成物伤。"
+        "description": "造成物伤，若敌方本回合更换精灵，自己回复7能量。"
       }
     }
   },
@@ -1760,12 +1760,12 @@
     "category": "Defense",
     "energy_cost": 4,
     "power": null,
-    "description": "Damage taken -70%. Counter Attack: next Attack-type move's power is doubled.",
+    "description": "Damage taken -80%. Counter Attack: next Attack-type move's power is doubled.",
     "has_counter": true,
     "localized": {
       "zh": {
         "name": "淬火",
-        "description": "减伤70%，应对攻击：下次攻击技能威力翻倍。"
+        "description": "减伤80%，应对攻击：下次攻击技能威力翻倍。"
       }
     }
   },
@@ -1835,12 +1835,12 @@
     "category": "Defense",
     "energy_cost": 2,
     "power": null,
-    "description": "Damage taken -70%. Counter Attack: applies 4 stacks of Burn to the opponent.",
+    "description": "Damage taken -70%. Counter Attack: applies 6 stacks of Burn to the opponent.",
     "has_counter": true,
     "localized": {
       "zh": {
         "name": "火焰护盾",
-        "description": "减伤70%，应对攻击：敌方获得4层灼烧。"
+        "description": "减伤70%，应对攻击：敌方获得6层灼烧。"
       }
     }
   },
@@ -1955,12 +1955,12 @@
     "category": "Status",
     "energy_cost": 1,
     "power": null,
-    "description": "User gains Attack +130% and Defense -40%.",
+    "description": "User gains Attack +120% and Defense -40%.",
     "has_counter": false,
     "localized": {
       "zh": {
         "name": "怒火",
-        "description": "自己获得双攻+130%和双防-40%。"
+        "description": "自己获得双攻+120%和双防-40%。"
       }
     }
   },
@@ -2029,7 +2029,7 @@
     "type": "Fire",
     "category": "Physical Attack",
     "energy_cost": 1,
-    "power": 35,
+    "power": 40,
     "description": "Deals physical damage. Counter Status: move power x4.",
     "has_counter": true,
     "localized": {
@@ -2140,7 +2140,7 @@
     "localized": {
       "zh": {
         "name": "引燃",
-        "description": "敌方获得10层灼烧效果。"
+        "description": "敌方获得10层灼烧。"
       }
     }
   },
@@ -2149,7 +2149,7 @@
     "type": "Fire",
     "category": "Magic Attack",
     "energy_cost": 3,
-    "power": 45,
+    "power": 55,
     "description": "Deals magic damage. Inflicts 4 stacks of Burn. Counter Status: move's power and Burn stacks inflicted are doubled.",
     "has_counter": true,
     "localized": {
@@ -2300,12 +2300,12 @@
     "category": "Defense",
     "energy_cost": 2,
     "power": null,
-    "description": "Damage taken -70%. Counter Attack: causes the user to Exit.",
+    "description": "Damage taken -80%. Counter Attack: user triggers Exit.",
     "has_counter": true,
     "localized": {
       "zh": {
         "name": "泡沫幻影",
-        "description": "减伤70%，应对攻击：自己脱离。"
+        "description": "减伤80%，应对攻击：自己脱离。"
       }
     }
   },
@@ -2465,12 +2465,12 @@
     "category": "Defense",
     "energy_cost": 2,
     "power": null,
-    "description": "Damage taken -70%. Counter Attack: user gains Move Energy Cost -2.",
+    "description": "Damage taken -60%. Counter Attack: user gains Move Energy Cost -2.",
     "has_counter": true,
     "localized": {
       "zh": {
         "name": "水环",
-        "description": "减伤70%，应对攻击：自己获得全技能能耗-2。"
+        "description": "减伤60%，应对攻击：自己获得全技能能耗-2。"
       }
     }
   },
@@ -2495,12 +2495,12 @@
     "category": "Defense",
     "energy_cost": 2,
     "power": null,
-    "description": "Damage taken -70%. Counter Attack: user gains Magic Attack +40%.",
+    "description": "Damage taken -80%. Counter Attack: user gains Magic Attack +70%.",
     "has_counter": true,
     "localized": {
       "zh": {
         "name": "水泡盾",
-        "description": "减伤70%，应对攻击：自己获得魔攻+40%。"
+        "description": "减伤80%，应对攻击：自己获得魔攻+70%。"
       }
     }
   },
@@ -2539,7 +2539,7 @@
     "type": "Water",
     "category": "Magic Attack",
     "energy_cost": 7,
-    "power": 140,
+    "power": 150,
     "description": "Deals magic damage. Counter Status: this move's energy cost -6 permanently.",
     "has_counter": true,
     "localized": {
@@ -2583,7 +2583,7 @@
     "name": "Saltwater Bath",
     "type": "Water",
     "category": "Status",
-    "energy_cost": 1,
+    "energy_cost": 2,
     "power": null,
     "description": "User gains Move Energy Cost -2. Counter Defense: gains Move Energy Cost -3 instead.",
     "has_counter": true,
@@ -2615,12 +2615,12 @@
     "category": "Status",
     "energy_cost": 0,
     "power": null,
-    "description": "Light-type move power +40% permanently. Counter Defense: power +80% permanently instead.",
+    "description": "Light-type move power +50% permanently. Counter Defense: power +100% permanently instead.",
     "has_counter": true,
     "localized": {
       "zh": {
         "name": "放晴",
-        "description": "光系技能威力永久+40%，应对防御：改为永久+80%。"
+        "description": "光系技能威力永久+50%，应对防御：改为永久+100%。"
       }
     }
   },
@@ -2703,14 +2703,14 @@
     "name": "Mirror Reflection",
     "type": "Light",
     "category": "Defense",
-    "energy_cost": 2,
+    "energy_cost": 1,
     "power": null,
-    "description": "Damage taken -80%. Counter Attack: this move becomes the countered move.",
+    "description": "Damage taken -70%. Counter Attack: this move becomes the countered move.",
     "has_counter": true,
     "localized": {
       "zh": {
         "name": "镜像反射",
-        "description": "减伤80%，应对攻击：本技能变为被应对的技能。"
+        "description": "减伤70%，应对攻击：本技能变为被应对的技能。"
       }
     }
   },
@@ -2740,7 +2740,7 @@
     "localized": {
       "zh": {
         "name": "漫反射",
-        "description": "每种系别中的至多一个技能，威力+35。"
+        "description": "每种系别中的至多1个技能，威力+35。"
       }
     }
   },
@@ -2780,12 +2780,12 @@
     "category": "Magic Attack",
     "energy_cost": 3,
     "power": 95,
-    "description": "Deals magic damage. This move's type always matches the current weather.",
+    "description": "Deals magic damage. This move's type matches the current weather.",
     "has_counter": false,
     "localized": {
       "zh": {
         "name": "天光",
-        "description": "造成魔伤，本技能系别始终和天气系别相同。"
+        "description": "造成魔伤，本技能系别和天气系别相同。"
       }
     }
   },
@@ -2810,7 +2810,7 @@
     "category": "Magic Attack",
     "energy_cost": 4,
     "power": 50,
-    "description": "Deals magic damage. Having other types of moves gives different effects.",
+    "description": "Deals magic damage. Carrying other types of moves grants different effects.",
     "has_counter": false,
     "localized": {
       "zh": {
@@ -2868,14 +2868,14 @@
     "name": "Spiked Shield",
     "type": "Ground",
     "category": "Defense",
-    "energy_cost": 3,
+    "energy_cost": 2,
     "power": null,
-    "description": "Damage taken -70%. Counter Attack: opponent gains Physical Attack -50%.",
+    "description": "Damage taken -70%. Counter Attack: opponent gains Physical Attack -70%.",
     "has_counter": true,
     "localized": {
       "zh": {
         "name": "刺盾",
-        "description": "减伤70%，应对攻击：敌方获得物攻-50%。"
+        "description": "减伤70%，应对攻击：敌方获得物攻-70%。"
       }
     }
   },
@@ -2899,13 +2899,13 @@
     "type": "Ground",
     "category": "Physical Attack",
     "energy_cost": 5,
-    "power": 70,
-    "description": "Deals physical damage. Gains Physical Defense +60%. Counter Status: this move's power is doubled, and Physical Defense +60% additionally.",
+    "power": 80,
+    "description": "Deals physical damage. Gains Physical Defense +70%. Counter Status: this move's power is doubled, and Physical Defense +70% additionally.",
     "has_counter": true,
     "localized": {
       "zh": {
         "name": "地陷",
-        "description": "造成物伤，自己获得物防+60%，应对状态：本次技能威力翻倍，且物防额外+60%。"
+        "description": "造成物伤，自己获得物防+70%，应对状态：本次技能威力翻倍，且物防额外+70%。"
       }
     }
   },
@@ -2930,7 +2930,7 @@
     "category": "Defense",
     "energy_cost": 3,
     "power": null,
-    "description": "Damage taken -50% and causes the user to Exit. Counter Attack.",
+    "description": "Damage taken -50% and user triggers Exit. Counter Attack.",
     "has_counter": true,
     "localized": {
       "zh": {
@@ -2959,7 +2959,7 @@
     "type": "Ground",
     "category": "Physical Attack",
     "energy_cost": 3,
-    "power": 85,
+    "power": 95,
     "description": "Deals physical damage. Counter Status: opponent gains Physical Defense -80%.",
     "has_counter": true,
     "localized": {
@@ -3050,27 +3050,12 @@
     "category": "Status",
     "energy_cost": 2,
     "power": null,
-    "description": "User gains Physical Attack +50% and Physical Defense +50%. Counter Defense: user's Buffs are doubled.",
+    "description": "User gains Physical Attack +60% and Physical Defense +60%. Counter Defense: user's Buffs are doubled.",
     "has_counter": true,
     "localized": {
       "zh": {
         "name": "泥浆铠甲",
-        "description": "自己获得物攻和物防+40%，应对防御：额外使自己的增益翻倍。"
-      }
-    }
-  },
-  {
-    "name": "Quagmire",
-    "type": "Ground",
-    "category": "Status",
-    "energy_cost": 4,
-    "power": null,
-    "description": "Gains 1 stack of Sluggish Mark.",
-    "has_counter": false,
-    "localized": {
-      "zh": {
-        "name": "泥沼",
-        "description": "自己获得1层迟缓印记。"
+        "description": "自己获得物攻和物防+60%，应对防御：额外使自己的增益翻倍。"
       }
     }
   },
@@ -3215,12 +3200,12 @@
     "category": "Defense",
     "energy_cost": 2,
     "power": null,
-    "description": "Damage taken -80%. Counter Attack: opponent gains Combo count -2.",
+    "description": "Damage taken -80%. Counter Attack: opponent gains Combo Count -3.",
     "has_counter": true,
     "localized": {
       "zh": {
         "name": "淤泥表皮",
-        "description": "减伤80%，应对攻击：敌方获得连击数-2。"
+        "description": "减伤80%，应对攻击：敌方获得连击数-3。"
       }
     }
   },
@@ -3245,12 +3230,12 @@
     "category": "Physical Attack",
     "energy_cost": 3,
     "power": 80,
-    "description": "Deals physical damage. Opponent gains Combo count -3.",
+    "description": "Deals physical damage. Opponent gains Combo Count -3.",
     "has_counter": false,
     "localized": {
       "zh": {
         "name": "震击",
-        "description": "造成物理伤害，敌方获得连击数-3。"
+        "description": "造成物伤，敌方获得连击数-3。"
       }
     }
   },
@@ -3275,12 +3260,12 @@
     "category": "Physical Attack",
     "energy_cost": 3,
     "power": 80,
-    "description": "Deals physical damage. Counter Status: opponent gains Physical Defense -80%.",
-    "has_counter": true,
+    "description": "Deals physical damage. If the opponent switches monster this turn, user gains Physical Defense +100%.",
+    "has_counter": false,
     "localized": {
       "zh": {
         "name": "砂石冲撞",
-        "description": "造成物伤，应对状态：敌方获得物防-80%。"
+        "description": "造成物伤，若敌方本回合更换精灵，自己获得物防+100%。"
       }
     }
   },
@@ -3319,7 +3304,7 @@
     "type": "Ice",
     "category": "Physical Attack",
     "energy_cost": 4,
-    "power": 100,
+    "power": 105,
     "description": "Deals physical damage. Counter Status: opponent gains Move Energy Cost +3.",
     "has_counter": true,
     "localized": {
@@ -3349,7 +3334,7 @@
     "type": "Ice",
     "category": "Magic Attack",
     "energy_cost": 7,
-    "power": 100,
+    "power": 90,
     "description": "Deals magic damage. Opponent gains Move Energy Cost +2.",
     "has_counter": false,
     "localized": {
@@ -3364,7 +3349,7 @@
     "type": "Ice",
     "category": "Magic Attack",
     "energy_cost": 4,
-    "power": 0,
+    "power": null,
     "description": "Deals magic damage. Power equals to 10 times the opponent's total move energy cost.",
     "has_counter": false,
     "localized": {
@@ -3395,12 +3380,12 @@
     "category": "Defense",
     "energy_cost": 2,
     "power": null,
-    "description": "Damage taken -70%. Counter Attack: opponent gains 2 stacks of Freeze.",
+    "description": "Damage taken -80%. Counter Attack: opponent gains 2 stacks of Freeze.",
     "has_counter": true,
     "localized": {
       "zh": {
         "name": "冰墙",
-        "description": "减伤70%，应对攻击：敌方获得2层冻结。"
+        "description": "减伤80%，应对攻击：敌方获得2层冻结。"
       }
     }
   },
@@ -3410,12 +3395,12 @@
     "category": "Defense",
     "energy_cost": 2,
     "power": null,
-    "description": "Damage taken -70%. Counter Attack: countered move's energy cost +3.",
+    "description": "Damage taken -80%. Counter Attack: countered move's energy cost +3.",
     "has_counter": true,
     "localized": {
       "zh": {
         "name": "冰天雪地",
-        "description": "减伤70%，应对攻击：被应对技能能耗+3。"
+        "description": "减伤80%，应对攻击：被应对技能能耗+3。"
       }
     }
   },
@@ -3550,7 +3535,7 @@
     "localized": {
       "zh": {
         "name": "霜降",
-        "description": "敌方获得4层冻结效果。"
+        "description": "敌方获得4层冻结。"
       }
     }
   },
@@ -3560,12 +3545,12 @@
     "category": "Status",
     "energy_cost": 4,
     "power": null,
-    "description": "Opponent gains 3 stacks of Freeze. For each Freeze stack on the opponent, opponent gains Move Energy Cost +1.",
+    "description": "Opponent gains 1 stacks of Freeze. For each Freeze stack on the opponent, opponent gains Move Energy Cost +1.",
     "has_counter": false,
     "localized": {
       "zh": {
         "name": "霜天",
-        "description": "敌方获得3层冻结，且每有1层冻结获得全技能能耗+1。"
+        "description": "敌方获得1层冻结，且每有1层冻结获得全技能能耗+1。"
       }
     }
   },
@@ -3649,7 +3634,7 @@
     "type": "Ice",
     "category": "Physical Attack",
     "energy_cost": 3,
-    "power": 80,
+    "power": 90,
     "description": "Deals physical damage. Opponent gains Speed -30.",
     "has_counter": false,
     "localized": {
@@ -3695,12 +3680,12 @@
     "category": "Magic Attack",
     "energy_cost": 3,
     "power": 70,
-    "description": "Deals magic damage. Opponent gains Magic Defense -40%.",
+    "description": "Deals magic damage. Opponent gains Magic Defense -50%.",
     "has_counter": false,
     "localized": {
       "zh": {
         "name": "寒风吹",
-        "description": "造成魔伤，敌方获得魔防-40%。"
+        "description": "造成魔伤，敌方获得魔防-50%。"
       }
     }
   },
@@ -3760,7 +3745,7 @@
     "localized": {
       "zh": {
         "name": "架势",
-        "description": "自己回复20%生命，下次技能无蓄力。"
+        "description": "自己回复20%生命，下次技能无需蓄力。"
       }
     }
   },
@@ -3815,12 +3800,12 @@
     "category": "Status",
     "energy_cost": 3,
     "power": null,
-    "description": "Gains 1 stack of Dragonbite Mark.",
+    "description": "User gains 1 stack of Dragonbite Mark.",
     "has_counter": false,
     "localized": {
       "zh": {
         "name": "龙威",
-        "description": "获得1层龙噬印记。"
+        "description": "自己获得1层龙噬印记。"
       }
     }
   },
@@ -3829,7 +3814,7 @@
     "type": "Dragon",
     "category": "Magic Attack",
     "energy_cost": 1,
-    "power": 50,
+    "power": 55,
     "description": "Deals magic damage. Counter Status: next turn can use moves without the need to Charge.",
     "has_counter": true,
     "localized": {
@@ -3845,12 +3830,12 @@
     "category": "Defense",
     "energy_cost": 2,
     "power": null,
-    "description": "Damage taken -60%. This move can be used during Charge state. Counter Attack: next turn can use moves without the need to Charge.",
+    "description": "Damage taken -70%. This move can be used during Charge state. Counter Attack: next turn can use moves without the need to Charge.",
     "has_counter": true,
     "localized": {
       "zh": {
         "name": "龙血",
-        "description": "减伤60%，本技能可以在蓄力状态下使用，应对攻击：下次技能无需蓄力。"
+        "description": "减伤70%，本技能可以在蓄力状态下使用，应对攻击：下次技能无需蓄力。"
       }
     }
   },
@@ -3979,13 +3964,13 @@
     "type": "Electric",
     "category": "Magic Attack",
     "energy_cost": 2,
-    "power": 60,
+    "power": 70,
     "description": "Deals magic damage. User gains Speed +30.",
     "has_counter": false,
     "localized": {
       "zh": {
         "name": "超导加速",
-        "description": "造成魔伤，自身获得速度+30。"
+        "description": "造成魔伤，自己获得速度+30。"
       }
     }
   },
@@ -4040,12 +4025,12 @@
     "category": "Defense",
     "energy_cost": 3,
     "power": null,
-    "description": "Damage taken -60%. Counter Attack: on the next turn, the move selected by the user will be performed one additional time.",
+    "description": "Damage taken -70%. Counter Attack: on the next turn, the move selected by the user will be performed one additional time.",
     "has_counter": true,
     "localized": {
       "zh": {
         "name": "电磁偏转",
-        "description": "减伤60%，应对攻击：下回合所选技能使用次数+1。"
+        "description": "减伤70%，应对攻击：下回合所选技能使用次数+1。"
       }
     }
   },
@@ -4115,12 +4100,12 @@
     "category": "Status",
     "energy_cost": 1,
     "power": null,
-    "description": "User triggers Re-Enter. On the next turn, user's selected move will be performed one additional time.",
+    "description": "User triggers Re-Enter at the end of the turn. On the next turn, user's selected move will be performed one additional time.",
     "has_counter": false,
     "localized": {
       "zh": {
         "name": "过载回路",
-        "description": "自己返场，下回合所选技能使用次数+1。"
+        "description": "回合结束自己返场，下回合所选技能使用次数+1。"
       }
     }
   },
@@ -4130,12 +4115,12 @@
     "category": "Defense",
     "energy_cost": 2,
     "power": null,
-    "description": "Damage taken -70%. Counter Attack: user triggers Re-Enter at the end of the turn.",
+    "description": "Damage taken -80%. Counter Attack: user triggers Re-Enter at the end of the turn.",
     "has_counter": true,
     "localized": {
       "zh": {
         "name": "集中",
-        "description": "减伤70%，应对攻击：自己回合结束返场。"
+        "description": "减伤80%，应对攻击：自己回合结束返场。"
       }
     }
   },
@@ -4150,7 +4135,7 @@
     "localized": {
       "zh": {
         "name": "加大功率",
-        "description": "自己脱离，被替换入场的精灵回复8能量。"
+        "description": "自己脱离，替换入场的精灵回复8能量。"
       }
     }
   },
@@ -4180,7 +4165,7 @@
     "localized": {
       "zh": {
         "name": "雷暴",
-        "description": "造成魔伤，迸发：本技能获得所有生效过的迸发效果，每获得1种，本技能能耗+1，威力+10。"
+        "description": "造成魔伤，迸发：本技能获得所有生效过的迸发，每获得1种，本技能能耗+1，威力+10。"
       }
     }
   },
@@ -4220,12 +4205,12 @@
     "category": "Status",
     "energy_cost": 2,
     "power": null,
-    "description": "Opponent's Priority -1. Counter Defense: opponent gains Attack -70%.",
+    "description": "Opponent's Priority -1. Counter Defense: opponent gains Attack -70% additionally.",
     "has_counter": true,
     "localized": {
       "zh": {
         "name": "麻痹",
-        "description": "敌方先手-1，应对防御：额外使敌方获得攻击-70%。"
+        "description": "敌方先手-1，应对防御：额外使敌方获得双攻-70%。"
       }
     }
   },
@@ -4234,7 +4219,7 @@
     "type": "Electric",
     "category": "Magic Attack",
     "energy_cost": 3,
-    "power": 80,
+    "power": 90,
     "description": "Deals magic damage. Counter Status: at the end of the turn, forces the opponent to Re-Enter.",
     "has_counter": true,
     "localized": {
@@ -4295,12 +4280,12 @@
     "category": "Magic Attack",
     "energy_cost": 3,
     "power": 35,
-    "description": "Deals magic damage, 2 Combo. Burst: this move's power +15.",
+    "description": "Deals magic damage, 2 Combo. Burst: this move's power +20.",
     "has_counter": false,
     "localized": {
       "zh": {
         "name": "引雷",
-        "description": "造成魔伤，2连击，迸发：本次技能威力+15。"
+        "description": "造成魔伤，2连击，迸发：本次技能威力+20。"
       }
     }
   },
@@ -4369,7 +4354,7 @@
     "type": "Poison",
     "category": "Physical Attack",
     "energy_cost": 2,
-    "power": 20,
+    "power": 25,
     "description": "Deals physical damage. Opponent gains 2 stacks of Poison. Counter Status: opponent gains 6 stacks of Poison instead.",
     "has_counter": true,
     "localized": {
@@ -4415,12 +4400,12 @@
     "category": "Magic Attack",
     "energy_cost": 5,
     "power": 120,
-    "description": "Deals magic damage. For each Poison Effect stack on the opponent, this move's energy cost -1. Gives opponent 1 stack of Poison.",
+    "description": "Deals magic damage. For each Poison Effect stack on the opponent, this move's energy cost -1, and the opponent gains 1 stack of Poison.",
     "has_counter": false,
     "localized": {
       "zh": {
         "name": "毒液渗透",
-        "description": "造成魔伤，每拥有1层中毒效果，本技能能耗-1，赋予1层中毒。"
+        "description": "造成魔伤，敌方每有1层中毒效果，本技能能耗-1，敌方获得1层中毒。"
       }
     }
   },
@@ -4450,7 +4435,7 @@
     "localized": {
       "zh": {
         "name": "毒针",
-        "description": "造成物伤，敌方获得1层中毒效果。"
+        "description": "造成物伤，敌方获得1层中毒。"
       }
     }
   },
@@ -4480,7 +4465,7 @@
     "localized": {
       "zh": {
         "name": "感染病",
-        "description": "造成魔伤，若击败敌方则将中毒转化为印记。"
+        "description": "造成魔伤，若击败敌方则将中毒转化为中毒印记。"
       }
     }
   },
@@ -4609,13 +4594,13 @@
     "type": "Poison",
     "category": "Magic Attack",
     "energy_cost": 3,
-    "power": 70,
+    "power": 75,
     "description": "Deals magic damage. For each Poison Effect stack on the opponent, this move's power +10. Counter Status: opponent gains 2 stacks of Poison.",
     "has_counter": true,
     "localized": {
       "zh": {
         "name": "鸩毒",
-        "description": "造成魔伤，敌方每有1层中毒效果，本次技能威力+10，应对状态：敌方获得2层中毒。"
+        "description": "造成魔伤，敌方每有1层中毒效果，本次技能威力+10，应对状态：改为本次威力+20。"
       }
     }
   },
@@ -4624,7 +4609,7 @@
     "type": "Bug",
     "category": "Physical Attack",
     "energy_cost": 4,
-    "power": 90,
+    "power": 95,
     "description": "Deals physical damage. Dispels all Marks from the opponent. Counter Status: steals all Marks from the opponent instead.",
     "has_counter": true,
     "localized": {
@@ -4690,7 +4675,7 @@
     "localized": {
       "zh": {
         "name": "虫茧",
-        "description": "自己回复20%生命，获得1次奉献：获得10%吸血。"
+        "description": "自己回复20%生命，己方队伍获得1次奉献：获得10%吸血。"
       }
     }
   },
@@ -4705,7 +4690,7 @@
     "localized": {
       "zh": {
         "name": "虫结阵",
-        "description": "减伤60%，应对攻击：获得1次随机奉献。"
+        "description": "减伤80%，应对攻击：己方队伍获得1次随机奉献。"
       }
     }
   },
@@ -4715,12 +4700,12 @@
     "category": "Magic Attack",
     "energy_cost": 2,
     "power": 15,
-    "description": "Deals magic damage. For each team member that carries this move, Combo count +1.",
+    "description": "Deals magic damage. For each 'Chitter' move held by the monsters in the team, this move's Combo Count +1.",
     "has_counter": false,
     "localized": {
       "zh": {
         "name": "虫鸣",
-        "description": "造成魔伤，队伍中每有1只带有本技能的精灵，本次技能连击数+1。"
+        "description": "造成魔伤，队伍中的精灵每携带1个【虫鸣】，本次技能连击数+1。"
       }
     }
   },
@@ -4745,12 +4730,12 @@
     "category": "Physical Attack",
     "energy_cost": 5,
     "power": 45,
-    "description": "Deals physical damage, 2 Combo. Devotion: gains 1 stack that grants Combo count +1.",
+    "description": "Deals physical damage, 2 Combo. Devotion: gains 1 stack that grants Combo Count +1.",
     "has_counter": false,
     "localized": {
       "zh": {
         "name": "虫群过境",
-        "description": "造成物伤，2连击。获得1次奉献：获得连击数+1。"
+        "description": "造成物伤，2连击。己方队伍获得1次奉献：获得连击数+1。"
       }
     }
   },
@@ -4760,12 +4745,12 @@
     "category": "Status",
     "energy_cost": 3,
     "power": null,
-    "description": "gains 2 random Devotion enhancements.",
+    "description": "User's team gains 2 random Devotion enhancements.",
     "has_counter": false,
     "localized": {
       "zh": {
         "name": "虫群智慧",
-        "description": "随机获得2次奉献。"
+        "description": "己方队伍获得2次随机奉献。"
       }
     }
   },
@@ -4795,7 +4780,7 @@
     "localized": {
       "zh": {
         "name": "飞断",
-        "description": "造成物伤，获得1次奉献：威力+20。"
+        "description": "造成物伤，己方队伍获得1次奉献：威力+20。"
       }
     }
   },
@@ -4810,7 +4795,7 @@
     "localized": {
       "zh": {
         "name": "假寐",
-        "description": "自己回复2能量，获得1次奉献：能耗-2。"
+        "description": "自己回复2能量，己方队伍获得1次奉献：能耗-2。"
       }
     }
   },
@@ -4969,7 +4954,7 @@
     "type": "Fighting",
     "category": "Physical Attack",
     "energy_cost": 3,
-    "power": 50,
+    "power": 65,
     "description": "Deals physical damage. Counter Status: this move's power x5.",
     "has_counter": true,
     "localized": {
@@ -4984,7 +4969,7 @@
     "type": "Fighting",
     "category": "Physical Attack",
     "energy_cost": 2,
-    "power": 60,
+    "power": 65,
     "description": "Deals physical damage. Counter Status: user gains Physical Attack +100%.",
     "has_counter": true,
     "localized": {
@@ -5030,7 +5015,7 @@
     "category": "Magic Attack",
     "energy_cost": 3,
     "power": 25,
-    "description": "Deals magic damage, 2 Combo. Each time this monster performs a successful Counter, this move's Combo count +2 permanently.",
+    "description": "Deals magic damage, 2 Combo. Each time this monster performs a successful Counter, this move's Combo Count +2 permanently.",
     "has_counter": true,
     "localized": {
       "zh": {
@@ -5060,12 +5045,12 @@
     "category": "Defense",
     "energy_cost": 3,
     "power": null,
-    "description": "Damage taken -80%. Counter Attack: gains Move Power +40.",
+    "description": "Damage taken -80%. Counter Attack: user gains Move Power +40.",
     "has_counter": true,
     "localized": {
       "zh": {
         "name": "防御反击",
-        "description": "减伤80%，应对攻击：获得全技能威力+40。"
+        "description": "减伤80%，应对攻击：自己获得全技能威力+40。"
       }
     }
   },
@@ -5095,7 +5080,7 @@
     "localized": {
       "zh": {
         "name": "化劲",
-        "description": "获得全技能威力+40。"
+        "description": "自己获得全技能威力+40。"
       }
     }
   },
@@ -5104,7 +5089,7 @@
     "type": "Fighting",
     "category": "Physical Attack",
     "energy_cost": 2,
-    "power": 25,
+    "power": 35,
     "description": "Deals physical damage. Counter Status: this move's power x10.",
     "has_counter": true,
     "localized": {
@@ -5119,7 +5104,7 @@
     "type": "Fighting",
     "category": "Physical Attack",
     "energy_cost": 3,
-    "power": 85,
+    "power": 90,
     "description": "Deals physical damage. Counter Status: additionally triggers Interrupt, and user restores energy equal to this move's energy cost.",
     "has_counter": true,
     "localized": {
@@ -5150,12 +5135,12 @@
     "category": "Status",
     "energy_cost": 1,
     "power": null,
-    "description": "Opponent gains Defense -50%. Counter Defense: user gains Physical Attack +50%.",
+    "description": "Opponent gains Defense -70%. Counter Defense: user gains Physical Attack +70% additionally.",
     "has_counter": true,
     "localized": {
       "zh": {
         "name": "破绽",
-        "description": "敌方获得双防-50%，应对防御：自己额外获得物攻+50%。"
+        "description": "敌方获得双防-70%，应对防御：自己额外获得物攻+70%。"
       }
     }
   },
@@ -5194,7 +5179,7 @@
     "type": "Fighting",
     "category": "Physical Attack",
     "energy_cost": 3,
-    "power": 30,
+    "power": 35,
     "description": "Deals physical damage, 2 Combo. Counter Status: this move gets 6 Combo instead.",
     "has_counter": true,
     "localized": {
@@ -5215,7 +5200,7 @@
     "localized": {
       "zh": {
         "name": "提气",
-        "description": "获得全技能威力+40，若敌方本回合替换精灵，额外获得威力+50。"
+        "description": "自己获得全技能威力+40，若敌方本回合更换精灵，额外获得威力+50。"
       }
     }
   },
@@ -5225,12 +5210,12 @@
     "category": "Defense",
     "energy_cost": 4,
     "power": null,
-    "description": "Damage taken -60%. Counter Attack: deals damage to the opponent with same power as the countered move.",
+    "description": "Damage taken -60%. Counter Attack: deals physical damage to the opponent with same power as the countered move.",
     "has_counter": true,
     "localized": {
       "zh": {
         "name": "听桥",
-        "description": "减伤60%，应对攻击：对敌方造成伤害，威力与被应对技能相等。"
+        "description": "减伤60%，应对攻击：对敌方造成物理伤害，威力与被应对技能相等。"
       }
     }
   },
@@ -5239,7 +5224,7 @@
     "type": "Fighting",
     "category": "Physical Attack",
     "energy_cost": 3,
-    "power": 75,
+    "power": 85,
     "description": "Deals physical damage. Counter Status: this move's power is doubled.",
     "has_counter": true,
     "localized": {
@@ -5285,12 +5270,12 @@
     "category": "Defense",
     "energy_cost": 2,
     "power": null,
-    "description": "Counter Attack: Interrupt the countered move and deal 75 power physical damage.",
+    "description": "Counter Attack: Interrupt the countered move and deal 90 power physical damage.",
     "has_counter": true,
     "localized": {
       "zh": {
         "name": "硬门",
-        "description": "应对攻击：打断被应对技能，并造成75威力物伤。"
+        "description": "应对攻击：打断被应对技能，并造成90威力物伤。"
       }
     }
   },
@@ -5314,7 +5299,7 @@
     "type": "Fighting",
     "category": "Physical Attack",
     "energy_cost": 2,
-    "power": 70,
+    "power": 75,
     "description": "Deals physical damage. Counter Status: additionally Interrupt the countered move.",
     "has_counter": true,
     "localized": {
@@ -5345,7 +5330,7 @@
     "category": "Status",
     "energy_cost": 2,
     "power": null,
-    "description": "User gains Combo count +100%.",
+    "description": "User gains Combo Count +100%.",
     "has_counter": false,
     "localized": {
       "zh": {
@@ -5420,12 +5405,12 @@
     "category": "Status",
     "energy_cost": 1,
     "power": null,
-    "description": "Both opponent and user Exit. Priority -1.",
+    "description": "Both opponent and user trigger Exit. Priority -1.",
     "has_counter": false,
     "localized": {
       "zh": {
         "name": "风隐",
-        "description": "敌方和自己均脱离。先手-1。"
+        "description": "敌方和自己均脱离，先手-1。"
       }
     }
   },
@@ -5494,7 +5479,7 @@
     "type": "Flying",
     "category": "Physical Attack",
     "energy_cost": 5,
-    "power": 60,
+    "power": 70,
     "description": "Deals physical damage. Quick Entry. Counter Status: this move's power x1.5.",
     "has_counter": true,
     "localized": {
@@ -5539,7 +5524,7 @@
     "type": "Flying",
     "category": "Physical Attack",
     "energy_cost": 3,
-    "power": 70,
+    "power": 75,
     "description": "Deals physical damage. If this move goes first, this move's power +50%.",
     "has_counter": true,
     "localized": {
@@ -5590,7 +5575,7 @@
     "localized": {
       "zh": {
         "name": "羽化加速",
-        "description": "自己获得技能威力+20，迅捷。"
+        "description": "自己获得全技能威力+20，迅捷。"
       }
     }
   },
@@ -5605,7 +5590,7 @@
     "localized": {
       "zh": {
         "name": "飞羽",
-        "description": "迅捷，驱散敌方一种增益。"
+        "description": "迅捷，驱散敌方1种增益。"
       }
     }
   },
@@ -5614,7 +5599,7 @@
     "type": "Flying",
     "category": "Physical Attack",
     "energy_cost": 2,
-    "power": 70,
+    "power": 75,
     "description": "Deals physical damage. Counter Status: At the end of the turn, opponent triggers Emergency Exit.",
     "has_counter": true,
     "localized": {
@@ -5630,7 +5615,7 @@
     "category": "Defense",
     "energy_cost": 3,
     "power": null,
-    "description": "Damage taken -70%. Counter Attack: user gains Combo count +3.",
+    "description": "Damage taken -70%. Counter Attack: user gains Combo Count +3.",
     "has_counter": true,
     "localized": {
       "zh": {
@@ -5785,7 +5770,7 @@
     "localized": {
       "zh": {
         "name": "撒娇",
-        "description": "造成魔伤，3连击，获得萌化：威力永久+20。"
+        "description": "造成魔伤，3连击。自己获得萌化：威力永久+20。"
       }
     }
   },
@@ -5794,7 +5779,7 @@
     "type": "Cute",
     "category": "Physical Attack",
     "energy_cost": 2,
-    "power": 0,
+    "power": null,
     "description": "Deals physical damage. The greater the weight difference between user and opponent, the higher the power.",
     "has_counter": false,
     "localized": {
@@ -5840,7 +5825,7 @@
     "category": "Physical Attack",
     "energy_cost": 3,
     "power": 30,
-    "description": "Deals physical damage, 1 Combo. For each stack of Regression on all monsters on both teams, this move's Combo count +1.",
+    "description": "Deals physical damage, 1 Combo. For each stack of Regression on all monsters on both teams, this move's Combo Count +1.",
     "has_counter": false,
     "localized": {
       "zh": {
@@ -5880,21 +5865,6 @@
     }
   },
   {
-    "name": "Sweet Shield",
-    "type": "Cute",
-    "category": "Status",
-    "energy_cost": 3,
-    "power": null,
-    "description": "User gains 1 stack of Regression: Physical Attack +100% and Physical Defense +100% permanently.",
-    "has_counter": false,
-    "localized": {
-      "zh": {
-        "name": "甜心护盾",
-        "description": "自己获得萌化：物攻和物防永久+100%。"
-      }
-    }
-  },
-  {
     "name": "Sweet Recovery",
     "type": "Cute",
     "category": "Status",
@@ -5930,12 +5900,12 @@
     "category": "Defense",
     "energy_cost": 2,
     "power": null,
-    "description": "Damage taken -60%. Counter Attack: opponent loses 3 energy.",
+    "description": "Damage taken -70%. Counter Attack: opponent loses 3 energy.",
     "has_counter": true,
     "localized": {
       "zh": {
         "name": "报复",
-        "description": "减伤60%，应对攻击：敌方失去3能量。"
+        "description": "减伤70%，应对攻击：敌方失去3能量。"
       }
     }
   },
@@ -5944,7 +5914,7 @@
     "type": "Ghost",
     "category": "Magic Attack",
     "energy_cost": 2,
-    "power": 30,
+    "power": 40,
     "description": "Deals magic damage. If opponent has 0 energy, damage x20.",
     "has_counter": false,
     "localized": {
@@ -5960,12 +5930,12 @@
     "category": "Status",
     "energy_cost": 2,
     "power": null,
-    "description": "User gains Magic Attack +70%. If opponent switches monster this turn, user gains Speed +70.",
+    "description": "User gains Magic Attack +90%. If opponent switches monster this turn, user gains Speed +70.",
     "has_counter": false,
     "localized": {
       "zh": {
         "name": "嘲弄",
-        "description": "自己获得魔攻+70%，若敌方本回合替换精灵，自己获得速度+70。"
+        "description": "自己获得魔攻+90%，若敌方本回合更换精灵，自己获得速度+70。"
       }
     }
   },
@@ -5973,7 +5943,7 @@
     "name": "Mischief",
     "type": "Ghost",
     "category": "Status",
-    "energy_cost": 0,
+    "energy_cost": 1,
     "power": null,
     "description": "Opponent loses 3 energy. Counter Defense: opponent loses 6 energy instead.",
     "has_counter": true,
@@ -6064,7 +6034,7 @@
     "type": "Ghost",
     "category": "Physical Attack",
     "energy_cost": 3,
-    "power": 85,
+    "power": 80,
     "description": "Deals physical damage. Counter Status: opponent loses 6 energy.",
     "has_counter": true,
     "localized": {
@@ -6095,12 +6065,12 @@
     "category": "Magic Attack",
     "energy_cost": 3,
     "power": 25,
-    "description": "Deals magic damage, 3 Combo. If the opponent switches monster this turn, this move's Combo counts are doubled.",
+    "description": "Deals magic damage, 3 Combo. If the opponent switches monster this turn, this move's Combo Count is doubled.",
     "has_counter": false,
     "localized": {
       "zh": {
         "name": "灵光",
-        "description": "造成魔伤，3连击，若敌方本回合替换精灵，本次技能连击数翻倍。"
+        "description": "造成魔伤，3连击，若敌方本回合更换精灵，本次技能连击数翻倍。"
       }
     }
   },
@@ -6140,12 +6110,12 @@
     "category": "Defense",
     "energy_cost": 2,
     "power": null,
-    "description": "Damage taken -70%. Counter Attack: user gains Magic Defense +40%.",
+    "description": "Damage taken -80%. Counter Attack: user gains Magic Defense +70%.",
     "has_counter": true,
     "localized": {
       "zh": {
         "name": "虚化",
-        "description": "减伤70%，应对攻击：自己获得魔防+40%。"
+        "description": "减伤80%，应对攻击：自己获得魔防+70%。"
       }
     }
   },
@@ -6205,7 +6175,7 @@
     "localized": {
       "zh": {
         "name": "暗箱操作",
-        "description": "自己获得双攻和双防-100%，应对防御：改为敌方-100%。"
+        "description": "自己获得双攻和双防-100%，应对防御：改为敌方获得双攻和双防-100%。"
       }
     }
   },
@@ -6229,13 +6199,13 @@
     "type": "Dark",
     "category": "Physical Attack",
     "energy_cost": 2,
-    "power": 60,
+    "power": 65,
     "description": "Deals physical damage with 100% Lifesteal.",
     "has_counter": false,
     "localized": {
       "zh": {
         "name": "蝙蝠",
-        "description": "造成物伤，吸血100%。"
+        "description": "造成物伤，并吸血100%。"
       }
     }
   },
@@ -6245,7 +6215,7 @@
     "category": "Physical Attack",
     "energy_cost": 3,
     "power": 35,
-    "description": "Deals physical damage, 2 Combo. If this move defeats the opponent, this move's Combo count +2 permanently.",
+    "description": "Deals physical damage, 2 Combo. If this move defeats the opponent, this move's Combo Count +2 permanently.",
     "has_counter": false,
     "localized": {
       "zh": {
@@ -6335,12 +6305,12 @@
     "category": "Status",
     "energy_cost": 1,
     "power": null,
-    "description": "User triggers Exit. Counter Defense: opponent's Attack-type move's energy cost +6.",
+    "description": "User triggers Exit. Counter Defense: opponent's Attack-type move's energy cost +4.",
     "has_counter": true,
     "localized": {
       "zh": {
         "name": "恶意逃离",
-        "description": "脱离，应对防御：额外使敌方攻击技能能耗+6。"
+        "description": "脱离，应对防御：额外使敌方攻击技能能耗+4。"
       }
     }
   },
@@ -6349,7 +6319,7 @@
     "type": "Dark",
     "category": "Physical Attack",
     "energy_cost": 4,
-    "power": 140,
+    "power": 135,
     "description": "Deals physical damage. If user's HP ratio is higher than 50%, user gains Attack -50% after use.",
     "has_counter": false,
     "localized": {
@@ -6370,7 +6340,7 @@
     "localized": {
       "zh": {
         "name": "力量吞噬",
-        "description": "敌方获得技能威力-20，自己获得技能威力+20。"
+        "description": "敌方获得全技能威力-20，自己获得全技能威力+20。"
       }
     }
   },
@@ -6415,7 +6385,7 @@
     "localized": {
       "zh": {
         "name": "骗局",
-        "description": "造成魔伤，能量不足时每1点能量消耗5%生命。"
+        "description": "造成魔伤，能量不足时，消耗5%生命代替1能量。"
       }
     }
   },
@@ -6485,7 +6455,7 @@
     "category": "Physical Attack",
     "energy_cost": 3,
     "power": 30,
-    "description": "Deals physical damage, 3 Combo. If user's HP ratio is lower than 50%, this move's Combo count +2.",
+    "description": "Deals physical damage, 3 Combo. If user's HP ratio is lower than 50%, this move's Combo Count +2.",
     "has_counter": false,
     "localized": {
       "zh": {
@@ -6500,12 +6470,12 @@
     "category": "Status",
     "energy_cost": 2,
     "power": null,
-    "description": "Gains Lifesteal +100%.",
+    "description": "User gains Lifesteal +100%.",
     "has_counter": false,
     "localized": {
       "zh": {
         "name": "贪婪",
-        "description": "获得100%吸血。"
+        "description": "自己获得100%吸血。"
       }
     }
   },
@@ -6619,13 +6589,13 @@
     "type": "Mechanical",
     "category": "Physical Attack",
     "energy_cost": 3,
-    "power": 60,
-    "description": "Deals physical damage. Each time the position of this move changes, this move's power +20 permanently.",
+    "power": 80,
+    "description": "Deals physical damage. Each turn the position of this move changes, this move's power +20 permanently.",
     "has_counter": false,
     "localized": {
       "zh": {
         "name": "齿轮扭矩",
-        "description": "造成物伤，每变化1次位置，本技能威力永久+20。"
+        "description": "造成物伤，每回合位置发生变化时，本技能威力永久+20。"
       }
     }
   },
@@ -6633,14 +6603,14 @@
     "name": "Gear Cut",
     "type": "Mechanical",
     "category": "Physical Attack",
-    "energy_cost": 6,
-    "power": 145,
+    "energy_cost": 5,
+    "power": 130,
     "description": "Deals physical damage. If this move is at Slot 1 or Slot 3, energy cost -2. Transmission 1.",
     "has_counter": false,
     "localized": {
       "zh": {
         "name": "齿轮切开",
-        "description": "造成物伤，本技能位于1号或3号位时能耗-2。传动1。"
+        "description": "造成物伤，本技能位于1号或3号位时能耗-2，传动1。"
       }
     }
   },
@@ -6650,12 +6620,12 @@
     "category": "Physical Attack",
     "energy_cost": 1,
     "power": 20,
-    "description": "Deals physical damage, 2 Combo. If this move is at Slot 1 or Slot 3, Combo count +1. Transmission 1.",
+    "description": "Deals physical damage, 2 Combo. If this move is at Slot 1 or Slot 3, Combo Count +1. Transmission 1.",
     "has_counter": false,
     "localized": {
       "zh": {
         "name": "传感器",
-        "description": "造成物伤，2连击。本技能位于1号或3号位时，连击数+1。传动1。"
+        "description": "造成物伤，2连击，本技能位于1号或3号位时连击数+1，传动1。"
       }
     }
   },
@@ -6663,14 +6633,14 @@
     "name": "Magnetic Storm",
     "type": "Mechanical",
     "category": "Magic Attack",
-    "energy_cost": 3,
-    "power": 95,
+    "energy_cost": 2,
+    "power": 70,
     "description": "Deals magic damage. If this move is at Slot 1 or Slot 3, power +30. Transmission 1.",
     "has_counter": false,
     "localized": {
       "zh": {
         "name": "磁暴",
-        "description": "造成魔伤，本技能位于1号或3号位时，威力+30。传动1。"
+        "description": "造成魔伤，本技能位于1号或3号位时威力+30，传动1。"
       }
     }
   },
@@ -6694,13 +6664,13 @@
     "type": "Mechanical",
     "category": "Physical Attack",
     "energy_cost": 3,
-    "power": 80,
+    "power": 70,
     "description": "Deals physical damage. If this move is at Slot 1, power +90. Transmission 2.",
     "has_counter": false,
     "localized": {
       "zh": {
         "name": "钢铁洪流",
-        "description": "造成物伤，本技能位于1号位时威力+90。传动2。"
+        "description": "造成物伤，本技能位于1号位时威力+90，传动2。"
       }
     }
   },
@@ -6709,13 +6679,13 @@
     "type": "Mechanical",
     "category": "Physical Attack",
     "energy_cost": 4,
-    "power": 0,
-    "description": "Deals physical damage. Power equals to one third of sum of adjacent moves' power. Transmission.",
+    "power": null,
+    "description": "Deals physical damage. Power equals to one third of sum of adjacent moves' power. Transmission 1.",
     "has_counter": false,
     "localized": {
       "zh": {
         "name": "钢钻",
-        "description": "造成物伤，技能威力为两侧技能威力和的三分之一，传动。"
+        "description": "造成物伤，技能威力为两侧技能威力和的三分之一，传动1。"
       }
     }
   },
@@ -6723,8 +6693,8 @@
     "name": "Metal Sound",
     "type": "Mechanical",
     "category": "Magic Attack",
-    "energy_cost": 2,
-    "power": 80,
+    "energy_cost": 3,
+    "power": 100,
     "description": "Deals magic damage to the opponent.",
     "has_counter": false,
     "localized": {
@@ -6738,14 +6708,14 @@
     "name": "Ion Oscillation",
     "type": "Mechanical",
     "category": "Magic Attack",
-    "energy_cost": 1,
-    "power": 55,
+    "energy_cost": 3,
+    "power": 90,
     "description": "Deals magic damage. If this move is at Slot 3, power +40. Transmission 1.",
     "has_counter": false,
     "localized": {
       "zh": {
         "name": "离子震荡",
-        "description": "造成魔伤，本技能位于3号位时，威力+40。传动1。"
+        "description": "造成魔伤，本技能位于3号位时威力+40，传动1。"
       }
     }
   },
@@ -6775,7 +6745,7 @@
     "localized": {
       "zh": {
         "name": "能量守恒",
-        "description": "减伤80%，应对攻击：两侧的技能能耗永久-1。"
+        "description": "减伤80%，应对攻击：两侧技能能耗永久-1。"
       }
     }
   },
@@ -6785,12 +6755,12 @@
     "category": "Status",
     "energy_cost": 1,
     "power": null,
-    "description": "User gains Speed +80. If this move is at Slot 1 or Slot 3, user additionally gains Attack +100%. Transmission 1.",
+    "description": "User gains Speed +80. If this move is at Slot 1 or Slot 3, user additionally gains Physical Attack +60%. Transmission 1.",
     "has_counter": false,
     "localized": {
       "zh": {
         "name": "啮合传递",
-        "description": "自己获得速度+80，本技能位于1号位或3号位时额外获得物攻+100%。传动1。"
+        "description": "自己获得速度+80，本技能位于1号或3号位时额外获得物攻+60%，传动1。"
       }
     }
   },
@@ -6799,13 +6769,13 @@
     "type": "Mechanical",
     "category": "Physical Attack",
     "energy_cost": 1,
-    "power": 55,
+    "power": 45,
     "description": "Deals physical damage. If this move is at Slot 1, power +60. Transmission 1.",
     "has_counter": false,
     "localized": {
       "zh": {
         "name": "械斗",
-        "description": "造成物伤，本技能位于1号位时，威力+60。传动1。"
+        "description": "造成物伤，本技能位于1号位时威力+60，传动1。"
       }
     }
   },
@@ -6815,12 +6785,12 @@
     "category": "Status",
     "energy_cost": 3,
     "power": null,
-    "description": "Active: this move's passive energy cost -1 further. Passive: adjacent moves' energy cost -1. Transmission.",
+    "description": "Active: this move's passive energy cost -1 further. Passive: adjacent moves' energy cost -1. Transmission 1.",
     "has_counter": false,
     "localized": {
       "zh": {
         "name": "轴承支撑",
-        "description": "主动：本技能被动额外-1能耗，被动：两侧技能能耗-1，传动。"
+        "description": "主动：本技能被动额外-1能耗，被动：两侧技能能耗-1，传动1。"
       }
     }
   },
@@ -6850,7 +6820,7 @@
     "localized": {
       "zh": {
         "name": "超维投射",
-        "description": "敌方获得4层星陨。"
+        "description": "敌方获得4层星陨印记。"
       }
     }
   },
@@ -6865,7 +6835,7 @@
     "localized": {
       "zh": {
         "name": "超新星馈赠",
-        "description": "敌方获得2层星陨，每使用1次，赋予的星陨层数+1。"
+        "description": "敌方获得2层星陨印记，每使用1次，赋予的星陨印记层数+1。"
       }
     }
   },
@@ -6874,13 +6844,13 @@
     "type": "Illusion",
     "category": "Magic Attack",
     "energy_cost": 2,
-    "power": 60,
+    "power": 65,
     "description": "Deals magic damage. Counter Status: opponent gains 3 stacks of Starfall Mark.",
     "has_counter": true,
     "localized": {
       "zh": {
         "name": "错乱",
-        "description": "造成魔伤，应对状态：敌方获得3层星陨。"
+        "description": "造成魔伤，应对状态：敌方获得3层星陨印记。"
       }
     }
   },
@@ -6904,13 +6874,13 @@
     "type": "Illusion",
     "category": "Magic Attack",
     "energy_cost": 4,
-    "power": 20,
-    "description": "Deals magic damage, 1 Combo. For each Starfall Mark stack on the opponent, this move's Combo count +1.",
+    "power": 15,
+    "description": "Deals magic damage, 1 Combo. For each Starfall Mark stack on the opponent, this move's Combo Count +1.",
     "has_counter": false,
     "localized": {
       "zh": {
         "name": "多维击打",
-        "description": "造成魔伤，1连击，敌方每有1层星陨，本次技能连击数+1。"
+        "description": "造成魔伤，1连击，敌方每有1层星陨印记，本次技能连击数+1。"
       }
     }
   },
@@ -6918,14 +6888,14 @@
     "name": "Antinomy",
     "type": "Illusion",
     "category": "Status",
-    "energy_cost": 3,
+    "energy_cost": 4,
     "power": null,
     "description": "Opponent gains 3 stacks of Starfall Mark. Counter Defense: additionally doubles the opponent's Starfall Mark stacks.",
     "has_counter": true,
     "localized": {
       "zh": {
         "name": "二律背反",
-        "description": "敌方获得3层星陨，应对防御：额外使敌方星陨层数翻倍。"
+        "description": "敌方获得3层星陨印记，应对防御：额外使敌方星陨印记层数翻倍。"
       }
     }
   },
@@ -6940,7 +6910,7 @@
     "localized": {
       "zh": {
         "name": "空间压迫",
-        "description": "造成物伤，敌方获得1层星陨。"
+        "description": "造成物伤，敌方获得1层星陨印记。"
       }
     }
   },
@@ -6965,12 +6935,12 @@
     "category": "Defense",
     "energy_cost": 3,
     "power": null,
-    "description": "Damage taken -70%. Counter Attack: opponent gains 2 stacks of Starfall Mark.",
+    "description": "Damage taken -80%. Counter Attack: opponent gains 2 stacks of Starfall Mark.",
     "has_counter": true,
     "localized": {
       "zh": {
         "name": "冥想",
-        "description": "减伤70%，应对攻击：敌方获得2层星陨。"
+        "description": "减伤80%，应对攻击：敌方获得2层星陨印记。"
       }
     }
   },
@@ -7025,12 +6995,12 @@
     "category": "Magic Attack",
     "energy_cost": 3,
     "power": 85,
-    "description": "Deals magic damage. If this move defeats the opponent, user gains Magic Attack +50%.",
+    "description": "Deals magic damage. If this move defeats the opponent, user gains Magic Attack +70%.",
     "has_counter": false,
     "localized": {
       "zh": {
         "name": "坍缩",
-        "description": "造成魔伤，若击败敌方，自己获得魔攻+50%。"
+        "description": "造成魔伤，若击败敌方，自己获得魔攻+70%。"
       }
     }
   },
@@ -7060,7 +7030,7 @@
     "localized": {
       "zh": {
         "name": "心灵洞悉",
-        "description": "敌方获得星陨，获得层数等于敌方印记层数。"
+        "description": "敌方获得星陨印记，获得层数等于敌方印记层数。"
       }
     }
   },
@@ -7075,7 +7045,7 @@
     "localized": {
       "zh": {
         "name": "星轨裂变",
-        "description": "敌方获得2层星陨。"
+        "description": "敌方获得2层星陨印记。"
       }
     }
   },
@@ -7090,7 +7060,7 @@
     "localized": {
       "zh": {
         "name": "星链",
-        "description": "2连击，每次连击使敌方获得1层星陨。"
+        "description": "2连击，每次连击使敌方获得1层星陨印记。"
       }
     }
   },
