@@ -201,11 +201,11 @@
   },
   {
     "name": "Total Focus",
-    "description": "At the start of the first turn, gains Attack +100%. Each action reduces this bonus by 20%.",
+    "description": "When entering the battlefield, gains Attack +100%. After each action, loses 20% of the gained Attack.",
     "localized": {
       "zh": {
         "name": "全神贯注",
-        "description": "入场首回合，获得物攻+100%，每次行动衰减20%。"
+        "description": "入场时，获得物攻+100%，每次行动后-20%。"
       }
     }
   },
@@ -535,7 +535,7 @@
     "localized": {
       "zh": {
         "name": "水翼飞升",
-        "description": "己方精灵每使用1次水系技能，自己入场时获得全技能能耗-1，0能耗技能威力+30%。"
+        "description": "己方精灵每使用1次水系技能，自己入场时获得全技能能耗-1，且能耗为0的技能威力+30%。"
       }
     }
   },
@@ -611,11 +611,11 @@
   },
   {
     "name": "Leyline Blessing",
-    "description": "Immediately restores 10 energy. Before entering the battlefield, for each Ground-type move used by teammates, restores 3 energy.",
+    "description": "Immediately restores 10 energy, exceeding the maximum energy cap. Before entering the battlefield, for each Ground-type move used by teammates, restores 3 energy.",
     "localized": {
       "zh": {
         "name": "地脉馈赠",
-        "description": "立即回复10点能量。入场前己方精灵每放1次地系技能，回复3点能量。"
+        "description": "突破能量上限并立即回复10能量，入场前己方精灵每放1次地系技能，回复3点能量。"
       }
     }
   },
@@ -645,7 +645,7 @@
     "localized": {
       "zh": {
         "name": "悼亡",
-        "description": "双方队伍每有1只力竭的精灵，自己获得双攻+30%。"
+        "description": "双方队伍中每有1只力竭的精灵，自己获得双攻+30%。"
       }
     }
   },
@@ -665,7 +665,7 @@
     "localized": {
       "zh": {
         "name": "坠星",
-        "description": "敌方每有1层星陨印记，自己技能威力+15%。"
+        "description": "敌方每有1层星陨印记，自己的技能威力+15%。"
       }
     }
   },
@@ -721,11 +721,11 @@
   },
   {
     "name": "Dazzle",
-    "description": "Gains 3 additional random moves from this monster's move pool. Non-Light-type moves gain move power +25%.",
+    "description": "Gains three additional random moves that are not currently carried, and non-Light-type moves gain move power +25%.",
     "localized": {
       "zh": {
         "name": "夺目",
-        "description": "额外获得3个随机技能，非光系技能威力+25%。"
+        "description": "额外获得三个未携带的随机技能，且非光系技能威力+25%。"
       }
     }
   },
@@ -835,7 +835,7 @@
     "localized": {
       "zh": {
         "name": "灵魂灼伤",
-        "description": "冰系技能能使敌方获得4层灼烧，火系技能能使敌方获得2层冻结。"
+        "description": "冰系技能使敌方获得4层灼烧，火系技能使敌方获得2层冻结。"
       }
     }
   },
@@ -1545,7 +1545,7 @@
     "localized": {
       "zh": {
         "name": "先知",
-        "description": "若敌方技能足够击败自己，回合开始时自己获得速度+50，攻击+50%。"
+        "description": "若敌方技能足够击败自己，回合开始时自己获得速度+50，双攻+50%。"
       }
     }
   },
