@@ -1984,7 +1984,7 @@ async def register_user(
     # Validate email format and DNS
     try:
         email_info = validate_email(user_data.email, check_deliverability=True)
-        normalized_email = email_info.normalized
+        normalized_email = email_info.normalized.lower()
     except EmailNotValidError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -2519,7 +2519,7 @@ async def forgot_password(
     await verify_captcha(email_data.captcha_token, get_real_client_ip(request))
 
     # Find user by email
-    user = db.query(models.User).filter(models.User.email == email_data.email).first()
+    user = db.query(models.User).filter(models.User.email == email_data.email.lower()).first()
 
     if user and not user.is_guest:
         # Generate reset token (valid for 1 hour)
