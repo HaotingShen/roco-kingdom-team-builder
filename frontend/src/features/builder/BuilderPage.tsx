@@ -276,6 +276,7 @@ export default function BuilderPage() {
   const [shareOpen, setShareOpen] = useState(false);
   const [shareConfirmOpen, setShareConfirmOpen] = useState(false);
   const [shareCreateConfirmOpen, setShareCreateConfirmOpen] = useState(false);
+  const [mobileAdDismissed, setMobileAdDismissed] = useState(false);
   const [pendingShareTeam, setPendingShareTeam] = useState<TeamOut | null>(null);
   // Ref flag: when true, the next createTeam.onSuccess opens the share modal
   const saveAndShareMode = useRef(false);
@@ -1184,6 +1185,25 @@ export default function BuilderPage() {
             isAlreadySaved={isAnalysisAlreadySaved}
             isLoggedIn={!!user}
           />
+        )}
+
+        {/* Mobile Ad — shown only when sidebar is hidden (< lg) */}
+        {!mobileAdDismissed && (
+          <div className="relative lg:hidden">
+            <button
+              onClick={() => setMobileAdDismissed(true)}
+              className="absolute top-1 right-1 z-10 w-5 h-5 hidden sm:flex items-center justify-center rounded-full bg-zinc-200 hover:bg-zinc-300 text-zinc-500 hover:text-zinc-700 text-xs leading-none cursor-pointer"
+              aria-label="Close ad"
+            >
+              ×
+            </button>
+            <img
+              src="/ad-images/mobile.jpg"
+              alt="广告"
+              className="w-full rounded"
+              style={{ filter: "saturate(0.6)" }}
+            />
+          </div>
         )}
       </div>
 
