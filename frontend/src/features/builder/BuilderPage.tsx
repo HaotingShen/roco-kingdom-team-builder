@@ -1201,7 +1201,7 @@ export default function BuilderPage() {
               src="/ad-images/mobile.jpg"
               alt="广告"
               className="w-full rounded"
-              style={{ filter: "saturate(0.6)" }}
+              style={{ filter: "saturate(0.8)" }}
             />
           </div>
         )}
