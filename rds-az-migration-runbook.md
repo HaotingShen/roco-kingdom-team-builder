@@ -9,7 +9,7 @@ costing ~$130/month in inter-AZ transfer fees.
 between the snapshot and the new instance. Trade-off is ~25–35 minutes of total downtime.
 Plan for this in advance — announce maintenance to users if needed (use the announcement banner).
 
-**Pinned image tag:** `59967d527e1feab3d8c06ceeb20de07935358b58`
+**Pinned image tag:** `6d5c9ae59820f159bcd53fee7f6e4831e8c99eca`
 Every deploy step in this runbook uses this exact tag. The code version does not change —
 only the database connection changes.
 
@@ -38,7 +38,7 @@ this window. RDS I/O spikes during automated snapshots.
 | RDS instance class | `db.t3.micro` |
 | RDS parameter group | `default.postgres16` (no custom params — restore will match) |
 | RDS deletion protection | **ON** — must be disabled before deletion |
-| Pinned image | `59967d527e1feab3d8c06ceeb20de07935358b58` |
+| Pinned image | `6d5c9ae59820f159bcd53fee7f6e4831e8c99eca` |
 | EC2 instance | `i-08477110ddb42c54d` / `13.228.63.192` |
 
 ---
@@ -53,9 +53,14 @@ values verbatim if you need to roll back.
 aws ssm get-parameter --name /rktb/prod/DATABASE_URL \
   --with-decryption --query Parameter.Value --output text --region ap-southeast-1
 
+postgresql://rktb_admin:26c50b538a8a5444ff7458424d9b9d2209d773e0c592370e@rktb-postgres.cnwseow4y66l.ap-southeast-1.rds.amazonaws.com:5432/roco_kingdom
+
 # Save this output — needed for rollback
 aws ssm get-parameter --name /rktb/prod/UMAMI_DATABASE_URL \
   --with-decryption --query Parameter.Value --output text --region ap-southeast-1
+
+postgresql://rktb_admin:26c50b538a8a5444ff7458424d9b9d2209d773e0c592370e@rktb-postgres.cnwseow4y66l.ap-southeast-1.rds.amazonaws.com:5432/umami?sslmode=require&connection_limit=5
+
 ```
 
 Do not proceed until both values are saved somewhere you can access even if the site is down.
@@ -261,7 +266,7 @@ Then restart the backend to end downtime:
 
 ```bash
 # On EC2
-bash deploy.sh 59967d527e1feab3d8c06ceeb20de07935358b58
+bash deploy.sh 6d5c9ae59820f159bcd53fee7f6e4831e8c99eca
 ```
 
 ---
@@ -306,7 +311,7 @@ Uses the exact same code version that was running before. Only the DB connection
 Alembic will run `upgrade head` — this is a confirmed no-op since the schema already matches.
 
 ```bash
-bash deploy.sh 59967d527e1feab3d8c06ceeb20de07935358b58
+bash deploy.sh 6d5c9ae59820f159bcd53fee7f6e4831e8c99eca
 ```
 
 ### Step 4.4 — Verify immediately after deploy
@@ -349,7 +354,7 @@ aws ssm put-parameter --name /rktb/prod/UMAMI_DATABASE_URL \
 
 # R3 — Redeploy with pinned image pointing back to old DB
 ssh -i ~/.ssh/rktb-key.pem ubuntu@13.228.63.192 \
-  "cd /home/ubuntu/rktb && bash deploy.sh 59967d527e1feab3d8c06ceeb20de07935358b58"
+  "cd /home/ubuntu/rktb && bash deploy.sh 6d5c9ae59820f159bcd53fee7f6e4831e8c99eca"
 
 # R4 — Confirm containers are running
 ssh -i ~/.ssh/rktb-key.pem ubuntu@13.228.63.192 \

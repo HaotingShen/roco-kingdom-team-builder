@@ -534,6 +534,7 @@ aws rds create-db-instance \
     --db-name roco_kingdom \
     --vpc-security-group-ids $RDS_SG \
     --db-subnet-group-name rktb-db-subnets \
+    --availability-zone ap-southeast-1a \
     --no-publicly-accessible \
     --storage-encrypted \
     --deletion-protection \
@@ -827,7 +828,7 @@ Everything checks out for Phase 1:
   rktb-ec2-sg        sg-0c2dc3e4f20452ddb
 
   === RDS ===
-  available  rktb-postgres.cnwseow4y66l.ap-southeast-1.rds.amazonaws.com
+  available  rktb-postgres-1a.cnwseow4y66l.ap-southeast-1.rds.amazonaws.com
   sg-0eedc536da3a8f6fa
 
   === EC2 ===
@@ -2542,7 +2543,7 @@ aws cloudwatch put-metric-alarm \
   --period 300 \
   --threshold 80 \
   --comparison-operator GreaterThanThreshold \
-  --dimensions Name=DBInstanceIdentifier,Value=rktb-postgres \
+  --dimensions Name=DBInstanceIdentifier,Value=rktb-postgres-1a \
   --evaluation-periods 2 \
   --alarm-actions arn:aws:sns:ap-southeast-1:$ACCOUNT_ID:rktb-alerts \
   --region ap-southeast-1
@@ -2556,7 +2557,7 @@ aws cloudwatch put-metric-alarm \
   --period 300 \
   --threshold 2147483648 \
   --comparison-operator LessThanThreshold \
-  --dimensions Name=DBInstanceIdentifier,Value=rktb-postgres \
+  --dimensions Name=DBInstanceIdentifier,Value=rktb-postgres-1a \
   --evaluation-periods 1 \
   --alarm-actions arn:aws:sns:ap-southeast-1:$ACCOUNT_ID:rktb-alerts \
   --region ap-southeast-1
@@ -2642,7 +2643,7 @@ Nginx on EC2 strips the `/api` prefix (`rewrite ^/api(/.*)$ $1 break`) before pa
 | Redeploy | `git push origin main` (triggers GitHub Actions) |
 | Manual redeploy (SSH) | `ssh rktb` then `cd rktb && bash deploy.sh latest` |
 | Manual redeploy (SSM) | `aws ssm start-session --target $INSTANCE_ID --region ap-southeast-1` then run deploy.sh |
-| RDS snapshot | `aws rds create-db-snapshot --db-instance-identifier rktb-postgres --db-snapshot-identifier backup-$(date +%Y%m%d) --region ap-southeast-1` |
+| RDS snapshot | `aws rds create-db-snapshot --db-instance-identifier rktb-postgres-1a --db-snapshot-identifier backup-$(date +%Y%m%d) --region ap-southeast-1` |
 | Update SSH IP | Update EC2 security group port 22 source CIDR via AWS Console or `aws ec2 modify-security-group-rules` |
 | Switch LLM provider | Update SSM parameter + redeploy (see note below) |
 | Check costs | `aws ce get-cost-and-usage --time-period Start=$(date +%Y-%m-01),End=$(date +%Y-%m-%d) --granularity MONTHLY --metrics BlendedCost` |
@@ -2889,7 +2890,7 @@ Initial pool_size=5+10=15/worker was too conservative. Iteratively increased to 
 Fix: Removed duplicate engine from `main.py`, imported `get_db` and `SessionLocal` from `backend.database`. FastAPI's dependency injection caches same function → 1 connection per request.
 
 **Root Cause 3 — Umami shares same RDS instance (March 29, commit f926bfb)**
-Umami analytics uses `UMAMI_DATABASE_URL` pointing to same RDS host (`rktb-postgres.cnwseow4y66l...`), just different database (`umami`). Its connections count against the same `max_connections=80` limit. Prisma default pool = 9 connections, silently consuming slots unaccounted for in backend math.
+Umami analytics uses `UMAMI_DATABASE_URL` pointing to same RDS host (`rktb-postgres-1a.cnwseow4y66l...`), just different database (`umami`). Its connections count against the same `max_connections=80` limit. Prisma default pool = 9 connections, silently consuming slots unaccounted for in backend math.
 
 ### Final Configuration
 

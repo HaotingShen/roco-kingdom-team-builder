@@ -129,8 +129,8 @@ docker compose -f docker-compose.prod.yml up -d
 ```
 
 **Database connection refused:**
-- Check RDS is running: AWS Console → RDS → rktb-postgres → status should be "Available"
-- If stopped: `aws rds start-db-instance --db-instance-identifier rktb-postgres --region ap-southeast-1`
+- Check RDS is running: AWS Console → RDS → rktb-postgres-1a → status should be "Available"
+- If stopped: `aws rds start-db-instance --db-instance-identifier rktb-postgres-1a --region ap-southeast-1`
 
 **Redis is down:**
 ```bash
@@ -279,14 +279,14 @@ aws ce get-cost-and-usage \
 aws ec2 stop-instances --instance-ids i-08477110ddb42c54d --region ap-southeast-1
 
 # Stop RDS (~$15/month saved) — takes ~2 min
-aws rds stop-db-instance --db-instance-identifier rktb-postgres --region ap-southeast-1
+aws rds stop-db-instance --db-instance-identifier rktb-postgres-1a --region ap-southeast-1
 ```
 
 > RDS auto-restarts after 7 days (AWS limitation). You'll need to stop it again.
 
 ### Restart everything
 ```bash
-aws rds start-db-instance --db-instance-identifier rktb-postgres --region ap-southeast-1
+aws rds start-db-instance --db-instance-identifier rktb-postgres-1a --region ap-southeast-1
 # Wait ~3 minutes for RDS to be "Available", then:
 aws ec2 start-instances --instance-ids i-08477110ddb42c54d --region ap-southeast-1
 ```
@@ -555,7 +555,7 @@ Each file contains: metadata, token usage, DeepSeek cache hit rate, response tim
 |---|---|
 | EC2 Instance | i-08477110ddb42c54d |
 | EC2 Elastic IP | 13.228.63.192 |
-| RDS Identifier | rktb-postgres |
+| RDS Identifier | rktb-postgres-1a |
 | S3 Bucket | rktb-frontend |
 | CloudFront ID | E1S4H9ALERPPY0 |
 | Region | ap-southeast-1 |
