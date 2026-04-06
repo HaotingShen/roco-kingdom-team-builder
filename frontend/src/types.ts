@@ -154,6 +154,8 @@ export interface EvolutionStageMonster {
   sub_type?: TypeOut | null;
   children_ids?: number[];
   parent_ids?: number[];
+  evolution_level?: number | null;
+  evolution_condition?: string | null;
 }
 
 export interface EvolutionStage {

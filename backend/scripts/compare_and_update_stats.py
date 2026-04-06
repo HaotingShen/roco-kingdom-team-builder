@@ -1,7 +1,7 @@
 """
 compare_and_update_stats.py
 
-Compares base stats between lichouxuan-roco/monsters_stats.json (reference)
+Compares base stats between an external monsters_stats.json reference file
 and backend/data/monsters.json (our data), then optionally applies updates.
 
 Matching logic:
@@ -21,8 +21,8 @@ Stat field mapping:
   speed            → base_spd
 
 Usage:
-  python3 -m backend.scripts.compare_and_update_stats           # dry run (report only)
-  python3 -m backend.scripts.compare_and_update_stats --apply   # apply changes
+  python3 -m backend.scripts.compare_and_update_stats --stats /path/to/monsters_stats.json
+  python3 -m backend.scripts.compare_and_update_stats --stats /path/to/monsters_stats.json --apply
 """
 
 import json
@@ -30,7 +30,6 @@ import sys
 import os
 from pathlib import Path
 
-STATS_PATH = Path("/mnt/d/Alan/Github Projects/lichouxuan-roco/monsters_stats.json")
 MONSTERS_PATH = Path(__file__).parents[2] / "backend" / "data" / "monsters.json"
 
 STAT_MAP = {
@@ -57,16 +56,28 @@ def save_json(path, data):
 def main():
     apply = "--apply" in sys.argv
 
+    # Required: --stats /path/to/monsters_stats.json
+    stats_path = None
     output_path = None
     for arg in sys.argv[1:]:
-        if arg.startswith("--output="):
+        if arg.startswith("--stats="):
+            stats_path = Path(arg.split("=", 1)[1])
+        elif arg == "--stats":
+            idx = sys.argv.index("--stats")
+            if idx + 1 < len(sys.argv):
+                stats_path = Path(sys.argv[idx + 1])
+        elif arg.startswith("--output="):
             output_path = arg.split("=", 1)[1]
         elif arg == "--output":
             idx = sys.argv.index("--output")
             if idx + 1 < len(sys.argv):
                 output_path = sys.argv[idx + 1]
 
-    stats_list = load_json(STATS_PATH)
+    if stats_path is None:
+        print("Usage: python3 -m backend.scripts.compare_and_update_stats --stats /path/to/monsters_stats.json [--apply] [--output report.txt]")
+        sys.exit(1)
+
+    stats_list = load_json(stats_path)
     monsters = load_json(MONSTERS_PATH)
 
     # Build lookup: zh_name → stats entry

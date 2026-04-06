@@ -3263,7 +3263,6 @@ def build_evolution_tree(monster_id: int, db: Session) -> dict | None:
         joinedload(models.Monster.sub_type),
     ).filter(models.Monster.id.in_(node_ids)).all()
 
-    monsters_by_id = {m.id: m for m in monsters}
     depth_map = {row.id: row.depth for row in nodes_data}
 
     # 5. Build tree structure organized by stages
@@ -3280,6 +3279,8 @@ def build_evolution_tree(monster_id: int, db: Session) -> dict | None:
             "is_leader_form": m.is_leader_form,
             "main_type": schemas.TypeOut.model_validate(m.main_type).model_dump() if m.main_type else None,
             "sub_type": schemas.TypeOut.model_validate(m.sub_type).model_dump() if m.sub_type else None,
+            "evolution_level": m.evolution_level,
+            "evolution_condition": m.evolution_condition,
         }
         stages_dict[depth].append(monster_data)
 

@@ -40,14 +40,21 @@ def sync_monsters():
         trait_map = {t.id: t.name for t in session.query(Trait).all()}
         species_map = {s.id: s.name for s in session.query(MonsterSpecies).all()}
         monster_map = {m.id: m.name for m in monsters}
+        monster_form_map = {m.id: m.form for m in monsters}
 
         # Convert to JSON format
         monsters_data = []
         for monster in monsters:
-            # Find evolves_from name
+            # Find evolves_from name (and form, for non-default parent forms)
             evolves_from = None
+            evolves_from_form = None
             if monster.evolves_from_id:
                 evolves_from = monster_map.get(monster.evolves_from_id)
+                parent_form = monster_form_map.get(monster.evolves_from_id)
+                # Only emit evolves_from_form when the parent isn't the default form,
+                # so the importer's auto-detection can't find it via the normal path.
+                if parent_form and parent_form != "default":
+                    evolves_from_form = parent_form
 
             # Convert AttackStyle enum to string
             attack_style_map = {
@@ -59,12 +66,13 @@ def sync_monsters():
             entry = {
                 "name": monster.name,
                 "evolves_from": evolves_from,
+                **({"evolves_from_form": evolves_from_form} if evolves_from_form else {}),
                 "species": species_map[monster.species_id],
                 "form": monster.form,
                 "main_type": type_map[monster.main_type_id],
                 "sub_type": type_map.get(monster.sub_type_id),
                 "default_legacy_type": type_map[monster.default_legacy_type_id],
-                "trait": trait_map[monster.trait_id],
+                "trait": trait_map.get(monster.trait_id),
                 "leader_potential": monster.leader_potential,
                 "is_leader_form": monster.is_leader_form,
                 "base_hp": monster.base_hp,
@@ -75,7 +83,9 @@ def sync_monsters():
                 "base_spd": monster.base_spd,
                 "preferred_attack_style": attack_style_map[monster.preferred_attack_style],
                 "moveset_key": monster.localized.get("zh", {}).get("name") if isinstance(monster.localized.get("zh"), dict) else None,
-                "localized": monster.localized
+                "localized": monster.localized,
+                **({"evolution_level": monster.evolution_level} if monster.evolution_level is not None else {}),
+                **({"evolution_condition": monster.evolution_condition} if monster.evolution_condition is not None else {}),
             }
 
             monsters_data.append(entry)

@@ -115,7 +115,9 @@ def load_monsters_two_pass():
                 base_mag_def=item["base_mag_def"],
                 base_spd=item["base_spd"],
                 preferred_attack_style=AttackStyle[ATTACK_STYLE_MAP[item["preferred_attack_style"]]],
-                localized=item["localized"]
+                localized=item["localized"],
+                evolution_level=item.get("evolution_level"),
+                evolution_condition=item.get("evolution_condition"),
             ).on_conflict_do_update(
                 index_elements=["name", "form"],
                 set_={
@@ -134,7 +136,9 @@ def load_monsters_two_pass():
                     "base_mag_def": item["base_mag_def"],
                     "base_spd": item["base_spd"],
                     "preferred_attack_style": AttackStyle[ATTACK_STYLE_MAP[item["preferred_attack_style"]]],
-                    "localized": item["localized"]
+                    "localized": item["localized"],
+                    "evolution_level": item.get("evolution_level"),
+                    "evolution_condition": item.get("evolution_condition"),
                 }
             )
             session.execute(stmt)
@@ -148,17 +152,22 @@ def load_monsters_two_pass():
             evolves_from = item.get("evolves_from")
             this_form = item.get("form", "default")
             if evolves_from:
-                # Try parent's default form first
-                parent_id = monster_by_name_and_form.get((evolves_from, "default"))
-                if parent_id is None:
-                    # Fallback: try matching this form
-                    parent_id = monster_by_name_and_form.get((evolves_from, this_form))
-                if parent_id is None:
-                    # Special case: Child form like "Chess Knight - White" evolves from parent form "White"
-                    # Extract suffix after " - " if it exists
-                    if " - " in this_form:
-                        form_suffix = this_form.split(" - ", 1)[1]
-                        parent_id = monster_by_name_and_form.get((evolves_from, form_suffix))
+                # Explicit override: use evolves_from_form if provided in data
+                explicit_form = item.get("evolves_from_form")
+                if explicit_form is not None:
+                    parent_id = monster_by_name_and_form.get((evolves_from, explicit_form))
+                else:
+                    # Try parent's default form first
+                    parent_id = monster_by_name_and_form.get((evolves_from, "default"))
+                    if parent_id is None:
+                        # Fallback: try matching this form
+                        parent_id = monster_by_name_and_form.get((evolves_from, this_form))
+                    if parent_id is None:
+                        # Special case: Child form like "Chess Knight - White" evolves from parent form "White"
+                        # Extract suffix after " - " if it exists
+                        if " - " in this_form:
+                            form_suffix = this_form.split(" - ", 1)[1]
+                            parent_id = monster_by_name_and_form.get((evolves_from, form_suffix))
                 if parent_id is None:
                     print(f"Warning: evolves_from '{evolves_from}' (form 'default' or '{this_form}') not found for monster '{item['name']}' with form '{this_form}'")
                     continue

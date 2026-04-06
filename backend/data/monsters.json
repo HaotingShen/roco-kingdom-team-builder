@@ -97,7 +97,8 @@
       "zh": {
         "name": "喵呜"
       }
-    }
+    },
+    "evolution_level": 16
   },
   {
     "name": "Magikat",
@@ -122,7 +123,8 @@
       "zh": {
         "name": "魔力猫"
       }
-    }
+    },
+    "evolution_level": 32
   },
   {
     "name": "Leafcrown Magikat",
@@ -197,7 +199,8 @@
       "zh": {
         "name": "焰火"
       }
-    }
+    },
+    "evolution_level": 16
   },
   {
     "name": "Flameon",
@@ -222,7 +225,8 @@
       "zh": {
         "name": "火神"
       }
-    }
+    },
+    "evolution_level": 36
   },
   {
     "name": "Blazewar",
@@ -297,7 +301,8 @@
       "zh": {
         "name": "波波拉"
       }
-    }
+    },
+    "evolution_level": 16
   },
   {
     "name": "Aquava",
@@ -322,7 +327,8 @@
       "zh": {
         "name": "水灵"
       }
-    }
+    },
+    "evolution_level": 36
   },
   {
     "name": "Sanctaqua",
@@ -581,7 +587,8 @@
         "name": "咔咔壳",
         "form": "本来的样子"
       }
-    }
+    },
+    "evolution_level": 16
   },
   {
     "name": "Clackshell",
@@ -607,7 +614,8 @@
         "name": "咔咔壳",
         "form": "蜕皮时的样子"
       }
-    }
+    },
+    "evolution_level": 16
   },
   {
     "name": "Bubbleshell",
@@ -633,7 +641,8 @@
         "name": "水泡壳",
         "form": "本来的样子"
       }
-    }
+    },
+    "evolution_level": 36
   },
   {
     "name": "Bubbleshell",
@@ -659,7 +668,8 @@
         "name": "水泡壳",
         "form": "蜕皮时的样子"
       }
-    }
+    },
+    "evolution_level": 36
   },
   {
     "name": "Thornram",
@@ -709,7 +719,8 @@
       "zh": {
         "name": "铃兰羊"
       }
-    }
+    },
+    "evolution_level": 20
   },
   {
     "name": "Bloomshade",
@@ -734,7 +745,8 @@
       "zh": {
         "name": "花影羚羊"
       }
-    }
+    },
+    "evolution_level": 32
   },
   {
     "name": "Snowplume",
@@ -864,7 +876,8 @@
         "name": "冬羽雀",
         "form": "本来的样子"
       }
-    }
+    },
+    "evolution_condition": "亲密度进化"
   },
   {
     "name": "Winterfinch",
@@ -890,7 +903,8 @@
         "name": "冬羽雀",
         "form": "夏天的样子"
       }
-    }
+    },
+    "evolution_condition": "亲密度进化"
   },
   {
     "name": "Winterfinch",
@@ -916,7 +930,8 @@
         "name": "冬羽雀",
         "form": "秋天的样子"
       }
-    }
+    },
+    "evolution_condition": "亲密度进化"
   },
   {
     "name": "Winterfinch",
@@ -942,7 +957,8 @@
         "name": "冬羽雀",
         "form": "春天的样子"
       }
-    }
+    },
+    "evolution_condition": "亲密度进化"
   },
   {
     "name": "Frostgale",
@@ -968,7 +984,8 @@
         "name": "岚鸟",
         "form": "本来的样子"
       }
-    }
+    },
+    "evolution_level": 30
   },
   {
     "name": "Frostgale",
@@ -994,7 +1011,8 @@
         "name": "岚鸟",
         "form": "夏天的样子"
       }
-    }
+    },
+    "evolution_level": 30
   },
   {
     "name": "Frostgale",
@@ -1020,7 +1038,8 @@
         "name": "岚鸟",
         "form": "秋天的样子"
       }
-    }
+    },
+    "evolution_level": 30
   },
   {
     "name": "Frostgale",
@@ -1046,7 +1065,8 @@
         "name": "岚鸟",
         "form": "春天的样子"
       }
-    }
+    },
+    "evolution_level": 30
   },
   {
     "name": "Frostwing Lord",
@@ -1200,7 +1220,8 @@
       "zh": {
         "name": "幻灵菇"
       }
-    }
+    },
+    "evolution_level": 20
   },
   {
     "name": "Myclshade",
@@ -1225,7 +1246,8 @@
       "zh": {
         "name": "幻影灵菇"
       }
-    }
+    },
+    "evolution_level": 32
   },
   {
     "name": "Rockskin",
@@ -1303,7 +1325,8 @@
         "name": "石刺蜥",
         "form": "本来的样子"
       }
-    }
+    },
+    "evolution_level": 32
   },
   {
     "name": "Rockspike",
@@ -1329,7 +1352,8 @@
         "name": "石刺蜥",
         "form": "球球尾巴的样子"
       }
-    }
+    },
+    "evolution_level": 32
   },
   {
     "name": "Rockcrown",
@@ -1355,7 +1379,8 @@
         "name": "石冠王蜥",
         "form": "本来的样子"
       }
-    }
+    },
+    "evolution_level": 48
   },
   {
     "name": "Rockcrown",
@@ -1381,7 +1406,8 @@
         "name": "石冠王蜥",
         "form": "球球尾巴的样子"
       }
-    }
+    },
+    "evolution_level": 48
   },
   {
     "name": "Bristone",
@@ -1431,7 +1457,8 @@
       "zh": {
         "name": "布是岩"
       }
-    }
+    },
+    "evolution_level": 16
   },
   {
     "name": "Bricklore",
@@ -1456,7 +1483,8 @@
       "zh": {
         "name": "布克棱岩"
       }
-    }
+    },
+    "evolution_level": 32
   },
   {
     "name": "Blazemurk",
@@ -1531,7 +1559,8 @@
       "zh": {
         "name": "叮叮恶魔"
       }
-    }
+    },
+    "evolution_level": 40
   },
   {
     "name": "Fuzzlet",
@@ -1581,7 +1610,8 @@
       "zh": {
         "name": "爬爬"
       }
-    }
+    },
+    "evolution_level": 20
   },
   {
     "name": "Flutterfly",
@@ -1607,7 +1637,9 @@
         "name": "化蝶",
         "form": "平常的样子"
       }
-    }
+    },
+    "evolution_level": 35,
+    "evolution_condition": "随机形态进化"
   },
   {
     "name": "Flutterfly",
@@ -1633,7 +1665,9 @@
         "name": "化蝶",
         "form": "幽冥眼的样子"
       }
-    }
+    },
+    "evolution_level": 35,
+    "evolution_condition": "随机形态进化"
   },
   {
     "name": "Flutterfly",
@@ -1659,7 +1693,9 @@
         "name": "化蝶",
         "form": "喵喵的样子"
       }
-    }
+    },
+    "evolution_level": 35,
+    "evolution_condition": "随机形态进化"
   },
   {
     "name": "Flutterfly",
@@ -1685,7 +1721,9 @@
         "name": "化蝶",
         "form": "奇丽花的样子"
       }
-    }
+    },
+    "evolution_level": 35,
+    "evolution_condition": "随机形态进化"
   },
   {
     "name": "Shadowwood",
@@ -1785,7 +1823,8 @@
       "zh": {
         "name": "燕尾獭"
       }
-    }
+    },
+    "evolution_level": 30
   },
   {
     "name": "Curloxen",
@@ -1810,7 +1849,8 @@
       "zh": {
         "name": "卷胡巨獭"
       }
-    }
+    },
+    "evolution_level": 48
   },
   {
     "name": "Crystil",
@@ -1861,7 +1901,9 @@
         "name": "晶石蜗",
         "form": "西瓜碧玺的样子"
       }
-    }
+    },
+    "evolution_level": 40,
+    "evolution_condition": "挖三次蓝晶碧玺"
   },
   {
     "name": "Geoslug",
@@ -1887,7 +1929,9 @@
         "name": "晶石蜗",
         "form": "莲花刚玉的样子"
       }
-    }
+    },
+    "evolution_level": 40,
+    "evolution_condition": "挖三次紫莲刚玉"
   },
   {
     "name": "Geoslug",
@@ -1913,7 +1957,9 @@
         "name": "晶石蜗",
         "form": "星彩榴石的样子"
       }
-    }
+    },
+    "evolution_level": 40,
+    "evolution_condition": "挖三次黄石榴石"
   },
   {
     "name": "Geoslug",
@@ -1939,7 +1985,9 @@
         "name": "晶石蜗",
         "form": "火山琉璃的样子"
       }
-    }
+    },
+    "evolution_level": 40,
+    "evolution_condition": "挖三次黑晶琉璃"
   },
   {
     "name": "Geoslug",
@@ -1965,7 +2013,9 @@
         "name": "晶石蜗",
         "form": "蓝锥矿的样子"
       }
-    }
+    },
+    "evolution_level": 40,
+    "evolution_condition": "挖两种矿石且每种各挖三次"
   },
   {
     "name": "Geoslug",
@@ -1991,7 +2041,9 @@
         "name": "晶石蜗",
         "form": "烧蓝黄金的样子"
       }
-    }
+    },
+    "evolution_level": 40,
+    "evolution_condition": "挖三种矿石且每种各挖三次"
   },
   {
     "name": "Diamoslug",
@@ -2197,7 +2249,8 @@
       "zh": {
         "name": "奇丽叶"
       }
-    }
+    },
+    "evolution_level": 16
   },
   {
     "name": "Chiliflower",
@@ -2222,7 +2275,8 @@
       "zh": {
         "name": "奇丽花"
       }
-    }
+    },
+    "evolution_level": 32
   },
   {
     "name": "Chilifruit",
@@ -2351,7 +2405,8 @@
         "name": "卡卡虫",
         "form": "草地附近的样子"
       }
-    }
+    },
+    "evolution_level": 16
   },
   {
     "name": "Kacrabug",
@@ -2377,7 +2432,8 @@
         "name": "卡卡虫",
         "form": "沙地附近的样子"
       }
-    }
+    },
+    "evolution_level": 16
   },
   {
     "name": "Kacrabug",
@@ -2403,7 +2459,8 @@
         "name": "卡卡虫",
         "form": "雪山附近的样子"
       }
-    }
+    },
+    "evolution_level": 16
   },
   {
     "name": "Kawachung",
@@ -2429,7 +2486,8 @@
         "name": "卡瓦重",
         "form": "草地附近的样子"
       }
-    }
+    },
+    "evolution_level": 36
   },
   {
     "name": "Kawachung",
@@ -2455,7 +2513,8 @@
         "name": "卡瓦重",
         "form": "沙地附近的样子"
       }
-    }
+    },
+    "evolution_level": 36
   },
   {
     "name": "Kawachung",
@@ -2481,7 +2540,8 @@
         "name": "卡瓦重",
         "form": "雪山附近的样子"
       }
-    }
+    },
+    "evolution_level": 36
   },
   {
     "name": "Guardhound",
@@ -2531,7 +2591,8 @@
       "zh": {
         "name": "音速犬"
       }
-    }
+    },
+    "evolution_level": 26
   },
   {
     "name": "Stormhound",
@@ -2606,7 +2667,8 @@
       "zh": {
         "name": "抱枕松鼠"
       }
-    }
+    },
+    "evolution_level": 32
   },
   {
     "name": "Bouncequel",
@@ -2631,7 +2693,8 @@
       "zh": {
         "name": "蹦床松鼠"
       }
-    }
+    },
+    "evolution_level": 46
   },
   {
     "name": "DuduPot",
@@ -2681,7 +2744,8 @@
       "zh": {
         "name": "嘟嘟锅"
       }
-    }
+    },
+    "evolution_level": 38
   },
   {
     "name": "Masklet",
@@ -2732,7 +2796,9 @@
         "name": "暗影灵面",
         "form": "闭眼的样子"
       }
-    }
+    },
+    "evolution_level": 20,
+    "evolution_condition": "白天进化"
   },
   {
     "name": "Shadowmask",
@@ -2758,7 +2824,9 @@
         "name": "暗影灵面",
         "form": "睁眼的样子"
       }
-    }
+    },
+    "evolution_level": 20,
+    "evolution_condition": "夜晚进化"
   },
   {
     "name": "Nethergaze",
@@ -2784,7 +2852,8 @@
         "name": "幽冥眼",
         "form": "闭眼的样子"
       }
-    }
+    },
+    "evolution_level": 32
   },
   {
     "name": "Nethergaze",
@@ -2810,7 +2879,8 @@
         "name": "幽冥眼",
         "form": "睁眼的样子"
       }
-    }
+    },
+    "evolution_level": 32
   },
   {
     "name": "Somnwalk",
@@ -2888,7 +2958,8 @@
         "name": "梦悠悠",
         "form": "穿旧睡衣的样子"
       }
-    }
+    },
+    "evolution_level": 32
   },
   {
     "name": "Somnfloat",
@@ -2914,7 +2985,8 @@
         "name": "梦悠悠",
         "form": "穿星星睡衣的样子"
       }
-    }
+    },
+    "evolution_level": 32
   },
   {
     "name": "Beastbud",
@@ -2989,7 +3061,8 @@
       "zh": {
         "name": "仪式之星"
       }
-    }
+    },
+    "evolution_level": 35
   },
   {
     "name": "Ritualoss",
@@ -3014,7 +3087,8 @@
       "zh": {
         "name": "仪式巨像"
       }
-    }
+    },
+    "evolution_level": 45
   },
   {
     "name": "Sacramentoss",
@@ -3169,7 +3243,8 @@
         "name": "蹦蹦草",
         "form": "海神球形态"
       }
-    }
+    },
+    "evolution_level": 16
   },
   {
     "name": "Bouncebud",
@@ -3195,7 +3270,8 @@
         "name": "蹦蹦草",
         "form": "彩玉球形态"
       }
-    }
+    },
+    "evolution_level": 16
   },
   {
     "name": "Bouncebud",
@@ -3221,7 +3297,8 @@
         "name": "蹦蹦草",
         "form": "短毛球形态"
       }
-    }
+    },
+    "evolution_level": 16
   },
   {
     "name": "Bouncebud",
@@ -3247,7 +3324,8 @@
         "name": "蹦蹦草",
         "form": "象牙球形态"
       }
-    }
+    },
+    "evolution_level": 16
   },
   {
     "name": "Bouncebloom",
@@ -3273,7 +3351,8 @@
         "name": "蹦蹦花",
         "form": "海神球形态"
       }
-    }
+    },
+    "evolution_level": 32
   },
   {
     "name": "Bouncebloom",
@@ -3299,7 +3378,8 @@
         "name": "蹦蹦花",
         "form": "彩玉球形态"
       }
-    }
+    },
+    "evolution_level": 32
   },
   {
     "name": "Bouncebloom",
@@ -3325,7 +3405,8 @@
         "name": "蹦蹦花",
         "form": "短毛球形态"
       }
-    }
+    },
+    "evolution_level": 32
   },
   {
     "name": "Bouncebloom",
@@ -3351,7 +3432,8 @@
         "name": "蹦蹦花",
         "form": "象牙球形态"
       }
-    }
+    },
+    "evolution_level": 32
   },
   {
     "name": "Bouncefruit",
@@ -3505,7 +3587,8 @@
       "zh": {
         "name": "粉咩咩"
       }
-    }
+    },
+    "evolution_level": 30
   },
   {
     "name": "Sparkorb",
@@ -3530,7 +3613,8 @@
       "zh": {
         "name": "电球咩咩"
       }
-    }
+    },
+    "evolution_level": 42
   },
   {
     "name": "Dandella",
@@ -3580,7 +3664,8 @@
       "zh": {
         "name": "蒲公英娃娃"
       }
-    }
+    },
+    "evolution_level": 26
   },
   {
     "name": "Ebayle",
@@ -3630,7 +3715,9 @@
       "zh": {
         "name": "伊贝粉粉"
       }
-    }
+    },
+    "evolution_level": 28,
+    "evolution_condition": "天气为雨天进化"
   },
   {
     "name": "Slowlume",
@@ -3680,7 +3767,8 @@
       "zh": {
         "name": "动力猿"
       }
-    }
+    },
+    "evolution_level": 18
   },
   {
     "name": "Drowsire",
@@ -3705,7 +3793,8 @@
       "zh": {
         "name": "瞌睡王"
       }
-    }
+    },
+    "evolution_level": 36
   },
   {
     "name": "Seablade",
@@ -3783,7 +3872,8 @@
         "name": "刺盔虫",
         "form": "本来的样子"
       }
-    }
+    },
+    "evolution_level": 26
   },
   {
     "name": "Spikeguard",
@@ -3809,7 +3899,8 @@
         "name": "刺盔虫",
         "form": "磨损的样子"
       }
-    }
+    },
+    "evolution_level": 26
   },
   {
     "name": "Thornhelm",
@@ -3835,7 +3926,8 @@
         "name": "千棘盔",
         "form": "本来的样子"
       }
-    }
+    },
+    "evolution_level": 42
   },
   {
     "name": "Thornhelm",
@@ -3861,7 +3953,8 @@
         "name": "千棘盔",
         "form": "磨损的样子"
       }
-    }
+    },
+    "evolution_level": 42
   },
   {
     "name": "Thornmare",
@@ -3988,7 +4081,8 @@
       "zh": {
         "name": "咔咔雀"
       }
-    }
+    },
+    "evolution_level": 18
   },
   {
     "name": "Kacranor",
@@ -4013,7 +4107,8 @@
       "zh": {
         "name": "咔咔鸟"
       }
-    }
+    },
+    "evolution_level": 36
   },
   {
     "name": "Starlite",
@@ -4091,7 +4186,8 @@
         "name": "星光狮",
         "form": "星光能量的样子"
       }
-    }
+    },
+    "evolution_level": 38
   },
   {
     "name": "Starlion",
@@ -4117,7 +4213,8 @@
         "name": "星光狮",
         "form": "月光能量的样子"
       }
-    }
+    },
+    "evolution_level": 38
   },
   {
     "name": "Swarmlet",
@@ -4167,7 +4264,9 @@
       "zh": {
         "name": "黄蜂后"
       }
-    }
+    },
+    "evolution_level": 21,
+    "evolution_condition": "性别为雌性"
   },
   {
     "name": "Blossomqueen",
@@ -4192,7 +4291,8 @@
       "zh": {
         "name": "花魁蜂后"
       }
-    }
+    },
+    "evolution_level": 38
   },
   {
     "name": "Hivequeen",
@@ -4267,7 +4367,9 @@
       "zh": {
         "name": "紫夜"
       }
-    }
+    },
+    "evolution_level": 26,
+    "evolution_condition": "性别为雌性"
   },
   {
     "name": "Nyve",
@@ -4292,7 +4394,8 @@
       "zh": {
         "name": "朔夜伊芙"
       }
-    }
+    },
+    "evolution_level": 44
   },
   {
     "name": "Burrownix",
@@ -4342,7 +4445,9 @@
       "zh": {
         "name": "贪食鼹"
       }
-    }
+    },
+    "evolution_level": 20,
+    "evolution_condition": "击败三只虫系精灵"
   },
   {
     "name": "Megaspinex",
@@ -4367,7 +4472,9 @@
       "zh": {
         "name": "巨噬针鼹"
       }
-    }
+    },
+    "evolution_level": 32,
+    "evolution_condition": "击败三只虫系精灵"
   },
   {
     "name": "Mildgull",
@@ -4417,7 +4524,8 @@
       "zh": {
         "name": "蓝珠天鹅"
       }
-    }
+    },
+    "evolution_level": 20
   },
   {
     "name": "Verdame",
@@ -4442,7 +4550,8 @@
       "zh": {
         "name": "翠顶夫人"
       }
-    }
+    },
+    "evolution_level": 40
   },
   {
     "name": "Noirdame",
@@ -4467,7 +4576,9 @@
       "zh": {
         "name": "黑羽夫人"
       }
-    }
+    },
+    "evolution_level": 40,
+    "evolution_condition": "修改恶系血脉"
   },
   {
     "name": "Hammerstork",
@@ -4542,7 +4653,8 @@
       "zh": {
         "name": "魔草巫灵"
       }
-    }
+    },
+    "evolution_level": 32
   },
   {
     "name": "Memostone",
@@ -4617,7 +4729,8 @@
       "zh": {
         "name": "黑猫巫师"
       }
-    }
+    },
+    "evolution_level": 40
   },
   {
     "name": "Stealthacat",
@@ -4692,7 +4805,8 @@
       "zh": {
         "name": "草衣虫"
       }
-    }
+    },
+    "evolution_level": 20
   },
   {
     "name": "Bloomvail",
@@ -4717,7 +4831,9 @@
       "zh": {
         "name": "花衣蝶"
       }
-    }
+    },
+    "evolution_level": 36,
+    "evolution_condition": "性别为雌性"
   },
   {
     "name": "Verdwing",
@@ -4767,7 +4883,8 @@
       "zh": {
         "name": "魔翼鸟"
       }
-    }
+    },
+    "evolution_level": 20
   },
   {
     "name": "Pactwing",
@@ -4792,7 +4909,8 @@
       "zh": {
         "name": "魔眷鸟"
       }
-    }
+    },
+    "evolution_level": 32
   },
   {
     "name": "Amiyat",
@@ -4842,7 +4960,8 @@
       "zh": {
         "name": "阿米樱"
       }
-    }
+    },
+    "evolution_level": 30
   },
   {
     "name": "Loyen",
@@ -4867,7 +4986,8 @@
       "zh": {
         "name": "罗隐"
       }
-    }
+    },
+    "evolution_level": 50
   },
   {
     "name": "Bellshark",
@@ -4917,7 +5037,8 @@
       "zh": {
         "name": "蓝蝶鲨"
       }
-    }
+    },
+    "evolution_level": 32
   },
   {
     "name": "Prismashark",
@@ -4942,7 +5063,8 @@
       "zh": {
         "name": "彩蝶鲨"
       }
-    }
+    },
+    "evolution_level": 50
   },
   {
     "name": "Oracleshark",
@@ -5017,7 +5139,8 @@
       "zh": {
         "name": "巨灵石"
       }
-    }
+    },
+    "evolution_level": 40
   },
   {
     "name": "Unilett",
@@ -5067,7 +5190,8 @@
       "zh": {
         "name": "白金独角兽"
       }
-    }
+    },
+    "evolution_level": 40
   },
   {
     "name": "Chromacorn",
@@ -5170,7 +5294,8 @@
         "name": "蓬叶虫",
         "form": "金黄的样子"
       }
-    }
+    },
+    "evolution_level": 25
   },
   {
     "name": "Bushleaf",
@@ -5196,7 +5321,8 @@
         "name": "蓬叶虫",
         "form": "枯叶的样子"
       }
-    }
+    },
+    "evolution_level": 25
   },
   {
     "name": "Tumblemoth",
@@ -5222,7 +5348,8 @@
         "name": "风滚暮虫",
         "form": "金黄的样子"
       }
-    }
+    },
+    "evolution_level": 45
   },
   {
     "name": "Tumblemoth",
@@ -5248,7 +5375,8 @@
         "name": "风滚暮虫",
         "form": "枯叶的样子"
       }
-    }
+    },
+    "evolution_level": 45
   },
   {
     "name": "Misttail",
@@ -5298,7 +5426,8 @@
       "zh": {
         "name": "影狸"
       }
-    }
+    },
+    "evolution_level": 36
   },
   {
     "name": "Dodoar",
@@ -5348,7 +5477,8 @@
       "zh": {
         "name": "多啦多"
       }
-    }
+    },
+    "evolution_level": 16
   },
   {
     "name": "Gulardo",
@@ -5373,7 +5503,8 @@
       "zh": {
         "name": "古啦多"
       }
-    }
+    },
+    "evolution_level": 36
   },
   {
     "name": "Cryshroom",
@@ -5423,7 +5554,8 @@
       "zh": {
         "name": "怖须菇"
       }
-    }
+    },
+    "evolution_level": 24
   },
   {
     "name": "Wailshroom",
@@ -5448,7 +5580,8 @@
       "zh": {
         "name": "怖哭菇"
       }
-    }
+    },
+    "evolution_level": 38
   },
   {
     "name": "Demonwolf",
@@ -5548,7 +5681,8 @@
       "zh": {
         "name": "电企鹅"
       }
-    }
+    },
+    "evolution_level": 32
   },
   {
     "name": "Snowdlet",
@@ -5598,7 +5732,8 @@
       "zh": {
         "name": "雪蛮人"
       }
-    }
+    },
+    "evolution_level": 28
   },
   {
     "name": "Snowgian",
@@ -5623,7 +5758,8 @@
       "zh": {
         "name": "雪巨人"
       }
-    }
+    },
+    "evolution_level": 40
   },
   {
     "name": "Puffhog",
@@ -5673,7 +5809,8 @@
       "zh": {
         "name": "獠牙猪"
       }
-    }
+    },
+    "evolution_level": 33
   },
   {
     "name": "Snowling",
@@ -5723,7 +5860,8 @@
       "zh": {
         "name": "冰封怨灵"
       }
-    }
+    },
+    "evolution_level": 26
   },
   {
     "name": "Snowsprite",
@@ -5748,7 +5886,8 @@
       "zh": {
         "name": "雪灵"
       }
-    }
+    },
+    "evolution_level": 42
   },
   {
     "name": "Hoodlette",
@@ -5798,7 +5937,8 @@
       "zh": {
         "name": "帽兜娃娃"
       }
-    }
+    },
+    "evolution_level": 32
   },
   {
     "name": "Snowshadoll",
@@ -5823,7 +5963,8 @@
       "zh": {
         "name": "雪影娃娃"
       }
-    }
+    },
+    "evolution_level": 48
   },
   {
     "name": "Frostshade",
@@ -5898,7 +6039,8 @@
       "zh": {
         "name": "权杖-V"
       }
-    }
+    },
+    "evolution_level": 40
   },
   {
     "name": "Spiritfox",
@@ -5948,7 +6090,8 @@
       "zh": {
         "name": "九尾狐"
       }
-    }
+    },
+    "evolution_level": 30
   },
   {
     "name": "Mystifox",
@@ -5973,7 +6116,8 @@
       "zh": {
         "name": "尖嘴狐仙"
       }
-    }
+    },
+    "evolution_level": 50
   },
   {
     "name": "Lio",
@@ -6023,7 +6167,9 @@
       "zh": {
         "name": "灵羽勇士"
       }
-    }
+    },
+    "evolution_level": 28,
+    "evolution_condition": "成长为1星"
   },
   {
     "name": "Lioseraph",
@@ -6048,7 +6194,9 @@
       "zh": {
         "name": "圣羽翼王"
       }
-    }
+    },
+    "evolution_level": 40,
+    "evolution_condition": "成长为2星"
   },
   {
     "name": "Pinelet",
@@ -6098,7 +6246,8 @@
       "zh": {
         "name": "松叶羊"
       }
-    }
+    },
+    "evolution_level": 16
   },
   {
     "name": "Needleranger",
@@ -6123,7 +6272,8 @@
       "zh": {
         "name": "针叶巡林"
       }
-    }
+    },
+    "evolution_level": 36
   },
   {
     "name": "Cubrage",
@@ -6173,7 +6323,8 @@
       "zh": {
         "name": "炽焰狮"
       }
-    }
+    },
+    "evolution_level": 16
   },
   {
     "name": "Heartblaze",
@@ -6198,7 +6349,8 @@
       "zh": {
         "name": "炽心勇狮"
       }
-    }
+    },
+    "evolution_level": 36
   },
   {
     "name": "Dripserp",
@@ -6248,7 +6400,8 @@
       "zh": {
         "name": "水蛇锁"
       }
-    }
+    },
+    "evolution_level": 16
   },
   {
     "name": "Serphex",
@@ -6273,7 +6426,8 @@
       "zh": {
         "name": "游蛇魔使"
       }
-    }
+    },
+    "evolution_level": 36
   },
   {
     "name": "Fairdove",
@@ -6348,7 +6502,8 @@
       "zh": {
         "name": "怒目怂猫"
       }
-    }
+    },
+    "evolution_level": 36
   },
   {
     "name": "Grifflet",
@@ -6426,7 +6581,8 @@
         "name": "神圣狮鹫",
         "form": "崖间地的样子"
       }
-    }
+    },
+    "evolution_level": 32
   },
   {
     "name": "Holygriff",
@@ -6452,7 +6608,8 @@
         "name": "神圣狮鹫",
         "form": "高山地的样子"
       }
-    }
+    },
+    "evolution_level": 32
   },
   {
     "name": "Royalgriff",
@@ -6478,7 +6635,8 @@
         "name": "皇家狮鹫",
         "form": "崖间地的样子"
       }
-    }
+    },
+    "evolution_level": 46
   },
   {
     "name": "Royalgriff",
@@ -6504,7 +6662,8 @@
         "name": "皇家狮鹫",
         "form": "高山地的样子"
       }
-    }
+    },
+    "evolution_level": 46
   },
   {
     "name": "Roundlet",
@@ -6554,7 +6713,8 @@
       "zh": {
         "name": "尖角蜘蛛"
       }
-    }
+    },
+    "evolution_level": 24
   },
   {
     "name": "Yamhorntitan",
@@ -6579,7 +6739,8 @@
       "zh": {
         "name": "芋香巨角蛛"
       }
-    }
+    },
+    "evolution_level": 40
   },
   {
     "name": "Wavelo",
@@ -6629,7 +6790,8 @@
       "zh": {
         "name": "消波螺"
       }
-    }
+    },
+    "evolution_level": 16
   },
   {
     "name": "Wavevor",
@@ -6654,7 +6816,8 @@
       "zh": {
         "name": "嗜波螺"
       }
-    }
+    },
+    "evolution_level": 32
   },
   {
     "name": "Mushdlet",
@@ -6704,7 +6867,9 @@
       "zh": {
         "name": "多菇丁"
       }
-    }
+    },
+    "evolution_level": 36,
+    "evolution_condition": "天气为雨天进化"
   },
   {
     "name": "Nethermush",
@@ -6729,7 +6894,9 @@
       "zh": {
         "name": "九幽菇"
       }
-    }
+    },
+    "evolution_level": 48,
+    "evolution_condition": "天气为雨天进化"
   },
   {
     "name": "Spottle",
@@ -6779,7 +6946,8 @@
       "zh": {
         "name": "斑枭"
       }
-    }
+    },
+    "evolution_level": 30
   },
   {
     "name": "Yirei",
@@ -6829,7 +6997,8 @@
       "zh": {
         "name": "伊兰亚龙"
       }
-    }
+    },
+    "evolution_level": 40
   },
   {
     "name": "Yilandragon",
@@ -6904,7 +7073,8 @@
       "zh": {
         "name": "卷毛鸭"
       }
-    }
+    },
+    "evolution_level": 40
   },
   {
     "name": "Sealior",
@@ -6954,7 +7124,8 @@
       "zh": {
         "name": "海豹船长"
       }
-    }
+    },
+    "evolution_level": 40
   },
   {
     "name": "Honkerel",
@@ -7004,7 +7175,8 @@
       "zh": {
         "name": "圆号鱼"
       }
-    }
+    },
+    "evolution_level": 36
   },
   {
     "name": "Sweetnail",
@@ -7054,7 +7226,8 @@
       "zh": {
         "name": "壳乙螺"
       }
-    }
+    },
+    "evolution_level": 32
   },
   {
     "name": "Carlor",
@@ -7079,7 +7252,8 @@
       "zh": {
         "name": "卡洛儿"
       }
-    }
+    },
+    "evolution_level": 44
   },
   {
     "name": "Scriptmite",
@@ -7129,7 +7303,8 @@
       "zh": {
         "name": "书卷守护"
       }
-    }
+    },
+    "evolution_level": 16
   },
   {
     "name": "Scriptarchon",
@@ -7154,7 +7329,9 @@
       "zh": {
         "name": "古卷执政官"
       }
-    }
+    },
+    "evolution_level": 36,
+    "evolution_condition": "击败三只武系精灵"
   },
   {
     "name": "Scriptgolem",
@@ -7179,7 +7356,9 @@
       "zh": {
         "name": "古卷匣魔像"
       }
-    }
+    },
+    "evolution_level": 36,
+    "evolution_condition": "击败三只幻系精灵"
   },
   {
     "name": "Runrat",
@@ -7229,7 +7408,9 @@
       "zh": {
         "name": "流浪鼠"
       }
-    }
+    },
+    "evolution_level": 37,
+    "evolution_condition": "采集矿石三次"
   },
   {
     "name": "Chessie",
@@ -7307,7 +7488,9 @@
         "name": "棋骑士",
         "form": "白子"
       }
-    }
+    },
+    "evolution_level": 26,
+    "evolution_condition": "击败三次棋骑士黑子且棋棋性别必须为雄性"
   },
   {
     "name": "Chess Knight",
@@ -7333,7 +7516,9 @@
         "name": "棋骑士",
         "form": "黑子"
       }
-    }
+    },
+    "evolution_level": 26,
+    "evolution_condition": "击败三次棋骑士白子且棋棋性别必须为雄性"
   },
   {
     "name": "Chess Guard",
@@ -7359,7 +7544,9 @@
         "name": "棋齐垒",
         "form": "白子"
       }
-    }
+    },
+    "evolution_level": 26,
+    "evolution_condition": "击败三次棋齐垒黑子且棋棋性别必须为雄性"
   },
   {
     "name": "Chess Guard",
@@ -7385,7 +7572,9 @@
         "name": "棋齐垒",
         "form": "黑子"
       }
-    }
+    },
+    "evolution_level": 26,
+    "evolution_condition": "击败三次棋齐垒白子且棋棋性别必须为雄性"
   },
   {
     "name": "Chess Overseer",
@@ -7411,7 +7600,9 @@
         "name": "棋祈督",
         "form": "白子"
       }
-    }
+    },
+    "evolution_level": 26,
+    "evolution_condition": "击败三次棋祈督黑子且棋棋性别必须为雄性"
   },
   {
     "name": "Chess Overseer",
@@ -7437,7 +7628,9 @@
         "name": "棋祈督",
         "form": "黑子"
       }
-    }
+    },
+    "evolution_level": 26,
+    "evolution_condition": "击败三次棋祈督白子且棋棋性别必须为雄性"
   },
   {
     "name": "Chess Queen",
@@ -7463,7 +7656,9 @@
         "name": "棋绮后",
         "form": "白子"
       }
-    }
+    },
+    "evolution_level": 26,
+    "evolution_condition": "击败三次棋绮后黑子且棋棋性别必须为雌性"
   },
   {
     "name": "Chess Queen",
@@ -7489,7 +7684,9 @@
         "name": "棋绮后",
         "form": "黑子"
       }
-    }
+    },
+    "evolution_level": 26,
+    "evolution_condition": "击败三次棋绮后白子且棋棋性别必须为雌性"
   },
   {
     "name": "Chess Majesty",
@@ -7747,7 +7944,8 @@
       "zh": {
         "name": "舞动路路"
       }
-    }
+    },
+    "evolution_level": 26
   },
   {
     "name": "Whitlu",
@@ -7772,7 +7970,8 @@
       "zh": {
         "name": "白发路路"
       }
-    }
+    },
+    "evolution_level": 40
   },
   {
     "name": "Doodle",
@@ -7822,7 +8021,8 @@
       "zh": {
         "name": "气球猫"
       }
-    }
+    },
+    "evolution_level": 20
   },
   {
     "name": "Dreamsan",
@@ -7847,7 +8047,8 @@
       "zh": {
         "name": "梦想三三"
       }
-    }
+    },
+    "evolution_level": 32
   },
   {
     "name": "Miradream",
@@ -7922,7 +8123,8 @@
       "zh": {
         "name": "鳗尾兽"
       }
-    }
+    },
+    "evolution_level": 26
   },
   {
     "name": "Sacred Squire",
@@ -7972,7 +8174,8 @@
       "zh": {
         "name": "圣剑-X"
       }
-    }
+    },
+    "evolution_level": 40
   },
   {
     "name": "Sacredblade Knight",
@@ -8047,7 +8250,9 @@
       "zh": {
         "name": "酷拉"
       }
-    }
+    },
+    "evolution_level": 40,
+    "evolution_condition": "前往好友世界后进化"
   },
   {
     "name": "Voltiring",
@@ -8097,7 +8302,8 @@
       "zh": {
         "name": "刺电环"
       }
-    }
+    },
+    "evolution_level": 28
   },
   {
     "name": "Thornring",
@@ -8122,7 +8328,8 @@
       "zh": {
         "name": "荆棘电环"
       }
-    }
+    },
+    "evolution_level": 40
   },
   {
     "name": "Miniboxer",
@@ -8172,7 +8379,8 @@
       "zh": {
         "name": "迷迷箱怪"
       }
-    }
+    },
+    "evolution_level": 36
   },
   {
     "name": "Bellserp",
@@ -8248,7 +8456,8 @@
       "zh": {
         "name": "寒音蛇"
       }
-    }
+    },
+    "evolution_level": 38
   },
   {
     "name": "Chimeserp",
@@ -8274,7 +8483,8 @@
         "name": "寒音蛇",
         "form": "本命年的样子"
       }
-    }
+    },
+    "evolution_level": 38
   },
   {
     "name": "Shortcrawl",
@@ -8324,7 +8534,8 @@
       "zh": {
         "name": "恶魔红钻"
       }
-    }
+    },
+    "evolution_level": 36
   },
   {
     "name": "Liraray",
@@ -8503,7 +8714,8 @@
       "zh": {
         "name": "奔乐鹿"
       }
-    }
+    },
+    "evolution_level": 28
   },
   {
     "name": "Jazzhart",
@@ -8528,7 +8740,8 @@
       "zh": {
         "name": "爵士鹿"
       }
-    }
+    },
+    "evolution_level": 40
   },
   {
     "name": "Popspin",
@@ -8603,7 +8816,8 @@
       "zh": {
         "name": "声波缇塔"
       }
-    }
+    },
+    "evolution_level": 40
   },
   {
     "name": "Piplet",
@@ -8653,7 +8867,8 @@
       "zh": {
         "name": "鄙目鹬"
       }
-    }
+    },
+    "evolution_level": 16
   },
   {
     "name": "Tallstilt",
@@ -8678,7 +8893,8 @@
       "zh": {
         "name": "高脚鹬"
       }
-    }
+    },
+    "evolution_level": 32
   },
   {
     "name": "Conetina",
@@ -8729,7 +8945,9 @@
         "name": "香草甜甜",
         "form": "樱桃饰品"
       }
-    }
+    },
+    "evolution_level": 28,
+    "evolution_condition": "随机形态进化"
   },
   {
     "name": "Vanitina",
@@ -8755,7 +8973,9 @@
         "name": "香草甜甜",
         "form": "杨桃饰品"
       }
-    }
+    },
+    "evolution_level": 28,
+    "evolution_condition": "随机形态进化"
   },
   {
     "name": "Vanitina",
@@ -8781,7 +9001,9 @@
         "name": "香草甜甜",
         "form": "蓝莓饰品"
       }
-    }
+    },
+    "evolution_level": 28,
+    "evolution_condition": "随机形态进化"
   },
   {
     "name": "Sundaetina",
@@ -8807,7 +9029,9 @@
         "name": "圣代甜甜",
         "form": "樱桃巧克力口味"
       }
-    }
+    },
+    "evolution_level": 40,
+    "evolves_from_form": "Cherry"
   },
   {
     "name": "Sundaetina",
@@ -8833,7 +9057,9 @@
         "name": "圣代甜甜",
         "form": "樱桃草莓口味"
       }
-    }
+    },
+    "evolution_level": 40,
+    "evolves_from_form": "Cherry"
   },
   {
     "name": "Sundaetina",
@@ -8859,7 +9085,9 @@
         "name": "圣代甜甜",
         "form": "樱桃抹茶口味"
       }
-    }
+    },
+    "evolution_level": 40,
+    "evolves_from_form": "Cherry"
   },
   {
     "name": "Sundaetina",
@@ -8885,7 +9113,9 @@
         "name": "圣代甜甜",
         "form": "蓝莓巧克力口味"
       }
-    }
+    },
+    "evolution_level": 40,
+    "evolves_from_form": "Blueberry"
   },
   {
     "name": "Sundaetina",
@@ -8911,7 +9141,9 @@
         "name": "圣代甜甜",
         "form": "蓝莓草莓口味"
       }
-    }
+    },
+    "evolution_level": 40,
+    "evolves_from_form": "Blueberry"
   },
   {
     "name": "Sundaetina",
@@ -8937,7 +9169,9 @@
         "name": "圣代甜甜",
         "form": "蓝莓抹茶口味"
       }
-    }
+    },
+    "evolution_level": 40,
+    "evolves_from_form": "Blueberry"
   },
   {
     "name": "Sundaetina",
@@ -8963,7 +9197,9 @@
         "name": "圣代甜甜",
         "form": "杨桃巧克力口味"
       }
-    }
+    },
+    "evolution_level": 40,
+    "evolves_from_form": "Starfruit"
   },
   {
     "name": "Sundaetina",
@@ -8989,7 +9225,9 @@
         "name": "圣代甜甜",
         "form": "杨桃草莓口味"
       }
-    }
+    },
+    "evolution_level": 40,
+    "evolves_from_form": "Starfruit"
   },
   {
     "name": "Sundaetina",
@@ -9015,7 +9253,9 @@
         "name": "圣代甜甜",
         "form": "杨桃抹茶口味"
       }
-    }
+    },
+    "evolution_level": 40,
+    "evolves_from_form": "Starfruit"
   },
   {
     "name": "Spiklet",
@@ -9093,7 +9333,9 @@
         "name": "月亮砣",
         "form": "上弦的样子"
       }
-    }
+    },
+    "evolution_level": 36,
+    "evolution_condition": "夜晚进化"
   },
   {
     "name": "Moonlet",
@@ -9119,7 +9361,9 @@
         "name": "月亮砣",
         "form": "下弦的样子"
       }
-    }
+    },
+    "evolution_level": 36,
+    "evolution_condition": "早上进化"
   },
   {
     "name": "Minnifin",
@@ -9169,7 +9413,8 @@
       "zh": {
         "name": "快鳍鱼"
       }
-    }
+    },
+    "evolution_level": 20
   },
   {
     "name": "Dragofin",
@@ -9194,7 +9439,8 @@
       "zh": {
         "name": "龙鱼"
       }
-    }
+    },
+    "evolution_level": 32
   },
   {
     "name": "Shyeel",
@@ -9244,7 +9490,8 @@
       "zh": {
         "name": "闪电鳗鱼"
       }
-    }
+    },
+    "evolution_level": 36
   },
   {
     "name": "Jade Jelly",
@@ -9294,7 +9541,8 @@
       "zh": {
         "name": "琉璃水母"
       }
-    }
+    },
+    "evolution_level": 26
   },
   {
     "name": "Firewatt",
@@ -9344,7 +9592,8 @@
       "zh": {
         "name": "火尾战士"
       }
-    }
+    },
+    "evolution_level": 20
   },
   {
     "name": "Blazeguard",
@@ -9369,7 +9618,8 @@
       "zh": {
         "name": "烈火守护"
       }
-    }
+    },
+    "evolution_level": 40
   },
   {
     "name": "Cracklewing",
@@ -9444,7 +9694,8 @@
       "zh": {
         "name": "红丝绒"
       }
-    }
+    },
+    "evolution_level": 16
   },
   {
     "name": "Crossvelvet",
@@ -9469,7 +9720,8 @@
       "zh": {
         "name": "红绒十字"
       }
-    }
+    },
+    "evolution_level": 36
   },
   {
     "name": "Uda",
@@ -9547,7 +9799,9 @@
         "name": "迷你乌",
         "form": "极昼的样子"
       }
-    }
+    },
+    "evolution_level": 30,
+    "evolution_condition": "白天进化"
   },
   {
     "name": "Miniu",
@@ -9573,7 +9827,9 @@
         "name": "迷你乌",
         "form": "极夜的样子"
       }
-    }
+    },
+    "evolution_level": 30,
+    "evolution_condition": "夜晚进化"
   },
   {
     "name": "Ulata",
@@ -9599,7 +9855,8 @@
         "name": "乌拉塔",
         "form": "极昼的样子"
       }
-    }
+    },
+    "evolution_level": 50
   },
   {
     "name": "Ulata",
@@ -9625,7 +9882,8 @@
         "name": "乌拉塔",
         "form": "极夜的样子"
       }
-    }
+    },
+    "evolution_level": 50
   },
   {
     "name": "Spirapa",
@@ -9675,7 +9933,8 @@
       "zh": {
         "name": "帕帕斯卡"
       }
-    }
+    },
+    "evolution_level": 36
   },
   {
     "name": "Mechacube",
@@ -9725,7 +9984,9 @@
       "zh": {
         "name": "多彩方方"
       }
-    }
+    },
+    "evolution_level": 28,
+    "evolution_condition": "前往好友世界后进化"
   },
   {
     "name": "Cubanoid",
@@ -9750,7 +10011,9 @@
       "zh": {
         "name": "立方人"
       }
-    }
+    },
+    "evolution_level": 40,
+    "evolution_condition": "前往好友世界后进化"
   },
   {
     "name": "Inklit",
@@ -9800,7 +10063,9 @@
       "zh": {
         "name": "混乱鱿彩"
       }
-    }
+    },
+    "evolution_level": 32,
+    "evolution_condition": "打败三只萌系精灵"
   },
   {
     "name": "Ordicquid",
@@ -9825,7 +10090,9 @@
       "zh": {
         "name": "秩序鱿墨"
       }
-    }
+    },
+    "evolution_level": 32,
+    "evolution_condition": "打败三只恶系精灵"
   },
   {
     "name": "Standchick",
@@ -9875,7 +10142,8 @@
       "zh": {
         "name": "晕晕鸡"
       }
-    }
+    },
+    "evolution_level": 16
   },
   {
     "name": "Gentleroost",
@@ -9900,7 +10168,8 @@
       "zh": {
         "name": "绅士鸡"
       }
-    }
+    },
+    "evolution_level": 36
   },
   {
     "name": "Warroost",
@@ -9925,7 +10194,9 @@
       "zh": {
         "name": "武者鸡"
       }
-    }
+    },
+    "evolution_level": 36,
+    "evolution_condition": "击败三只恶系精灵"
   },
   {
     "name": "Yuyu",
@@ -9975,7 +10246,8 @@
       "zh": {
         "name": "绒光优优"
       }
-    }
+    },
+    "evolution_level": 36
   },
   {
     "name": "Fuzzling",
@@ -10025,7 +10297,9 @@
       "zh": {
         "name": "捕尘长绒"
       }
-    }
+    },
+    "evolution_level": 30,
+    "evolution_condition": "身高大于0.375"
   },
   {
     "name": "Dusteater",
@@ -10050,7 +10324,9 @@
       "zh": {
         "name": "食尘短绒"
       }
-    }
+    },
+    "evolution_level": 30,
+    "evolution_condition": "身高小于0.375"
   },
   {
     "name": "Toxilora",
@@ -10100,7 +10376,8 @@
       "zh": {
         "name": "厉毒修萝"
       }
-    }
+    },
+    "evolution_level": 40
   },
   {
     "name": "Deepblue",
@@ -10175,7 +10452,8 @@
       "zh": {
         "name": "格兰花"
       }
-    }
+    },
+    "evolution_level": 16
   },
   {
     "name": "Gransphere",
@@ -10200,7 +10478,8 @@
       "zh": {
         "name": "格兰球"
       }
-    }
+    },
+    "evolution_level": 32
   },
   {
     "name": "Terramole",
@@ -10278,7 +10557,8 @@
         "name": "遁鼠",
         "form": "枯水期的样子"
       }
-    }
+    },
+    "evolution_level": 16
   },
   {
     "name": "Burrowmole",
@@ -10304,7 +10584,8 @@
         "name": "遁鼠",
         "form": "储水期的样子"
       }
-    }
+    },
+    "evolution_level": 16
   },
   {
     "name": "Deepburrow",
@@ -10330,7 +10611,8 @@
         "name": "遁地鼠",
         "form": "枯水期的样子"
       }
-    }
+    },
+    "evolution_level": 36
   },
   {
     "name": "Deepburrow",
@@ -10356,7 +10638,8 @@
         "name": "遁地鼠",
         "form": "储水期的样子"
       }
-    }
+    },
+    "evolution_level": 36
   },
   {
     "name": "Artling",
@@ -10406,7 +10689,8 @@
       "zh": {
         "name": "画像守护"
       }
-    }
+    },
+    "evolution_level": 16
   },
   {
     "name": "Arthand",
@@ -10431,7 +10715,9 @@
       "zh": {
         "name": "画间法师手"
       }
-    }
+    },
+    "evolution_level": 36,
+    "evolution_condition": "击败三只武系精灵"
   },
   {
     "name": "Artiron",
@@ -10456,7 +10742,9 @@
       "zh": {
         "name": "画间沉铁兽"
       }
-    }
+    },
+    "evolution_level": 36,
+    "evolution_condition": "击败三只幻系精灵"
   },
   {
     "name": "Winglet",
@@ -10506,7 +10794,8 @@
       "zh": {
         "name": "翼龙"
       }
-    }
+    },
+    "evolution_level": 40
   },
   {
     "name": "Qiulo",
@@ -10556,7 +10845,8 @@
       "zh": {
         "name": "裘力"
       }
-    }
+    },
+    "evolution_level": 20
   },
   {
     "name": "Qiuka",
@@ -10581,7 +10871,8 @@
       "zh": {
         "name": "裘卡"
       }
-    }
+    },
+    "evolution_level": 32
   },
   {
     "name": "Minibeetle",
@@ -10631,7 +10922,8 @@
       "zh": {
         "name": "铠甲虫"
       }
-    }
+    },
+    "evolution_level": 40
   },
   {
     "name": "Mudgull",
@@ -10681,7 +10973,8 @@
       "zh": {
         "name": "泥吼牙"
       }
-    }
+    },
+    "evolution_level": 36
   },
   {
     "name": "Skullmaw",
@@ -10731,7 +11024,8 @@
       "zh": {
         "name": "寂灭骨龙"
       }
-    }
+    },
+    "evolution_level": 40
   },
   {
     "name": "Jelly",
@@ -10781,7 +11075,9 @@
       "zh": {
         "name": "抹茶布丁"
       }
-    }
+    },
+    "evolution_level": 30,
+    "evolution_condition": "修改草系血脉"
   },
   {
     "name": "Coconut Pudding",
@@ -10806,7 +11102,9 @@
       "zh": {
         "name": "椰浆布丁"
       }
-    }
+    },
+    "evolution_level": 30,
+    "evolution_condition": "修改冰系血脉"
   },
   {
     "name": "Lava Pudding",
@@ -10831,7 +11129,9 @@
       "zh": {
         "name": "熔岩布丁"
       }
-    }
+    },
+    "evolution_level": 30,
+    "evolution_condition": "修改火系血脉"
   },
   {
     "name": "Blus",
@@ -10881,7 +11181,8 @@
       "zh": {
         "name": "雪顶布鲁斯"
       }
-    }
+    },
+    "evolution_level": 26
   },
   {
     "name": "Frostblus",
@@ -10906,7 +11207,8 @@
       "zh": {
         "name": "冰钻布鲁斯"
       }
-    }
+    },
+    "evolution_level": 42
   },
   {
     "name": "Starid",
@@ -10956,7 +11258,8 @@
       "zh": {
         "name": "落星虫"
       }
-    }
+    },
+    "evolution_level": 30
   },
   {
     "name": "Meteorid",
@@ -10981,7 +11284,8 @@
       "zh": {
         "name": "陨星虫"
       }
-    }
+    },
+    "evolution_level": 42
   },
   {
     "name": "Cutaroo",
@@ -11031,7 +11335,8 @@
       "zh": {
         "name": "炽热猿"
       }
-    }
+    },
+    "evolution_level": 28
   },
   {
     "name": "Flamaru",
@@ -11056,7 +11361,8 @@
       "zh": {
         "name": "火焰猿"
       }
-    }
+    },
+    "evolution_level": 40
   },
   {
     "name": "Flufflet",
@@ -11106,7 +11412,9 @@
       "zh": {
         "name": "小绒茧"
       }
-    }
+    },
+    "evolution_level": 27,
+    "evolution_condition": "精灵放小队并获得1200星光值"
   },
   {
     "name": "Fluffairy",
@@ -11131,7 +11439,8 @@
       "zh": {
         "name": "绒仙子"
       }
-    }
+    },
+    "evolution_level": 47
   },
   {
     "name": "Hornwing",
@@ -11181,7 +11490,9 @@
       "zh": {
         "name": "光纤兽"
       }
-    }
+    },
+    "evolution_level": 27,
+    "evolution_condition": "精灵放小队并获得1200星光值"
   },
   {
     "name": "Lumirilion",
@@ -11206,7 +11517,8 @@
       "zh": {
         "name": "疾光千兽"
       }
-    }
+    },
+    "evolution_level": 47
   },
   {
     "name": "Duolamp",
@@ -11256,7 +11568,8 @@
       "zh": {
         "name": "利灯鱼"
       }
-    }
+    },
+    "evolution_level": 30
   },
   {
     "name": "Cresnowbear",
@@ -11331,7 +11644,9 @@
       "zh": {
         "name": "窃光蚊"
       }
-    }
+    },
+    "evolution_level": 28,
+    "evolution_condition": "击败三只光系精灵"
   },
   {
     "name": "Kindlbug",
@@ -11381,7 +11696,9 @@
       "zh": {
         "name": "燃薪虫"
       }
-    }
+    },
+    "evolution_level": 40,
+    "evolution_condition": "使用三次引燃"
   },
   {
     "name": "Hollowkull",
@@ -11431,7 +11748,9 @@
       "zh": {
         "name": "夜宿颅"
       }
-    }
+    },
+    "evolution_level": 30,
+    "evolution_condition": "使用三次勾魂"
   },
   {
     "name": "Nightowl",
@@ -11456,7 +11775,8 @@
       "zh": {
         "name": "夜枭"
       }
-    }
+    },
+    "evolution_level": 50
   },
   {
     "name": "Pinkstar",
@@ -11506,7 +11826,8 @@
       "zh": {
         "name": "小皮球"
       }
-    }
+    },
+    "evolution_level": 32
   },
   {
     "name": "Besor",
@@ -11556,7 +11877,8 @@
       "zh": {
         "name": "贝加尔"
       }
-    }
+    },
+    "evolution_level": 28
   },
   {
     "name": "Beguron",
@@ -11581,7 +11903,8 @@
       "zh": {
         "name": "贝古斯"
       }
-    }
+    },
+    "evolution_level": 38
   },
   {
     "name": "Starlette",
@@ -11631,7 +11954,8 @@
       "zh": {
         "name": "粉耳星兔"
       }
-    }
+    },
+    "evolution_level": 32
   },
   {
     "name": "Meteorabbit",
@@ -11656,7 +11980,9 @@
       "zh": {
         "name": "落陨星兔"
       }
-    }
+    },
+    "evolution_level": 32,
+    "evolution_condition": "修改幽系血脉"
   },
   {
     "name": "Palet",
@@ -11706,7 +12032,9 @@
       "zh": {
         "name": "帕尔萨斯"
       }
-    }
+    },
+    "evolution_level": 28,
+    "evolution_condition": "成长为1星"
   },
   {
     "name": "Dracopal",
@@ -11731,7 +12059,9 @@
       "zh": {
         "name": "龙息帕尔"
       }
-    }
+    },
+    "evolution_level": 40,
+    "evolution_condition": "成长为2星"
   },
   {
     "name": "Springlet",
@@ -11781,7 +12111,8 @@
       "zh": {
         "name": "春兔"
       }
-    }
+    },
+    "evolution_level": 21
   },
   {
     "name": "Bloomhare",
@@ -11806,7 +12137,8 @@
       "zh": {
         "name": "春花兔"
       }
-    }
+    },
+    "evolution_level": 38
   },
   {
     "name": "Dusklight",
@@ -11856,7 +12188,8 @@
       "zh": {
         "name": "曜星光"
       }
-    }
+    },
+    "evolution_level": 21
   },
   {
     "name": "Twilightstar",
@@ -11881,7 +12214,8 @@
       "zh": {
         "name": "暮星辰"
       }
-    }
+    },
+    "evolution_level": 38
   },
   {
     "name": "Scholabbit",
@@ -11956,7 +12290,9 @@
       "zh": {
         "name": "超能阿布"
       }
-    }
+    },
+    "evolution_level": 40,
+    "evolution_condition": "修改龙系血脉"
   },
   {
     "name": "Chestnut",
@@ -12231,7 +12567,8 @@
       "zh": {
         "name": "溯源钟"
       }
-    }
+    },
+    "evolution_level": 32
   },
   {
     "name": "Dosi",
@@ -12281,7 +12618,8 @@
       "zh": {
         "name": "库多西"
       }
-    }
+    },
+    "evolution_level": 32
   },
   {
     "name": "Bodosi",
@@ -12306,7 +12644,8 @@
       "zh": {
         "name": "波多西"
       }
-    }
+    },
+    "evolution_level": 48
   },
   {
     "name": "Doling",
@@ -12731,7 +13070,8 @@
       "zh": {
         "name": "上岸蛙"
       }
-    }
+    },
+    "evolution_level": 33
   },
   {
     "name": "Flamtail",

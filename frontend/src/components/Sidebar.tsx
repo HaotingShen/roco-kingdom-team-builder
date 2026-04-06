@@ -65,7 +65,7 @@ export default function Sidebar() {
 
       {/* Ad banner */}
       {!adDismissed && (
-        <div className="mt-auto p-3 pb-4 relative">
+        <div className="mt-auto p-3 relative">
           <button
             onClick={() => setAdDismissed(true)}
             className="absolute top-1 right-1 z-10 w-5 h-5 flex items-center justify-center rounded-full bg-zinc-200 hover:bg-zinc-300 text-zinc-500 hover:text-zinc-700 text-xs leading-none cursor-pointer"

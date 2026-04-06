@@ -303,6 +303,8 @@ class Monster(Base):
     base_spd: Mapped[int] = mapped_column(Integer, nullable=False)
     preferred_attack_style: Mapped[AttackStyle] = mapped_column(Enum(AttackStyle, name="preferred_attack_style_enum"), default=AttackStyle.BOTH, nullable=False)
     localized: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
+    evolution_level: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    evolution_condition: Mapped[str | None] = mapped_column(String(255), nullable=True)
     __table_args__ = (
         Index("ix_monsters_localized_gin", "localized", postgresql_using="gin"),
         UniqueConstraint("name", "form", name="uq_monster_name_form"),
