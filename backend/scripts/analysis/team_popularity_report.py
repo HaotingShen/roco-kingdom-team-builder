@@ -83,16 +83,16 @@ def collect(db) -> dict:
 
     # ── 0. Scope ─────────────────────────────────────────────────────────────
     # Exclude featured (admin-curated) teams.
-    # All valid saved teams have exactly 3 monsters (enforced by frontend before save),
+    # All valid saved teams have exactly 6 monsters (enforced by frontend before save),
     # no leader-form monsters (MonsterPicker hardcodes is_leader_form=false),
     # a magic item, and at least 1 talent stat nonzero per monster.
-    # We still filter to exactly 3 monsters as a data-integrity guard.
+    # We still filter to exactly 6 monsters as a data-integrity guard.
     user_team_ids_q = (
         db.query(Team.id)
         .join(UserMonster, UserMonster.team_id == Team.id)
         .filter(Team.is_featured == False)
         .group_by(Team.id)
-        .having(func.count(UserMonster.id) == 3)
+        .having(func.count(UserMonster.id) == 6)
     )
     user_team_ids = [r[0] for r in user_team_ids_q.all()]
     T = len(user_team_ids)  # total qualifying user teams
@@ -106,9 +106,6 @@ def collect(db) -> dict:
             .filter(Team.id.in_(user_team_ids)).scalar(),
         "total_registered": db.query(func.count(User.id)).filter(User.is_guest == False).scalar(),
         "total_guest": db.query(func.count(User.id)).filter(User.is_guest == True).scalar(),
-        "total_user_monsters": db.query(func.count(UserMonster.id))
-            .filter(UserMonster.team_id.in_(user_team_ids)).scalar(),
-        "total_analyses": db.query(func.count(TeamAnalysis.id)).scalar(),
     }
 
     # ── 1. Monster popularity ─────────────────────────────────────────────────
@@ -250,27 +247,30 @@ def collect(db) -> dict:
     # ── 8. Per-monster personality breakdown (top 10 monsters only) ───────────
     # Which personality does each popular monster most often use?
     per_monster_personality = db.execute(text("""
-        SELECT
-            m.name AS monster_name,
-            p.name AS personality,
-            COUNT(*) AS cnt,
-            RANK() OVER (PARTITION BY m.name ORDER BY COUNT(*) DESC) AS rnk
-        FROM user_monsters um
-        JOIN monsters m ON um.monster_id = m.id
-        JOIN personalities p ON um.personality_id = p.id
-        WHERE um.team_id = ANY(:ids)
-          AND m.name IN (
-            SELECT m2.name
-            FROM user_monsters um2
-            JOIN monsters m2 ON um2.monster_id = m2.id
-            WHERE um2.team_id = ANY(:ids)
-            GROUP BY m2.name
-            ORDER BY COUNT(*) DESC
-            LIMIT 10
-          )
-        GROUP BY m.name, p.name
-        HAVING RANK() OVER (PARTITION BY m.name ORDER BY COUNT(*) DESC) <= 3
-        ORDER BY m.name, rnk
+        SELECT monster_name, personality, cnt, rnk FROM (
+            SELECT
+                m.name AS monster_name,
+                p.name AS personality,
+                COUNT(*) AS cnt,
+                SUM(COUNT(*)) OVER (PARTITION BY m.name) AS monster_total,
+                RANK() OVER (PARTITION BY m.name ORDER BY COUNT(*) DESC) AS rnk
+            FROM user_monsters um
+            JOIN monsters m ON um.monster_id = m.id
+            JOIN personalities p ON um.personality_id = p.id
+            WHERE um.team_id = ANY(:ids)
+              AND m.name IN (
+                SELECT m2.name
+                FROM user_monsters um2
+                JOIN monsters m2 ON um2.monster_id = m2.id
+                WHERE um2.team_id = ANY(:ids)
+                GROUP BY m2.name
+                ORDER BY COUNT(*) DESC
+                LIMIT 20
+              )
+            GROUP BY m.name, p.name
+        ) sub
+        WHERE rnk <= 3
+        ORDER BY monster_total DESC, monster_name, rnk
     """), {"ids": user_team_ids}).fetchall()
     data["per_monster_personality"] = per_monster_personality
 
@@ -289,50 +289,56 @@ def collect(db) -> dict:
 
     # ── 10. Per-monster legacy type choice ────────────────────────────────────
     per_monster_legacy = db.execute(text("""
-        SELECT
-            m.name AS monster_name,
-            t.name AS legacy_type,
-            COUNT(*) AS cnt,
-            RANK() OVER (PARTITION BY m.name ORDER BY COUNT(*) DESC) AS rnk
-        FROM user_monsters um
-        JOIN monsters m ON um.monster_id = m.id
-        JOIN types t ON um.legacy_type_id = t.id
-        WHERE um.team_id = ANY(:ids)
-          AND m.name IN (
-            SELECT m2.name FROM user_monsters um2
-            JOIN monsters m2 ON um2.monster_id = m2.id
-            WHERE um2.team_id = ANY(:ids)
-            GROUP BY m2.name ORDER BY COUNT(*) DESC LIMIT 10
-          )
-        GROUP BY m.name, t.name
-        HAVING RANK() OVER (PARTITION BY m.name ORDER BY COUNT(*) DESC) <= 3
-        ORDER BY m.name, rnk
+        SELECT monster_name, legacy_type, cnt, rnk FROM (
+            SELECT
+                m.name AS monster_name,
+                t.name AS legacy_type,
+                COUNT(*) AS cnt,
+                SUM(COUNT(*)) OVER (PARTITION BY m.name) AS monster_total,
+                RANK() OVER (PARTITION BY m.name ORDER BY COUNT(*) DESC) AS rnk
+            FROM user_monsters um
+            JOIN monsters m ON um.monster_id = m.id
+            JOIN types t ON um.legacy_type_id = t.id
+            WHERE um.team_id = ANY(:ids)
+              AND m.name IN (
+                SELECT m2.name FROM user_monsters um2
+                JOIN monsters m2 ON um2.monster_id = m2.id
+                WHERE um2.team_id = ANY(:ids)
+                GROUP BY m2.name ORDER BY COUNT(*) DESC LIMIT 20
+              )
+            GROUP BY m.name, t.name
+        ) sub
+        WHERE rnk <= 3
+        ORDER BY monster_total DESC, monster_name, rnk
     """), {"ids": user_team_ids}).fetchall()
     data["per_monster_legacy"] = per_monster_legacy
 
     # ── 11. Move choices per popular monster ──────────────────────────────────
     per_monster_moves = db.execute(text("""
-        SELECT
-            m.name AS monster_name,
-            mv.name AS move_name,
-            mt.name AS move_type,
-            mv.move_category,
-            COUNT(*) AS cnt,
-            RANK() OVER (PARTITION BY m.name ORDER BY COUNT(*) DESC) AS rnk
-        FROM user_monsters um
-        JOIN monsters m ON um.monster_id = m.id
-        JOIN moves mv ON mv.id IN (um.move1_id, um.move2_id, um.move3_id, um.move4_id)
-        JOIN types mt ON mv.move_type_id = mt.id
-        WHERE um.team_id = ANY(:ids)
-          AND m.name IN (
-            SELECT m2.name FROM user_monsters um2
-            JOIN monsters m2 ON um2.monster_id = m2.id
-            WHERE um2.team_id = ANY(:ids)
-            GROUP BY m2.name ORDER BY COUNT(*) DESC LIMIT 10
-          )
-        GROUP BY m.name, mv.name, mt.name, mv.move_category
-        HAVING RANK() OVER (PARTITION BY m.name ORDER BY COUNT(*) DESC) <= 5
-        ORDER BY m.name, rnk
+        SELECT monster_name, move_name, move_type, move_category, cnt, rnk FROM (
+            SELECT
+                m.name AS monster_name,
+                mv.name AS move_name,
+                mt.name AS move_type,
+                mv.move_category,
+                COUNT(*) AS cnt,
+                SUM(COUNT(*)) OVER (PARTITION BY m.name) AS monster_total,
+                RANK() OVER (PARTITION BY m.name ORDER BY COUNT(*) DESC) AS rnk
+            FROM user_monsters um
+            JOIN monsters m ON um.monster_id = m.id
+            JOIN moves mv ON mv.id IN (um.move1_id, um.move2_id, um.move3_id, um.move4_id)
+            JOIN types mt ON mv.move_type_id = mt.id
+            WHERE um.team_id = ANY(:ids)
+              AND m.name IN (
+                SELECT m2.name FROM user_monsters um2
+                JOIN monsters m2 ON um2.monster_id = m2.id
+                WHERE um2.team_id = ANY(:ids)
+                GROUP BY m2.name ORDER BY COUNT(*) DESC LIMIT 20
+              )
+            GROUP BY m.name, mv.name, mt.name, mv.move_category
+        ) sub
+        WHERE rnk <= 5
+        ORDER BY monster_total DESC, monster_name, rnk
     """), {"ids": user_team_ids}).fetchall()
     data["per_monster_moves"] = per_monster_moves
 
@@ -425,40 +431,65 @@ def collect(db) -> dict:
     """), {"ids": user_team_ids}).fetchall()
     data["teams_per_user"] = teams_per_user
 
-    # ── 15. Analysis usage ────────────────────────────────────────────────────
-    analyzed_teams = db.execute(text("""
-        SELECT COUNT(DISTINCT team_id) FROM team_analyses
-        WHERE team_id = ANY(:ids)
-    """), {"ids": user_team_ids}).scalar()
-    data["analyzed_teams"] = analyzed_teams
-
-    analysis_by_lang = db.execute(text("""
-        SELECT language, COUNT(*) FROM team_analyses
-        WHERE team_id = ANY(:ids)
-        GROUP BY language ORDER BY COUNT(*) DESC
+    # ── 15. Meta teams ────────────────────────────────────────────────────────
+    # Level 1: Most common 6-monster compositions (monsters only, order-insensitive).
+    # We sort the 6 monster names alphabetically to canonicalize order before grouping.
+    meta_teams_loose = db.execute(text("""
+        SELECT monster_combo, COUNT(*) AS team_count
+        FROM (
+            SELECT team_id,
+                STRING_AGG(m.name ORDER BY m.name) AS monster_combo
+            FROM user_monsters um
+            JOIN monsters m ON um.monster_id = m.id
+            WHERE um.team_id = ANY(:ids)
+            GROUP BY team_id
+        ) sub
+        GROUP BY monster_combo
+        ORDER BY team_count DESC
+        LIMIT 20
     """), {"ids": user_team_ids}).fetchall()
-    data["analysis_by_lang"] = analysis_by_lang
+    data["meta_teams_loose"] = meta_teams_loose
 
-    cache_hits = db.execute(text("""
-        SELECT is_from_cache, COUNT(*) FROM team_analyses
-        WHERE team_id = ANY(:ids)
-        GROUP BY is_from_cache
+    # Level 2: Exact composition — monster + magic item + all 6 move sets +
+    # personality + legacy type per slot (talents excluded as too granular).
+    # Slots are canonicalized by sorting on monster name so order doesn't matter.
+    meta_teams_exact = db.execute(text("""
+        SELECT full_combo, magic_item, team_count
+        FROM (
+            SELECT
+                t.id AS team_id,
+                mi.name AS magic_item,
+                STRING_AGG(
+                    m.name || '|' ||
+                    p.name || '|' ||
+                    lt.name || '|' ||
+                    COALESCE(mv1.name,'') || '|' ||
+                    COALESCE(mv2.name,'') || '|' ||
+                    COALESCE(mv3.name,'') || '|' ||
+                    COALESCE(mv4.name,'')
+                    ORDER BY m.name, p.name
+                , ';;') AS full_combo
+            FROM teams t
+            JOIN magic_items mi ON t.magic_item_id = mi.id
+            JOIN user_monsters um ON um.team_id = t.id
+            JOIN monsters m ON um.monster_id = m.id
+            JOIN personalities p ON um.personality_id = p.id
+            JOIN types lt ON um.legacy_type_id = lt.id
+            LEFT JOIN moves mv1 ON mv1.id = um.move1_id
+            LEFT JOIN moves mv2 ON mv2.id = um.move2_id
+            LEFT JOIN moves mv3 ON mv3.id = um.move3_id
+            LEFT JOIN moves mv4 ON mv4.id = um.move4_id
+            WHERE t.id = ANY(:ids)
+            GROUP BY t.id, mi.name
+        ) combos
+        GROUP BY full_combo, magic_item
+        HAVING COUNT(*) > 1
+        ORDER BY team_count DESC
+        LIMIT 20
     """), {"ids": user_team_ids}).fetchall()
-    data["cache_hits"] = cache_hits
+    data["meta_teams_exact"] = meta_teams_exact
 
-    # ── 16. Time trends: team creation ────────────────────────────────────────
-    monthly_teams = db.execute(text("""
-        SELECT
-            TO_CHAR(created_at AT TIME ZONE 'Asia/Shanghai', 'YYYY-MM') AS month,
-            COUNT(*) AS new_teams
-        FROM teams
-        WHERE id = ANY(:ids)
-        GROUP BY 1
-        ORDER BY 1
-    """), {"ids": user_team_ids}).fetchall()
-    data["monthly_teams"] = monthly_teams
-
-    # ── 17. User tier distribution ────────────────────────────────────────────
+    # ── 16. User tier distribution ────────────────────────────────────────────
     tier_dist = db.execute(text("""
         SELECT subscription_tier, COUNT(*) FROM users
         WHERE is_guest = false
@@ -498,7 +529,7 @@ def render(data: dict) -> str:
     lines.append(f"# Roco Kingdom Team Builder — Popularity Analysis Report")
     lines.append(f"")
     lines.append(f"Generated: **{data['_generated_at']}**  ")
-    lines.append(f"Analysis scope: **user-created teams with exactly 3 monsters, magic item, ≥1 talent stat nonzero per monster** (featured/admin teams excluded)")
+    lines.append(f"Analysis scope: **user-created teams with exactly 6 monsters, magic item, ≥1 talent stat nonzero per monster** (featured/admin teams excluded)")
     lines.append(f"")
 
     # ── 0. Overview ───────────────────────────────────────────────────────────
@@ -511,18 +542,16 @@ def render(data: dict) -> str:
     p(f"| Total registered users | {s['total_registered']} |")
     p(f"| Total guest users | {s['total_guest']} |")
     p(f"| Users who have saved ≥1 team | {s['total_users_with_teams']} |")
-    p(f"| Total monster slots filled | {s['total_user_monsters']} |")
-    p(f"| Total analyses run | {s['total_analyses']} |")
     blank()
 
     # ── 1. Monster popularity (top 30) ────────────────────────────────────────
     h1("1. Monster Popularity")
     h2("1a. By Monster Form (exact)")
-    p(f"Total user monster slots: **{s['total_user_monsters']}**")
+    total_um = T * 6 or 1  # all teams have exactly 6 monsters
+    p(f"Total user monster slots: **{total_um}**")
     blank()
     p("| Rank | Monster | Form | Types | Used in slots | % of slots | Teams using |")
     p("| --- | --- | --- | --- | --- | --- | --- |")
-    total_um = s["total_user_monsters"] or 1
     for i, r in enumerate(data["monster_usage"][:30], 1):
         types = r.main_type + (f"/{r.sub_type}" if r.sub_type else "")
         p(f"| {i} | {r.name} | {r.form} | {types} | {r.usage_count} | {pct(r.usage_count, total_um)} | {r.team_count} |")
@@ -583,8 +612,8 @@ def render(data: dict) -> str:
     blank()
 
     # ── 6. Per-monster move preferences ───────────────────────────────────────
-    h1("6. Per-Monster Move Preferences (Top 10 monsters)")
-    p("Top 5 most-chosen moves for each of the 10 most popular monsters.")
+    h1("6. Per-Monster Move Preferences (Top 20 monsters)")
+    p("Top 5 most-chosen moves for each of the 20 most popular monsters, ordered by monster popularity.")
     blank()
     current_monster = None
     for r in data["per_monster_moves"]:
@@ -605,7 +634,7 @@ def render(data: dict) -> str:
         p(f"| {i} | {r.name} | {r.usage_count} | {pct(r.usage_count, total_um)} |")
     blank()
 
-    h2("7b. Per-monster top personalities (Top 10 monsters)")
+    h2("7b. Per-monster top personalities (Top 20 monsters, ordered by popularity)")
     current_monster = None
     for r in data["per_monster_personality"]:
         if r.monster_name != current_monster:
@@ -625,7 +654,7 @@ def render(data: dict) -> str:
         p(f"| {i} | {r.legacy_type} | {r.usage_count} | {pct(r.usage_count, total_um)} |")
     blank()
 
-    h2("8b. Per-monster top legacy type choices (Top 10 monsters)")
+    h2("8b. Per-monster top legacy type choices (Top 20 monsters, ordered by popularity)")
     current_monster = None
     for r in data["per_monster_legacy"]:
         if r.monster_name != current_monster:
@@ -676,66 +705,90 @@ def render(data: dict) -> str:
         p(f"| Speed | {ta.avg_spd_when_chosen} |")
     blank()
 
-    # ── 10. Analysis Usage ────────────────────────────────────────────────────
-    h1("10. Analysis Usage")
-    analyzed = data["analyzed_teams"]
-    p(f"- Teams that have been analyzed: **{analyzed}** / {T} ({pct(analyzed, T)})")
-    blank()
-    p("**By language:**")
-    p("| Language | # Analyses |")
-    p("| --- | --- |")
-    for r in data["analysis_by_lang"]:
-        p(f"| {r[0]} | {r[1]} |")
-    blank()
-    p("**Cache hits vs live calls:**")
-    p("| Type | Count |")
-    p("| --- | --- |")
-    for r in data["cache_hits"]:
-        label = "Cache hit" if r[0] else "Live LLM call"
-        p(f"| {label} | {r[1]} |")
-    blank()
-
-    # ── 11. User Behavior ─────────────────────────────────────────────────────
-    h1("11. User Behavior")
+    # ── 10. User Behavior ────────────────────────────────────────────────────
+    h1("10. User Behavior")
     tpu = [r.team_count for r in data["teams_per_user"]]
+    total_users = s["total_registered"] + s["total_guest"]
+    users_with_zero = total_users - len(tpu)
+    p(f"- Total users: **{total_users}**")
+    p(f"- Users with ≥1 qualifying team: **{len(tpu)}**")
     if tpu:
-        p(f"- Users with saved teams: **{len(tpu)}**")
         p(f"- Max teams by one user: **{max(tpu)}**")
-        p(f"- Avg teams per user: **{sum(tpu)/len(tpu):.1f}**")
-        p(f"- Median teams per user: **{sorted(tpu)[len(tpu)//2]}**")
-        # Distribution buckets
-        blank()
-        buckets = [(1,1),(2,3),(4,9),(10,24),(25,999)]
-        p("| Teams saved | # Users | % of users with teams |")
-        p("| --- | --- | --- |")
-        for lo, hi in buckets:
-            c = sum(1 for x in tpu if lo <= x <= hi)
-            label = str(lo) if lo == hi else f"{lo}–{hi}" if hi < 999 else f"{lo}+"
-            p(f"| {label} | {c} | {pct(c, len(tpu))} |")
+        p(f"- Avg teams per user (among those with teams): **{sum(tpu)/len(tpu):.1f}**")
+        p(f"- Median teams per user (among those with teams): **{sorted(tpu)[len(tpu)//2]}**")
+    blank()
+    buckets = [(0,0),(1,1),(2,3),(4,9),(10,20)]
+    p("| Teams saved | # Users | % of all users |")
+    p("| --- | --- | --- |")
+    zero_c = users_with_zero
+    p(f"| 0 | {zero_c} | {pct(zero_c, total_users)} |")
+    for lo, hi in buckets[1:]:
+        c = sum(1 for x in tpu if lo <= x <= hi)
+        label = str(lo) if lo == hi else f"{lo}–{hi}"
+        p(f"| {label} | {c} | {pct(c, total_users)} |")
     blank()
 
-    # ── 12. Time Trends ───────────────────────────────────────────────────────
-    h1("12. Team Creation Over Time (CST)")
-    p("| Month | New Teams |")
-    p("| --- | --- |")
-    for r in data["monthly_teams"]:
-        p(f"| {r[0]} | {r[1]} |")
-    blank()
-
-    # ── 13. User Tiers & Language ─────────────────────────────────────────────
-    h1("13. User Demographics")
-    h2("13a. Subscription tiers (registered users only)")
+    # ── 11. User Demographics ────────────────────────────────────────────────
+    h1("11. User Demographics")
+    h2("11a. Subscription tiers (registered users only)")
     p("| Tier | # Users |")
     p("| --- | --- |")
     for r in data["tier_dist"]:
         p(f"| {r[0]} | {r[1]} |")
     blank()
 
-    h2("13b. Language preference (registered users only)")
+    h2("11b. Language preference (registered users only)")
     p("| Language | # Users |")
     p("| --- | --- |")
     for r in data["lang_pref"]:
         p(f"| {r[0]} | {r[1]} |")
+    blank()
+
+    # ── 12. Meta Teams ───────────────────────────────────────────────────────
+    h1("12. Meta Teams")
+    p("Identifies teams that appear frequently across the player base.")
+    blank()
+
+    h2("12a. Most Common 6-Monster Rosters (monsters only, order-insensitive)")
+    p("Two teams match if they contain the same 6 monsters regardless of slot order, personality, moves, or magic item.")
+    blank()
+    ml = data["meta_teams_loose"]
+    if ml:
+        p("| Rank | Monsters (alphabetical) | # Teams |  % of all teams |")
+        p("| --- | --- | --- | --- |")
+        for i, r in enumerate(ml, 1):
+            # Format: comma-separated monster names from the aggregated string
+            monsters = r.monster_combo  # already comma-separated from STRING_AGG
+            p(f"| {i} | {monsters} | {r.team_count} | {pct(r.team_count, T)} |")
+    else:
+        p("*No repeated rosters found.*")
+    blank()
+
+    h2("12b. Exact Duplicate Teams (same monsters + magic item + all movesets + personalities + legacy types)")
+    p("Only teams appearing more than once are shown. Talents are excluded (too granular to expect exact matches).")
+    blank()
+    me = data["meta_teams_exact"]
+    if me:
+        for i, r in enumerate(me, 1):
+            h3(f"#{i} — appears {r.team_count} times | Magic Item: {r.magic_item}")
+            # full_combo: slots separated by ';;', fields within each slot separated by '|'
+            # fields: monster|personality|legacy|mv1|mv2|mv3|mv4
+            slots = r.full_combo.split(";;")
+            p("| # | Monster | Personality | Legacy | Move 1 | Move 2 | Move 3 | Move 4 |")
+            p("| --- | --- | --- | --- | --- | --- | --- | --- |")
+            for j, slot in enumerate(slots, 1):
+                parts = slot.split("|")
+                mon  = parts[0] if len(parts) > 0 else "—"
+                pers = parts[1] if len(parts) > 1 else "—"
+                leg  = parts[2] if len(parts) > 2 else "—"
+                mv1  = parts[3] if len(parts) > 3 and parts[3] else "—"
+                mv2  = parts[4] if len(parts) > 4 and parts[4] else "—"
+                mv3  = parts[5] if len(parts) > 5 and parts[5] else "—"
+                mv4  = parts[6] if len(parts) > 6 and parts[6] else "—"
+                p(f"| {j} | {mon} | {pers} | {leg} | {mv1} | {mv2} | {mv3} | {mv4} |")
+            blank()
+    else:
+        p("*No exact duplicate teams found — all teams are unique at this detail level.*")
     blank()
 
     # ── Footer ────────────────────────────────────────────────────────────────
