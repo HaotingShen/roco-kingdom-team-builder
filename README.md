@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="frontend/public/logo.png" width="120" alt="Logo" />
+</p>
+
 # Roco Kingdom Team Builder
 
 > A production full-stack web app for building and analyzing PvP teams in the mobile game **Roco Kingdom: World**.
