@@ -1,97 +1,166 @@
-# Roco Kingdom Team Builder App
+# Roco Kingdom Team Builder
 
-A full-stack team-building tool for the mobile game **Roco Kingdom: World**, designed to help players create, analyze, and optimize PvP teams.  
-
-The backend is built with **FastAPI, PostgreSQL, SQLAlchemy, and Alembic**, and the frontend uses **React and TypeScript**. The system powers detailed team creation, editing, and analysis with effective stat calculations, type coverage checks, magic item evaluation, and **LLM-driven** trait–move synergy recommendations.
-
-
-## **Features (Backend)**
-
-- **Comprehensive PostgreSQL schema** for all game entities:
-  - Monsters (forms, evolutions, dual types, leader potential)
-  - Moves (categories, type matchups, counter effects, energy cost)
-  - Types (full many-to-many mappings for strengths, weaknesses, resistances)
-  - Traits, Personalities, Magic Items, Game Terms
-  - Association tables for monster move pools, legacy-type moves, and type relationships
-
-- **Optimized ETL pipeline**:
-  - Bulk JSON import scripts with **idempotent inserts** to avoid duplicates
-  - Handles complex relationships (e.g., legacy moves linked to both monster and type)
-
-- **Battle simulation data logic**:
-  - Personality-based stat calculations with rounding rules
-  - Energy profile analysis (average cost, zero-cost, energy restore detection)
-  - Counter coverage detection for attack/defense/status categories
-  - Defensive utility move counts
-
-- **LLM-powered trait synergy analysis**:
-  - Dynamically generates prompts including monster stats, trait description, and selected moves
-  - Returns **synergy move lists** and tailored recommendations (2 move-usage strategies, 1 general move selection tip)
-  - Async batching for efficiency using `asyncio.gather`
-
-- **REST API with full CRUD for teams**:
-  - Create, read, update (with nested monster/talent replacement), delete teams
-  - Inline analysis endpoint for unpersisted teams
-  - Analysis-by-ID endpoint for saved teams
-
-- **Detailed team-level evaluation**:
-  - Offensive type coverage and weaknesses
-  - Team-wide defensive vulnerability analysis
-  - Role diversity check based on preferred attack styles
-  - Magic item compatibility evaluation
-  - Summary recommendations combining algorithmic checks and LLM insights
-
-
-## **Tech Stack**
-
-**Backend**
-- Python 3.10+
-- FastAPI
-- SQLAlchemy 2.x ORM
-- Alembic (migrations)
-- PostgreSQL 14+
-- Psycopg2 (Postgres driver)
-- Google Generative AI SDK
-
-**Frontend**
-- React 18
-- TypeScript
-- Tailwind CSS
-- Axios (API calls)
-
-**Dev Environment**
-- WSL/Ubuntu
-- VSCode
-- Docker & docker-compose
-
-
-## **Database Schema Highlights**
-
-| Table           | Purpose                                                              |
-| --------------- | -------------------------------------------------------------------- |
-| `monsters`      | All monster forms, stats, type relationships, preferred attack style |
-| `moves`         | Move pool, type, category, energy cost, counter flags                |
-| `types`         | Type chart data with many-to-many relations for effectiveness        |
-| `traits`        | Passive abilities affecting battle mechanics                         |
-| `personalities` | Stat modifiers per monster                                           |
-| `magic_items`   | Usable items with conditional effects                                |
-| `user_monsters` | User’s chosen monsters in a team, linked to moves and talents        |
-| `talents`       | Stat boosts applied to a user’s monster                              |
-| `teams`         | Collection of `user_monsters` with optional magic item               |
+> A production full-stack web app for building and analyzing PvP teams in the mobile game **Roco Kingdom: World**.
+> Live at **[rkteambuilder.com](https://rkteambuilder.com)**
 
 ---
 
-## **API Highlights**
+## What It Does
 
-| Endpoint               | Method           | Purpose                                   |
-| ---------------------- | ---------------- | ----------------------------------------- |
-| `/monsters/`           | GET              | List/filter monsters                      |
-| `/monsters/{id}`       | GET              | Monster details with move pool            |
-| `/moves/`              | GET              | List/filter moves                         |
-| `/moves/{id}`          | GET              | Move details                              |
-| `/teams/`              | POST             | Create team                               |
-| `/teams/{id}`          | GET              | Fetch saved team                          |
-| `/teams/{id}`          | PUT              | Update team (replace/add/remove monsters) |
-| `/teams/{id}`          | DELETE           | Delete team                               |
-| `/team/analyze/`       | POST             | Analyze inline team                       |
-| `/team/analyze_by_id/` | POST             | Analyze saved team                        |
+Players configure a 6-monster team — choosing personality, moves, legacy type, and talent allocation per monster — then run an AI-powered analysis that evaluates:
+
+- **Trait-move synergies** per monster (via LLM)
+- **Type coverage** and team-wide defensive weaknesses
+- **Energy economy**, counter triangle balance, and role diversity
+- **Magic item** compatibility and best-target recommendation
+
+Results are cached in Redis and persisted to the database, so re-viewing is instant and free.
+
+---
+
+## Technical Highlights
+
+**LLM Integration**
+- 7 concurrent LLM calls per analysis (6 per-monster + 1 team-wide) using `asyncio.gather`
+- Redis response cache (1-hour TTL) deduplicates identical requests across users
+- Retry grace system: partial failures don't consume user quota
+
+**Auth & Multi-Tier User System**
+- Guest accounts auto-created on first visit via `device_id` cookie — zero friction onboarding
+- Seamless guest → registered upgrade with full data migration
+- JWT access tokens (15 min) + refresh tokens (7 days) in `httpOnly` cookies
+- Cross-account abuse prevention: per-device and per-IP daily caps tracked in Redis
+
+**Production Infrastructure**
+- Dockerized backend deployed on AWS EC2, frontend on S3 + CloudFront
+- All secrets managed through AWS Parameter Store
+- GitHub Actions CI/CD: push to `main` → build Docker image → push to ECR → EC2 auto-restarts
+- CloudWatch log integration for monitoring and daily digest alerts
+
+**Other**
+- Full bilingual UI (English / Chinese) with per-entity JSONB localization in PostgreSQL
+- Game data stat formula implemented from scratch based on reverse-engineered game mechanics
+
+---
+
+## Stack
+
+| | |
+|---|---|
+| **Frontend** | React 19, TypeScript, Vite, Tailwind CSS, TanStack Query |
+| **Backend** | Python, FastAPI, SQLAlchemy 2.x, Alembic |
+| **Database** | PostgreSQL (AWS RDS) |
+| **Cache** | Redis |
+| **LLM** | Gemini (local dev) / DeepSeek (production) |
+| **Infra** | AWS EC2, S3, CloudFront, ECR, Parameter Store |
+
+---
+
+## Architecture
+
+```
+Browser → CloudFront
+  │
+  ├── /* ───────────────────> S3                 (React SPA)
+  │
+  └── /api/* ───────────────> EC2 (Docker)
+                                  ├── FastAPI   ← uvicorn, 2 workers
+                                  ├── Redis     ← LLM cache + quota counters
+                                  └── Umami     ← self-hosted analytics
+                                  │
+                              RDS PostgreSQL
+                                  ├── roco_kingdom  (app data)
+                                  └── umami         (analytics data)
+```
+
+---
+
+## Local Setup
+
+**1. Clone and install dependencies**
+```bash
+git clone https://github.com/HaotingShen/roco-kingdom-team-builder.git
+cd roco-kingdom-team-builder
+
+# Backend
+python3 -m venv .venv
+source .venv/bin/activate        # Windows: .venv\Scripts\activate
+pip install -r backend/requirements.txt
+
+# Frontend
+cd frontend && npm install && cd ..
+```
+
+**2. Start PostgreSQL and Redis**
+
+The easiest way is via the included Docker Compose file:
+```bash
+docker compose up db redis -d
+```
+This spins up PostgreSQL 16 (port 5432) and Redis 7 (port 6379) locally. Alternatively, install and run them manually.
+
+**3. Configure environment**
+
+Create `backend/.env`:
+```bash
+DATABASE_URL=postgresql+psycopg2://rktb_admin:localdev@localhost/roco_kingdom
+SECRET_KEY=<any-random-32+-character-string>
+LLM_PROVIDER=gemini              # gemini for local dev
+GEMINI_API_KEY=...               # get from aistudio.google.com
+REDIS_URL=redis://localhost:6379/0
+FRONTEND_URL=http://localhost:5173
+```
+
+**4. Run database migrations and import game data**
+```bash
+# Run from backend/ directory
+cd backend && alembic upgrade head && cd ..
+
+# Run from project root — imports all game data (monsters, moves, types, etc.)
+python3 -m backend.scripts.importers.reset_and_reimport
+```
+
+> `reset_and_reimport` drops and recreates all tables. **Local development only** — never run on production.
+
+**5. Start the servers**
+```bash
+# Backend — API at http://localhost:8000, interactive docs at http://localhost:8000/docs
+python3 -m uvicorn backend.main:app --reload --env-file backend/.env
+
+# Frontend — in a separate terminal
+cd frontend && npm run dev
+# App at http://localhost:5173
+```
+
+---
+
+## Contributing
+
+**Branch and PR workflow**
+```bash
+# Always branch off main
+git checkout main && git pull origin main
+git checkout -b feature/your-feature-name
+
+# After making changes
+git add <specific files>
+git commit -m "Short description of change"
+git push origin feature/your-feature-name
+# Then open a PR on GitHub targeting main
+```
+
+**Guidelines**
+- Open an issue first to describe the feature before writing code
+- Keep PRs focused — one feature or fix per PR
+- New features should live in `frontend/src/features/<feature-name>/` as self-contained modules
+- Avoid modifying existing pages or backend endpoints unless discussed first
+
+---
+
+## Tests
+
+```bash
+cd backend && pytest -v
+```
+
+Covers auth flows, stat formula correctness, game term extraction, username validation, and retry grace logic.
