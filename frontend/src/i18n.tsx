@@ -294,6 +294,8 @@ const ui: Record<Lang, Dict> = {
       noAttackMoves: "Pick at least one Physical or Magic attack move to see offensive coverage.",
       noEffectiveCoverage: "None of the selected moves are super-effective against any type.",
       noBlindSpots: "Every type can be hit at neutral or better damage.",
+      blindSpotModeSingle: "Single",
+      blindSpotModeDual: "Dual",
       coverageDataUnavailable: "Couldn't load move or type data. Please try again.",
     },
     recommendationCategories: {
@@ -981,6 +983,8 @@ const ui: Record<Lang, Dict> = {
       noAttackMoves: "请至少选择一个物理或魔法攻击技能以查看打击面分析。",
       noEffectiveCoverage: "所选技能对任何属性都没有克制效果。",
       noBlindSpots: "可对所有属性造成至少中性伤害。",
+      blindSpotModeSingle: "单系",
+      blindSpotModeDual: "双系",
       coverageDataUnavailable: "无法加载技能或属性数据，请稍后重试。",
     },
     recommendationCategories: {
