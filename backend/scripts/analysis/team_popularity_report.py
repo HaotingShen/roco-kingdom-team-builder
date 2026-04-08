@@ -347,13 +347,15 @@ def collect(db) -> dict:
     type_coverage2 = db.execute(text("""
         SELECT type_combo, COUNT(*) AS team_count
         FROM (
-            SELECT um.team_id,
-                   STRING_AGG(DISTINCT t.name ORDER BY t.name) AS type_combo
-            FROM user_monsters um
-            JOIN monsters m ON um.monster_id = m.id
-            JOIN types t ON m.main_type_id = t.id
-            WHERE um.team_id = ANY(:ids)
-            GROUP BY um.team_id
+            SELECT team_id, STRING_AGG(type_name, ',' ORDER BY type_name) AS type_combo
+            FROM (
+                SELECT DISTINCT um.team_id, t.name AS type_name
+                FROM user_monsters um
+                JOIN monsters m ON um.monster_id = m.id
+                JOIN types t ON m.main_type_id = t.id
+                WHERE um.team_id = ANY(:ids)
+            ) deduped
+            GROUP BY team_id
         ) sub
         GROUP BY type_combo
         ORDER BY team_count DESC
@@ -438,7 +440,7 @@ def collect(db) -> dict:
         SELECT monster_combo, COUNT(*) AS team_count
         FROM (
             SELECT team_id,
-                STRING_AGG(m.name ORDER BY m.name) AS monster_combo
+                STRING_AGG(m.name, ',' ORDER BY m.name) AS monster_combo
             FROM user_monsters um
             JOIN monsters m ON um.monster_id = m.id
             WHERE um.team_id = ANY(:ids)
@@ -454,7 +456,7 @@ def collect(db) -> dict:
     # personality + legacy type per slot (talents excluded as too granular).
     # Slots are canonicalized by sorting on monster name so order doesn't matter.
     meta_teams_exact = db.execute(text("""
-        SELECT full_combo, magic_item, team_count
+        SELECT full_combo, magic_item, COUNT(*) AS team_count
         FROM (
             SELECT
                 t.id AS team_id,
@@ -466,9 +468,10 @@ def collect(db) -> dict:
                     COALESCE(mv1.name,'') || '|' ||
                     COALESCE(mv2.name,'') || '|' ||
                     COALESCE(mv3.name,'') || '|' ||
-                    COALESCE(mv4.name,'')
+                    COALESCE(mv4.name,''),
+                    ';;'
                     ORDER BY m.name, p.name
-                , ';;') AS full_combo
+                ) AS full_combo
             FROM teams t
             JOIN magic_items mi ON t.magic_item_id = mi.id
             JOIN user_monsters um ON um.team_id = t.id
