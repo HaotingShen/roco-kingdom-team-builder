@@ -182,21 +182,23 @@ def collect(db) -> dict:
     # ── 3. Monster pairs ──────────────────────────────────────────────────────
     # Canonicalize pair order by monster ID (stable integer ordering).
     pairs = db.execute(text("""
-        SELECT
-            CASE WHEN m1.id <= m2.id
-                 THEN COALESCE(m1.localized->'zh'->>'name', m1.name)
-                 ELSE COALESCE(m2.localized->'zh'->>'name', m2.name) END AS mon_a,
-            CASE WHEN m1.id <= m2.id
-                 THEN COALESCE(m2.localized->'zh'->>'name', m2.name)
-                 ELSE COALESCE(m1.localized->'zh'->>'name', m1.name) END AS mon_b,
-            COUNT(*) AS pair_count
-        FROM user_monsters um1
-        JOIN user_monsters um2
-            ON um1.team_id = um2.team_id AND um1.id < um2.id
-        JOIN monsters m1 ON um1.monster_id = m1.id
-        JOIN monsters m2 ON um2.monster_id = m2.id
-        WHERE um1.team_id = ANY(:ids)
-        GROUP BY LEAST(m1.id, m2.id), GREATEST(m1.id, m2.id)
+        SELECT mon_a, mon_b, COUNT(*) AS pair_count
+        FROM (
+            SELECT
+                CASE WHEN m1.id <= m2.id
+                     THEN COALESCE(m1.localized->'zh'->>'name', m1.name)
+                     ELSE COALESCE(m2.localized->'zh'->>'name', m2.name) END AS mon_a,
+                CASE WHEN m1.id <= m2.id
+                     THEN COALESCE(m2.localized->'zh'->>'name', m2.name)
+                     ELSE COALESCE(m1.localized->'zh'->>'name', m1.name) END AS mon_b
+            FROM user_monsters um1
+            JOIN user_monsters um2
+                ON um1.team_id = um2.team_id AND um1.id < um2.id
+            JOIN monsters m1 ON um1.monster_id = m1.id
+            JOIN monsters m2 ON um2.monster_id = m2.id
+            WHERE um1.team_id = ANY(:ids)
+        ) sub
+        GROUP BY mon_a, mon_b
         ORDER BY pair_count DESC
         LIMIT 20
     """), {"ids": user_team_ids}).fetchall()
