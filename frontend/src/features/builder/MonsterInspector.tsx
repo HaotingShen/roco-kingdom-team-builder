@@ -571,6 +571,11 @@ export default function MonsterInspector({ activeIdx }: { activeIdx: number }) {
     nav(`/dex/monsters/${monsterId}?from=builder`);
   };
 
+  const goAnalyzeForMonster = () => {
+    if (!monsterId) return;
+    nav(`/build/analyze/${activeIdx}`);
+  };
+
   const inspectorTitle = useMemo(() => {
     if (!monsterId || !detail) {
       return t("builder.inspectorTitle", { n: activeIdx + 1 });
@@ -597,7 +602,7 @@ export default function MonsterInspector({ activeIdx }: { activeIdx: number }) {
         </>
       ) : (
         <>
-          {/* View in Dex (left) + Change Monster (right) */}
+          {/* View in Dex / Analyze / Change Monster */}
           <div className="flex items-center gap-2">
             <button
               className="flex-1 h-9 rounded-lg border-2 border-zinc-300 bg-white text-xs font-medium text-zinc-700 cursor-pointer hover:bg-zinc-50 hover:border-zinc-400 hover:shadow-sm transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400"
@@ -605,6 +610,13 @@ export default function MonsterInspector({ activeIdx }: { activeIdx: number }) {
               title={t("builder.viewInDex")}
             >
               {t("builder.viewInDex")}
+            </button>
+            <button
+              className="flex-1 h-9 rounded-lg border-2 border-zinc-300 bg-white text-xs font-medium text-zinc-700 cursor-pointer hover:bg-zinc-50 hover:border-zinc-400 hover:shadow-sm transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400"
+              onClick={goAnalyzeForMonster}
+              title={t("builder.analyzeMonster")}
+            >
+              {t("builder.analyzeMonster")}
             </button>
             <button
               className="flex-1 h-9 rounded-lg border-2 border-zinc-300 bg-white text-xs font-medium text-zinc-700 cursor-pointer hover:bg-zinc-50 hover:border-zinc-400 hover:shadow-sm transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400"
