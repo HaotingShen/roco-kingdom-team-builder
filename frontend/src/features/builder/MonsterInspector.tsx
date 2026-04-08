@@ -10,6 +10,7 @@ import { useNavigate } from "react-router-dom";
 import { typeIconUrl } from "@/lib/images";
 import { formatRowEffects, formatSentenceEffects } from "@/lib/personality";
 import { QUERY_KEYS, LEGACY_TYPES_ORDER } from "@/lib/constants";
+import { buildDexForwardQuery } from "@/lib/dexNavigation";
 
 // ---------- helpers ----------
 function Warn({ children }: { children: React.ReactNode }) {
@@ -501,7 +502,21 @@ function TalentsSection({
 
 // ---------- main component ----------
 
-export default function MonsterInspector({ activeIdx }: { activeIdx: number }) {
+export default function MonsterInspector({
+  activeIdx,
+  context = "builder",
+}: {
+  activeIdx: number;
+  /**
+   * Where the inspector is being rendered. In "builder" mode it exposes the
+   * full action strip (View in Dex + Analyze + Change Monster). In "analyze"
+   * mode the latter two are hidden — the user is already on the analysis
+   * page, and they can change the slot's monster from the builder page —
+   * and the "View in Dex" button passes `from=analyze&slot=N` so the dex
+   * page's back link returns to /build/analyze/:slot instead of /build.
+   */
+  context?: "builder" | "analyze";
+}) {
   const { slots, setSlot } = useBuilderStore();
   const slot = slots[activeIdx];
   const nav = useNavigate();
@@ -568,7 +583,16 @@ export default function MonsterInspector({ activeIdx }: { activeIdx: number }) {
 
   const goDexForMonster = () => {
     if (!monsterId) return;
-    nav(`/dex/monsters/${monsterId}?from=builder`);
+    // When launched from the analyze page, carry the originating slot so the
+    // dex page's back link can return to /build/analyze/:slot instead of /build.
+    // Shares buildDexForwardQuery with MonsterDetailPage/EvolutionTree so all
+    // three callers stay in sync on the URL-param convention.
+    const qs = buildDexForwardQuery({
+      fromBuilder: context === "builder",
+      fromAnalyze: context === "analyze",
+      analyzeSlot: context === "analyze" ? String(activeIdx) : undefined,
+    });
+    nav(`/dex/monsters/${monsterId}?${qs}`);
   };
 
   const goAnalyzeForMonster = () => {
@@ -602,7 +626,7 @@ export default function MonsterInspector({ activeIdx }: { activeIdx: number }) {
         </>
       ) : (
         <>
-          {/* View in Dex / Analyze / Change Monster */}
+          {/* Action strip: View in Dex always, Analyze + Change Monster only in builder context */}
           <div className="flex items-center gap-2">
             <button
               className="flex-1 h-9 rounded-lg border-2 border-zinc-300 bg-white text-xs font-medium text-zinc-700 cursor-pointer hover:bg-zinc-50 hover:border-zinc-400 hover:shadow-sm transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400"
@@ -611,22 +635,26 @@ export default function MonsterInspector({ activeIdx }: { activeIdx: number }) {
             >
               {t("builder.viewInDex")}
             </button>
-            <button
-              className="flex-1 h-9 rounded-lg border-2 border-zinc-300 bg-white text-xs font-medium text-zinc-700 cursor-pointer hover:bg-zinc-50 hover:border-zinc-400 hover:shadow-sm transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400"
-              onClick={goAnalyzeForMonster}
-              title={t("builder.analyzeMonster")}
-            >
-              {t("builder.analyzeMonster")}
-            </button>
-            <button
-              className="flex-1 h-9 rounded-lg border-2 border-zinc-300 bg-white text-xs font-medium text-zinc-700 cursor-pointer hover:bg-zinc-50 hover:border-zinc-400 hover:shadow-sm transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400"
-              onClick={() =>
-                onChange({ monster_id: 0, move1_id: 0, move2_id: 0, move3_id: 0, move4_id: 0 })
-              }
-              title={t("builder.changeMonster")}
-            >
-              {t("builder.changeMonster")}
-            </button>
+            {context === "builder" && (
+              <>
+                <button
+                  className="flex-1 h-9 rounded-lg border-2 border-zinc-300 bg-white text-xs font-medium text-zinc-700 cursor-pointer hover:bg-zinc-50 hover:border-zinc-400 hover:shadow-sm transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400"
+                  onClick={goAnalyzeForMonster}
+                  title={t("builder.analyzeMonster")}
+                >
+                  {t("builder.analyzeMonster")}
+                </button>
+                <button
+                  className="flex-1 h-9 rounded-lg border-2 border-zinc-300 bg-white text-xs font-medium text-zinc-700 cursor-pointer hover:bg-zinc-50 hover:border-zinc-400 hover:shadow-sm transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400"
+                  onClick={() =>
+                    onChange({ monster_id: 0, move1_id: 0, move2_id: 0, move3_id: 0, move4_id: 0 })
+                  }
+                  title={t("builder.changeMonster")}
+                >
+                  {t("builder.changeMonster")}
+                </button>
+              </>
+            )}
           </div>
 
           <PersonalitySection slot={slot} onChange={onChange} />

@@ -140,7 +140,7 @@ export default function MonsterAnalysisPage() {
 
       <div className="grid gap-4 grid-cols-1 lg:grid-cols-[340px_1fr] xl:grid-cols-[420px_1fr]">
         <div>
-          <MonsterInspector activeIdx={slotIdx} />
+          <MonsterInspector activeIdx={slotIdx} context="analyze" />
         </div>
         <div>
           <PageTabs tabs={tabs} />

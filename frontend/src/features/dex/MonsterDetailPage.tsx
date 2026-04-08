@@ -9,6 +9,7 @@ import { STAT_KEYS } from "@/types";
 import { typeIconUrl, monsterImageFallbackChain } from "@/lib/images";
 import { useMonsterNavigation } from "./useMonsterNavigation";
 import { QUERY_KEYS, LEGACY_TYPES_ORDER } from "@/lib/constants";
+import { buildDexForwardQuery } from "@/lib/dexNavigation";
 import EvolutionTree from "./EvolutionTree";
 import RichDescription from "@/components/RichDescription";
 import TypeDefensePanel from "@/components/TypeDefensePanel";
@@ -59,15 +60,47 @@ export default function MonsterDetailPage() {
   const fromTab = sp.get("tab") || "monsters";
   const movesParam = sp.get("moves");
   const which = movesParam === "legacy" ? "legacy" : movesParam === "stones" ? "stones" : "pool";
-  const fromBuilder = sp.get("from") === "builder";
+  const fromParam = sp.get("from");
+  const fromBuilder = fromParam === "builder";
+  // "analyze" mode: launched from MonsterAnalysisPage via MonsterInspector.
+  // Carries the originating slot index so the back link can return to
+  // /build/analyze/:slot. Only accept strict non-negative integers — any
+  // other value is treated as a malformed URL, and the page falls back to
+  // the bare dex behaviour (back button labelled + targeted as "Back to
+  // Dex" rather than mismatching between label and target).
+  const fromAnalyze = fromParam === "analyze";
+  const analyzeSlotRaw = fromAnalyze ? sp.get("slot") : null;
+  const analyzeSlot: string | undefined =
+    analyzeSlotRaw !== null && /^\d+$/.test(analyzeSlotRaw)
+      ? analyzeSlotRaw
+      : undefined;
+  const hasAnalyzeReturn = fromAnalyze && analyzeSlot !== undefined;
+
   const backRaw = sp.get("back"); // decoded full dex URL (e.g. /dex?tab=monsters&sort=base_spd)
   const dexUrl = backRaw ?? `/dex?tab=${fromTab}`;
-  // forward params: carry back (or tab fallback) + from=builder through all in-page navigation
-  const fwd = new URLSearchParams();
-  if (backRaw) fwd.set("back", backRaw);
-  else fwd.set("tab", fromTab);
-  if (fromBuilder) fwd.set("from", "builder");
-  const forwardQuery = fwd.toString();
+  // Forward params: carry back (or tab fallback) + any from=... context
+  // through all in-page navigation (moves tab switcher, evolution tree links).
+  const forwardQuery = buildDexForwardQuery({
+    backRaw,
+    fromTab,
+    fromBuilder,
+    fromAnalyze: hasAnalyzeReturn,
+    analyzeSlot,
+  });
+
+  // Back-link target + label derived from ONE flag (hasAnalyzeReturn) so the
+  // two can't disagree on a malformed URL. See lib/dexNavigation for the
+  // matching forward-query logic.
+  const backTo = hasAnalyzeReturn
+    ? `/build/analyze/${analyzeSlot}`
+    : fromBuilder
+    ? "/build"
+    : dexUrl;
+  const backLabelKey = hasAnalyzeReturn
+    ? "dex.backToMonsterAnalysis"
+    : fromBuilder
+    ? "dex.backToBuilder"
+    : "dex.backToDex";
   const { lang, t } = useI18n();
   const navigate = useNavigate();
 
@@ -195,11 +228,11 @@ export default function MonsterDetailPage() {
     <div className="space-y-3">
       <div className="flex items-center">
         <Link
-          to={fromBuilder ? "/build" : dexUrl}
+          to={backTo}
           className="inline-flex items-center gap-1 text-sm font-medium rounded-lg border border-zinc-300 bg-white px-4 py-2 shadow-sm hover:bg-zinc-50 hover:border-zinc-400 hover:shadow transition-all duration-200"
         >
           <span aria-hidden className="text-xl leading-none text-zinc-600 -translate-y-[1px]">←</span>
-          <span className="text-zinc-700">{fromBuilder ? t("dex.backToBuilder") : t("dex.backToDex")}</span>
+          <span className="text-zinc-700">{t(backLabelKey)}</span>
         </Link>
       </div>
 
@@ -445,6 +478,8 @@ export default function MonsterDetailPage() {
             currentMonsterId={m.id}
             fromTab={fromTab}
             fromBuilder={fromBuilder}
+            fromAnalyze={hasAnalyzeReturn}
+            analyzeSlot={analyzeSlot}
             back={backRaw ?? undefined}
           />
         </section>
