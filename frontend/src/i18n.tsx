@@ -297,6 +297,11 @@ const ui: Record<Lang, Dict> = {
       blindSpotModeSingle: "Single",
       blindSpotModeDual: "Dual",
       coverageDataUnavailable: "Couldn't load move or type data. Please try again.",
+      effectiveStats: "Final Stats",
+      pickPersonality: "Pick a personality on the inspector to see final stats.",
+      effectiveHp: "Effective HP (raw atk × power to KO)",
+      vsPhysical: "vs Phy",
+      vsMagic: "vs Mag",
     },
     recommendationCategories: {
       coverage: "Type Coverage",
@@ -986,6 +991,11 @@ const ui: Record<Lang, Dict> = {
       blindSpotModeSingle: "单系",
       blindSpotModeDual: "双系",
       coverageDataUnavailable: "无法加载技能或属性数据，请稍后重试。",
+      effectiveStats: "面板属性",
+      pickPersonality: "请在配装器中选择性格以查看最终面板属性。",
+      effectiveHp: "有效血量 (击杀所需 攻击×威力)",
+      vsPhysical: "物理",
+      vsMagic: "魔法",
     },
     recommendationCategories: {
       coverage: "属性覆盖",

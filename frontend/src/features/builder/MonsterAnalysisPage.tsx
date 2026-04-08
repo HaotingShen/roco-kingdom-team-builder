@@ -9,6 +9,7 @@ import MonsterInspector from "./MonsterInspector";
 import PageTabs from "@/components/PageTabs";
 import TypeDefensePanel from "@/components/TypeDefensePanel";
 import MoveCoveragePanel from "@/components/MoveCoveragePanel";
+import EffectiveStatsPanel from "@/components/EffectiveStatsPanel";
 
 /**
  * Builder-scoped analysis page for a single configured monster slot.
@@ -91,6 +92,14 @@ export default function MonsterAnalysisPage() {
       <TypeDefensePanel monster={detail} />
       <MoveCoveragePanel
         moveIds={[slot?.move1_id, slot?.move2_id, slot?.move3_id, slot?.move4_id]}
+      />
+      <EffectiveStatsPanel
+        monster={detail}
+        talent={slot?.talent ?? {
+          hp_boost: 0, phy_atk_boost: 0, mag_atk_boost: 0,
+          phy_def_boost: 0, mag_def_boost: 0, spd_boost: 0,
+        }}
+        personalityId={slot?.personality_id ?? 0}
       />
     </div>
   );
