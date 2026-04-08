@@ -39,6 +39,10 @@ from backend.models import (
 engine = create_engine(DATABASE_URL, pool_pre_ping=True)
 Session = sessionmaker(bind=engine)
 
+# Only include teams created or last updated on/after this date.
+# 2026-03-26 00:00 Beijing (CST, UTC+8) = 2026-03-25 16:00:00 UTC
+SINCE_UTC = datetime(2026, 3, 25, 16, 0, 0, tzinfo=timezone.utc)
+
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -96,14 +100,16 @@ def collect(db) -> dict:
     featured_combos = {r.combo for r in featured_combos_q}
 
     # Step 2: get all non-featured user teams with exactly 6 monsters + their combos
+    # Only include teams created or updated on/after SINCE_UTC.
     user_teams_q = db.execute(text("""
         SELECT t.id, STRING_AGG(um.monster_id::text, ',' ORDER BY um.monster_id) AS combo
         FROM teams t
         JOIN user_monsters um ON um.team_id = t.id
         WHERE t.is_featured = false
+          AND (t.created_at >= :since OR t.updated_at >= :since)
         GROUP BY t.id
         HAVING COUNT(um.id) = 6
-    """)).fetchall()
+    """), {"since": SINCE_UTC}).fetchall()
 
     # Step 3: exclude teams whose monster composition matches any featured team
     user_team_ids = [r.id for r in user_teams_q if r.combo not in featured_combos]
@@ -584,7 +590,8 @@ def render(data: dict) -> str:
     lines.append(f"# Roco Kingdom Team Builder — Popularity Analysis Report")
     lines.append(f"")
     lines.append(f"Generated: **{data['_generated_at']}**  ")
-    lines.append(f"Analysis scope: **user-created teams with exactly 6 monsters** (featured/admin teams and copies of featured compositions excluded)")
+    since_cst = SINCE_UTC.strftime("%Y-%m-%d %H:%M UTC") + " (2026-03-26 00:00 CST)"
+    lines.append(f"Analysis scope: **user-created teams with exactly 6 monsters, created/updated ≥ {since_cst}** (featured/admin teams and copies of featured compositions excluded)")
     lines.append(f"")
 
     # ── 0. Overview ───────────────────────────────────────────────────────────
