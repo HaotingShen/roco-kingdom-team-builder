@@ -293,6 +293,9 @@ const ui: Record<Lang, Dict> = {
       matchupNonAttack: "—",
       matchupNoMoves: "Pick at least one Physical or Magic attack move to see damage.",
       matchupDataUnavailable: "Couldn't load matchup data. Please try again.",
+      // Featured-team sub-tabs (mock data; replaced by real /teams/featured later)
+      featuredTeamInfoPlaceholder: "Team summary will appear here.",
+      featuredTeamNoTeams: "No featured teams to display.",
       emptyTitle: "No monster selected",
       emptyHint: "Return to the team builder, pick a monster for this slot, then click Analyze.",
       noMonsterHint: "Pick a monster to see its type matchups.",
@@ -1019,6 +1022,9 @@ const ui: Record<Lang, Dict> = {
       matchupNonAttack: "—",
       matchupNoMoves: "请至少选择一个物理或魔法攻击技能以查看伤害。",
       matchupDataUnavailable: "无法加载对战数据，请稍后重试。",
+      // 精选队伍子标签（当前为模拟数据，后续替换为真实 /teams/featured）
+      featuredTeamInfoPlaceholder: "队伍简介将在此处显示。",
+      featuredTeamNoTeams: "暂无可显示的精选队伍。",
       emptyTitle: "未选择精灵",
       emptyHint: "请返回构筑器，为该槽位选择精灵后再点击分析。",
       noMonsterHint: "请选择精灵以查看属性克制。",
