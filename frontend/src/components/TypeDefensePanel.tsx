@@ -4,6 +4,7 @@ import { endpoints } from "@/lib/api";
 import { useI18n, pickName } from "@/i18n";
 import { typeIconUrl } from "@/lib/images";
 import { QUERY_KEYS, LEGACY_TYPES_ORDER } from "@/lib/constants";
+import PanelCard from "./PanelCard";
 import type { TypeOut, MonsterOut, MonsterLiteOut } from "@/types";
 
 /**
@@ -94,27 +95,23 @@ export default function TypeDefensePanel({ monster }: { monster: MonsterLike | n
     };
   }, [monster?.main_type?.name, monster?.sub_type?.name, typeMap, typesQ.data]);
 
+  const title = t("dex.typeDefense");
+
   // No-monster fallback: friendly placeholder rather than an empty card.
   if (!monster?.main_type) {
     return (
-      <section className="rounded-lg border border-zinc-200 bg-white shadow-sm p-4">
-        <div className="flex items-center gap-2 mb-3">
-          <span className="text-lg font-semibold text-zinc-800">{t("dex.typeDefense")}</span>
-        </div>
+      <PanelCard title={title}>
         <div className="text-sm text-zinc-500">{t("analysis.noMonsterHint")}</div>
-      </section>
+      </PanelCard>
     );
   }
 
   // Loading: types not yet fetched (extremely brief in practice — usually cached).
   if (typesQ.isLoading || typesQ.data == null) {
     return (
-      <section className="rounded-lg border border-zinc-200 bg-white shadow-sm p-4">
-        <div className="flex items-center gap-2 mb-3">
-          <span className="text-lg font-semibold text-zinc-800">{t("dex.typeDefense")}</span>
-        </div>
+      <PanelCard title={title}>
         <div className="text-sm text-zinc-500">{t("common.loading")}</div>
-      </section>
+      </PanelCard>
     );
   }
 
@@ -155,10 +152,7 @@ export default function TypeDefensePanel({ monster }: { monster: MonsterLike | n
     matchups.quarter.length > 0;
 
   return (
-    <section className="rounded-lg border border-zinc-200 bg-white shadow-sm p-4">
-      <div className="flex items-center gap-2 mb-3">
-        <span className="text-lg font-semibold text-zinc-800">{t("dex.typeDefense")}</span>
-      </div>
+    <PanelCard title={title}>
       {hasAny ? (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-6 gap-y-3">
           <div className="space-y-3">
@@ -173,6 +167,6 @@ export default function TypeDefensePanel({ monster }: { monster: MonsterLike | n
       ) : (
         <div className="text-sm text-zinc-500">{t("analysis.noMatchupsHint")}</div>
       )}
-    </section>
+    </PanelCard>
   );
 }

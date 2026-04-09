@@ -31,12 +31,41 @@ export function normalizeMoveCategory(category: string): string {
 /** Pre-built resist/vuln sets for one defender type. */
 export type TypeSets = { resist: Set<string>; vuln: Set<string> };
 
-/** Build the resist/vuln Sets for a single defender type once. */
+/**
+ * Module-level cache for `setsFor`.
+ *
+ * The resist/vuln arrays on a TypeOut are loaded once from /types and then
+ * never mutate for the lifetime of the app — so we can safely memoize the
+ * (small) derived Sets by type name. MoveCoveragePanel previously paid for
+ * up to ~20 Set allocations per render when iterating the 18 defender types;
+ * MatchupPanel rebuilds defender sets on every status-toggle click. This
+ * cache makes both effectively free after the first call per type.
+ *
+ * Invalidation: the backend /types payload is immutable per app session, so
+ * the only way for the sets to "change" is across a full page reload — at
+ * which point the module is re-imported and the cache starts fresh. A manual
+ * `clearTypeSetsCache()` escape hatch exists for tests that stub TypeOut.
+ */
+const typeSetsCache = new Map<string, TypeSets>();
+
+/**
+ * Build the resist/vuln Sets for a single defender type. Memoized by type
+ * name — the first call per name allocates, subsequent calls reuse.
+ */
 export function setsFor(t: TypeOut): TypeSets {
-  return {
+  const cached = typeSetsCache.get(t.name);
+  if (cached != null) return cached;
+  const sets: TypeSets = {
     resist: new Set<string>(t.resistant_to ?? []),
     vuln: new Set<string>(t.vulnerable_to ?? []),
   };
+  typeSetsCache.set(t.name, sets);
+  return sets;
+}
+
+/** Test hook: drop all memoized TypeSets. Not used by production code. */
+export function clearTypeSetsCache(): void {
+  typeSetsCache.clear();
 }
 
 /**

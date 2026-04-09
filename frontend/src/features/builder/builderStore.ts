@@ -2,7 +2,30 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { ID, UserMonsterCreate, TeamCreate, TalentUpsert, TeamAnalysisOut, TeamOut, TeamUpdate, ShareDecodeResponse } from "@/types";
 
-const emptyTalent: TalentUpsert = { hp_boost:0, phy_atk_boost:0, mag_atk_boost:0, phy_def_boost:0, mag_def_boost:0, spd_boost:0 };
+/**
+ * Module-level zero-talent constant.
+ *
+ * Exported so consumers that need a stable talent fallback — e.g. the
+ * analysis panels, which render before the user picks anything in an
+ * unconfigured slot — can reference the same object across renders.
+ * Importing this instead of constructing an inline object literal prevents
+ * `useMemo`/`useQuery` dependency arrays from detecting a fresh reference
+ * every render.
+ *
+ * Treat it as read-only: anywhere that needs to mutate must clone first
+ * (e.g. `{ ...EMPTY_TALENT }`, as emptySlot() does below).
+ */
+export const EMPTY_TALENT: TalentUpsert = {
+  hp_boost: 0,
+  phy_atk_boost: 0,
+  mag_atk_boost: 0,
+  phy_def_boost: 0,
+  mag_def_boost: 0,
+  spd_boost: 0,
+};
+// Backward-compatible alias for the existing in-file helper that references
+// the lower-cased name. Keeps the diff to this file minimal.
+const emptyTalent = EMPTY_TALENT;
 function emptySlot(): UserMonsterCreate & { id?: ID } {
   return {
     id: undefined,

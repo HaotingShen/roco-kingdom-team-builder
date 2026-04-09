@@ -4,14 +4,16 @@ import { useQuery } from "@tanstack/react-query";
 import { endpoints } from "@/lib/api";
 import { useI18n, pickName, pickFormName } from "@/i18n";
 import { QUERY_KEYS } from "@/lib/constants";
-import { useBuilderStore } from "./builderStore";
+import { useBuilderStore, EMPTY_TALENT } from "./builderStore";
+import { useMovesByIds } from "@/hooks/useMovesByIds";
+import { usePersonalities } from "@/hooks/usePersonalities";
 import MonsterInspector from "./MonsterInspector";
 import PageTabs from "@/components/PageTabs";
 import TypeDefensePanel from "@/components/TypeDefensePanel";
 import MoveCoveragePanel from "@/components/MoveCoveragePanel";
 import EffectiveStatsPanel from "@/components/EffectiveStatsPanel";
-import type { MonsterOut, MonsterLiteOut, TypeOut } from "@/types";
 import VsFeaturedTeamsTab from "./VsFeaturedTeamsTab";
+import type { MonsterOut, MonsterLiteOut, TypeOut } from "@/types";
 
 /**
  * Builder-scoped analysis page for a single configured monster slot.
@@ -29,6 +31,20 @@ import VsFeaturedTeamsTab from "./VsFeaturedTeamsTab";
  *   always shows the regular form's types because leader forms share the same
  *   elemental typing as their pre-evolution final stage. MoveCoveragePanel is
  *   also unaffected (uses user's chosen moves). The builder store is never modified.
+ *
+ * Data-ownership model (post-refactor): this page is the single fetch site
+ * for everything the analysis panels need about the ATTACKER (the configured
+ * slot). Each child panel is presentational — they receive hydrated monster /
+ * moves / personality via props. Concretely:
+ *
+ *   - `attackerMonsterQ` — one fetch, keyed by the slot's monster_id.
+ *   - `useMovesByIds(attackerMoveIds)` — one batched fetch for all 4 moves.
+ *   - `usePersonalities()` — shared app-wide query for the ~dozen personality
+ *     rows (cached across every consumer).
+ *
+ * The "vs featured teams" tab then receives the attacker bundle already
+ * hydrated and is responsible for hydrating any defender-side data for
+ * each matchup panel it renders.
  */
 export default function MonsterAnalysisPage() {
   const { slot: slotParam } = useParams();
@@ -40,39 +56,56 @@ export default function MonsterAnalysisPage() {
     Number.isInteger(slotIdx) && slotIdx >= 0 && slotIdx < slots.length;
   const slot = validSlot ? slots[slotIdx] : null;
   const monsterId = slot?.monster_id ?? 0;
+  const personalityId = slot?.personality_id ?? 0;
+  const talent = slot?.talent ?? EMPTY_TALENT;
 
   // Leader form toggle state — resets whenever the user navigates to a different slot.
   const [showLeaderForm, setShowLeaderForm] = useState(false);
   useEffect(() => { setShowLeaderForm(false); }, [slotIdx]);
 
-  // Fetch monster detail with the SAME query key the inspector uses, so the
-  // cache is shared (no extra network call when navigating from /build).
-  const monsterQ = useQuery({
+  // ----- Attacker fetches (single source for all 3 analysis panels) -----
+
+  const attackerMonsterQ = useQuery({
     queryKey: QUERY_KEYS.MONSTER_DETAIL(monsterId),
-    queryFn: () => endpoints.monsterById(monsterId).then((r) => r.data),
+    queryFn: () =>
+      endpoints.monsterById(monsterId).then((r) => r.data as MonsterOut),
     enabled: !!monsterId,
   });
 
+  // I5: stabilize the move-id tuple so every downstream memo sees the same
+  // array identity across renders when the ids haven't actually changed.
+  const attackerRawMoveIds = useMemo(
+    () => [slot?.move1_id, slot?.move2_id, slot?.move3_id, slot?.move4_id],
+    [slot?.move1_id, slot?.move2_id, slot?.move3_id, slot?.move4_id],
+  );
+
+  const attackerMovesResult = useMovesByIds(attackerRawMoveIds);
+  const attackerMovesData = attackerMovesResult.query.data;
+  const attackerHasSelectedMoves = attackerMovesResult.ids.length > 0;
+
+  const personalitiesQ = usePersonalities();
+  const attackerPersonality = useMemo(
+    () => personalitiesQ.data?.find((p) => p.id === personalityId) ?? null,
+    [personalitiesQ.data, personalityId],
+  );
+
+  // ----- Leader form queries -----
+
   // Types list — needed to resolve the Leader type ID.
-  // Uses the same cache key as TypeDefensePanel/MoveCoveragePanel; zero extra network calls.
   const typesQ = useQuery({
     queryKey: QUERY_KEYS.TYPES,
     queryFn: () => endpoints.types().then((r) => r.data as TypeOut[]),
     staleTime: Infinity,
   });
 
-  // Leader type ID resolved by name — avoids hardcoding a DB ID.
   const leaderTypeId = useMemo(
     () => typesQ.data?.find((tp) => tp.name === "Leader")?.id ?? null,
     [typesQ.data],
   );
 
-  const detail: MonsterOut | undefined = monsterQ.data;
+  const detail: MonsterOut | undefined = attackerMonsterQ.data;
 
   // Step 1 — find the leader form record for this exact monster form.
-  // Using evolves_from_id (not species_id) is critical for multi-form species:
-  // e.g. Yajiri-Fluffy (id=15) → Yajiking-Fluffy (evolves_from=15), not Yajiking-Compact.
-  // Returns MonsterLiteOut (list endpoint) — only used here to get the leader's id.
   const leaderInfoQ = useQuery({
     queryKey: QUERY_KEYS.LEADER_MONSTER(detail?.id ?? 0),
     queryFn: () =>
@@ -195,14 +228,15 @@ export default function MonsterAnalysisPage() {
     </div>
   ) : null;
 
-  // Tab 1 content with explicit loading + error states.
-  // Without these, TypeDefensePanel falls back to its "noMonsterHint" placeholder
-  // while monsterQ is in flight, which is misleading right after clicking Analyze.
-  const statsTabContent = monsterQ.isLoading ? (
+  // ----- Tab 1 content (stats) -----
+  // Without explicit loading + error states, TypeDefensePanel falls back to
+  // its "noMonsterHint" placeholder while attackerMonsterQ is in flight,
+  // which is misleading right after clicking Analyze.
+  const statsTabContent = attackerMonsterQ.isLoading ? (
     <section className="rounded-lg border border-zinc-200 bg-white shadow-sm p-4">
       <div className="text-sm text-zinc-500">{t("common.loading")}</div>
     </section>
-  ) : monsterQ.isError ? (
+  ) : attackerMonsterQ.isError ? (
     <section className="rounded-lg border border-zinc-200 bg-white shadow-sm p-4">
       <div className="text-sm text-rose-600">{t("analysis.loadFailed")}</div>
     </section>
@@ -212,58 +246,53 @@ export default function MonsterAnalysisPage() {
       {/* TypeDefensePanel always uses the regular form — leader forms share the same typing. */}
       <TypeDefensePanel monster={detail} />
       <MoveCoveragePanel
-        moveIds={[slot?.move1_id, slot?.move2_id, slot?.move3_id, slot?.move4_id]}
+        moves={attackerMovesData}
+        movesLoading={attackerMovesResult.query.isLoading}
+        movesError={attackerMovesResult.query.isError}
+        hasSelectedMoves={attackerHasSelectedMoves}
       />
       <EffectiveStatsPanel
         monster={activeStatsMonster}
-        talent={slot?.talent ?? {
-          hp_boost: 0, phy_atk_boost: 0, mag_atk_boost: 0,
-          phy_def_boost: 0, mag_def_boost: 0, spd_boost: 0,
-        }}
-        personalityId={slot?.personality_id ?? 0}
+        talent={talent}
+        personality={attackerPersonality}
       />
     </div>
   );
 
+  // ----- Tab 2 content (vs featured teams) -----
+  // The tab is gated on the attacker-side data because the matchup panel
+  // needs a fully hydrated attacker. Loading/error for the attacker moves
+  // and personalities collapses into the same hint so the tab has ONE
+  // loading experience instead of per-row flicker.
+  const attackerLoaded =
+    !!detail &&
+    !attackerMovesResult.query.isLoading &&
+    !personalitiesQ.isLoading &&
+    !!attackerPersonality;
+  const attackerError =
+    attackerMonsterQ.isError ||
+    attackerMovesResult.query.isError ||
+    personalitiesQ.isError;
+
+  const vsFeaturedTabContent =
+    !attackerLoaded || attackerError ? (
+      <section className="rounded-lg border border-zinc-200 bg-white shadow-sm p-4">
+        <div className={attackerError ? "text-sm text-rose-600" : "text-sm text-zinc-500"}>
+          {attackerError ? t("analysis.loadFailed") : t("common.loading")}
+        </div>
+      </section>
+    ) : (
+      <VsFeaturedTeamsTab
+        attackerMonster={detail!}
+        attackerTalent={talent}
+        attackerPersonality={attackerPersonality!}
+        attackerMoves={attackerMovesData ?? []}
+      />
+    );
+
   const tabs = [
-    {
-      key: "stats",
-      label: t("analysis.tabStats"),
-      content: statsTabContent,
-    },
-    {
-      key: "vsFeatured",
-      label: t("analysis.tabVsFeatured"),
-      content:
-        monsterQ.isLoading || monsterQ.isError || !detail ? (
-          <section className="rounded-lg border border-zinc-200 bg-white shadow-sm p-4">
-            <div className="text-sm text-zinc-500">
-              {monsterQ.isError ? t("analysis.loadFailed") : t("common.loading")}
-            </div>
-          </section>
-        ) : (
-          <VsFeaturedTeamsTab
-            attackerMonster={detail}
-            attackerTalent={
-              slot?.talent ?? {
-                hp_boost: 0,
-                phy_atk_boost: 0,
-                mag_atk_boost: 0,
-                phy_def_boost: 0,
-                mag_def_boost: 0,
-                spd_boost: 0,
-              }
-            }
-            attackerPersonalityId={slot?.personality_id ?? 0}
-            attackerMoveIds={[
-              slot?.move1_id,
-              slot?.move2_id,
-              slot?.move3_id,
-              slot?.move4_id,
-            ]}
-          />
-        ),
-    },
+    { key: "stats", label: t("analysis.tabStats"), content: statsTabContent },
+    { key: "vsFeatured", label: t("analysis.tabVsFeatured"), content: vsFeaturedTabContent },
   ];
 
   return (
