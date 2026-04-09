@@ -11,6 +11,7 @@ import TypeDefensePanel from "@/components/TypeDefensePanel";
 import MoveCoveragePanel from "@/components/MoveCoveragePanel";
 import EffectiveStatsPanel from "@/components/EffectiveStatsPanel";
 import type { MonsterOut, MonsterLiteOut, TypeOut } from "@/types";
+import VsFeaturedTeamsTab from "./VsFeaturedTeamsTab";
 
 /**
  * Builder-scoped analysis page for a single configured monster slot.
@@ -233,16 +234,35 @@ export default function MonsterAnalysisPage() {
     {
       key: "vsFeatured",
       label: t("analysis.tabVsFeatured"),
-      content: (
-        <section className="rounded-lg border border-zinc-200 bg-white shadow-sm p-6">
-          <div className="text-sm font-semibold text-zinc-800 mb-2">
-            {t("analysis.tabVsFeatured")}
-          </div>
-          <div className="text-sm text-zinc-600">
-            {t("analysis.vsFeaturedComingSoon")}
-          </div>
-        </section>
-      ),
+      content:
+        monsterQ.isLoading || monsterQ.isError || !detail ? (
+          <section className="rounded-lg border border-zinc-200 bg-white shadow-sm p-4">
+            <div className="text-sm text-zinc-500">
+              {monsterQ.isError ? t("analysis.loadFailed") : t("common.loading")}
+            </div>
+          </section>
+        ) : (
+          <VsFeaturedTeamsTab
+            attackerMonster={detail}
+            attackerTalent={
+              slot?.talent ?? {
+                hp_boost: 0,
+                phy_atk_boost: 0,
+                mag_atk_boost: 0,
+                phy_def_boost: 0,
+                mag_def_boost: 0,
+                spd_boost: 0,
+              }
+            }
+            attackerPersonalityId={slot?.personality_id ?? 0}
+            attackerMoveIds={[
+              slot?.move1_id,
+              slot?.move2_id,
+              slot?.move3_id,
+              slot?.move4_id,
+            ]}
+          />
+        ),
     },
   ];
 
