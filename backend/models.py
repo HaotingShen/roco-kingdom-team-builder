@@ -100,6 +100,15 @@ monster_moves = Table(
     Column("position", Integer, nullable=False, default=0)  # Preserves JSON order
 )
 
+# Many-to-many: a Move grants/applies one or more Statuses (used by the
+# damage matchup feature). Statuses are reusable entities — two different
+# moves can grant the same named status row.
+move_statuses = Table(
+    "move_statuses", Base.metadata,
+    Column("move_id",   Integer, ForeignKey("moves.id"),    primary_key=True),
+    Column("status_id", Integer, ForeignKey("statuses.id"), primary_key=True),
+)
+
 # Association tables for type effectiveness
 type_effective_against = Table(
     "type_effective_against", Base.metadata,
@@ -252,10 +261,68 @@ class Move(Base):
     __table_args__ = (
         Index("ix_moves_localized_gin", "localized", postgresql_using="gin"),
     )
-    
+
     # Relationships
     move_type = relationship("Type", back_populates="moves")
     legacy_for = relationship("LegacyMove", back_populates="move")
+    statuses = relationship(
+        "Status",
+        secondary=move_statuses,
+        back_populates="moves",
+        lazy="selectin",
+    )
+
+
+class Status(Base):
+    """
+    A reusable named effect a move can grant — buffs, debuffs, defensive
+    states, etc. Linked to Move via the move_statuses join table.
+
+    All boost columns are integers representing PERCENTAGES (e.g. 20 = +20%).
+    The damage formula converts these to multipliers via boost_multiplier(b),
+    which is symmetric: +20 → ×1.20, -20 → ×(1/1.20) ≈ ×0.833.
+
+    Three columns (hp_boost, spd_boost, combo_bonus) are kept for symmetry
+    with the 6-stat model and future expansion but are NOT consumed by the
+    current damage formula. See backend/damage.py for the live formula.
+    """
+    __tablename__ = "statuses"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    name: Mapped[str] = mapped_column(String(64), nullable=False, unique=True)
+    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    localized: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
+
+    # ----- Stat boosts (additive across statuses, then via boost_multiplier) -----
+    # hp_boost is inert in the current damage formula (kept for 6-stat symmetry).
+    hp_boost:      Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    phy_atk_boost: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    mag_atk_boost: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    phy_def_boost: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    mag_def_boost: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    # spd_boost is inert in the current damage formula (turn order isn't modelled yet).
+    spd_boost:     Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+
+    # ----- Power modifiers (apply to attack moves) -----
+    flat_power_boost: Mapped[int]   = mapped_column(Integer, nullable=False, default=0)
+    pct_power_boost:  Mapped[int]   = mapped_column(Integer, nullable=False, default=0)
+
+    # ----- Combo (inert until move.combo_count column lands; see roadmap) -----
+    combo_bonus: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+
+    # ----- Damage modifiers (multiplicative across statuses) -----
+    dmg_reduction_pct: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
+    dmg_bonus_pct:     Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
+
+    __table_args__ = (
+        Index("ix_statuses_localized_gin", "localized", postgresql_using="gin"),
+    )
+
+    # Relationships
+    moves = relationship(
+        "Move",
+        secondary=move_statuses,
+        back_populates="statuses",
+    )
 
 class LegacyMove(Base):
     __tablename__ = "legacy_moves"

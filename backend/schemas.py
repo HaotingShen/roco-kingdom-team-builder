@@ -311,15 +311,46 @@ class MoveLiteOut(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
+class StatusOut(BaseModel):
+    id: int
+    name: str
+    description: Optional[str] = None
+    localized: Dict
+
+    # Stat boosts (percentages — see backend/damage.py for the multiplier rule)
+    hp_boost: int
+    phy_atk_boost: int
+    mag_atk_boost: int
+    phy_def_boost: int
+    mag_def_boost: int
+    spd_boost: int
+
+    # Power modifiers
+    flat_power_boost: int
+    pct_power_boost: int
+
+    # Combo (inert until move.combo_count lands)
+    combo_bonus: int
+
+    # Damage modifiers
+    dmg_reduction_pct: float
+    dmg_bonus_pct: float
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 # Full version of MoveOut
 class MoveOut(MoveLiteOut):
     move_category: MoveCategory
     energy_cost: int
     power: Optional[int] = None
     description: str
+    # Default empty list keeps existing consumers backwards-compatible until the
+    # move_statuses join table is populated.
+    statuses: List[StatusOut] = []
 
     model_config = ConfigDict(from_attributes=True)
-    
+
     @field_serializer("move_category")
     def _ser_move_category(self, v: MoveCategory, _info):
         return v.value
