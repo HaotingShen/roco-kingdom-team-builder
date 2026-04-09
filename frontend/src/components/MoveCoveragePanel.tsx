@@ -1,9 +1,10 @@
-import { useMemo, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { endpoints } from "@/lib/api";
 import { useI18n, pickName } from "@/i18n";
 import { typeIconUrl } from "@/lib/images";
 import { QUERY_KEYS } from "@/lib/constants";
+import HintPopover from "./HintPopover";
 import {
   DEFENDER_TYPE_NAMES,
   byLegacyTypeOrder,
@@ -307,23 +308,36 @@ export default function MoveCoveragePanel({ moveIds }: { moveIds: Array<number |
         )}
         <span className="font-medium text-zinc-700">{aName}</span>
         <span className="text-zinc-400">+</span>
-        {partners.map((p) => {
+        {partners.map((p, i) => {
           const pTp = typeMap.get(p);
           const pName = pTp ? pickName(pTp, lang) : p;
           const pIcon = typeIconUrl(p, 30);
+          // Render a "/" between successive partners (not before the first)
+          // so a group reads as "Steel + Fire/Water/Grass" rather than
+          // "Steel + Fire Water Grass". The slash is decorative — partners
+          // already get hover/alt text via the img element.
+          const sep =
+            i > 0 ? (
+              <span key={`${p}-sep`} aria-hidden className="text-zinc-300 select-none">
+                /
+              </span>
+            ) : null;
           return pIcon ? (
-            <img
-              key={p}
-              src={pIcon}
-              alt={pName}
-              title={pName}
-              className="w-[18px] h-[18px] sm:w-[22px] sm:h-[22px]"
-              loading="lazy"
-            />
+            <Fragment key={p}>
+              {sep}
+              <img
+                src={pIcon}
+                alt={pName}
+                title={pName}
+                className="w-[18px] h-[18px] sm:w-[22px] sm:h-[22px]"
+                loading="lazy"
+              />
+            </Fragment>
           ) : (
-            <span key={p} className="font-medium text-zinc-700">
-              {pName}
-            </span>
+            <Fragment key={p}>
+              {sep}
+              <span className="font-medium text-zinc-700">{pName}</span>
+            </Fragment>
           );
         })}
       </span>
@@ -366,6 +380,10 @@ export default function MoveCoveragePanel({ moveIds }: { moveIds: Array<number |
         <span className="shrink-0 inline-block text-xs sm:text-sm font-semibold rounded-full border px-2.5 sm:px-3 py-1 bg-emerald-50 text-emerald-700 border-emerald-200">
           {t("analysis.coverageEffective")}
         </span>
+        <HintPopover
+          text={t("analysis.coverageEffectiveHint")}
+          ariaLabel={t("analysis.coverageEffective")}
+        />
         {renderToggle(effectiveMode, setEffectiveMode)}
         {coverage.effectiveUnion.map(renderSinglePill)}
         {renderGroupSeparator(effectiveMode, coverage.effectiveUnion.length, dualEffectiveGroupCount)}
@@ -380,6 +398,10 @@ export default function MoveCoveragePanel({ moveIds }: { moveIds: Array<number |
         <span className="shrink-0 inline-block text-xs sm:text-sm font-semibold rounded-full border px-2.5 sm:px-3 py-1 bg-red-50 text-red-700 border-red-200">
           {t("analysis.coverageBlindSpot")}
         </span>
+        <HintPopover
+          text={t("analysis.coverageBlindSpotHint")}
+          ariaLabel={t("analysis.coverageBlindSpot")}
+        />
         {renderToggle(blindMode, setBlindMode)}
         {coverage.ineffectiveAll.map(renderSinglePill)}
         {renderGroupSeparator(blindMode, coverage.ineffectiveAll.length, dualBlindGroupCount)}
