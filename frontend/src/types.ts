@@ -61,6 +61,36 @@ export interface PersonalityOut extends Named {
   spd_mod_pct: number;
 }
 
+/**
+ * Status — a reusable named effect a move can grant. Mirrors
+ * backend.schemas.StatusOut. All boost columns are integer percentages
+ * (e.g. 20 = +20%); see frontend/src/lib/statusModel.ts for the combiner
+ * and frontend/src/lib/damageCalc.ts for how they feed the damage formula.
+ *
+ * Three columns (hp_boost, spd_boost, combo_bonus) are present for
+ * symmetry with the 6-stat model and future expansion but are NOT
+ * consumed by the current damage formula.
+ */
+export interface StatusOut extends Named {
+  id: ID;
+  description?: string | null;
+
+  hp_boost: number;
+  phy_atk_boost: number;
+  mag_atk_boost: number;
+  phy_def_boost: number;
+  mag_def_boost: number;
+  spd_boost: number;
+
+  flat_power_boost: number;
+  pct_power_boost: number;
+
+  combo_bonus: number;
+
+  dmg_reduction_pct: number;
+  dmg_bonus_pct: number;
+}
+
 export interface MoveOut extends Named {
   id: ID;
 
@@ -80,6 +110,9 @@ export interface MoveOut extends Named {
   energy_cost?: number;
   power?: number | null;
   description?: string;
+
+  /** Statuses this move grants (M:N via the move_statuses join). Default empty. */
+  statuses?: StatusOut[];
 }
 
 export interface MonsterSpeciesOut extends Named {

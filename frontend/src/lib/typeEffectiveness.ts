@@ -57,6 +57,47 @@ export function isEffectiveOnNet(a: TypeSets, b: TypeSets, m: string): boolean {
 }
 
 /**
+ * Multiplier for an attacker's move type against a defender's types,
+ * on the game's 5-step scale: 3 / 2 / 1 / 0.5 / 0.25.
+ *
+ * Used by the damage formula in lib/damageCalc.ts. Mirrors
+ * backend.damage.type_effectiveness exactly.
+ *
+ *   3.0    if both halves are vulnerable
+ *   2.0    if exactly one half is vulnerable AND the other doesn't resist
+ *   1.0    cancelled (vuln + resist on the two halves) OR neither half cares
+ *   0.5    exactly one half resists AND the other doesn't make it vulnerable
+ *   0.25   if both halves resist
+ *
+ * Single-type defender (sub === null) is a degenerate case in {2, 1, 0.5}.
+ */
+export function typeEffectiveness(
+  moveTypeName: string,
+  main: TypeSets,
+  sub: TypeSets | null,
+): number {
+  const mainVuln = main.vuln.has(moveTypeName);
+  const mainResist = main.resist.has(moveTypeName);
+
+  if (sub === null) {
+    if (mainVuln) return 2;
+    if (mainResist) return 0.5;
+    return 1;
+  }
+
+  const subVuln = sub.vuln.has(moveTypeName);
+  const subResist = sub.resist.has(moveTypeName);
+
+  if (mainVuln && subVuln) return 3;
+  if (mainResist && subResist) return 0.25;
+  // vuln on one half + resist on the other → cancelled to neutral
+  if ((mainVuln && subResist) || (mainResist && subVuln)) return 1;
+  if (mainVuln || subVuln) return 2;
+  if (mainResist || subResist) return 0.5;
+  return 1;
+}
+
+/**
  * The 18 base defender types. "Leader" and any future non-defender pseudo-type
  * the backend may add are excluded — only entries in LEGACY_TYPES_ORDER count.
  *
