@@ -16,6 +16,18 @@
 import type { TypeOut } from "@/types";
 import { LEGACY_TYPES_ORDER } from "@/lib/constants";
 
+/**
+ * Normalize backend move category values to frontend enum keys.
+ * Wire format: "Physical Attack" / "Magic Attack" / "Defense" / "Status"
+ * Frontend enum:  "PHY_ATTACK"     / "MAG_ATTACK"   / "DEFENSE" / "STATUS"
+ */
+export function normalizeMoveCategory(category: string): string {
+  const upper = category.toUpperCase();
+  if (upper === "PHYSICAL ATTACK") return "PHY_ATTACK";
+  if (upper === "MAGIC ATTACK") return "MAG_ATTACK";
+  return upper;
+}
+
 /** Pre-built resist/vuln sets for one defender type. */
 export type TypeSets = { resist: Set<string>; vuln: Set<string> };
 

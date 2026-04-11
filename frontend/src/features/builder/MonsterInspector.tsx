@@ -626,10 +626,12 @@ export default function MonsterInspector({
         </>
       ) : (
         <>
-          {/* Action strip: View in Dex always, Analyze + Change Monster only in builder context */}
+          {/* Action strip: View in Dex always, Analyze + Change Monster only in builder context.
+              In builder context: Analyze (shorter label) gets flex-[2], the other two flex-[3]
+              each — 2:3:3 ratio so View in Dex and Change Monster have equal, wider widths. */}
           <div className="flex items-center gap-2">
             <button
-              className="flex-1 h-9 rounded-lg border-2 border-zinc-300 bg-white text-xs font-medium text-zinc-700 cursor-pointer hover:bg-zinc-50 hover:border-zinc-400 hover:shadow-sm transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400"
+              className="flex-[3] min-w-0 h-9 rounded-lg border-2 border-zinc-300 bg-white text-xs font-medium text-zinc-700 cursor-pointer overflow-hidden hover:bg-zinc-50 hover:border-zinc-400 hover:shadow-sm transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400"
               onClick={goDexForMonster}
               title={t("builder.viewInDex")}
             >
@@ -638,14 +640,14 @@ export default function MonsterInspector({
             {context === "builder" && (
               <>
                 <button
-                  className="flex-1 h-9 rounded-lg border-2 border-zinc-300 bg-white text-xs font-medium text-zinc-700 cursor-pointer hover:bg-zinc-50 hover:border-zinc-400 hover:shadow-sm transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400"
+                  className="flex-[2] min-w-0 h-9 rounded-lg border-2 border-zinc-300 bg-white text-xs font-medium text-zinc-700 cursor-pointer overflow-hidden hover:bg-zinc-50 hover:border-zinc-400 hover:shadow-sm transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400"
                   onClick={goAnalyzeForMonster}
                   title={t("builder.analyzeMonster")}
                 >
                   {t("builder.analyzeMonster")}
                 </button>
                 <button
-                  className="flex-1 h-9 rounded-lg border-2 border-zinc-300 bg-white text-xs font-medium text-zinc-700 cursor-pointer hover:bg-zinc-50 hover:border-zinc-400 hover:shadow-sm transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400"
+                  className="flex-[3] min-w-0 h-9 rounded-lg border-2 border-zinc-300 bg-white text-xs font-medium text-zinc-700 cursor-pointer overflow-hidden hover:bg-zinc-50 hover:border-zinc-400 hover:shadow-sm transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400"
                   onClick={() =>
                     onChange({ monster_id: 0, move1_id: 0, move2_id: 0, move3_id: 0, move4_id: 0 })
                   }

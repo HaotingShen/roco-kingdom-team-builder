@@ -35,6 +35,8 @@ export default function Topbar() {
     ? t("topbar.dex")
     : loc.pathname.startsWith("/teams")
     ? t("topbar.teams")
+    : loc.pathname.startsWith("/build/analyze")
+    ? t("topbar.monsterAnalysis")
     : t("topbar.builder");
 
   const isOnBuilder =

@@ -54,6 +54,16 @@ export default function HintPopover({
     return () => document.removeEventListener("mousedown", handler);
   }, [open]);
 
+  // Close on Escape — standard expected behaviour for any popover.
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, [open]);
+
   return (
     <span ref={wrapperRef} className={`relative inline-flex items-center ${className}`}>
       <button
@@ -72,7 +82,7 @@ export default function HintPopover({
       {open && (
         <span
           role="tooltip"
-          className="absolute z-20 left-0 top-[calc(100%+4px)] w-64 max-w-[80vw] px-3 py-2 rounded-lg border border-zinc-200 bg-white shadow-lg text-xs text-zinc-700 leading-relaxed whitespace-normal"
+          className="absolute z-20 left-1/2 -translate-x-1/2 top-[calc(100%+4px)] w-64 max-w-[80vw] px-3 py-2 rounded-lg border border-zinc-200 bg-white shadow-lg text-xs text-zinc-700 leading-relaxed whitespace-normal"
         >
           {text}
         </span>

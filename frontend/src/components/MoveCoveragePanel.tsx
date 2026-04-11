@@ -12,6 +12,7 @@ import {
   groupPairsByAnchor,
   isEffectiveOnNet,
   isResistedOnNet,
+  normalizeMoveCategory,
   setsFor,
   type DualGroup,
   type TypeSets,
@@ -38,20 +39,10 @@ import type { MoveOut, TypeOut } from "@/types";
  * sharing react-query caches with the rest of the app (moves-by-ids + types).
  */
 
-// Matches the existing inline pattern used in MonsterDetailPage / DexPage / MoveDetailPage.
-// Wire format from the backend is "Physical Attack" / "Magic Attack" / "Defense" / "Status";
-// the rest of the frontend uses "PHY_ATTACK" / "MAG_ATTACK" / "DEFENSE" / "STATUS".
-function normalizeMoveCategory(category: string): string {
-  const upper = category.toUpperCase();
-  if (upper === "PHYSICAL ATTACK") return "PHY_ATTACK";
-  if (upper === "MAGIC ATTACK") return "MAG_ATTACK";
-  return upper;
-}
-
 function isAttackCategory(m: MoveOut): boolean {
   // MoveOut declares both move_category and category for defensive parsing —
-  // the wire value can be "Physical Attack" / "Magic Attack" / etc. (see notes
-  // on normalizeMoveCategory above).
+  // the wire value can be "Physical Attack" / "Magic Attack" / etc. (see
+  // normalizeMoveCategory in lib/typeEffectiveness.ts for the mapping).
   const raw = m.move_category || m.category || "";
   const cat = normalizeMoveCategory(raw);
   return cat === "PHY_ATTACK" || cat === "MAG_ATTACK";
@@ -74,7 +65,7 @@ export default function MoveCoveragePanel({ moveIds }: { moveIds: Array<number |
   );
 
   const movesQ = useQuery({
-    queryKey: ["moves-by-ids", uniqIds.join(",")],
+    queryKey: QUERY_KEYS.MOVES_BY_IDS(uniqIds.join(",")),
     queryFn: () =>
       endpoints
         .moves({ ids: uniqIds.join(",") })
@@ -261,7 +252,7 @@ export default function MoveCoveragePanel({ moveIds }: { moveIds: Array<number |
           type="button"
           onClick={() => setMode(m)}
           aria-pressed={mode === m}
-          className={`px-2.5 sm:px-3 py-0.5 sm:py-1 rounded-full transition-colors ${
+          className={`px-2.5 sm:px-3 py-0.5 sm:py-1 rounded-full transition-colors cursor-pointer ${
             mode === m
               ? "bg-white text-zinc-800 shadow-sm font-medium"
               : "text-zinc-500 hover:text-zinc-700"
@@ -283,9 +274,9 @@ export default function MoveCoveragePanel({ moveIds }: { moveIds: Array<number |
         className="inline-flex items-center gap-1 rounded-full bg-white border border-zinc-200 text-xs sm:text-sm px-2.5 sm:px-3 py-0.5 sm:py-1 shadow-sm"
       >
         {iconUrl && (
-          <img src={iconUrl} alt="" className="w-[18px] h-[18px] sm:w-[22px] sm:h-[22px]" loading="lazy" />
+          <img src={iconUrl} alt="" className="w-[18px] h-[18px] sm:w-[22px] sm:h-[22px] shrink-0" loading="lazy" />
         )}
-        <span className="font-medium text-zinc-700">{displayName}</span>
+        <span className="font-medium text-zinc-700 leading-none">{displayName}</span>
       </span>
     );
   };
@@ -301,24 +292,23 @@ export default function MoveCoveragePanel({ moveIds }: { moveIds: Array<number |
     return (
       <span
         key={`group:${anchor}`}
-        className="inline-flex items-center gap-1 rounded-full bg-white border border-zinc-200 text-xs sm:text-sm px-2.5 sm:px-3 py-0.5 sm:py-1 shadow-sm"
+        className="inline-flex items-center gap-1 rounded-full bg-white border border-zinc-200 text-xs sm:text-sm px-2.5 sm:px-3 py-0.5 sm:py-1 shadow-sm shrink-0"
       >
         {aIcon && (
-          <img src={aIcon} alt="" className="w-[18px] h-[18px] sm:w-[22px] sm:h-[22px]" loading="lazy" />
+          <img src={aIcon} alt="" className="w-[18px] h-[18px] sm:w-[22px] sm:h-[22px] shrink-0" loading="lazy" />
         )}
-        <span className="font-medium text-zinc-700">{aName}</span>
-        <span className="text-zinc-400">+</span>
+        {/* leading-none collapses the default 1.5 line-height so the text
+            doesn't add extra height above/below and stays centered with the
+            fixed-pixel icons. */}
+        <span className="font-medium text-zinc-700 leading-none">{aName}</span>
+        <span className="text-zinc-400 leading-none">+</span>
         {partners.map((p, i) => {
           const pTp = typeMap.get(p);
           const pName = pTp ? pickName(pTp, lang) : p;
           const pIcon = typeIconUrl(p, 30);
-          // Render a "/" between successive partners (not before the first)
-          // so a group reads as "Steel + Fire/Water/Grass" rather than
-          // "Steel + Fire Water Grass". The slash is decorative — partners
-          // already get hover/alt text via the img element.
           const sep =
             i > 0 ? (
-              <span key={`${p}-sep`} aria-hidden className="text-zinc-300 select-none">
+              <span key={`${p}-sep`} aria-hidden className="text-zinc-300 leading-none select-none">
                 /
               </span>
             ) : null;
@@ -329,14 +319,14 @@ export default function MoveCoveragePanel({ moveIds }: { moveIds: Array<number |
                 src={pIcon}
                 alt={pName}
                 title={pName}
-                className="w-[18px] h-[18px] sm:w-[22px] sm:h-[22px]"
+                className="w-[18px] h-[18px] sm:w-[22px] sm:h-[22px] shrink-0"
                 loading="lazy"
               />
             </Fragment>
           ) : (
             <Fragment key={p}>
               {sep}
-              <span className="font-medium text-zinc-700">{pName}</span>
+              <span className="font-medium text-zinc-700 leading-none">{pName}</span>
             </Fragment>
           );
         })}
@@ -344,70 +334,61 @@ export default function MoveCoveragePanel({ moveIds }: { moveIds: Array<number |
     );
   };
 
-  // Empty-state helper: in "dual" mode the row is empty only when BOTH
-  // single- and dual-type result lists are empty (the dual view includes
-  // single results). In "single" mode, only the single list matters.
-  const showEmptyHint = (
-    mode: "single" | "dual",
-    singleCount: number,
-    dualCount: number,
-  ) => singleCount === 0 && (mode === "single" || dualCount === 0);
-
-  // Visual separator dot between single-type and dual-type pill groups in
-  // dual mode. Only rendered when BOTH groups have content — keeps the row
-  // visually segmented at scale (worst case dozens of dual pills) without
-  // adding clutter when one side is empty.
-  const renderGroupSeparator = (
-    mode: "single" | "dual",
-    singleCount: number,
-    dualCount: number,
-  ) =>
-    mode === "dual" && singleCount > 0 && dualCount > 0 ? (
-      <span aria-hidden className="text-zinc-300 px-1 select-none">·</span>
-    ) : null;
-
-  // Length sources for empty/separator decisions in dual mode: groups of
-  // anchor-keyed dual results, NOT raw pair counts. A row with one group of
-  // 12 partners is "1 result", visually — and the empty hint should respect
-  // that, not the underlying pair count.
+  // Each mode is fully independent: single mode shows only single-type results,
+  // dual mode shows only dual-type pair results. The two toggles answer different
+  // questions — no mixing, no separator needed.
   const dualBlindGroupCount = groupedDualBlindSpots.length;
   const dualEffectiveGroupCount = groupedDualEffectiveCoverage.length;
 
   return card(
     <div className="space-y-3">
       {/* Effective Against row */}
-      <div className="flex flex-wrap items-center gap-x-2 gap-y-2">
-        <span className="shrink-0 inline-block text-xs sm:text-sm font-semibold rounded-full border px-2.5 sm:px-3 py-1 bg-emerald-50 text-emerald-700 border-emerald-200">
-          {t("analysis.coverageEffective")}
-        </span>
-        <HintPopover
-          text={t("analysis.coverageEffectiveHint")}
-          ariaLabel={t("analysis.coverageEffective")}
-        />
-        {renderToggle(effectiveMode, setEffectiveMode)}
-        {coverage.effectiveUnion.map(renderSinglePill)}
-        {renderGroupSeparator(effectiveMode, coverage.effectiveUnion.length, dualEffectiveGroupCount)}
-        {effectiveMode === "dual" && groupedDualEffectiveCoverage.map(renderDualGroup)}
-        {showEmptyHint(effectiveMode, coverage.effectiveUnion.length, dualEffectiveGroupCount) && (
-          <span className="text-xs text-zinc-500">{t("analysis.noEffectiveCoverage")}</span>
+      <div className="space-y-1">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-2">
+          <span className="shrink-0 inline-block text-xs sm:text-sm font-semibold rounded-full border px-2.5 sm:px-3 py-1 bg-emerald-50 text-emerald-700 border-emerald-200">
+            {t("analysis.coverageEffective")}
+          </span>
+          <HintPopover
+            text={effectiveMode === "single" ? t("analysis.coverageEffectiveHintSingle") : t("analysis.coverageEffectiveHintDual")}
+            ariaLabel={t("analysis.coverageEffective")}
+          />
+          {renderToggle(effectiveMode, setEffectiveMode)}
+          {effectiveMode === "single" && coverage.effectiveUnion.map(renderSinglePill)}
+          {effectiveMode === "dual" && groupedDualEffectiveCoverage.map(renderDualGroup)}
+          {effectiveMode === "single" && coverage.effectiveUnion.length === 0 && (
+            <span className="text-xs text-zinc-500">{t("analysis.noEffectiveCoverage")}</span>
+          )}
+          {effectiveMode === "dual" && dualEffectiveGroupCount === 0 && (
+            <span className="text-xs text-zinc-500">{t("analysis.noEffectiveCoverageDual")}</span>
+          )}
+        </div>
+        {effectiveMode === "dual" && dualEffectiveGroupCount > 0 && (
+          <p className="text-[10px] text-zinc-400 pl-1">{t("analysis.dualListCompleteEffective")}</p>
         )}
       </div>
 
       {/* No Effective Coverage (blind spot) row */}
-      <div className="flex flex-wrap items-center gap-x-2 gap-y-2">
-        <span className="shrink-0 inline-block text-xs sm:text-sm font-semibold rounded-full border px-2.5 sm:px-3 py-1 bg-red-50 text-red-700 border-red-200">
-          {t("analysis.coverageBlindSpot")}
-        </span>
-        <HintPopover
-          text={t("analysis.coverageBlindSpotHint")}
-          ariaLabel={t("analysis.coverageBlindSpot")}
-        />
-        {renderToggle(blindMode, setBlindMode)}
-        {coverage.ineffectiveAll.map(renderSinglePill)}
-        {renderGroupSeparator(blindMode, coverage.ineffectiveAll.length, dualBlindGroupCount)}
-        {blindMode === "dual" && groupedDualBlindSpots.map(renderDualGroup)}
-        {showEmptyHint(blindMode, coverage.ineffectiveAll.length, dualBlindGroupCount) && (
-          <span className="text-xs text-zinc-500">{t("analysis.noBlindSpots")}</span>
+      <div className="space-y-1">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-2">
+          <span className="shrink-0 inline-block text-xs sm:text-sm font-semibold rounded-full border px-2.5 sm:px-3 py-1 bg-red-50 text-red-700 border-red-200">
+            {t("analysis.coverageBlindSpot")}
+          </span>
+          <HintPopover
+            text={blindMode === "single" ? t("analysis.coverageBlindSpotHintSingle") : t("analysis.coverageBlindSpotHintDual")}
+            ariaLabel={t("analysis.coverageBlindSpot")}
+          />
+          {renderToggle(blindMode, setBlindMode)}
+          {blindMode === "single" && coverage.ineffectiveAll.map(renderSinglePill)}
+          {blindMode === "dual" && groupedDualBlindSpots.map(renderDualGroup)}
+          {blindMode === "single" && coverage.ineffectiveAll.length === 0 && (
+            <span className="text-xs text-zinc-500">{t("analysis.noBlindSpots")}</span>
+          )}
+          {blindMode === "dual" && dualBlindGroupCount === 0 && (
+            <span className="text-xs text-zinc-500">{t("analysis.noBlindSpotsDual")}</span>
+          )}
+        </div>
+        {blindMode === "dual" && dualBlindGroupCount > 0 && (
+          <p className="text-[10px] text-zinc-400 pl-1">{t("analysis.dualListCompleteBlindSpot")}</p>
         )}
       </div>
     </div>,

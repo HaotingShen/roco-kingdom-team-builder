@@ -9,21 +9,13 @@ import { STAT_KEYS } from "@/types";
 import { typeIconUrl, monsterImageFallbackChain } from "@/lib/images";
 import { useMonsterNavigation } from "./useMonsterNavigation";
 import { QUERY_KEYS, LEGACY_TYPES_ORDER } from "@/lib/constants";
+import { normalizeMoveCategory } from "@/lib/typeEffectiveness";
 import { buildDexForwardQuery } from "@/lib/dexNavigation";
 import EvolutionTree from "./EvolutionTree";
 import RichDescription from "@/components/RichDescription";
 import TypeDefensePanel from "@/components/TypeDefensePanel";
 
 /* ---------- helpers ---------- */
-
-// Normalize backend category values to frontend enum keys
-function normalizeMoveCategory(category: string): string {
-  const upper = category.toUpperCase();
-  // Map backend enum values to frontend enum keys
-  if (upper === "PHYSICAL ATTACK") return "PHY_ATTACK";
-  if (upper === "MAGIC ATTACK") return "MAG_ATTACK";
-  return upper; // DEFENSE, STATUS already match
-}
 
 export function extractStats(m: MonsterOut): Record<StatKey, number> {
   return {
@@ -46,7 +38,7 @@ function useMoveObjects(list: any[] | undefined) {
     list.length > 0 &&
     (typeof list[0] === "number" || !!(list[0] as any)?.move_id);
   const q = useQuery({
-    queryKey: ["moves-by-ids", ids.join(",")],
+    queryKey: QUERY_KEYS.MOVES_BY_IDS(ids.join(",")),
     queryFn: () => endpoints.moves({ ids: ids.join(",") }).then((r) => r.data?.items ?? r.data),
     enabled: needFetch && ids.length > 0,
   });
