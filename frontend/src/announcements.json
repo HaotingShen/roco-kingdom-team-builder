@@ -38,5 +38,13 @@
     "zh": "新功能：图鉴已添加全部精灵的进化等级以及特殊进化条件！",
     "date": "2026-04-06",
     "expiresAt": "2026-04-12"
+  },
+  {
+    "id": "2026-04-12-monster-analysis-feature",
+    "type": "info",
+    "en": "New: Click「Monster Analysis」on any monster slot in the builder to view type matchups, move coverage, and final PvP stats with a survivability calculator.",
+    "zh": "新功能：在构筑器精灵面板中点击「精灵分析」，即可查看属性克制关系、技能打击面与含性格和个体值的PvP最终属性，附带生存能力计算器！",
+    "date": "2026-04-12",
+    "expiresAt": "2026-04-22"
   }
 ]

@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { endpoints } from "@/lib/api";
-import { useI18n, pickName } from "@/i18n";
+import { useI18n, pickName, pickFormName } from "@/i18n";
 import MonsterPicker from "./MonsterPicker";
 import { useBuilderStore } from "./builderStore";
 import type { ID, MoveOut, PersonalityOut, TypeOut, UserMonsterCreate } from "@/types";
@@ -505,6 +505,7 @@ function TalentsSection({
 export default function MonsterInspector({
   activeIdx,
   context = "builder",
+  dexMonsterId,
 }: {
   activeIdx: number;
   /**
@@ -516,6 +517,12 @@ export default function MonsterInspector({
    * page's back link returns to /build/analyze/:slot instead of /build.
    */
   context?: "builder" | "analyze";
+  /**
+   * Override the monster ID used for "View in Dex" navigation. When omitted,
+   * defaults to the slot's regular monster. Pass the leader form's ID when
+   * the leader form toggle is active so "View in Dex" lands on the right page.
+   */
+  dexMonsterId?: number;
 }) {
   const { slots, setSlot } = useBuilderStore();
   const slot = slots[activeIdx];
@@ -592,7 +599,8 @@ export default function MonsterInspector({
       fromAnalyze: context === "analyze",
       analyzeSlot: context === "analyze" ? String(activeIdx) : undefined,
     });
-    nav(`/dex/monsters/${monsterId}?${qs}`);
+    // Use dexMonsterId override when provided (e.g. leader form is active on analyze page).
+    nav(`/dex/monsters/${dexMonsterId ?? monsterId}?${qs}`);
   };
 
   const goAnalyzeForMonster = () => {
@@ -605,7 +613,8 @@ export default function MonsterInspector({
       return t("builder.inspectorTitle", { n: activeIdx + 1 });
     }
     const monsterName = pickName(detail, lang) || detail.name || "";
-    return `${t("builder.inspector")} — ${monsterName}`;
+    const formName = pickFormName(detail, lang);
+    return `${t("builder.inspector")} — ${monsterName}${formName ? ` (${formName})` : ""}`;
   }, [monsterId, detail, activeIdx, lang, t]);
 
   return (
@@ -626,12 +635,13 @@ export default function MonsterInspector({
         </>
       ) : (
         <>
-          {/* Action strip: View in Dex always, Analyze + Change Monster only in builder context.
-              In builder context: Analyze (shorter label) gets flex-[2], the other two flex-[3]
-              each — 2:3:3 ratio so View in Dex and Change Monster have equal, wider widths. */}
-          <div className="flex items-center gap-2">
+          {/* Action strip: View in Dex always; Monster Analysis + Change Monster only in builder context.
+              ≥400px: all three on one row (flex-1 each).
+              <400px: View in Dex + Change Monster share row 1; Monster Analysis drops to row 2
+                      full-width via order-last + w-full so its longer label always fits. */}
+          <div className="flex flex-wrap gap-2">
             <button
-              className="flex-[3] min-w-0 h-9 rounded-lg border-2 border-zinc-300 bg-white text-xs font-medium text-zinc-700 cursor-pointer overflow-hidden hover:bg-zinc-50 hover:border-zinc-400 hover:shadow-sm transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400"
+              className="flex-1 min-w-0 h-9 rounded-lg border-2 border-zinc-300 bg-white text-xs font-medium text-zinc-700 cursor-pointer truncate hover:bg-zinc-50 hover:border-zinc-400 hover:shadow-sm transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400"
               onClick={goDexForMonster}
               title={t("builder.viewInDex")}
             >
@@ -640,14 +650,14 @@ export default function MonsterInspector({
             {context === "builder" && (
               <>
                 <button
-                  className="flex-[2] min-w-0 h-9 rounded-lg border-2 border-zinc-300 bg-white text-xs font-medium text-zinc-700 cursor-pointer overflow-hidden hover:bg-zinc-50 hover:border-zinc-400 hover:shadow-sm transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400"
+                  className="w-full min-[400px]:flex-1 min-[400px]:w-auto order-last min-[400px]:order-none min-w-0 h-9 rounded-lg border-2 border-zinc-300 bg-white text-xs font-medium text-zinc-700 cursor-pointer truncate hover:bg-zinc-50 hover:border-zinc-400 hover:shadow-sm transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400"
                   onClick={goAnalyzeForMonster}
                   title={t("builder.analyzeMonster")}
                 >
                   {t("builder.analyzeMonster")}
                 </button>
                 <button
-                  className="flex-[3] min-w-0 h-9 rounded-lg border-2 border-zinc-300 bg-white text-xs font-medium text-zinc-700 cursor-pointer overflow-hidden hover:bg-zinc-50 hover:border-zinc-400 hover:shadow-sm transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400"
+                  className="flex-1 min-w-0 h-9 rounded-lg border-2 border-zinc-300 bg-white text-xs font-medium text-zinc-700 cursor-pointer truncate hover:bg-zinc-50 hover:border-zinc-400 hover:shadow-sm transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400"
                   onClick={() =>
                     onChange({ monster_id: 0, move1_id: 0, move2_id: 0, move3_id: 0, move4_id: 0 })
                   }

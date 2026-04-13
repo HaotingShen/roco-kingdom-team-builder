@@ -31,6 +31,8 @@ export const QUERY_KEYS = {
     ["teams", "list", params] as const,
 
   QUOTA: ["quota"] as const,
+
+  LEADER_MONSTER: (monsterId: number) => ["monsters", "leader", monsterId] as const,
 } as const;
 
 /* ========== Team Configuration ========== */

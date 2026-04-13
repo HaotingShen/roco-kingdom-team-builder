@@ -3153,6 +3153,8 @@ def get_monsters(
     type_id: Optional[int] = Query(None),
     trait_id: Optional[int] = Query(None),
     is_leader_form: Optional[bool] = Query(None),
+    species_id: Optional[int] = Query(None),
+    evolves_from_id: Optional[int] = Query(None),
     limit: int = Query(1000, ge=1, le=1000),
     offset: int = Query(0, ge=0),
 ):
@@ -3201,7 +3203,13 @@ def get_monsters(
 
     if is_leader_form is not None:
         query = query.filter(models.Monster.is_leader_form == is_leader_form)
-        
+
+    if species_id is not None:
+        query = query.filter(models.Monster.species_id == species_id)
+
+    if evolves_from_id is not None:
+        query = query.filter(models.Monster.evolves_from_id == evolves_from_id)
+
     # Enforce deterministic order
     query = query.order_by(models.Monster.id.asc())
     

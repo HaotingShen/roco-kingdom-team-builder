@@ -37,7 +37,13 @@ export default function PageTabs({
           </button>
         ))}
       </div>
-      <div>{tabs.find(t => t.key === active)?.content}</div>
+      <div>
+        {tabs.map(t => (
+          <div key={t.key} className={t.key === active ? "" : "hidden"}>
+            {t.content}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

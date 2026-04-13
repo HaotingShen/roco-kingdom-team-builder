@@ -25,6 +25,7 @@ export default function TypeDefensePanel({ monster }: { monster: MonsterLike | n
   const typesQ = useQuery({
     queryKey: QUERY_KEYS.TYPES,
     queryFn: () => endpoints.types().then((r) => r.data as TypeOut[]),
+    staleTime: Infinity,
   });
 
   // Build name → TypeOut map (TypeOut here is TypeWithMatchupsOut on the wire,
@@ -120,7 +121,7 @@ export default function TypeDefensePanel({ monster }: { monster: MonsterLike | n
   const renderRow = (key: string, label: string, types: string[], pill: string) =>
     types.length > 0 ? (
       <div key={key} className="flex flex-wrap items-center gap-x-2 gap-y-2">
-        <span className={`shrink-0 inline-block text-xs sm:text-sm font-semibold rounded-full border px-2.5 sm:px-3 py-1 ${pill}`}>
+        <span className={`shrink-0 inline-block text-sm font-semibold rounded-full border px-3 py-1 ${pill}`}>
           {label}
         </span>
         {types.map((name) => {
@@ -130,13 +131,13 @@ export default function TypeDefensePanel({ monster }: { monster: MonsterLike | n
           return (
             <span
               key={name}
-              className="inline-flex items-center gap-1 rounded-full bg-white border border-zinc-200 text-xs sm:text-sm px-2.5 sm:px-3 py-0.5 sm:py-1 shadow-sm"
+              className="inline-flex items-center gap-1 rounded-full bg-white border border-zinc-200 text-sm px-3 py-1 shadow-sm"
             >
               {iconUrl && (
                 <img
                   src={iconUrl}
                   alt=""
-                  className="w-[18px] h-[18px] sm:w-[22px] sm:h-[22px]"
+                  className="w-5 h-5 sm:w-[22px] sm:h-[22px]"
                   loading="lazy"
                 />
               )}

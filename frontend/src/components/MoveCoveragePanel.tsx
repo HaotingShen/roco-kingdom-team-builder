@@ -76,6 +76,7 @@ export default function MoveCoveragePanel({ moveIds }: { moveIds: Array<number |
   const typesQ = useQuery({
     queryKey: QUERY_KEYS.TYPES,
     queryFn: () => endpoints.types().then((r) => r.data as TypeOut[]),
+    staleTime: Infinity,
   });
 
   // Filter to attack moves with a known move_type.
@@ -245,14 +246,14 @@ export default function MoveCoveragePanel({ moveIds }: { moveIds: Array<number |
     mode: "single" | "dual",
     setMode: (m: "single" | "dual") => void,
   ) => (
-    <div className="inline-flex items-center rounded-full border border-zinc-200 bg-zinc-50 p-0.5 text-xs sm:text-sm">
+    <div className="inline-flex items-center rounded-full border border-zinc-200 bg-zinc-50 p-0.5 text-sm">
       {(["single", "dual"] as const).map((m) => (
         <button
           key={m}
           type="button"
           onClick={() => setMode(m)}
           aria-pressed={mode === m}
-          className={`px-2.5 sm:px-3 py-0.5 sm:py-1 rounded-full transition-colors cursor-pointer ${
+          className={`px-3 py-1 rounded-full transition-colors cursor-pointer ${
             mode === m
               ? "bg-white text-zinc-800 shadow-sm font-medium"
               : "text-zinc-500 hover:text-zinc-700"
@@ -271,10 +272,10 @@ export default function MoveCoveragePanel({ moveIds }: { moveIds: Array<number |
     return (
       <span
         key={name}
-        className="inline-flex items-center gap-1 rounded-full bg-white border border-zinc-200 text-xs sm:text-sm px-2.5 sm:px-3 py-0.5 sm:py-1 shadow-sm"
+        className="inline-flex items-center gap-1 rounded-full bg-white border border-zinc-200 text-sm px-3 py-1 shadow-sm"
       >
         {iconUrl && (
-          <img src={iconUrl} alt="" className="w-[18px] h-[18px] sm:w-[22px] sm:h-[22px] shrink-0" loading="lazy" />
+          <img src={iconUrl} alt="" className="w-5 h-5 sm:w-[22px] sm:h-[22px] shrink-0" loading="lazy" />
         )}
         <span className="font-medium text-zinc-700 leading-none">{displayName}</span>
       </span>
@@ -292,10 +293,10 @@ export default function MoveCoveragePanel({ moveIds }: { moveIds: Array<number |
     return (
       <span
         key={`group:${anchor}`}
-        className="inline-flex items-center gap-1 rounded-full bg-white border border-zinc-200 text-xs sm:text-sm px-2.5 sm:px-3 py-0.5 sm:py-1 shadow-sm shrink-0"
+        className="inline-flex flex-wrap items-center gap-1 rounded-xl bg-white border border-zinc-200 text-sm px-3 py-1 shadow-sm max-w-full"
       >
         {aIcon && (
-          <img src={aIcon} alt="" className="w-[18px] h-[18px] sm:w-[22px] sm:h-[22px] shrink-0" loading="lazy" />
+          <img src={aIcon} alt="" className="w-5 h-5 sm:w-[22px] sm:h-[22px] shrink-0" loading="lazy" />
         )}
         {/* leading-none collapses the default 1.5 line-height so the text
             doesn't add extra height above/below and stays centered with the
@@ -319,7 +320,7 @@ export default function MoveCoveragePanel({ moveIds }: { moveIds: Array<number |
                 src={pIcon}
                 alt={pName}
                 title={pName}
-                className="w-[18px] h-[18px] sm:w-[22px] sm:h-[22px] shrink-0"
+                className="w-5 h-5 sm:w-[22px] sm:h-[22px] shrink-0"
                 loading="lazy"
               />
             </Fragment>
@@ -343,9 +344,10 @@ export default function MoveCoveragePanel({ moveIds }: { moveIds: Array<number |
   return card(
     <div className="space-y-3">
       {/* Effective Against row */}
-      <div className="space-y-1">
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-2">
-          <span className="shrink-0 inline-block text-xs sm:text-sm font-semibold rounded-full border px-2.5 sm:px-3 py-1 bg-emerald-50 text-emerald-700 border-emerald-200">
+      <div className="space-y-1.5">
+        {/* Header: label + hint + toggle — wraps if screen is too narrow for all three */}
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="shrink-0 inline-block text-sm font-semibold rounded-full border px-3 py-1 bg-emerald-50 text-emerald-700 border-emerald-200">
             {t("analysis.coverageEffective")}
           </span>
           <HintPopover
@@ -353,6 +355,9 @@ export default function MoveCoveragePanel({ moveIds }: { moveIds: Array<number |
             ariaLabel={t("analysis.coverageEffective")}
           />
           {renderToggle(effectiveMode, setEffectiveMode)}
+        </div>
+        {/* Pills on their own line, always wrapping cleanly */}
+        <div className="flex flex-wrap gap-1.5">
           {effectiveMode === "single" && coverage.effectiveUnion.map(renderSinglePill)}
           {effectiveMode === "dual" && groupedDualEffectiveCoverage.map(renderDualGroup)}
           {effectiveMode === "single" && coverage.effectiveUnion.length === 0 && (
@@ -368,9 +373,10 @@ export default function MoveCoveragePanel({ moveIds }: { moveIds: Array<number |
       </div>
 
       {/* No Effective Coverage (blind spot) row */}
-      <div className="space-y-1">
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-2">
-          <span className="shrink-0 inline-block text-xs sm:text-sm font-semibold rounded-full border px-2.5 sm:px-3 py-1 bg-red-50 text-red-700 border-red-200">
+      <div className="space-y-1.5">
+        {/* Header: label + hint + toggle — wraps if screen is too narrow for all three */}
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="shrink-0 inline-block text-sm font-semibold rounded-full border px-3 py-1 bg-red-50 text-red-700 border-red-200">
             {t("analysis.coverageBlindSpot")}
           </span>
           <HintPopover
@@ -378,6 +384,9 @@ export default function MoveCoveragePanel({ moveIds }: { moveIds: Array<number |
             ariaLabel={t("analysis.coverageBlindSpot")}
           />
           {renderToggle(blindMode, setBlindMode)}
+        </div>
+        {/* Pills on their own line, always wrapping cleanly */}
+        <div className="flex flex-wrap gap-1.5">
           {blindMode === "single" && coverage.ineffectiveAll.map(renderSinglePill)}
           {blindMode === "dual" && groupedDualBlindSpots.map(renderDualGroup)}
           {blindMode === "single" && coverage.ineffectiveAll.length === 0 && (
