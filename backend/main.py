@@ -393,18 +393,25 @@ def round_half_up(n):
     return int(Decimal(n).to_integral_value(rounding=ROUND_HALF_UP))
 
 def compute_effective_stats(monster, personality, talent):
-    # New formula (Beta Test 3):
-    # Roco coefficient: L = (base_stat + (talent × 6)/2) / 100
-    # HP: initial_hp = (2L + 1) * 60 + 50L + 10 = 170L + 70
-    #     final_hp = initial_hp * (1 + personality_modifier) + 50
-    # Other stats: initial_stat = L * 60 + 50L + 10 = 110L + 10
-    #              final_stat = initial_stat * (1 + personality_modifier) + 50
+    # Stat formula (corrected — double-rounding, HP final +100):
+    #
+    #   hp     = round( round( (2·base + 6·talent) · 85/100 + 70 ) · (1 + mod) + 100 )
+    #   others = round( round( (2·base + 6·talent) · 55/100 + 10 ) · (1 + mod) + 50  )
+    #
+    # Two rounding steps: an inner round on the pre-personality value, then
+    # an outer round on the final value. HP's final additive is +100; every
+    # other stat's is +50.
+    #
+    # The inner core `170·L + 70` (with `L = (base + 3·talent)/100`) is
+    # algebraically identical to `(2·base + 6·talent) · 0.85 + 70` — kept in
+    # the old form here so the arithmetic is easy to step through, same for
+    # the 110L+10 form below.
 
     base_hp = monster.base_hp
     hp_talent = talent.hp_boost
     L_hp = (base_hp + (hp_talent * 6) / 2) / 100
-    initial_hp = 170 * L_hp + 70
-    final_hp = initial_hp * (1 + personality.hp_mod_pct) + 50
+    inner_hp = round_half_up(170 * L_hp + 70)
+    final_hp = inner_hp * (1 + personality.hp_mod_pct) + 100
     hp = int(round_half_up(final_hp))
 
     def other_stat(attr, personality_attr, talent_attr):
@@ -412,8 +419,8 @@ def compute_effective_stats(monster, personality, talent):
         pers = getattr(personality, personality_attr)
         tal = getattr(talent, talent_attr)
         L = (base + (tal * 6) / 2) / 100
-        initial = 110 * L + 10
-        final = initial * (1 + pers) + 50
+        inner = round_half_up(110 * L + 10)
+        final = inner * (1 + pers) + 50
         return int(round_half_up(final))
 
     return schemas.EffectiveStats(
