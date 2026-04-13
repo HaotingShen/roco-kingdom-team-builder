@@ -9,19 +9,13 @@ import { STAT_KEYS } from "@/types";
 import { typeIconUrl, monsterImageFallbackChain } from "@/lib/images";
 import { useMonsterNavigation } from "./useMonsterNavigation";
 import { QUERY_KEYS, LEGACY_TYPES_ORDER } from "@/lib/constants";
+import { normalizeMoveCategory } from "@/lib/typeEffectiveness";
+import { buildDexForwardQuery } from "@/lib/dexNavigation";
 import EvolutionTree from "./EvolutionTree";
 import RichDescription from "@/components/RichDescription";
+import TypeDefensePanel from "@/components/TypeDefensePanel";
 
 /* ---------- helpers ---------- */
-
-// Normalize backend category values to frontend enum keys
-function normalizeMoveCategory(category: string): string {
-  const upper = category.toUpperCase();
-  // Map backend enum values to frontend enum keys
-  if (upper === "PHYSICAL ATTACK") return "PHY_ATTACK";
-  if (upper === "MAGIC ATTACK") return "MAG_ATTACK";
-  return upper; // DEFENSE, STATUS already match
-}
 
 export function extractStats(m: MonsterOut): Record<StatKey, number> {
   return {
@@ -44,7 +38,7 @@ function useMoveObjects(list: any[] | undefined) {
     list.length > 0 &&
     (typeof list[0] === "number" || !!(list[0] as any)?.move_id);
   const q = useQuery({
-    queryKey: ["moves-by-ids", ids.join(",")],
+    queryKey: QUERY_KEYS.MOVES_BY_IDS(ids.join(",")),
     queryFn: () => endpoints.moves({ ids: ids.join(",") }).then((r) => r.data?.items ?? r.data),
     enabled: needFetch && ids.length > 0,
   });
@@ -58,15 +52,47 @@ export default function MonsterDetailPage() {
   const fromTab = sp.get("tab") || "monsters";
   const movesParam = sp.get("moves");
   const which = movesParam === "legacy" ? "legacy" : movesParam === "stones" ? "stones" : "pool";
-  const fromBuilder = sp.get("from") === "builder";
+  const fromParam = sp.get("from");
+  const fromBuilder = fromParam === "builder";
+  // "analyze" mode: launched from MonsterAnalysisPage via MonsterInspector.
+  // Carries the originating slot index so the back link can return to
+  // /build/analyze/:slot. Only accept strict non-negative integers — any
+  // other value is treated as a malformed URL, and the page falls back to
+  // the bare dex behaviour (back button labelled + targeted as "Back to
+  // Dex" rather than mismatching between label and target).
+  const fromAnalyze = fromParam === "analyze";
+  const analyzeSlotRaw = fromAnalyze ? sp.get("slot") : null;
+  const analyzeSlot: string | undefined =
+    analyzeSlotRaw !== null && /^\d+$/.test(analyzeSlotRaw)
+      ? analyzeSlotRaw
+      : undefined;
+  const hasAnalyzeReturn = fromAnalyze && analyzeSlot !== undefined;
+
   const backRaw = sp.get("back"); // decoded full dex URL (e.g. /dex?tab=monsters&sort=base_spd)
   const dexUrl = backRaw ?? `/dex?tab=${fromTab}`;
-  // forward params: carry back (or tab fallback) + from=builder through all in-page navigation
-  const fwd = new URLSearchParams();
-  if (backRaw) fwd.set("back", backRaw);
-  else fwd.set("tab", fromTab);
-  if (fromBuilder) fwd.set("from", "builder");
-  const forwardQuery = fwd.toString();
+  // Forward params: carry back (or tab fallback) + any from=... context
+  // through all in-page navigation (moves tab switcher, evolution tree links).
+  const forwardQuery = buildDexForwardQuery({
+    backRaw,
+    fromTab,
+    fromBuilder,
+    fromAnalyze: hasAnalyzeReturn,
+    analyzeSlot,
+  });
+
+  // Back-link target + label derived from ONE flag (hasAnalyzeReturn) so the
+  // two can't disagree on a malformed URL. See lib/dexNavigation for the
+  // matching forward-query logic.
+  const backTo = hasAnalyzeReturn
+    ? `/build/analyze/${analyzeSlot}`
+    : fromBuilder
+    ? "/build"
+    : dexUrl;
+  const backLabelKey = hasAnalyzeReturn
+    ? "dex.backToMonsterAnalysis"
+    : fromBuilder
+    ? "dex.backToBuilder"
+    : "dex.backToDex";
   const { lang, t } = useI18n();
   const navigate = useNavigate();
 
@@ -155,67 +181,6 @@ export default function MonsterDetailPage() {
     queryFn: () => endpoints.types().then((r) => r.data as TypeOut[]),
   });
 
-  // Build a name → TypeOut map (includes vulnerable_to / resistant_to from /types)
-  const typeMap = useMemo(() => {
-    const map = new Map<string, TypeOut>();
-    (typesQ.data ?? []).forEach((t) => map.set(t.name, t));
-    return map;
-  }, [typesQ.data]);
-
-  // Compute defender type matchups using set operations on DB-derived relationship data.
-  // Complexity: O(n) where n ≤ 19 types — trivially fast, memoized on type name changes.
-  const matchups = useMemo(() => {
-    const empty = { triple: [] as string[], double: [] as string[], half: [] as string[], quarter: [] as string[] };
-    if (!m?.main_type || typesQ.data == null || typesQ.data.length === 0) return empty;
-
-    const mainT = typeMap.get(m.main_type.name);
-    if (!mainT) return empty;
-
-    const mainVuln   = new Set(mainT.vulnerable_to  ?? []);
-    const mainResist = new Set(mainT.resistant_to   ?? []);
-
-    const subT = m.sub_type ? typeMap.get(m.sub_type.name) : undefined;
-    if (!subT) {
-      const byOrder = (a: string, b: string) =>
-        LEGACY_TYPES_ORDER.indexOf(a as any) - LEGACY_TYPES_ORDER.indexOf(b as any);
-      return {
-        triple:  [],
-        double:  [...mainVuln].sort(byOrder),
-        half:    [...mainResist].sort(byOrder),
-        quarter: [],
-      };
-    }
-
-    const subVuln   = new Set(subT.vulnerable_to  ?? []);
-    const subResist = new Set(subT.resistant_to   ?? []);
-
-    const triple:  string[] = [];
-    const double:  string[] = [];
-    const half:    string[] = [];
-    const quarter: string[] = [];
-
-    // 3×: 2× main AND 2× sub
-    for (const t of mainVuln)   if (subVuln.has(t))                            triple.push(t);
-    // 2×: 2× one, neutral the other (not cancelled by a resist on the other)
-    for (const t of mainVuln)   if (!subVuln.has(t)   && !subResist.has(t))    double.push(t);
-    for (const t of subVuln)    if (!mainVuln.has(t)  && !mainResist.has(t))   double.push(t);
-    // 0.25×: 0.5× main AND 0.5× sub
-    for (const t of mainResist) if (subResist.has(t))                           quarter.push(t);
-    // 0.5×: 0.5× one, neutral the other (not boosted by a vuln on the other)
-    for (const t of mainResist) if (!subResist.has(t) && !subVuln.has(t))      half.push(t);
-    for (const t of subResist)  if (!mainResist.has(t) && !mainVuln.has(t))    half.push(t);
-
-    const byOrder = (a: string, b: string) =>
-      LEGACY_TYPES_ORDER.indexOf(a as any) - LEGACY_TYPES_ORDER.indexOf(b as any);
-
-    return {
-      triple:  triple.sort(byOrder),
-      double:  double.sort(byOrder),
-      half:    half.sort(byOrder),
-      quarter: quarter.sort(byOrder),
-    };
-  }, [m?.main_type?.name, m?.sub_type?.name, typeMap]);
-
   // Sort legacy moves by LEGACY_TYPES_ORDER
   const legacyMoves = useMemo(() => {
     if (!typesQ.data || !legacyMovesRaw || legacyMovesRaw.length === 0) {
@@ -255,11 +220,11 @@ export default function MonsterDetailPage() {
     <div className="space-y-3">
       <div className="flex items-center">
         <Link
-          to={fromBuilder ? "/build" : dexUrl}
+          to={backTo}
           className="inline-flex items-center gap-1 text-sm font-medium rounded-lg border border-zinc-300 bg-white px-4 py-2 shadow-sm hover:bg-zinc-50 hover:border-zinc-400 hover:shadow transition-all duration-200"
         >
           <span aria-hidden className="text-xl leading-none text-zinc-600 -translate-y-[1px]">←</span>
-          <span className="text-zinc-700">{fromBuilder ? t("dex.backToBuilder") : t("dex.backToDex")}</span>
+          <span className="text-zinc-700">{t(backLabelKey)}</span>
         </Link>
       </div>
 
@@ -485,57 +450,7 @@ export default function MonsterDetailPage() {
       </section>
 
       {/* Type Defense (defender matchups) */}
-      {(matchups.triple.length > 0 || matchups.double.length > 0 || matchups.half.length > 0 || matchups.quarter.length > 0) && (() => {
-        // Reusable row renderer
-        const renderRow = (key: string, label: string, types: string[], pill: string) =>
-          types.length > 0 ? (
-            <div key={key} className="flex flex-wrap items-center gap-x-2 gap-y-2">
-              <span className={`shrink-0 inline-block text-xs sm:text-sm font-semibold rounded-full border px-2.5 sm:px-3 py-1 ${pill}`}>
-                {label}
-              </span>
-              {types.map((name) => {
-                const tp = typeMap.get(name);
-                const displayName = tp ? pickName(tp as any, lang) : name;
-                const iconUrl = typeIconUrl(name, 30);
-                return (
-                  <span
-                    key={name}
-                    className="inline-flex items-center gap-1 rounded-full bg-white border border-zinc-200 text-xs sm:text-sm px-2.5 sm:px-3 py-0.5 sm:py-1 shadow-sm"
-                  >
-                    {iconUrl && (
-                      <img
-                        src={iconUrl}
-                        alt=""
-                        className="w-[18px] h-[18px] sm:w-[22px] sm:h-[22px]"
-                        loading="lazy"
-                      />
-                    )}
-                    <span className="font-medium text-zinc-700">{displayName}</span>
-                  </span>
-                );
-              })}
-            </div>
-          ) : null;
-
-        return (
-          <section className="rounded-lg border border-zinc-200 bg-white shadow-sm p-4">
-            <div className="flex items-center gap-2 mb-3">
-              <span className="text-lg font-semibold text-zinc-800">{t("dex.typeDefense")}</span>
-            </div>
-            {/* Mobile: single column. lg+: two columns — weaknesses left, resistances right */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-6 gap-y-3">
-              <div className="space-y-3">
-                {renderRow("triple", t("dex.weaknessTriple"), matchups.triple, "bg-red-50 text-red-700 border-red-200")}
-                {renderRow("double", t("dex.weaknessDouble"), matchups.double, "bg-orange-50 text-orange-700 border-orange-200")}
-              </div>
-              <div className="space-y-3">
-                {renderRow("half",    t("dex.resistHalf"),    matchups.half,    "bg-blue-50 text-blue-700 border-blue-200")}
-                {renderRow("quarter", t("dex.resistQuarter"), matchups.quarter, "bg-emerald-50 text-emerald-700 border-emerald-200")}
-              </div>
-            </div>
-          </section>
-        );
-      })()}
+      <TypeDefensePanel monster={m} />
 
       {/* Evolution chain */}
       {m?.evolution_tree && m.evolution_tree.stages && m.evolution_tree.stages.length > 1 ? (
@@ -555,6 +470,8 @@ export default function MonsterDetailPage() {
             currentMonsterId={m.id}
             fromTab={fromTab}
             fromBuilder={fromBuilder}
+            fromAnalyze={hasAnalyzeReturn}
+            analyzeSlot={analyzeSlot}
             back={backRaw ?? undefined}
           />
         </section>

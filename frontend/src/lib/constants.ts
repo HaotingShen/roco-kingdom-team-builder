@@ -14,6 +14,7 @@ export const QUERY_KEYS = {
   MOVE_DETAIL: (id: number | string) => ["moves", id] as const,
   MOVE_LIST: (params?: Record<string, unknown>) =>
     ["moves", "list", params] as const,
+  MOVES_BY_IDS: (ids: string) => ["moves-by-ids", ids] as const,
 
   TYPES: ["types"] as const,
   TYPES_INDEX: ["types-index"] as const,
@@ -30,6 +31,8 @@ export const QUERY_KEYS = {
     ["teams", "list", params] as const,
 
   QUOTA: ["quota"] as const,
+
+  LEADER_MONSTER: (monsterId: number) => ["monsters", "leader", monsterId] as const,
 } as const;
 
 /* ========== Team Configuration ========== */

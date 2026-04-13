@@ -3,6 +3,7 @@ import { Fragment, useState, useRef, useEffect, useLayoutEffect, useCallback } f
 import { createPortal } from "react-dom";
 import { useI18n, pickName, pickFormName, type Lang } from "@/i18n";
 import { monsterImageFallbackChain } from "@/lib/images";
+import { buildDexForwardQuery } from "@/lib/dexNavigation";
 import type { EvolutionTreeData, EvolutionStageMonster } from "@/types";
 
 interface EvolutionTreeProps {
@@ -10,6 +11,8 @@ interface EvolutionTreeProps {
   currentMonsterId: number;
   fromTab: string;
   fromBuilder: boolean;
+  fromAnalyze?: boolean;
+  analyzeSlot?: string;
   back?: string;
 }
 
@@ -18,14 +21,18 @@ export default function EvolutionTree({
   currentMonsterId,
   fromTab,
   fromBuilder,
+  fromAnalyze = false,
+  analyzeSlot,
   back,
 }: EvolutionTreeProps) {
   const { lang } = useI18n();
-  const fwd = new URLSearchParams();
-  if (back) fwd.set("back", back);
-  else fwd.set("tab", fromTab);
-  if (fromBuilder) fwd.set("from", "builder");
-  const forwardQuery = fwd.toString();
+  const forwardQuery = buildDexForwardQuery({
+    backRaw: back,
+    fromTab,
+    fromBuilder,
+    fromAnalyze,
+    analyzeSlot,
+  });
 
   if (!treeData || !treeData.stages || treeData.stages.length <= 1) {
     return null;

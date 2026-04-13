@@ -1,6 +1,7 @@
 import { createBrowserRouter } from "react-router-dom";
 import App from "./App";
 import BuilderPage from "./features/builder/BuilderPage";
+import MonsterAnalysisPage from "./features/builder/MonsterAnalysisPage";
 import DexPage from "./features/dex/DexPage";
 import MonsterDetailPage from "./features/dex/MonsterDetailPage";
 import MoveDetailPage from "./features/dex/MoveDetailPage";
@@ -24,6 +25,7 @@ const router = createBrowserRouter([
     children: [
       { index: true, element: <BuilderPage /> },
       { path: "build", element: <BuilderPage /> },
+      { path: "build/analyze/:slot", element: <MonsterAnalysisPage /> },
       { path: "dex", element: <DexPage /> },
       { path: "dex/monsters/:id", element: <MonsterDetailPage /> },
       { path: "dex/moves/:id", element: <MoveDetailPage /> },
