@@ -1,0 +1,5 @@
+move,status_name,zh_name,usage,affect,phy_atk_boost,mag_atk_boost,phy_def_boost,mag_def_boost,spd_boost,flat_power_boost,pct_power_boost,combo_bonus,dmg_reduction_pct,dmg_bonus_pct
+Power Boost,,力量增效,attack_only,self,100,,,,,,,,
+Magic Boost,,魔法增效,attack_only,self,,70,,,,,,,
+Roar,,咆哮,attack_only,opponent,-130,,,,,,,,
+Defend,,防御,defense_only,self,,,,,,,,,0.7,

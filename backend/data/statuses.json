@@ -1,0 +1,31 @@
+[
+  {
+    "move": "Power Boost",
+    "status_name": "Power Boost",
+    "zh_name": "力量增效",
+    "usage": "attack_only",
+    "phy_atk_boost": 100
+  },
+  {
+    "move": "Magic Boost",
+    "status_name": "Magic Boost",
+    "zh_name": "魔法增效",
+    "usage": "attack_only",
+    "mag_atk_boost": 70
+  },
+  {
+    "move": "Roar",
+    "status_name": "Roar",
+    "zh_name": "咆哮",
+    "usage": "attack_only",
+    "affect": "opponent",
+    "phy_atk_boost": -130
+  },
+  {
+    "move": "Defend",
+    "status_name": "Defend",
+    "zh_name": "防御",
+    "usage": "defense_only",
+    "dmg_reduction_pct": 0.7
+  }
+]

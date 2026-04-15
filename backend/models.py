@@ -140,6 +140,16 @@ class MagicEffectCode(enum.Enum):
     FLOW_SPELL = "flow_spell"
     EVOLUTION_POWER = "evolution_power"
 
+class StatusUsage(enum.Enum):
+    ALL = "all"
+    ATTACK_ONLY = "attack_only"
+    DEFENSE_ONLY = "defense_only"
+    MOVE_SPECIFIC = "move_specific"
+
+class StatusAffect(enum.Enum):
+    SELF = "self"
+    OPPONENT = "opponent"
+
 class Type(Base):
     __tablename__ = "types"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -312,6 +322,10 @@ class Status(Base):
     # ----- Damage modifiers (multiplicative across statuses) -----
     dmg_reduction_pct: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
     dmg_bonus_pct:     Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
+
+    # ----- Categorical metadata -----
+    usage:  Mapped[StatusUsage]  = mapped_column(Enum(StatusUsage, name="status_usage_enum"), nullable=False, default=StatusUsage.ALL)
+    affect: Mapped[StatusAffect] = mapped_column(Enum(StatusAffect, name="status_affect_enum"), nullable=False, default=StatusAffect.SELF)
 
     __table_args__ = (
         Index("ix_statuses_localized_gin", "localized", postgresql_using="gin"),

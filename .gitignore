@@ -220,6 +220,7 @@ CLAUDE.md
 # Local maintenance scripts (wiki/external data tools — not for version control)
 backend/scripts/maintenance/compare_moves_with_wiki.mjs
 backend/scripts/maintenance/apply_wiki_move_updates.py
+backend/scripts/maintenance/csv_to_statuses.py
 frontend/scripts/download-move-images.mjs
 
 # Generated reports and temporary output files

@@ -1,6 +1,6 @@
 from pydantic import BaseModel, ConfigDict, model_validator, Field, field_serializer, field_validator
 from typing import Optional, List, Dict, Any, ClassVar, Literal, Union
-from backend.models import MoveCategory, AttackStyle
+from backend.models import MoveCategory, AttackStyle, StatusUsage, StatusAffect
 from datetime import datetime
 
 
@@ -336,7 +336,19 @@ class StatusOut(BaseModel):
     dmg_reduction_pct: float
     dmg_bonus_pct: float
 
+    # Categorical metadata
+    usage: StatusUsage
+    affect: StatusAffect
+
     model_config = ConfigDict(from_attributes=True)
+
+    @field_serializer("usage")
+    def _ser_usage(self, v: StatusUsage, _info):
+        return v.value
+
+    @field_serializer("affect")
+    def _ser_affect(self, v: StatusAffect, _info):
+        return v.value
 
 
 # Full version of MoveOut

@@ -5,7 +5,7 @@ from backend.config import DATABASE_URL
 from backend.scripts.importers import (
     import_types, import_traits, import_personalities, import_monster_species,
     import_magic_items, import_game_terms, import_moves, import_monsters,
-    import_monster_moves, import_legacy_moves
+    import_monster_moves, import_legacy_moves, import_statuses
 )
 
 engine = create_engine(DATABASE_URL)
@@ -51,4 +51,5 @@ if __name__ == "__main__":
     import_monsters.main()
     import_monster_moves.main()
     import_legacy_moves.main()
+    import_statuses.main()
     print("Database has been reset and core data imported!")
