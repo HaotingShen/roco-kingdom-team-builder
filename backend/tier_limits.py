@@ -40,6 +40,7 @@ from backend.config import (
     GUEST_CREATION_LIMIT_PER_DAY,
     RETRY_GRACE_TTL,
     RETRY_GRACE_MAX_RETRIES,
+    LLM_PROVIDER,
 )
 from backend.logger import logger
 from backend import models
@@ -1363,3 +1364,83 @@ async def mark_user_team_analyzed(
         )
     except Exception as e:
         logger.error(f"Failed to mark user_analyzed: {e}")
+
+
+# ========== LLM Circuit Breaker ==========
+#
+# Opens when repeated LLM API failures are detected (e.g., DeepSeek outage).
+# While open, non-cached analysis requests return 503 immediately — no quota
+# charge, no rate limit key, no grace consumption.
+#
+# Keys are provider-scoped so Gemini and DeepSeek circuits are independent.
+# Auto-resets after _CIRCUIT_OPEN_TTL seconds without needing manual intervention.
+
+_CIRCUIT_FAILURE_KEY = f"{LLM_PROVIDER}:circuit:failures"
+_CIRCUIT_OPEN_KEY = f"{LLM_PROVIDER}:circuit:open"
+_CIRCUIT_WINDOW_SECONDS = 120   # rolling window for counting failures
+_CIRCUIT_OPEN_TTL = 120         # auto-reset after 2 minutes
+_CIRCUIT_THRESHOLD = 10         # open after 10 failed LLM API calls in window
+
+
+async def is_circuit_open() -> bool:
+    """Return True if the LLM API circuit breaker is open (sustained outage detected).
+
+    Fails open (returns False) on Redis error so a Redis outage doesn't also
+    block all analyses.
+    """
+    redis_client = get_redis()
+    if not redis_client:
+        return False
+    try:
+        return redis_client.exists(_CIRCUIT_OPEN_KEY) > 0
+    except Exception as e:
+        logger.error(f"Circuit breaker check failed: {e}")
+        return False
+
+
+async def record_llm_failures(count: int) -> None:
+    """Increment the LLM failure counter and open the circuit if threshold is reached.
+
+    Should be called with the number of failed real LLM API calls after each
+    analysis. Excludes quota exhaustion and auth errors (those are config issues,
+    not provider outages).
+
+    Args:
+        count: Number of failed LLM API calls to record
+    """
+    if count <= 0:
+        return
+    redis_client = get_redis()
+    if not redis_client:
+        return
+    try:
+        pipe = redis_client.pipeline()
+        pipe.incrby(_CIRCUIT_FAILURE_KEY, count)
+        pipe.expire(_CIRCUIT_FAILURE_KEY, _CIRCUIT_WINDOW_SECONDS)
+        results = pipe.execute()
+        total_failures = results[0]
+
+        if total_failures >= _CIRCUIT_THRESHOLD:
+            redis_client.set(_CIRCUIT_OPEN_KEY, 1, ex=_CIRCUIT_OPEN_TTL)
+            logger.warning(
+                f"LLM circuit breaker OPENED ({LLM_PROVIDER}): "
+                f"{total_failures} failures in {_CIRCUIT_WINDOW_SECONDS}s window"
+            )
+    except Exception as e:
+        logger.error(f"Failed to record LLM failures: {e}")
+
+
+async def reset_llm_failure_counter() -> None:
+    """Reset the LLM failure counter after a successful real API call.
+
+    Only call this when actual_llm_calls > 0 (real API calls were made and
+    succeeded). Do NOT call when all results came from cache.
+    """
+    redis_client = get_redis()
+    if not redis_client:
+        return
+    try:
+        redis_client.delete(_CIRCUIT_FAILURE_KEY)
+        logger.debug(f"LLM circuit breaker failure counter reset ({LLM_PROVIDER})")
+    except Exception as e:
+        logger.error(f"Failed to reset LLM failure counter: {e}")
