@@ -4305,7 +4305,7 @@ async def _perform_team_analysis(
     failed_api_calls = len(server_errors) + len(rate_limit_errors) + len(other_errors)
     if failed_api_calls > 0:
         await record_llm_failures(failed_api_calls)
-    elif actual_llm_calls > 0:
+    elif _actual_llm_calls[0] > 0:
         # Real API calls were made and all succeeded — reset failure counter
         await reset_llm_failure_counter()
 
