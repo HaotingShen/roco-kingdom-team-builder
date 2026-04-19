@@ -85,7 +85,7 @@ export default function MatchupPanel({
     ];
     const seen = new Set<number>();
     for (const move of defenderMoves) {
-      for (const status of move.statuses) {
+      for (const status of move.statuses ?? []) {
         if (seen.has(status.id)) continue;
         seen.add(status.id);
         options.push({

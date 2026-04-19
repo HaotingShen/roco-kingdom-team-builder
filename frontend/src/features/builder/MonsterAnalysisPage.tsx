@@ -260,35 +260,40 @@ export default function MonsterAnalysisPage() {
   );
 
   // ----- Tab 2 content (vs featured teams) -----
-  // The tab is gated on the attacker-side data because the matchup panel
-  // needs a fully hydrated attacker. Loading/error for the attacker moves
-  // and personalities collapses into the same hint so the tab has ONE
-  // loading experience instead of per-row flicker.
-  const attackerLoaded =
-    !!detail &&
-    !attackerMovesResult.query.isLoading &&
-    !personalitiesQ.isLoading &&
-    !!attackerPersonality;
+  const attackerFetching =
+    !detail ||
+    attackerMovesResult.query.isLoading ||
+    personalitiesQ.isLoading;
   const attackerError =
     attackerMonsterQ.isError ||
     attackerMovesResult.query.isError ||
     personalitiesQ.isError;
+  // Fetches finished but personality_id is 0 or resolves to nothing.
+  const attackerNeedsPersonality =
+    !attackerFetching && !attackerError && !attackerPersonality;
+  const attackerLoaded =
+    !attackerFetching && !attackerError && !!attackerPersonality;
 
-  const vsFeaturedTabContent =
-    !attackerLoaded || attackerError ? (
-      <section className="rounded-lg border border-zinc-200 bg-white shadow-sm p-4">
-        <div className={attackerError ? "text-sm text-rose-600" : "text-sm text-zinc-500"}>
-          {attackerError ? t("analysis.loadFailed") : t("common.loading")}
-        </div>
-      </section>
-    ) : (
-      <VsFeaturedTeamsTab
-        attackerMonster={detail!}
-        attackerTalent={talent}
-        attackerPersonality={attackerPersonality!}
-        attackerMoves={attackerMovesData ?? []}
-      />
-    );
+  const vsFeaturedTabContent = attackerError ? (
+    <section className="rounded-lg border border-zinc-200 bg-white shadow-sm p-4">
+      <div className="text-sm text-rose-600">{t("analysis.loadFailed")}</div>
+    </section>
+  ) : attackerFetching ? (
+    <section className="rounded-lg border border-zinc-200 bg-white shadow-sm p-4">
+      <div className="text-sm text-zinc-500">{t("common.loading")}</div>
+    </section>
+  ) : attackerNeedsPersonality ? (
+    <section className="rounded-lg border border-zinc-200 bg-white shadow-sm p-4">
+      <div className="text-sm text-zinc-500">{t("analysis.pickPersonality")}</div>
+    </section>
+  ) : attackerLoaded ? (
+    <VsFeaturedTeamsTab
+      attackerMonster={detail!}
+      attackerTalent={talent}
+      attackerPersonality={attackerPersonality!}
+      attackerMoves={attackerMovesData ?? []}
+    />
+  ) : null;
 
   const tabs = [
     { key: "stats", label: t("analysis.tabStats"), content: statsTabContent },

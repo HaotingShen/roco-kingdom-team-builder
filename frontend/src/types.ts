@@ -114,9 +114,11 @@ export interface MoveOut extends Named {
   /**
    * Statuses this move grants (M:N via the move_statuses join).
    * Backend always serializes this field, defaulting to `[]` when the
-   * move has no statuses — so FE code can iterate it unconditionally.
+   * move has no statuses. Optional here to guard against stale cached
+   * responses from before this field was added — always access as
+   * `move.statuses ?? []`.
    */
-  statuses: StatusOut[];
+  statuses?: StatusOut[];
 }
 
 export interface MonsterSpeciesOut extends Named {

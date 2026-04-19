@@ -13,7 +13,8 @@ from backend.scripts.importers import (
     import_moves,
     import_monsters,
     import_monster_moves,
-    import_legacy_moves
+    import_legacy_moves,
+    import_statuses,
 )
 
 if __name__ == "__main__":
@@ -51,6 +52,9 @@ if __name__ == "__main__":
 
     print("10/10 Importing legacy moves...")
     import_legacy_moves.main()
+
+    print("11/11 Importing statuses...")
+    import_statuses.main()
 
     print()
     print("✅ Game data updated successfully!")

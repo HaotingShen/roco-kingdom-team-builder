@@ -19,5 +19,6 @@ export function usePersonalities(): UseQueryResult<PersonalityOut[]> {
     queryKey: QUERY_KEYS.PERSONALITIES,
     queryFn: () =>
       endpoints.personalities().then((r) => r.data as PersonalityOut[]),
+    staleTime: Infinity,
   });
 }
