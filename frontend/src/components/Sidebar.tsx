@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { NavLink } from "react-router-dom";
 import { useI18n } from "@/i18n";
+import { logoUrl } from "@/lib/images";
 
 const link = "block px-4 py-2 rounded hover:bg-zinc-100";
 const active = "bg-zinc-200 font-medium";
@@ -16,7 +17,7 @@ function BrandLockup() {
       title={t("sidebar.siteName")}
     >
       <img
-        src="/logo.png"
+        src={logoUrl}
         alt=""
         width={32}
         height={32}
@@ -63,8 +64,8 @@ export default function Sidebar() {
         </NavLink>
       </nav>
 
-      {/* Ad banner */}
-      {!adDismissed && (
+      {/* Ad banner — hidden in TapTap build */}
+      {!adDismissed && !import.meta.env.VITE_HIDE_ADS && (
         <div className="mt-auto p-3 relative">
           <button
             onClick={() => setAdDismissed(true)}
@@ -80,7 +81,7 @@ export default function Sidebar() {
             onClick={() => window.umami?.track("ad-click-pzds")}
           >
             <img
-              src="/ad-images/pc.jpg"
+              src={`${(import.meta.env.VITE_ASSET_BASE_URL ?? "").replace(/\/$/, "")}/ad-images/pc.jpg`}
               alt="广告"
               className="w-full rounded"
               style={{ filter: "saturate(0.5)" }}

@@ -7,7 +7,7 @@ import { useBuilderStore } from "../builder/builderStore";
 import { useAuthStore } from "@/features/auth/authStore";
 import type { TeamOut, FullSavedAnalysisOut } from "@/types";
 import { pickName, pickFormName, useI18n, type Lang } from "@/i18n";
-import { monsterImageFallbackChain, typeIconUrl, magicItemImageUrl } from "@/lib/images";
+import { monsterImageFallbackChain, typeIconUrl, magicItemImageUrl, monsterPlaceholder } from "@/lib/images";
 import TeamShareModal from "@/features/share/TeamShareModal";
 import { useSeoMeta } from "@/hooks/useSeoMeta";
 import { formatRowEffects } from "@/lib/personality";
@@ -36,7 +36,7 @@ function MonsterImage({ monster, size = 180 }: { monster: any; size?: number }) 
   const fallbackChain = monsterImageFallbackChain(monster, size as 180 | 270 | 360);
 
   useEffect(() => {
-    setImgSrc(fallbackChain[0] || "/monster-images/placeholder.png");
+    setImgSrc(fallbackChain[0] || monsterPlaceholder);
   }, [monster]);
 
   const handleError = () => {
@@ -51,7 +51,7 @@ function MonsterImage({ monster, size = 180 }: { monster: any; size?: number }) 
 
   return (
     <img
-      src={imgSrc || "/monster-images/placeholder.png"}
+      src={imgSrc || monsterPlaceholder}
       alt={monster?.name || "Monster"}
       className="w-full h-full object-contain"
       onError={handleError}

@@ -1,4 +1,5 @@
 import { useI18n } from "@/i18n";
+import { paymentImageUrl } from "@/lib/images";
 
 interface Props {
   isOpen: boolean;
@@ -52,7 +53,7 @@ export default function DonationModal({ isOpen, onClose }: Props) {
               </div>
               <div className="p-2 bg-white">
                 <img
-                  src="/payments/wechat.jpg"
+                  src={paymentImageUrl("wechat.jpg")}
                   alt={t("donation.wechat") ?? "WeChat Pay"}
                   className="w-28 h-28 sm:w-36 sm:h-36 object-cover"
                 />
@@ -68,7 +69,7 @@ export default function DonationModal({ isOpen, onClose }: Props) {
               </div>
               <div className="p-2 bg-white">
                 <img
-                  src="/payments/alipay.jpg"
+                  src={paymentImageUrl("alipay.jpg")}
                   alt={t("donation.alipay") ?? "Alipay"}
                   className="w-28 h-28 sm:w-36 sm:h-36 object-cover"
                 />

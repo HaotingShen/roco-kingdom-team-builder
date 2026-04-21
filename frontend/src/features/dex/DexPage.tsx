@@ -9,7 +9,7 @@ import useDebounce from "@/hooks/useDebounce";
 import { useSeoMeta } from "@/hooks/useSeoMeta";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useWindowVirtualizer } from "@tanstack/react-virtual";
-import { typeIconUrl, magicItemImageUrl, monsterImageFallbackChain } from "@/lib/images";
+import { typeIconUrl, magicItemImageUrl, monsterImageFallbackChain, monsterPlaceholder, magicItemPlaceholder, moveIconUrlFromCn, moveSubIconUrl } from "@/lib/images";
 import { QUERY_KEYS } from "@/lib/constants";
 import RichDescription from "@/components/RichDescription";
 
@@ -459,7 +459,7 @@ function MonstersTab() {
                     const formLabel = m.is_leader_form ? "" : pickFormName(m as any, lang);
                     const title = [titleName, formLabel ? `(${formLabel})` : ""].filter(Boolean).join(" ");
                     const fallbackChain = monsterImageFallbackChain(m, 360);
-                    const src = fallbackChain[0] || "/monster-images/placeholder.png";
+                    const src = fallbackChain[0] || monsterPlaceholder;
                     return (
                       <Link
                         key={m.id}
@@ -484,8 +484,8 @@ function MonstersTab() {
                               if (next < fallbackChain.length) {
                                 img.dataset.fallbackStep = String(next);
                                 img.src = fallbackChain[next]!;
-                              } else if (img.src !== "/monster-images/placeholder.png") {
-                                img.src = "/monster-images/placeholder.png";
+                              } else if (img.src !== monsterPlaceholder) {
+                                img.src = monsterPlaceholder;
                               }
                             }}
                           />
@@ -930,9 +930,9 @@ function MovesTab() {
 
                     // assets
                     const moveNameZh = pickName(m as any, "zh") || cname;
-                    const moveImg = encodeURI(`/move-icons/${moveNameZh}.png`); // 128x128 source
+                    const moveImg = moveIconUrlFromCn(moveNameZh);
                     const typeImg = tp?.name ? typeIconUrl(tp.name, 30) : null;
-                    const energyImg = "/move-sub-icons/energy.png";
+                    const energyImg = moveSubIconUrl("energy.png");
 
                     // Special handling for Willpower Impact - use conditional-attack icon
                     const isWillpower = m.name === "Willpower Impact" ||
@@ -946,8 +946,8 @@ function MovesTab() {
                       STATUS: "status",
                     };
                     const catImg = isWillpower
-                      ? "/move-sub-icons/conditional-attack.png"
-                      : `/move-sub-icons/${catToFile[normalizedCategory] ?? "physical-attack"}.png`;
+                      ? moveSubIconUrl("conditional-attack.png")
+                      : moveSubIconUrl(`${catToFile[normalizedCategory] ?? "physical-attack"}.png`);
 
                     // Get type color class, fallback to zinc if type not found
                     const typeName = tp?.name?.toLowerCase() || "";
@@ -1071,7 +1071,7 @@ function MagicItemsTab() {
       {(items.data ?? []).map((it) => {
         const nm = pickName(it as any, lang) || it.name;
         const desc = pickDesc(it as any, lang) || it.description || "";
-        const img = magicItemImageUrl(it) || "/magic-items/placeholder.png";
+        const img = magicItemImageUrl(it) || magicItemPlaceholder;
 
         return (
           <div key={it.id} className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm hover:shadow-md transition-all duration-200 flex items-start gap-3">
@@ -1082,7 +1082,7 @@ function MagicItemsTab() {
                 width={48}
                 height={48}
                 className="w-full h-full object-contain drop-shadow-sm"
-                onError={(e) => { (e.currentTarget as HTMLImageElement).src = "/monster-images/placeholder.png"; }}
+                onError={(e) => { (e.currentTarget as HTMLImageElement).src = monsterPlaceholder; }}
               />
             </div>
             <div className="min-w-0 flex-1">

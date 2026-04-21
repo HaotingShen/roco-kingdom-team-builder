@@ -1187,8 +1187,8 @@ export default function BuilderPage() {
           />
         )}
 
-        {/* Mobile Ad — shown only when sidebar is hidden (< lg) */}
-        {!mobileAdDismissed && (
+        {/* Mobile Ad — shown only when sidebar is hidden (< lg), hidden in TapTap build */}
+        {!mobileAdDismissed && !import.meta.env.VITE_HIDE_ADS && (
           <div className="relative lg:hidden">
             <button
               onClick={() => setMobileAdDismissed(true)}
@@ -1198,7 +1198,7 @@ export default function BuilderPage() {
               ×
             </button>
             <img
-              src="/ad-images/mobile.jpg"
+              src={`${(import.meta.env.VITE_ASSET_BASE_URL ?? "").replace(/\/$/, "")}/ad-images/mobile.jpg`}
               alt="广告"
               className="w-full rounded"
               style={{ filter: "saturate(0.8)" }}

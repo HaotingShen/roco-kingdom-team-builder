@@ -1,3 +1,8 @@
+// In TapTap mode (VITE_ASSET_BASE_URL=https://rkteambuilder.com), all image paths
+// are prefixed so they resolve correctly regardless of iframe base URL.
+// In normal production, this is "" and existing absolute paths work as-is.
+const assetBase = (import.meta.env.VITE_ASSET_BASE_URL ?? "").replace(/\/$/, "");
+
 function safeBaseName(s: string): string {
   // remove characters illegal on Windows filesystems
   return s.replace(/[\\/:*?"<>|]/g, "").trim();
@@ -18,7 +23,7 @@ export function monsterImageUrlByCN(monster: any, size: 180 | 270 | 360 = 360): 
   const base = safeBaseName(cnForm ? `${cnName}(${cnForm})` : cnName);
   // URL-encode for the request path
   const encoded = encodeURIComponent(base);
-  return `/monster-images/${size}/${encoded}.png`;
+  return `${assetBase}/monster-images/${size}/${encoded}.png`;
 }
 
 export function monsterImageUrlByEN(monster: any, size: 180 | 270 | 360 = 360): string | null {
@@ -33,25 +38,25 @@ export function monsterImageUrlByEN(monster: any, size: 180 | 270 | 360 = 360): 
 
   const base = safeBaseName(form ? `${enName}(${form})` : enName);
   const encoded = encodeURIComponent(base);
-  return `/monster-images/${size}/${encoded}.png`;
+  return `${assetBase}/monster-images/${size}/${encoded}.png`;
 }
 
 export function monsterImageUrlById(monster: any, size: 180 | 270 | 360 = 360): string | null {
-  return monster?.id ? `/monster-images/${size}/${monster.id}.png` : null;
+  return monster?.id ? `${assetBase}/monster-images/${size}/${monster.id}.png` : null;
 }
 
 export function typeIconUrl(name?: string, size: 30 | 45 | 60 = 60): string | null {
   if (!name) return null;
   const slug = name.toLowerCase().replace(/\s+/g, "-");
-  return `/type-icons/${size}/${slug}.png`;
+  return `${assetBase}/type-icons/${size}/${slug}.png`;
 }
 
 export function magicItemImageUrl(item: any): string | null {
   if (!item) return null;
   const zh = item?.localized?.zh;
   const cnName = zh && typeof zh.name === "string" ? zh.name : null;
-  if (cnName) return `/magic-items/${encodeURI(cnName)}.png`;
-  if (item.name) return `/magic-items/${encodeURI(item.name)}.png`;
+  if (cnName) return `${assetBase}/magic-items/${encodeURI(cnName)}.png`;
+  if (item.name) return `${assetBase}/magic-items/${encodeURI(item.name)}.png`;
   return null;
 }
 
@@ -60,7 +65,7 @@ export function monsterImageFallbackChain(monster: any, size: 180 | 270 | 360 = 
     monsterImageUrlByCN(monster, size),
     monsterImageUrlByEN(monster, size),
     monsterImageUrlById(monster, size),
-    "/monster-images/placeholder.png",
+    `${assetBase}/monster-images/placeholder.png`,
   ].filter(Boolean) as string[];
 }
 
@@ -72,8 +77,23 @@ export function monsterImageFallbackChain(monster: any, size: 180 | 270 | 360 = 
 export function moveIconUrl(move: any): string | null {
   const zh = move?.localized?.zh;
   const cnName = typeof zh === 'object' && typeof zh?.name === 'string' ? zh.name.trim() : null;
-  if (cnName) return `/move-icons/${encodeURIComponent(cnName)}.png`;
+  if (cnName) return `${assetBase}/move-icons/${encodeURIComponent(cnName)}.png`;
   return null;
+}
+
+export function moveIconUrlFromCn(cnName: string): string {
+  return `${assetBase}/move-icons/${encodeURIComponent(cnName)}.png`;
+}
+
+export const monsterPlaceholder = `${assetBase}/monster-images/placeholder.png`;
+export const magicItemPlaceholder = `${assetBase}/magic-items/placeholder.png`;
+export const logoUrl = `${assetBase}/logo.png`;
+export function paymentImageUrl(filename: string): string {
+  return `${assetBase}/payments/${filename}`;
+}
+
+export function moveSubIconUrl(filename: string): string {
+  return `${assetBase}/move-sub-icons/${filename}`;
 }
 
 export function monsterImageSrcSet(monster: any): string {

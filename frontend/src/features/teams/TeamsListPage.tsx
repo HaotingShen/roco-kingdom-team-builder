@@ -5,7 +5,7 @@ import { formatLocal } from "@/lib/datetime";
 import type { TeamOut } from "@/types";
 import { useI18n, pickName } from "@/i18n";
 import { useState, useEffect } from "react";
-import { monsterImageFallbackChain, magicItemImageUrl } from "@/lib/images";
+import { monsterImageFallbackChain, magicItemImageUrl, monsterPlaceholder } from "@/lib/images";
 import { QUERY_KEYS } from "@/lib/constants";
 import { useQuota } from "@/hooks/useQuota";
 import { useSeoMeta } from "@/hooks/useSeoMeta";
@@ -18,7 +18,7 @@ function MonsterAvatar({ monster, size = 60 }: { monster: any; size?: number }) 
   const fallbackChain = monsterImageFallbackChain(monster, 360);
 
   useEffect(() => {
-    setImgSrc(fallbackChain[0] || "/monster-images/placeholder.png");
+    setImgSrc(fallbackChain[0] || monsterPlaceholder);
   }, [monster]);
 
   const handleError = () => {
@@ -37,7 +37,7 @@ function MonsterAvatar({ monster, size = 60 }: { monster: any; size?: number }) 
       style={{ width: size, height: size }}
     >
       <img
-        src={imgSrc || "/monster-images/placeholder.png"}
+        src={imgSrc || monsterPlaceholder}
         alt={monster?.name || "Monster"}
         className="w-full h-full object-cover"
         onError={handleError}

@@ -4,7 +4,7 @@ import { endpoints } from "@/lib/api";
 import { useI18n, pickName, pickDesc, pickFormName } from "@/i18n";
 import { useSeoMeta } from "@/hooks/useSeoMeta";
 import type { MoveOut, MonsterLiteOut, MoveLearnersOut, TypeOut } from "@/types";
-import { typeIconUrl, monsterImageFallbackChain } from "@/lib/images";
+import { typeIconUrl, monsterImageFallbackChain, monsterPlaceholder, moveIconUrlFromCn, moveSubIconUrl } from "@/lib/images";
 import RichDescription from "@/components/RichDescription";
 
 /* ---------- helpers ---------- */
@@ -64,7 +64,7 @@ function MonsterCard({ monster, backUrl }: { monster: MonsterLiteOut; backUrl: s
   const formLabel = pickFormName(monster as any, lang);
   const title = [name, formLabel ? `(${formLabel})` : ""].filter(Boolean).join(" ");
   const fallbackChain = monsterImageFallbackChain(monster, 360);
-  const src = fallbackChain[0] || "/monster-images/placeholder.png";
+  const src = fallbackChain[0] || monsterPlaceholder;
 
   return (
     <Link
@@ -86,8 +86,8 @@ function MonsterCard({ monster, backUrl }: { monster: MonsterLiteOut; backUrl: s
           if (next < fallbackChain.length) {
             img.dataset.fallbackStep = String(next);
             img.src = fallbackChain[next]!;
-          } else if (img.src !== "/monster-images/placeholder.png") {
-            img.src = "/monster-images/placeholder.png";
+          } else if (img.src !== monsterPlaceholder) {
+            img.src = monsterPlaceholder;
           }
         }}
       />
@@ -186,14 +186,14 @@ export default function MoveDetailPage() {
       (pickName(move, "zh") || "") === "聚能");
 
   const catImg = isWillpower
-    ? "/move-sub-icons/conditional-attack.png"
-    : `/move-sub-icons/${CAT_TO_FILE[normalizedCat] ?? "physical-attack"}.png`;
+    ? moveSubIconUrl("conditional-attack.png")
+    : moveSubIconUrl(`${CAT_TO_FILE[normalizedCat] ?? "physical-attack"}.png`);
 
   const typeName = tp?.name?.toLowerCase() || "";
   const typeColorClass = typeName ? TYPE_COLORS[typeName] || "border-l-zinc-400" : "border-l-zinc-400";
   const typeImg = tp?.name ? typeIconUrl(tp.name, 30) : null;
   const moveNameZh = move ? pickName(move, "zh") || moveName : "";
-  const moveImg = moveNameZh ? encodeURI(`/move-icons/${moveNameZh}.png`) : null;
+  const moveImg = moveNameZh ? moveIconUrlFromCn(moveNameZh) : null;
 
   // URL of this page (passed as ?back= when linking to monster detail)
   const currentUrl = `/dex/moves/${id}?back=${encodeURIComponent(backUrl)}`;
@@ -293,7 +293,7 @@ export default function MoveDetailPage() {
                     {catLabel}
                   </span>
                   <span className="inline-flex items-center gap-1.5">
-                    <img src="/move-sub-icons/energy.png" alt="" aria-hidden width={14} height={14} />
+                    <img src={moveSubIconUrl("energy.png")} alt="" aria-hidden width={14} height={14} />
                     {energy ?? "—"}
                   </span>
                   {!isDef && !isSta && (

@@ -6,6 +6,7 @@ import { useAuthStore } from "@/features/auth/authStore";
 import { useMutation } from "@tanstack/react-query";
 import { endpoints } from "@/lib/api";
 import type { TeamOut } from "@/types";
+import { logoUrl } from "@/lib/images";
 import UserMenu from "./UserMenu";
 import DonationModal from "./DonationModal";
 
@@ -110,7 +111,7 @@ export default function Topbar() {
         aria-label="Home"
       >
         <img
-          src="/logo.png"
+          src={logoUrl}
           alt=""
           width={28}
           height={28}
