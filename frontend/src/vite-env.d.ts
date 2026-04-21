@@ -7,6 +7,8 @@ interface ImportMetaEnv {
   readonly VITE_ASSET_BASE_URL?: string;
   /** When truthy, ad banners are hidden (TapTap platform rules prohibit ads) */
   readonly VITE_HIDE_ADS?: string;
+  /** When "true", use createHashRouter instead of createBrowserRouter (TapTap CDN has no SPA fallback) */
+  readonly VITE_HASH_ROUTER?: string;
 }
 
 interface ImportMeta {

@@ -1,4 +1,11 @@
-import { createBrowserRouter } from "react-router-dom";
+import { createBrowserRouter, createHashRouter } from "react-router-dom";
+
+// TapTap serves the app from an arbitrary CDN sub-path with no server-side
+// fallback to index.html. Hash routing avoids the dependency on pathname
+// entirely — all navigation happens via the fragment (#/build, #/dex, etc.).
+const createRouter = import.meta.env.VITE_HASH_ROUTER === "true"
+  ? createHashRouter
+  : createBrowserRouter;
 import App from "./App";
 import BuilderPage from "./features/builder/BuilderPage";
 import MonsterAnalysisPage from "./features/builder/MonsterAnalysisPage";
@@ -18,7 +25,7 @@ import SettingsPage from "./features/auth/SettingsPage";
 import FeedbackPage from "./features/feedback/FeedbackPage";
 import ImportPage from "./features/share/ImportPage";
 
-const router = createBrowserRouter([
+const router = createRouter([
   {
     path: "/",
     element: <App />,
