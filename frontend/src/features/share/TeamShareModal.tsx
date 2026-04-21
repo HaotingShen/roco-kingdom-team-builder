@@ -248,7 +248,7 @@ export default function TeamShareModal({ open, onClose, team, currentUsername }:
                 if (isComposingRef.current) {
                   setNote(e.target.value);
                 } else {
-                  setNote(e.target.value.slice(0, 100));
+                  setNote(e.target.value.slice(0, 150));
                 }
               }}
               onCompositionStart={() => {
@@ -259,13 +259,13 @@ export default function TeamShareModal({ open, onClose, team, currentUsername }:
               onCompositionEnd={e => {
                 isComposingRef.current = false;
                 setIsComposing(false);
-                setNote(e.currentTarget.value.slice(0, 100));
+                setNote(e.currentTarget.value.slice(0, 150));
               }}
               placeholder={t('share.notePlaceholder') ?? 'Add a note about your team…'}
               rows={2}
               className="w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm text-zinc-800 placeholder:text-zinc-400 resize-none focus:outline-none focus:ring-2 focus:ring-zinc-300"
             />
-            <p className="text-right text-xs text-zinc-400">{committedNoteLength}/100</p>
+            <p className="text-right text-xs text-zinc-400">{committedNoteLength}/150</p>
           </div>
 
           {/* Action buttons */}
