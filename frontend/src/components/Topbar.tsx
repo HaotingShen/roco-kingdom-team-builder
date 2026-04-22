@@ -1,5 +1,6 @@
 import { useNavigate, useLocation, Link } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
+import { toast } from "sonner";
 import { useI18n } from "@/i18n";
 import { useBuilderStore } from "@/features/builder/builderStore";
 import { useAuthStore } from "@/features/auth/authStore";
@@ -9,6 +10,7 @@ import type { TeamOut } from "@/types";
 import { logoUrl } from "@/lib/images";
 import UserMenu from "./UserMenu";
 import DonationModal from "./DonationModal";
+import ConfirmDialog from "./ConfirmDialog";
 
 export default function Topbar() {
   const nav = useNavigate();
@@ -44,18 +46,23 @@ export default function Topbar() {
     loc.pathname === "/" ||
     loc.pathname.startsWith("/build");
 
-  const onResetClick = () => {
-    const ok = window.confirm(
-      t("topbar.confirmReset") ?? "Reset the builder? This clears the current team and analysis."
-    );
-    if (!ok) return;
-
-    resetBuilder();
-
-    if (!isOnBuilder) nav("/build");
-  };
-
   const [showDonation, setShowDonation] = useState(false);
+  const [confirmDialog, setConfirmDialog] = useState<{
+    open: boolean; message: string; onConfirm: () => void;
+  }>({ open: false, message: "", onConfirm: () => {} });
+  const openConfirm = (message: string, onConfirm: () => void) =>
+    setConfirmDialog({ open: true, message, onConfirm });
+  const closeConfirm = () => setConfirmDialog(s => ({ ...s, open: false }));
+
+  const onResetClick = () => {
+    openConfirm(
+      t("topbar.confirmReset") ?? "Reset the builder? This clears the current team and analysis.",
+      () => {
+        resetBuilder();
+        if (!isOnBuilder) nav("/build");
+      }
+    );
+  };
 
   // Brief "Loaded: {name}" message shown after Quick Build succeeds
   const [quickBuildMsg, setQuickBuildMsg] = useState<string | null>(null);
@@ -82,7 +89,7 @@ export default function Topbar() {
       quickBuildMsgTimer.current = setTimeout(() => setQuickBuildMsg(null), 3000);
     },
     onError: () => {
-      alert(t("topbar.quickBuildFailed") ?? "Failed to load a sample team.");
+      toast.error(t("topbar.quickBuildFailed") ?? "Failed to load a sample team.");
     },
   });
 
@@ -93,11 +100,12 @@ export default function Topbar() {
 
   const onQuickBuildClick = () => {
     if (hasCurrentWork) {
-      const ok = window.confirm(
+      openConfirm(
         t("topbar.quickBuildConfirm") ??
-        "This will auto-generate a new team and replace your current team. Continue?"
+        "This will auto-generate a new team and replace your current team. Continue?",
+        () => quickBuild.mutate()
       );
-      if (!ok) return;
+      return;
     }
     quickBuild.mutate();
   };
@@ -210,6 +218,12 @@ export default function Topbar() {
       </div>
 
       <DonationModal isOpen={showDonation} onClose={() => setShowDonation(false)} />
+      <ConfirmDialog
+        isOpen={confirmDialog.open}
+        message={confirmDialog.message}
+        onConfirm={() => { closeConfirm(); confirmDialog.onConfirm(); }}
+        onCancel={closeConfirm}
+      />
     </header>
   );
 }

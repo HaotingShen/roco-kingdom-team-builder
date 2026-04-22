@@ -1,10 +1,12 @@
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
+import { toast } from "sonner";
 import { endpoints } from "@/lib/api";
 import { formatLocal } from "@/lib/datetime";
 import type { TeamOut } from "@/types";
 import { useI18n, pickName } from "@/i18n";
 import { useState, useEffect } from "react";
+import ConfirmDialog from "@/components/ConfirmDialog";
 import { monsterImageFallbackChain, magicItemImageUrl, monsterPlaceholder } from "@/lib/images";
 import { QUERY_KEYS } from "@/lib/constants";
 import { useQuota } from "@/hooks/useQuota";
@@ -61,6 +63,12 @@ export default function TeamsListPage() {
   const [renameModalOpen, setRenameModalOpen] = useState(false);
   const [renamingTeam, setRenamingTeam] = useState<TeamOut | null>(null);
   const [newTeamName, setNewTeamName] = useState("");
+  const [confirmDialog, setConfirmDialog] = useState<{
+    open: boolean; message: string; onConfirm: () => void;
+  }>({ open: false, message: "", onConfirm: () => {} });
+  const openConfirm = (message: string, onConfirm: () => void) =>
+    setConfirmDialog({ open: true, message, onConfirm });
+  const closeConfirm = () => setConfirmDialog(s => ({ ...s, open: false }));
 
   const teams = useQuery<TeamOut[]>({
     queryKey: ["teams"],
@@ -133,7 +141,7 @@ export default function TeamsListPage() {
     },
     onError: (_err, _vars, ctx) => {
       if (ctx?.prev) qc.setQueryData(["teams"], ctx.prev);
-      alert(t("teams.renameFailed"));
+      toast.error(t("teams.renameFailed") ?? "Rename failed. Please try again.");
     },
     onSettled: () => {
       qc.invalidateQueries({ queryKey: ["teams"] });
@@ -142,11 +150,10 @@ export default function TeamsListPage() {
 
   const onDeleteClick = (id: number) => {
     if (remove.isPending) return;
-    const ok = window.confirm(
-      t("teams.confirmDelete") ?? "Delete this team? This cannot be undone."
+    openConfirm(
+      t("teams.confirmDelete") ?? "Delete this team? This cannot be undone.",
+      () => remove.mutate(id)
     );
-    if (!ok) return;
-    remove.mutate(id);
   };
 
   const onRenameClick = (team: TeamOut) => {
@@ -159,7 +166,7 @@ export default function TeamsListPage() {
     e.preventDefault();
     if (!renamingTeam || rename.isPending) return;
     if (!newTeamName.trim()) {
-      alert(t("builder.teamNamePlaceholder"));
+      toast.error(t("builder.teamNamePlaceholder") ?? "Please enter a team name.");
       return;
     }
     rename.mutate({
@@ -307,6 +314,12 @@ export default function TeamsListPage() {
           </div>
         </div>
       )}
+      <ConfirmDialog
+        isOpen={confirmDialog.open}
+        message={confirmDialog.message}
+        onConfirm={() => { closeConfirm(); confirmDialog.onConfirm(); }}
+        onCancel={closeConfirm}
+      />
     </div>
   );
 }

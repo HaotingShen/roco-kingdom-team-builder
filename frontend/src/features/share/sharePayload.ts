@@ -45,9 +45,12 @@ export function encodeSharePayload(team: TeamOut, includeUsername?: string, note
   return toBase64Url(JSON.stringify(payload));
 }
 
-// Builds the full import URL using the current origin (works in dev and prod).
+// Builds the full import URL.
+// In TapTap builds VITE_ASSET_BASE_URL is https://rkteambuilder.com, so share links
+// always point to the real site — not TapTap's CDN (which would be window.location.origin).
 export function buildShareUrl(team: TeamOut, includeUsername?: string, note?: string): string {
-  return `${window.location.origin}/import?t=${encodeSharePayload(team, includeUsername, note)}`;
+  const base = import.meta.env.VITE_ASSET_BASE_URL || window.location.origin;
+  return `${base}/import?t=${encodeSharePayload(team, includeUsername, note)}`;
 }
 
 // Converts a saved TeamOut to ShareDecodeResponse shape for use in the share modal preview.

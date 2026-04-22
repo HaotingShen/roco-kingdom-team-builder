@@ -220,7 +220,7 @@ export default function ImportPage() {
             transformOrigin: 'top left',
             position: 'absolute', top: 0, left: 0,
           }}>
-            <TeamCard data={decoded!} shareUrl={`${window.location.origin}/import?t=${token}`} showQr={true} lang={lang} note={decoded!.note ?? undefined} onReady={() => setImagesReady(true)} />
+            <TeamCard data={decoded!} shareUrl={`${import.meta.env.VITE_ASSET_BASE_URL || window.location.origin}/import?t=${token}`} showQr={true} lang={lang} note={decoded!.note ?? undefined} onReady={() => setImagesReady(true)} />
           </div>
 
           {/* Loading overlay — sits above canvas until images are ready */}
