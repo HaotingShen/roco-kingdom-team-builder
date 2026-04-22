@@ -502,6 +502,7 @@ const ui: Record<Lang, Dict> = {
       guestReturned: "Welcome back! You can now save teams.",
       guestRateLimited: "You have reached the daily guest account limit. Please create a registered account or try again tomorrow.",
       guestFailed: "Failed to create guest account. Please try again.",
+      taptapRedirect: "Visit rkteambuilder.com to save and share your team.",
     },
     auth: {
       loginTitle: "Log In",
@@ -1223,6 +1224,7 @@ const ui: Record<Lang, Dict> = {
       guestReturned: "欢迎回来！现在可以保存队伍了。",
       guestRateLimited: "您已达到每日访客账号上限。请创建正式账号或明天再试。",
       guestFailed: "创建访客账号失败，请重试。",
+      taptapRedirect: "前往 rkteambuilder.com 保存并分享您的队伍。",
     },
     auth: {
       loginTitle: "登录",

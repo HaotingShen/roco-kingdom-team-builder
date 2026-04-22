@@ -56,9 +56,11 @@ export default function Sidebar() {
         <NavLink to="/dex" className={({ isActive }) => `${link} ${isActive ? active : ""}`}>
           {t("sidebar.dex")}
         </NavLink>
-        <NavLink to="/teams" className={({ isActive }) => `${link} ${isActive ? active : ""}`}>
-          {t("sidebar.teams")}
-        </NavLink>
+        {!import.meta.env.VITE_HIDE_AUTH && (
+          <NavLink to="/teams" className={({ isActive }) => `${link} ${isActive ? active : ""}`}>
+            {t("sidebar.teams")}
+          </NavLink>
+        )}
         <NavLink to="/feedback" className={({ isActive }) => `${link} ${isActive ? active : ""}`}>
           {t("sidebar.feedback")}
         </NavLink>

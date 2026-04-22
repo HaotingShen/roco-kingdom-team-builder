@@ -193,17 +193,19 @@ export default function Topbar() {
         </button>
 
         {/* Donate — compact below 800px */}
-        <button
-          onClick={() => setShowDonation(true)}
-          className="h-9 px-2 sm:px-3 rounded-lg border-2 border-amber-300 bg-amber-50 text-sm font-medium text-amber-700 hover:bg-amber-100 transition-colors cursor-pointer"
-          title={t("topbar.donate")}
-        >
-          <span className="sm:hidden">♥</span>
-          <span className="hidden sm:inline">{t("topbar.donate") ?? "Donate"}</span>
-        </button>
+        {!import.meta.env.VITE_HIDE_ADS && (
+          <button
+            onClick={() => setShowDonation(true)}
+            className="h-9 px-2 sm:px-3 rounded-lg border-2 border-amber-300 bg-amber-50 text-sm font-medium text-amber-700 hover:bg-amber-100 transition-colors cursor-pointer"
+            title={t("topbar.donate")}
+          >
+            <span className="sm:hidden">♥</span>
+            <span className="hidden sm:inline">{t("topbar.donate") ?? "Donate"}</span>
+          </button>
+        )}
 
         {/* Admin Link (visible to admins only) */}
-        {user?.is_admin && (
+        {!import.meta.env.VITE_HIDE_AUTH && user?.is_admin && (
           <Link
             to="/admin"
             className="h-9 px-3 rounded-lg border-2 border-purple-300 bg-purple-50 text-sm font-medium text-purple-700 hover:bg-purple-100 flex items-center transition-colors cursor-pointer"
@@ -214,10 +216,10 @@ export default function Topbar() {
         )}
 
         {/* User Menu */}
-        <UserMenu />
+        {!import.meta.env.VITE_HIDE_AUTH && <UserMenu />}
       </div>
 
-      <DonationModal isOpen={showDonation} onClose={() => setShowDonation(false)} />
+      {!import.meta.env.VITE_HIDE_ADS && <DonationModal isOpen={showDonation} onClose={() => setShowDonation(false)} />}
       <ConfirmDialog
         isOpen={confirmDialog.open}
         message={confirmDialog.message}

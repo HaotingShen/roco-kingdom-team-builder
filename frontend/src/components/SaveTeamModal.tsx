@@ -97,61 +97,83 @@ export default function SaveTeamModal({ isOpen, onClose, onGuestCreated }: SaveT
           </svg>
         </button>
 
-        {/* Title */}
-        <h2 className="text-xl font-semibold text-zinc-900 mb-2">
-          {t('saveModal.title') || 'Save Your Team'}
-        </h2>
-
-        {/* Description */}
-        <p className="text-sm text-zinc-600 mb-6">
-          {showGuestOption
-            ? (t('saveModal.description') ||
-               'Create an account to sync across devices, or continue as guest (saved on this device only).')
-            : (t('saveModal.descriptionNoGuest') ||
-               'Create an account or log in to save your team.')}
-        </p>
-
-        {/* Primary: Create Account */}
-        <button
-          onClick={handleCreateAccount}
-          className="w-full h-11 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors mb-3"
-        >
-          {t('saveModal.createAccount') || 'Create Account'}
-        </button>
-
-        {/* Secondary: Continue as Guest - hidden if device has registered account */}
-        {showGuestOption && (
+        {import.meta.env.VITE_HIDE_AUTH ? (
           <>
-            <button
-              onClick={handleContinueAsGuest}
-              disabled={isCreatingGuest}
-              className="w-full h-11 bg-zinc-100 text-zinc-700 font-medium rounded-lg hover:bg-zinc-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed mb-2"
+            <h2 className="text-xl font-semibold text-zinc-900 mb-4">
+              {t('saveModal.title') || 'Save Your Team'}
+            </h2>
+            <p className="text-sm text-zinc-600 mb-6">
+              {t('saveModal.taptapRedirect') ||
+                'Visit rkteambuilder.com to save and share your team.'}
+            </p>
+            <a
+              href="https://rkteambuilder.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full h-11 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center"
             >
-              {isCreatingGuest
-                ? (t('saveModal.creatingGuest') || 'Creating...')
-                : (t('saveModal.continueAsGuest') || 'Continue as Guest')}
+              rkteambuilder.com
+            </a>
+          </>
+        ) : (
+          <>
+            {/* Title */}
+            <h2 className="text-xl font-semibold text-zinc-900 mb-2">
+              {t('saveModal.title') || 'Save Your Team'}
+            </h2>
+
+            {/* Description */}
+            <p className="text-sm text-zinc-600 mb-6">
+              {showGuestOption
+                ? (t('saveModal.description') ||
+                   'Create an account to sync across devices, or continue as guest (saved on this device only).')
+                : (t('saveModal.descriptionNoGuest') ||
+                   'Create an account or log in to save your team.')}
+            </p>
+
+            {/* Primary: Create Account */}
+            <button
+              onClick={handleCreateAccount}
+              className="w-full h-11 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors mb-3"
+            >
+              {t('saveModal.createAccount') || 'Create Account'}
             </button>
 
-            {/* Guest disclaimer */}
-            <p className="text-xs text-zinc-500 text-center mb-4">
-              {t('saveModal.guestDisclaimer') || 'Guest teams expire after 90 days of inactivity.'}
+            {/* Secondary: Continue as Guest - hidden if device has registered account */}
+            {showGuestOption && (
+              <>
+                <button
+                  onClick={handleContinueAsGuest}
+                  disabled={isCreatingGuest}
+                  className="w-full h-11 bg-zinc-100 text-zinc-700 font-medium rounded-lg hover:bg-zinc-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed mb-2"
+                >
+                  {isCreatingGuest
+                    ? (t('saveModal.creatingGuest') || 'Creating...')
+                    : (t('saveModal.continueAsGuest') || 'Continue as Guest')}
+                </button>
+
+                {/* Guest disclaimer */}
+                <p className="text-xs text-zinc-500 text-center mb-4">
+                  {t('saveModal.guestDisclaimer') || 'Guest teams expire after 90 days of inactivity.'}
+                </p>
+              </>
+            )}
+
+            {/* Divider */}
+            <div className="border-t border-zinc-200 my-4" />
+
+            {/* Login link */}
+            <p className="text-sm text-center text-zinc-600">
+              {t('saveModal.haveAccount') || 'Already have an account?'}{' '}
+              <button
+                onClick={handleLogin}
+                className="text-blue-600 hover:text-blue-700 font-medium"
+              >
+                {t('saveModal.loginLink') || 'Log in'}
+              </button>
             </p>
           </>
         )}
-
-        {/* Divider */}
-        <div className="border-t border-zinc-200 my-4" />
-
-        {/* Login link */}
-        <p className="text-sm text-center text-zinc-600">
-          {t('saveModal.haveAccount') || 'Already have an account?'}{' '}
-          <button
-            onClick={handleLogin}
-            className="text-blue-600 hover:text-blue-700 font-medium"
-          >
-            {t('saveModal.loginLink') || 'Log in'}
-          </button>
-        </p>
       </div>
     </div>
   );

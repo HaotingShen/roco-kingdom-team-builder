@@ -457,7 +457,14 @@ export default function BuilderPage() {
       setIsAnalyzing(true);
     },
     onError: (err) => {
-      showError(extractErrorMessage(err));
+      if (import.meta.env.VITE_HIDE_AUTH && (err as any)?.response?.status === 429) {
+        const msg = lang === "zh"
+          ? "每位用户每天只能分析一次。如需更多分析次数，请访问 rkteambuilder.com"
+          : "Each user can analyze once per day. For more analyses, visit rkteambuilder.com";
+        showError(msg);
+      } else {
+        showError(extractErrorMessage(err));
+      }
       setIsAnalyzing(false);
     },
     onSuccess: (data) => {
@@ -764,12 +771,23 @@ export default function BuilderPage() {
                 {t("builder.unsavedWorkHint")}
               </p>
             </div>
-            <button
-              onClick={() => navigate('/auth/login')}
-              className="h-9 px-4 bg-amber-600 text-white text-sm font-medium rounded-lg hover:bg-amber-700 transition-colors shrink-0 cursor-pointer"
-            >
-              {t("userMenu.login")}
-            </button>
+            {import.meta.env.VITE_HIDE_AUTH ? (
+              <a
+                href="https://rkteambuilder.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="h-9 px-4 bg-amber-600 text-white text-sm font-medium rounded-lg hover:bg-amber-700 transition-colors shrink-0 cursor-pointer inline-flex items-center"
+              >
+                rkteambuilder.com
+              </a>
+            ) : (
+              <button
+                onClick={() => navigate('/auth/login')}
+                className="h-9 px-4 bg-amber-600 text-white text-sm font-medium rounded-lg hover:bg-amber-700 transition-colors shrink-0 cursor-pointer"
+              >
+                {t("userMenu.login")}
+              </button>
+            )}
           </div>
         )}
 
@@ -988,7 +1006,7 @@ export default function BuilderPage() {
             <div className="hidden sm:block flex-1" />
 
             {/* Action buttons */}
-            <button
+            {!import.meta.env.VITE_HIDE_AUTH && <button
               onClick={onSaveNew}
               disabled={createTeam.isPending}
               data-testid="create-team-btn"
@@ -1012,9 +1030,9 @@ export default function BuilderPage() {
               ) : (
                 t("builder.saveTeam") ?? "Save"
               )}
-            </button>
+            </button>}
 
-            {teamId && !isFeaturedTeam ? (
+            {!import.meta.env.VITE_HIDE_AUTH && teamId && !isFeaturedTeam ? (
               <button
                 onClick={onUpdateExisting}
                 disabled={updateTeam.isPending}
