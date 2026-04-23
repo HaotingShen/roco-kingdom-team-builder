@@ -10,13 +10,15 @@ export default function Footer() {
       <div className="max-w-4xl">
         <p>{t("footer.disclaimer")}</p>
       </div>
-      <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1">
-        <span>{t("footer.qqGroup")}</span>
-        <span>·</span>
-        <span>{t("footer.wechatGroup")}</span>
-        <span className="hidden lg:inline">·</span>
-        <span>{t("footer.business")}</span>
-      </div>
+      {!import.meta.env.VITE_HIDE_AUTH && (
+        <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1">
+          <span>{t("footer.qqGroup")}</span>
+          <span>·</span>
+          <span>{t("footer.wechatGroup")}</span>
+          <span className="hidden lg:inline">·</span>
+          <span>{t("footer.business")}</span>
+        </div>
+      )}
       <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1">
         <span>© {year} RK Team Builder · 洛手配队器</span>
         <NavLink to="/feedback" className="hover:text-zinc-700 underline underline-offset-2">
