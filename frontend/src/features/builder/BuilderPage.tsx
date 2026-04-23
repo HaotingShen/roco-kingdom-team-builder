@@ -757,8 +757,8 @@ export default function BuilderPage() {
       onDragEnd={handleDragEnd}
     >
       <div className="space-y-4">
-        {/* Anonymous user warning banner */}
-        {!user && hasWorkInProgress && (
+        {/* Anonymous user warning banner — hidden on TapTap (users can't save anyway) */}
+        {!import.meta.env.VITE_HIDE_AUTH && !user && hasWorkInProgress && (
           <div className="rounded-lg border-2 border-amber-300 bg-gradient-to-r from-amber-50 to-amber-100 p-4 flex items-center gap-3 shadow-sm">
             <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-amber-500 text-white text-sm font-bold shrink-0">
               !
@@ -771,23 +771,12 @@ export default function BuilderPage() {
                 {t("builder.unsavedWorkHint")}
               </p>
             </div>
-            {import.meta.env.VITE_HIDE_AUTH ? (
-              <a
-                href="https://rkteambuilder.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="h-9 px-4 bg-amber-600 text-white text-sm font-medium rounded-lg hover:bg-amber-700 transition-colors shrink-0 cursor-pointer inline-flex items-center"
-              >
-                rkteambuilder.com
-              </a>
-            ) : (
-              <button
-                onClick={() => navigate('/auth/login')}
-                className="h-9 px-4 bg-amber-600 text-white text-sm font-medium rounded-lg hover:bg-amber-700 transition-colors shrink-0 cursor-pointer"
-              >
-                {t("userMenu.login")}
-              </button>
-            )}
+            <button
+              onClick={() => navigate('/auth/login')}
+              className="h-9 px-4 bg-amber-600 text-white text-sm font-medium rounded-lg hover:bg-amber-700 transition-colors shrink-0 cursor-pointer"
+            >
+              {t("userMenu.login")}
+            </button>
           </div>
         )}
 

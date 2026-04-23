@@ -270,7 +270,11 @@ export default function TeamsListPage() {
         {teams.isLoading ? (
           <div className="text-zinc-500">{t("common.loading")}</div>
         ) : !teams.data?.length ? (
-          <div className="text-zinc-500">{t("teams.noTeams")}</div>
+          <div className="text-zinc-500">
+            {import.meta.env.VITE_HIDE_AUTH
+              ? t("teams.noTeamsTaptap")
+              : t("teams.noTeams")}
+          </div>
         ) : null}
       </div>
 

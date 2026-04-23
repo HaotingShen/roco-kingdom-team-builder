@@ -102,18 +102,10 @@ export default function SaveTeamModal({ isOpen, onClose, onGuestCreated }: SaveT
             <h2 className="text-xl font-semibold text-zinc-900 mb-4">
               {t('saveModal.title') || 'Save Your Team'}
             </h2>
-            <p className="text-sm text-zinc-600 mb-6">
+            <p className="text-sm text-zinc-600">
               {t('saveModal.taptapRedirect') ||
                 'Visit rkteambuilder.com to save and share your team.'}
             </p>
-            <a
-              href="https://rkteambuilder.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="w-full h-11 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center"
-            >
-              rkteambuilder.com
-            </a>
           </>
         ) : (
           <>
