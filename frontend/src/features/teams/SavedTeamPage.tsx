@@ -53,7 +53,7 @@ function MonsterImage({ monster, size = 180 }: { monster: any; size?: number }) 
   return (
     <img
       src={imgSrc || monsterPlaceholder}
-      alt={monster?.name || "Monster"}
+      alt={monster?.name || "Jingling"}
       className="w-full h-full object-contain"
       onError={handleError}
     />

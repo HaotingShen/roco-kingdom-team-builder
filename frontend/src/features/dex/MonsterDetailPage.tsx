@@ -109,14 +109,14 @@ export default function MonsterDetailPage() {
   useSeoMeta({
     title: monsterName
       ? lang === "zh" ? `${monsterName} | 洛手配队器` : `${monsterName} | RK Team Builder`
-      : lang === "zh" ? "精灵详情 | 洛手配队器" : "Monster Detail | RK Team Builder",
+      : lang === "zh" ? "精灵详情 | 洛手配队器" : "Jingling Detail | RK Team Builder",
     description: monsterName
       ? lang === "zh"
         ? `${monsterName} 的数值、招式、特性和进化 — 洛克王国: 世界。`
         : `${monsterName} — stats, moves, traits, and evolution for Roco Kingdom: World.`
       : lang === "zh"
         ? "查看精灵的数值、招式、特性和进化。"
-        : "View monster stats, moves, traits, and evolution for Roco Kingdom: World.",
+        : "View jingling stats, moves, traits, and evolution for Roco Kingdom: World.",
     canonicalPath: id ? `/dex/monsters/${id}` : "/dex",
   });
 
@@ -238,7 +238,7 @@ export default function MonsterDetailPage() {
               <Link
                 to={`/dex/monsters/${prevMonsterId}?${forwardQuery}`}
                 className="absolute left-2 top-1/2 -translate-y-1/2 inline-flex items-center justify-center w-10 h-10 rounded-full bg-white border border-zinc-300 shadow-md hover:bg-zinc-50 hover:border-zinc-400 hover:shadow-lg transition-all duration-200 text-zinc-600 hover:text-zinc-900"
-                aria-label="Previous monster"
+                aria-label="Previous jingling"
               >
                 <span className="text-3xl leading-none -translate-y-[3px]">‹</span>
               </Link>
@@ -256,7 +256,7 @@ export default function MonsterDetailPage() {
               <Link
                 to={`/dex/monsters/${nextMonsterId}?${forwardQuery}`}
                 className="absolute right-2 top-1/2 -translate-y-1/2 inline-flex items-center justify-center w-10 h-10 rounded-full bg-white border border-zinc-300 shadow-md hover:bg-zinc-50 hover:border-zinc-400 hover:shadow-lg transition-all duration-200 text-zinc-600 hover:text-zinc-900"
-                aria-label="Next monster"
+                aria-label="Next jingling"
               >
                 <span className="text-3xl leading-none -translate-y-[3px]">›</span>
               </Link>

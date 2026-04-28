@@ -3383,7 +3383,7 @@ def get_monster_detail(monster_id: int, db: Session = Depends(get_db)):
         joinedload(models.Monster.legacy_moves)
     ).filter(models.Monster.id == monster_id).first()
     if not monster:
-        raise HTTPException(status_code=404, detail="Monster not found")
+        raise HTTPException(status_code=404, detail="Jingling not found")
 
     # Build evolution tree
     evolution_tree = build_evolution_tree(monster_id, db)
@@ -3962,7 +3962,7 @@ async def _perform_team_analysis(
     # Validate all monsters were found
     missing_monsters = monster_ids_to_load - set(monster_db_map.keys())
     if missing_monsters:
-        raise HTTPException(status_code=400, detail=f"Monster IDs not found: {sorted(missing_monsters)}")
+        raise HTTPException(status_code=400, detail=f"Jingling IDs not found: {sorted(missing_monsters)}")
 
     logger.debug("Loading moves...")
     move_ids_to_load = set()

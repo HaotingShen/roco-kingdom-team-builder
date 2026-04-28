@@ -84,7 +84,56 @@ Then upload `frontend/taptap-submission.zip` to TapTap tool management.
 | `frontend/src/features/teams/SavedTeamPage.tsx` | ConfirmDialog replacing `window.confirm()` |
 | `frontend/src/features/share/sharePayload.ts` | `VITE_ASSET_BASE_URL \|\| window.location.origin` for share URL base |
 | `frontend/src/features/share/ImportPage.tsx` | Same fix for QR code URL |
+| `frontend/src/components/Footer.tsx` | `VITE_HIDE_AUTH` hides QQ/WeChat/email contact row |
 | `frontend/src/i18n.tsx` | Added keys for ConfirmDialog, TapTap redirect messages |
+
+## Traffic Analytics
+
+Umami tracking script is included in `index.taptap.html` under the same `data-website-id`. TapTap traffic is distinguished by hostname `3rd-tool-h5-al.tapimg.com`.
+
+**Connect to Umami DB on EC2:**
+```bash
+UMAMI_URL=$(aws ssm get-parameter --name /rktb/prod/UMAMI_DATABASE_URL --with-decryption --query Parameter.Value --output text --region ap-southeast-1)
+UMAMI_CONN="$(echo $UMAMI_URL | sed 's|postgresql+psycopg2|postgresql|' | sed 's|&connection_limit=5||')"
+```
+
+**Daily pageviews + sessions from TapTap:**
+```bash
+psql "$UMAMI_CONN" -c "
+SELECT
+  DATE(created_at AT TIME ZONE 'Asia/Shanghai') AS date,
+  COUNT(*) AS pageviews,
+  COUNT(DISTINCT session_id) AS sessions
+FROM website_event
+WHERE hostname = '3rd-tool-h5-al.tapimg.com'
+GROUP BY 1
+ORDER BY 1 DESC;
+"
+```
+
+**Total unique visitors from TapTap:**
+```bash
+psql "$UMAMI_CONN" -c "
+SELECT COUNT(DISTINCT session_id) AS unique_visitors
+FROM website_event
+WHERE hostname = '3rd-tool-h5-al.tapimg.com';
+"
+```
+
+**All hostnames (sanity check):**
+```bash
+psql "$UMAMI_CONN" -c "
+SELECT hostname, COUNT(*) AS hits
+FROM website_event
+GROUP BY hostname ORDER BY hits DESC LIMIT 10;
+"
+```
+
+**Early traffic stats (TapTap activity period Apr 1 – May 12, 2026):**
+- Apr 22 (launch day, partial): 44 pageviews, 5 sessions
+- Apr 23: 318 pageviews, 176 sessions
+- Apr 24: 926 pageviews, 324 sessions
+- Total by Apr 24: ~501 unique visitors
 
 ## Known Issues
 
@@ -111,3 +160,4 @@ Then upload `frontend/taptap-submission.zip` to TapTap tool management.
 | 2026-04-21 | v3 | Loaded successfully. CSRF warnings on login (self-healing, not a bug) |
 | 2026-04-22 | v4 | `window.confirm/alert` replaced with React ConfirmDialog + toast. Awaiting review. |
 | 2026-04-22 | v5 | Rejected — 「含有【打赏】」and 「含有账号登录功能」. Added `VITE_HIDE_AUTH=true`: hides login UI, donate button, save buttons, teams tab. Anonymous-only UX with plain-text rkteambuilder.com mentions. |
+| 2026-04-23 | v6 | Rejected — 「不得出现任何形式的直接联系方式」. Hidden footer QQ/WeChat/email row with `VITE_HIDE_AUTH`. **Passed review — live on TapTap.** |

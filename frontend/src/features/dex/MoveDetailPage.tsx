@@ -1,10 +1,13 @@
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { useMemo } from "react";
 import { endpoints } from "@/lib/api";
 import { useI18n, pickName, pickDesc, pickFormName } from "@/i18n";
 import { useSeoMeta } from "@/hooks/useSeoMeta";
 import type { MoveOut, MonsterLiteOut, MoveLearnersOut, TypeOut } from "@/types";
 import { typeIconUrl, monsterImageFallbackChain, monsterPlaceholder, moveIconUrlFromCn, moveSubIconUrl } from "@/lib/images";
+import { QUERY_KEYS } from "@/lib/constants";
+import { byLegacyTypeOrder, DEFENDER_TYPE_NAMES } from "@/lib/typeEffectiveness";
 import RichDescription from "@/components/RichDescription";
 
 /* ---------- helpers ---------- */
@@ -207,6 +210,35 @@ export default function MoveDetailPage() {
     return normalizedCat;
   })();
 
+  const typesQ = useQuery<TypeOut[]>({
+    queryKey: QUERY_KEYS.TYPES,
+    queryFn: () => endpoints.types().then((r) => r.data as TypeOut[]),
+    staleTime: Infinity,
+    enabled: !isDef && !isSta && !!tp,
+  });
+
+  // For attack moves: which single-type defenders this move is effective/resisted against
+  const moveEffectiveness = useMemo(() => {
+    if (!tp || typesQ.data == null) return null;
+    const effective: string[] = [];
+    const resisted: string[] = [];
+    for (const T of typesQ.data) {
+      if (!DEFENDER_TYPE_NAMES.has(T.name)) continue;
+      if ((T.vulnerable_to ?? []).includes(tp.name)) effective.push(T.name);
+      else if ((T.resistant_to ?? []).includes(tp.name)) resisted.push(T.name);
+    }
+    return {
+      effective: effective.sort(byLegacyTypeOrder),
+      resisted: resisted.sort(byLegacyTypeOrder),
+    };
+  }, [tp?.name, typesQ.data]);
+
+  const typeMap = useMemo(() => {
+    const m = new Map<string, TypeOut>();
+    (typesQ.data ?? []).forEach((t) => m.set(t.name, t));
+    return m;
+  }, [typesQ.data]);
+
   const totalLearners = learners
     ? learners.move_pool.length + learners.move_stones.length + learners.legacy.length
     : null;
@@ -317,6 +349,65 @@ export default function MoveDetailPage() {
           </div>
         </div>
       ) : null}
+
+      {/* Type Effectiveness — attack moves only */}
+      {!isDef && !isSta && tp && (
+        <div className="rounded-lg border border-zinc-200 bg-white shadow-sm p-5">
+          <div className="text-base font-semibold text-zinc-800 mb-3">{t("dex.moveEffectiveness")}</div>
+          {typesQ.isLoading ? (
+            <div className="text-sm text-zinc-500">{t("common.loading")}</div>
+          ) : typesQ.isError ? (
+            <div className="text-sm text-rose-600">{t("analysis.coverageDataUnavailable")}</div>
+          ) : moveEffectiveness ? (
+            moveEffectiveness.effective.length === 0 && moveEffectiveness.resisted.length === 0 ? (
+              <div className="text-sm text-zinc-500">{t("analysis.noMatchupsHint")}</div>
+            ) : (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-6 gap-y-3">
+                {moveEffectiveness.effective.length > 0 && (
+                  <div className="space-y-1.5">
+                    <span className="inline-block text-sm font-semibold rounded-full border px-3 py-1 bg-emerald-50 text-emerald-700 border-emerald-200">
+                      {t("dex.attackEffective")}
+                    </span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {moveEffectiveness.effective.map((name) => {
+                        const defTp = typeMap.get(name);
+                        const displayName = defTp ? pickName(defTp as any, lang) : name;
+                        const icon = typeIconUrl(name, 30);
+                        return (
+                          <span key={name} className="inline-flex items-center gap-1 rounded-full bg-white border border-zinc-200 text-sm px-3 py-1 shadow-sm">
+                            {icon && <img src={icon} alt="" className="w-5 h-5 sm:w-[22px] sm:h-[22px]" loading="lazy" />}
+                            <span className="font-medium text-zinc-700">{displayName}</span>
+                          </span>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+                {moveEffectiveness.resisted.length > 0 && (
+                  <div className="space-y-1.5">
+                    <span className="inline-block text-sm font-semibold rounded-full border px-3 py-1 bg-red-50 text-red-700 border-red-200">
+                      {t("dex.attackResisted")}
+                    </span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {moveEffectiveness.resisted.map((name) => {
+                        const defTp = typeMap.get(name);
+                        const displayName = defTp ? pickName(defTp as any, lang) : name;
+                        const icon = typeIconUrl(name, 30);
+                        return (
+                          <span key={name} className="inline-flex items-center gap-1 rounded-full bg-white border border-zinc-200 text-sm px-3 py-1 shadow-sm">
+                            {icon && <img src={icon} alt="" className="w-5 h-5 sm:w-[22px] sm:h-[22px]" loading="lazy" />}
+                            <span className="font-medium text-zinc-700">{displayName}</span>
+                          </span>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )
+          ) : null}
+        </div>
+      )}
 
       {/* Learners section */}
       <div className="space-y-2">
