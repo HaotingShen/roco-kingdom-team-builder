@@ -223,7 +223,11 @@ backend/scripts/maintenance/apply_wiki_move_updates.py
 backend/scripts/maintenance/csv_to_statuses.py
 frontend/scripts/download-move-images.mjs
 
+# TapTap build output (separate from dist/ to avoid accidental S3 deployment)
+dist-taptap/
+
 # Generated reports and temporary output files
+team_popularity_report*.md
 backend/scripts/maintenance/compare_moves_report.json
 backend/data/*.txt
 backend/data/*_backup_*.json

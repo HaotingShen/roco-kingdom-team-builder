@@ -347,7 +347,7 @@ export default function AnalysisResults({
       )}
 
       {/* Save Analysis Button - below header */}
-      {onSaveAnalysis && (
+      {!import.meta.env.VITE_HIDE_AUTH && onSaveAnalysis && (
         <div className="flex justify-center -mt-2 mb-4">
           {!teamId || !isLoggedIn ? (
             <button

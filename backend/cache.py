@@ -241,6 +241,10 @@ class RedisCache:
             blocking_timeout=self.lock_blocking_timeout,
         )
 
+        # Tracks whether compute_fn itself raised, so the outer except can
+        # distinguish LLM errors (propagate) from Redis/lock errors (retry).
+        _compute_fn_raised = False
+
         try:
             # Try to acquire lock
             acquired = await lock.acquire(blocking=True)
@@ -250,7 +254,11 @@ class RedisCache:
                 logger.warning(f"Lock timeout for {key[:50]}, computing anyway")
                 if on_compute:
                     on_compute()
-                return await compute_fn()
+                try:
+                    return await compute_fn()
+                except Exception:
+                    _compute_fn_raised = True
+                    raise
 
             # Double-check cache after acquiring lock
             # (another request might have filled it while we waited)
@@ -289,6 +297,11 @@ class RedisCache:
                 await self.set(key, result, ttl)
                 logger.info(f"Cached result for: {key[:50]}...")
                 return result
+            except Exception:
+                # Mark that the failure came from compute_fn, not from
+                # Redis/lock machinery, so the outer except can distinguish.
+                _compute_fn_raised = True
+                raise
             finally:
                 refresh_task.cancel()
                 try:
@@ -309,8 +322,12 @@ class RedisCache:
             return result
 
         except Exception as e:
+            if _compute_fn_raised:
+                # LLM/compute error — propagate directly without retrying.
+                # The endpoint layer handles user-facing error responses and quota.
+                raise
+            # Redis/lock error — retry compute once without the lock.
             logger.error(f"Error in get_or_compute for {key[:50]}: {e}")
-            # Retry compute and cache the result if retry succeeds
             if on_compute:
                 on_compute()
             result = await compute_fn()
