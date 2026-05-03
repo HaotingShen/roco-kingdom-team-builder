@@ -2,7 +2,7 @@ import { useRef, useEffect, useCallback } from 'react';
 import { QRCodeCanvas } from 'qrcode.react';
 import type { ShareDecodeResponse, PersonalityOut } from '@/types';
 import { pickName, pickFormName, useI18n } from '@/i18n';
-import { monsterImageFallbackChain, typeIconUrl, magicItemImageUrl, moveIconUrl } from '@/lib/images';
+import { monsterImageFallbackChain, typeIconUrl, magicItemImageUrl, moveIconUrl, logoUrl } from '@/lib/images';
 
 // ─── Layout constants ─────────────────────────────────────────────────────────
 
@@ -350,7 +350,7 @@ async function loadAssets(data: ShareDecodeResponse): Promise<Assets> {
       loadImg([url]).then(img => ({ url, img }))
     )),
     loadImg([magicItemImageUrl(data.magic_item) ?? '']),
-    loadImg(['/logo.png']),
+    loadImg([logoUrl]),
   ]);
 
   const typeIcons: Record<string, HTMLImageElement | null> = {};

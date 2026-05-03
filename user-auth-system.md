@@ -820,7 +820,7 @@ ACCESS_TOKEN_EXPIRE_MINUTES=15
 REFRESH_TOKEN_EXPIRE_DAYS=7
 
 # Cookie settings
-COOKIE_SAMESITE=lax              # lax, strict, or none
+COOKIE_SAMESITE=none             # none required for TapTap CDN cross-origin access (CSRF token compensates)
 COOKIE_SECURE=true               # Set false for localhost
 
 # Rate limiting

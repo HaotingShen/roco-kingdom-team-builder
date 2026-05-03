@@ -2,8 +2,8 @@
 
 **Domain:** `rkteambuilder.com` (already purchased)
 **Region:** Singapore (`ap-southeast-1`)
-**EC2:** t3.small (2 vCPU, 2 GB RAM)
-**Email:** AWS SES
+**EC2:** c6a.xlarge (4 vCPU, 8 GB RAM) — upgraded from t3.small on 2026-03-20
+**Email:** Resend (SES production access was denied)
 **Routing:** Path-based (single domain via CloudFront)
 
 ---
@@ -55,7 +55,7 @@ Users → https://rkteambuilder.com
             │                          │
             ▼                          ▼
   ┌─────────────────────┐    ┌───────────────┐
-  │  EC2 t3.small       │    │   S3 Bucket   │
+  │  EC2 c6a.xlarge     │    │   S3 Bucket   │
   │  ap-southeast-1     │    │  (React SPA)  │
   │                     │    │ rktb-frontend │
   │  ┌───────────────┐  │    └───────────────┘
@@ -75,6 +75,10 @@ Users → https://rkteambuilder.com
   │  │ ┌───────────┐ │  │
   │  │ │ Redis 7   │ │  │
   │  │ │ :6379     │ │  │
+  │  │ └───────────┘ │  │
+  │  │ ┌───────────┐ │  │
+  │  │ │ Umami     │ │  │
+  │  │ │ :3000     │ │  │
   │  │ └───────────┘ │  │
   │  └───────────────┘  │
   └──────────┬──────────┘
@@ -96,13 +100,13 @@ Users → https://rkteambuilder.com
 
 All API calls use the `/api/` prefix so CloudFront can distinguish them from SPA navigation (which uses the same path names but without the prefix). Nginx strips `/api` before FastAPI sees the request, so FastAPI routes remain unchanged.
 
-This means cookies are on the same domain — no cross-domain issues, no COOKIE_DOMAIN config needed, SameSite=Lax works.
+This means cookies are on the same domain — no cross-domain issues, no COOKIE_DOMAIN config needed. `COOKIE_SAMESITE=none` is set in production to support cross-origin access from TapTap's CDN webview; CSRF token validation compensates for the relaxed SameSite policy.
 
 ### Cost Estimate ($200 free credit + free tier)
 
 | Service | Free Tier (12 mo) | After Free Tier |
 |---------|-------------------|-----------------|
-| EC2 t3.small | Not free tier eligible | ~$15/mo |
+| EC2 c6a.xlarge | Not free tier eligible | ~$60/mo |
 | RDS db.t3.micro | 750 hrs/mo FREE | ~$15/mo |
 | S3 (5 GB) | FREE | ~$0.12/mo |
 | CloudFront (1 TB) | FREE | ~$85/TB |
@@ -136,7 +140,7 @@ With your $200 credit, that covers roughly the first 8-12 months (depending on w
   │  │  Routes to Internet Gateway       │  │ Private Subnet  (1b)  │  │
   │  │                                   │  │ No internet route     │  │
   │  │  ┌─────────────────────────────┐  │  │                       │  │
-  │  │  │  EC2  t3.small  (1.8)       │  │  │  ┌─────────────────┐  │  │
+  │  │  │  EC2  c6a.xlarge  (1.8)     │  │  │  ┌─────────────────┐  │  │
   │  │  │  13.228.63.192 (Elastic IP) │  │  │  │ RDS PostgreSQL  │  │  │
   │  │  │  IAM role: rktb-ec2-role    │  │  │  │ db.t3.micro(1.6)│  │  │
   │  │  │  SG: rktb-ec2-sg            │  │  │  │ SG: rktb-rds-sg │  │  │
@@ -669,7 +673,7 @@ echo "AMI: $AMI_ID"
 # Launch instance
 INSTANCE_ID=$(aws ec2 run-instances \
   --image-id $AMI_ID \
-  --instance-type t3.small \
+  --instance-type c6a.xlarge \
   --key-name rktb-key \
   --security-group-ids $EC2_SG \
   --subnet-id $PUB_SUBNET \
@@ -1027,9 +1031,9 @@ services:
       - LLM_PROVIDER=deepseek
       - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY}
       - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
-      # Cookie settings for path-based routing (same domain for frontend + API)
-      # COOKIE_DOMAIN not set = defaults to exact origin (rkteambuilder.com), correct for same-site
-      - COOKIE_SAMESITE=lax
+      # Cookie settings — none required for TapTap CDN cross-origin access (CSRF token compensates)
+      # COOKIE_DOMAIN not set = defaults to exact origin (rkteambuilder.com)
+      - COOKIE_SAMESITE=none
       - COOKIE_SECURE=true
       - FRONTEND_URL=${FRONTEND_URL}  # CRITICAL: Used for email links, must be public URL
       - ALLOWED_ORIGINS=${FRONTEND_URL}
@@ -1117,7 +1121,7 @@ volumes:
   What Phase 3 builds — software stack inside EC2:
 
   ┌────────────────────────────────────────────────────────────┐
-  │  EC2 t3.small  (13.228.63.192)                             │
+  │  EC2 c6a.xlarge  (13.228.63.192)                           │
   │                                                            │
   │  ┌─────────────────────────────────────────────────────┐   │
   │  │ Nginx  (port 80)                          [3.2]     │   │

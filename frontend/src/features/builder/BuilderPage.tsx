@@ -457,7 +457,14 @@ export default function BuilderPage() {
       setIsAnalyzing(true);
     },
     onError: (err) => {
-      showError(extractErrorMessage(err));
+      if (import.meta.env.VITE_HIDE_AUTH && (err as any)?.response?.status === 429) {
+        const msg = lang === "zh"
+          ? "每位用户每天只能分析一次。如需更多分析次数，请访问 rkteambuilder.com"
+          : "Each user can analyze once per day. For more analyses, visit rkteambuilder.com";
+        showError(msg);
+      } else {
+        showError(extractErrorMessage(err));
+      }
       setIsAnalyzing(false);
     },
     onSuccess: (data) => {
@@ -750,8 +757,8 @@ export default function BuilderPage() {
       onDragEnd={handleDragEnd}
     >
       <div className="space-y-4">
-        {/* Anonymous user warning banner */}
-        {!user && hasWorkInProgress && (
+        {/* Anonymous user warning banner — hidden on TapTap (users can't save anyway) */}
+        {!import.meta.env.VITE_HIDE_AUTH && !user && hasWorkInProgress && (
           <div className="rounded-lg border-2 border-amber-300 bg-gradient-to-r from-amber-50 to-amber-100 p-4 flex items-center gap-3 shadow-sm">
             <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-amber-500 text-white text-sm font-bold shrink-0">
               !
@@ -988,7 +995,7 @@ export default function BuilderPage() {
             <div className="hidden sm:block flex-1" />
 
             {/* Action buttons */}
-            <button
+            {!import.meta.env.VITE_HIDE_AUTH && <button
               onClick={onSaveNew}
               disabled={createTeam.isPending}
               data-testid="create-team-btn"
@@ -1012,9 +1019,9 @@ export default function BuilderPage() {
               ) : (
                 t("builder.saveTeam") ?? "Save"
               )}
-            </button>
+            </button>}
 
-            {teamId && !isFeaturedTeam ? (
+            {!import.meta.env.VITE_HIDE_AUTH && teamId && !isFeaturedTeam ? (
               <button
                 onClick={onUpdateExisting}
                 disabled={updateTeam.isPending}
@@ -1187,8 +1194,8 @@ export default function BuilderPage() {
           />
         )}
 
-        {/* Mobile Ad — shown only when sidebar is hidden (< lg) */}
-        {!mobileAdDismissed && (
+        {/* Mobile Ad — shown only when sidebar is hidden (< lg), hidden in TapTap build */}
+        {!mobileAdDismissed && !import.meta.env.VITE_HIDE_ADS && (
           <div className="relative lg:hidden">
             <button
               onClick={() => setMobileAdDismissed(true)}
@@ -1198,7 +1205,7 @@ export default function BuilderPage() {
               ×
             </button>
             <img
-              src="/ad-images/mobile.jpg"
+              src={`${(import.meta.env.VITE_ASSET_BASE_URL ?? "").replace(/\/$/, "")}/ad-images/mobile.jpg`}
               alt="广告"
               className="w-full rounded"
               style={{ filter: "saturate(0.8)" }}
