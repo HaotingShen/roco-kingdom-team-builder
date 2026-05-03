@@ -253,7 +253,7 @@
     "zh_name": "虫结阵",
     "usage": "defense_only",
     "affect": "self",
-    "dmg_reduction_pct": 0.6
+    "dmg_reduction_pct": 0.8
   },
   {
     "move": "Cover",

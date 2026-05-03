@@ -4685,7 +4685,7 @@
     "category": "Defense",
     "energy_cost": 2,
     "power": null,
-    "description": "Damage taken -60%. Counter Attack: gains 1 random Devotion enhancement.",
+    "description": "Damage taken -80%. Counter Attack: gains 1 random Devotion enhancement.",
     "has_counter": true,
     "localized": {
       "zh": {
