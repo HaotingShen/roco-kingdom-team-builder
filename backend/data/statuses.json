@@ -1,9 +1,378 @@
 [
   {
+    "move": "Counter Guard",
+    "status_name": "Counter Guard",
+    "zh_name": "防反",
+    "usage": "defense_only",
+    "affect": "self",
+    "dmg_reduction_pct": 0.6
+  },
+  {
+    "move": "Defend",
+    "status_name": "Defend",
+    "zh_name": "防御",
+    "usage": "defense_only",
+    "affect": "self",
+    "dmg_reduction_pct": 0.7
+  },
+  {
+    "move": "Pain Seeker",
+    "status_name": "Pain Seeker",
+    "zh_name": "嗜痛",
+    "usage": "defense_only",
+    "affect": "self",
+    "dmg_reduction_pct": 0.8
+  },
+  {
+    "move": "Fearless Heart",
+    "status_name": "Fearless Heart",
+    "zh_name": "无畏之心",
+    "usage": "defense_only",
+    "affect": "self",
+    "dmg_reduction_pct": 1.0
+  },
+  {
+    "move": "Scare Away",
+    "status_name": "Scare Away",
+    "zh_name": "吓退",
+    "usage": "defense_only",
+    "affect": "self",
+    "dmg_reduction_pct": 0.6
+  },
+  {
+    "move": "Vitality",
+    "status_name": "Vitality",
+    "zh_name": "血气",
+    "usage": "defense_only",
+    "affect": "self",
+    "dmg_reduction_pct": 0.6
+  },
+  {
+    "move": "Prevention Protocol",
+    "status_name": "Prevention Protocol",
+    "zh_name": "有效预防",
+    "usage": "defense_only",
+    "affect": "self",
+    "dmg_reduction_pct": 0.5
+  },
+  {
+    "move": "Waxy Membrane",
+    "status_name": "Waxy Membrane",
+    "zh_name": "蜡质膜",
+    "usage": "defense_only",
+    "affect": "self",
+    "dmg_reduction_pct": 0.8
+  },
+  {
+    "move": "Enzyme Control",
+    "status_name": "Enzyme Control",
+    "zh_name": "酶浓度调整",
+    "usage": "defense_only",
+    "affect": "self",
+    "dmg_reduction_pct": 0.8
+  },
+  {
+    "move": "Fibrosis",
+    "status_name": "Fibrosis",
+    "zh_name": "纤维化",
+    "usage": "defense_only",
+    "affect": "self",
+    "dmg_reduction_pct": 0.8
+  },
+  {
+    "move": "Quenching",
+    "status_name": "Quenching",
+    "zh_name": "淬火",
+    "usage": "defense_only",
+    "affect": "self",
+    "dmg_reduction_pct": 0.8
+  },
+  {
+    "move": "Flame Shield",
+    "status_name": "Flame Shield",
+    "zh_name": "火焰护盾",
+    "usage": "defense_only",
+    "affect": "self",
+    "dmg_reduction_pct": 0.7
+  },
+  {
+    "move": "Tide",
+    "status_name": "Tide",
+    "zh_name": "潮汐",
+    "usage": "defense_only",
+    "affect": "self",
+    "dmg_reduction_pct": 0.6
+  },
+  {
+    "move": "Bubble Mirage",
+    "status_name": "Bubble Mirage",
+    "zh_name": "泡沫幻影",
+    "usage": "defense_only",
+    "affect": "self",
+    "dmg_reduction_pct": 0.8
+  },
+  {
+    "move": "Aqua Ring",
+    "status_name": "Aqua Ring",
+    "zh_name": "水环",
+    "usage": "defense_only",
+    "affect": "self",
+    "dmg_reduction_pct": 0.6
+  },
+  {
+    "move": "Bubble Shield",
+    "status_name": "Bubble Shield",
+    "zh_name": "水泡盾",
+    "usage": "defense_only",
+    "affect": "self",
+    "dmg_reduction_pct": 0.8
+  },
+  {
+    "move": "Mirror Reflection",
+    "status_name": "Mirror Reflection",
+    "zh_name": "镜像反射",
+    "usage": "defense_only",
+    "affect": "self",
+    "dmg_reduction_pct": 0.7
+  },
+  {
+    "move": "Barrier",
+    "status_name": "Barrier",
+    "zh_name": "壁垒",
+    "usage": "defense_only",
+    "affect": "self",
+    "dmg_reduction_pct": 0.9
+  },
+  {
+    "move": "Mountain Stance",
+    "status_name": "Mountain Stance",
+    "zh_name": "不动如山",
+    "usage": "defense_only",
+    "affect": "self",
+    "dmg_reduction_pct": 0.9
+  },
+  {
+    "move": "Spiked Shield",
+    "status_name": "Spiked Shield",
+    "zh_name": "刺盾",
+    "usage": "defense_only",
+    "affect": "self",
+    "dmg_reduction_pct": 0.7
+  },
+  {
+    "move": "Dig",
+    "status_name": "Dig",
+    "zh_name": "遁地",
+    "usage": "defense_only",
+    "affect": "self",
+    "dmg_reduction_pct": 0.5
+  },
+  {
+    "move": "Harden",
+    "status_name": "Harden",
+    "zh_name": "硬化",
+    "usage": "defense_only",
+    "affect": "self",
+    "dmg_reduction_pct": 0.9
+  },
+  {
+    "move": "Muddy Skin",
+    "status_name": "Muddy Skin",
+    "zh_name": "淤泥表皮",
+    "usage": "defense_only",
+    "affect": "self",
+    "dmg_reduction_pct": 0.8
+  },
+  {
+    "move": "Ice Wall",
+    "status_name": "Ice Wall",
+    "zh_name": "冰墙",
+    "usage": "defense_only",
+    "affect": "self",
+    "dmg_reduction_pct": 0.8
+  },
+  {
+    "move": "Frozen Wilderness",
+    "status_name": "Frozen Wilderness",
+    "zh_name": "冰天雪地",
+    "usage": "defense_only",
+    "affect": "self",
+    "dmg_reduction_pct": 0.8
+  },
+  {
+    "move": "Snow Substitute",
+    "status_name": "Snow Substitute",
+    "zh_name": "雪替身",
+    "usage": "defense_only",
+    "affect": "self",
+    "dmg_reduction_pct": 0.7
+  },
+  {
+    "move": "Ice Eggshell",
+    "status_name": "Ice Eggshell",
+    "zh_name": "冰蛋壳",
+    "usage": "defense_only",
+    "affect": "self",
+    "dmg_reduction_pct": 0.6
+  },
+  {
+    "move": "Dragon Blood",
+    "status_name": "Dragon Blood",
+    "zh_name": "龙血",
+    "usage": "defense_only",
+    "affect": "self",
+    "dmg_reduction_pct": 0.7
+  },
+  {
+    "move": "Electromagnetic Deflection",
+    "status_name": "Electromagnetic Deflection",
+    "zh_name": "电磁偏转",
+    "usage": "defense_only",
+    "affect": "self",
+    "dmg_reduction_pct": 0.7
+  },
+  {
+    "move": "Concentration",
+    "status_name": "Concentration",
+    "zh_name": "集中",
+    "usage": "defense_only",
+    "affect": "self",
+    "dmg_reduction_pct": 0.8
+  },
+  {
+    "move": "Untouchable",
+    "status_name": "Untouchable",
+    "zh_name": "不可接触",
+    "usage": "defense_only",
+    "affect": "self",
+    "dmg_reduction_pct": 0.5
+  },
+  {
+    "move": "Bug Formation",
+    "status_name": "Bug Formation",
+    "zh_name": "虫结阵",
+    "usage": "defense_only",
+    "affect": "self",
+    "dmg_reduction_pct": 0.6
+  },
+  {
+    "move": "Cover",
+    "status_name": "Cover",
+    "zh_name": "掩护",
+    "usage": "defense_only",
+    "affect": "self",
+    "dmg_reduction_pct": 0.7
+  },
+  {
+    "move": "Defensive Counter",
+    "status_name": "Defensive Counter",
+    "zh_name": "防御反击",
+    "usage": "defense_only",
+    "affect": "self",
+    "dmg_reduction_pct": 0.8
+  },
+  {
+    "move": "Tingqiao",
+    "status_name": "Tingqiao",
+    "zh_name": "听桥",
+    "usage": "defense_only",
+    "affect": "self",
+    "dmg_reduction_pct": 0.6
+  },
+  {
+    "move": "Wind Wall",
+    "status_name": "Wind Wall",
+    "zh_name": "风墙",
+    "usage": "defense_only",
+    "affect": "self",
+    "dmg_reduction_pct": 0.5
+  },
+  {
+    "move": "Wing Shelter",
+    "status_name": "Wing Shelter",
+    "zh_name": "羽翼庇护",
+    "usage": "defense_only",
+    "affect": "self",
+    "dmg_reduction_pct": 0.7
+  },
+  {
+    "move": "Poisoned Praise",
+    "status_name": "Poisoned Praise",
+    "zh_name": "捧杀",
+    "usage": "defense_only",
+    "affect": "self",
+    "dmg_reduction_pct": 0.9
+  },
+  {
+    "move": "Revenge",
+    "status_name": "Revenge",
+    "zh_name": "报复",
+    "usage": "defense_only",
+    "affect": "self",
+    "dmg_reduction_pct": 0.7
+  },
+  {
+    "move": "Phantomize",
+    "status_name": "Phantomize",
+    "zh_name": "虚化",
+    "usage": "defense_only",
+    "affect": "self",
+    "dmg_reduction_pct": 0.8
+  },
+  {
+    "move": "Equivalent Exchange",
+    "status_name": "Equivalent Exchange",
+    "zh_name": "等价交换",
+    "usage": "defense_only",
+    "affect": "self",
+    "dmg_reduction_pct": 0.9
+  },
+  {
+    "move": "Fake Bankruptcy",
+    "status_name": "Fake Bankruptcy",
+    "zh_name": "虚假破产",
+    "usage": "defense_only",
+    "affect": "self",
+    "dmg_reduction_pct": 0.8
+  },
+  {
+    "move": "Conserve Energy",
+    "status_name": "Conserve Energy",
+    "zh_name": "能量守恒",
+    "usage": "defense_only",
+    "affect": "self",
+    "dmg_reduction_pct": 0.8
+  },
+  {
+    "move": "Meditation",
+    "status_name": "Meditation",
+    "zh_name": "冥想",
+    "usage": "defense_only",
+    "affect": "self",
+    "dmg_reduction_pct": 0.8
+  },
+  {
+    "move": "Encourage",
+    "status_name": "Encourage",
+    "zh_name": "鼓劲",
+    "usage": "attack_only",
+    "affect": "self",
+    "mag_def_boost": 170
+  },
+  {
+    "move": "Fortify",
+    "status_name": "Fortify",
+    "zh_name": "加固",
+    "usage": "attack_only",
+    "affect": "self",
+    "phy_def_boost": 140
+  },
+  {
     "move": "Power Boost",
     "status_name": "Power Boost",
     "zh_name": "力量增效",
     "usage": "attack_only",
+    "affect": "self",
     "phy_atk_boost": 100
   },
   {
@@ -11,6 +380,7 @@
     "status_name": "Magic Boost",
     "zh_name": "魔法增效",
     "usage": "attack_only",
+    "affect": "self",
     "mag_atk_boost": 70
   },
   {
@@ -22,10 +392,242 @@
     "phy_atk_boost": -130
   },
   {
-    "move": "Defend",
-    "status_name": "Defend",
-    "zh_name": "防御",
-    "usage": "defense_only",
-    "dmg_reduction_pct": 0.7
+    "move": "Sharp Eyes",
+    "status_name": "Sharp Eyes",
+    "zh_name": "锐利眼神",
+    "usage": "attack_only",
+    "affect": "opponent",
+    "phy_def_boost": -120,
+    "mag_def_boost": -120
+  },
+  {
+    "move": "Triple Break",
+    "status_name": "Triple Break",
+    "zh_name": "三连破",
+    "usage": "attack_only",
+    "affect": "self",
+    "phy_atk_boost": 30
+  },
+  {
+    "move": "Abundance",
+    "status_name": "Abundance",
+    "zh_name": "丰饶",
+    "usage": "attack_only",
+    "affect": "self",
+    "phy_atk_boost": 140,
+    "mag_atk_boost": 140
+  },
+  {
+    "move": "Flower Cannon",
+    "status_name": "Flower Cannon",
+    "zh_name": "花炮",
+    "usage": "attack_only",
+    "affect": "self",
+    "mag_atk_boost": 60
+  },
+  {
+    "move": "Bloom",
+    "status_name": "Bloom",
+    "zh_name": "盛开",
+    "usage": "attack_only",
+    "affect": "self",
+    "flat_power_boost": 30
+  },
+  {
+    "move": "Oxygen Flow",
+    "status_name": "Oxygen Flow",
+    "zh_name": "氧输送",
+    "usage": "attack_only",
+    "affect": "self",
+    "mag_atk_boost": 70
+  },
+  {
+    "move": "Rage",
+    "status_name": "Rage",
+    "zh_name": "怒火",
+    "usage": "attack_only",
+    "affect": "self",
+    "phy_atk_boost": 120,
+    "mag_atk_boost": 120,
+    "phy_def_boost": -40,
+    "mag_def_boost": -40
+  },
+  {
+    "move": "Warm-Up",
+    "status_name": "Warm-Up",
+    "zh_name": "热身",
+    "usage": "attack_only",
+    "affect": "self",
+    "pct_power_boost": 100
+  },
+  {
+    "move": "Hydrate",
+    "status_name": "Hydrate",
+    "zh_name": "润泽",
+    "usage": "attack_only",
+    "affect": "self",
+    "mag_atk_boost": 190
+  },
+  {
+    "move": "Mud Armor",
+    "status_name": "Mud Armor",
+    "zh_name": "泥浆铠甲",
+    "usage": "attack_only",
+    "affect": "self",
+    "phy_atk_boost": 60,
+    "phy_def_boost": 60
+  },
+  {
+    "move": "Stone Skin",
+    "status_name": "Stone Skin",
+    "zh_name": "石肤术",
+    "usage": "attack_only",
+    "affect": "self",
+    "phy_def_boost": 160,
+    "mag_def_boost": -60
+  },
+  {
+    "move": "Equilibrium",
+    "status_name": "Equilibrium",
+    "zh_name": "钧势",
+    "usage": "attack_only",
+    "affect": "self",
+    "phy_def_boost": 140
+  },
+  {
+    "move": "Frost",
+    "status_name": "Frost",
+    "zh_name": "霜冻",
+    "usage": "attack_only",
+    "affect": "opponent",
+    "mag_def_boost": -100
+  },
+  {
+    "move": "Dragon Dance",
+    "status_name": "Dragon Dance",
+    "zh_name": "龙吟",
+    "usage": "attack_only",
+    "affect": "self",
+    "phy_atk_boost": 100,
+    "mag_atk_boost": 100
+  },
+  {
+    "move": "Corruption",
+    "status_name": "Corruption",
+    "zh_name": "腐化",
+    "usage": "attack_only",
+    "affect": "opponent",
+    "phy_atk_boost": -30,
+    "mag_atk_boost": -30
+  },
+  {
+    "move": "Fight Poison with Poison",
+    "status_name": "Fight Poison with Poison",
+    "zh_name": "以毒攻毒",
+    "usage": "attack_only",
+    "affect": "self",
+    "mag_atk_boost": 30
+  },
+  {
+    "move": "Stockpile",
+    "status_name": "Stockpile",
+    "zh_name": "贮藏",
+    "usage": "attack_only",
+    "affect": "self",
+    "phy_atk_boost": 50,
+    "mag_atk_boost": 50
+  },
+  {
+    "move": "Transform Power",
+    "status_name": "Transform Power",
+    "zh_name": "化劲",
+    "usage": "attack_only",
+    "affect": "self",
+    "flat_power_boost": 40
+  },
+  {
+    "move": "Armor Break",
+    "status_name": "Armor Break",
+    "zh_name": "破防",
+    "usage": "attack_only",
+    "affect": "opponent",
+    "phy_def_boost": -130,
+    "mag_def_boost": -130
+  },
+  {
+    "move": "Weak Point",
+    "status_name": "Weak Point",
+    "zh_name": "破绽",
+    "usage": "attack_only",
+    "affect": "opponent",
+    "phy_def_boost": -70,
+    "mag_def_boost": -70
+  },
+  {
+    "move": "Dantian Focus",
+    "status_name": "Dantian Focus",
+    "zh_name": "气沉丹田",
+    "usage": "attack_only",
+    "affect": "self",
+    "phy_atk_boost": 130
+  },
+  {
+    "move": "Breath Focus",
+    "status_name": "Breath Focus",
+    "zh_name": "提气",
+    "usage": "attack_only",
+    "affect": "self",
+    "flat_power_boost": 40
+  },
+  {
+    "move": "Preparation Stance",
+    "status_name": "Preparation Stance",
+    "zh_name": "预备势",
+    "usage": "attack_only",
+    "affect": "self",
+    "phy_atk_boost": 80
+  },
+  {
+    "move": "Feather Acceleration",
+    "status_name": "Feather Acceleration",
+    "zh_name": "羽化加速",
+    "usage": "attack_only",
+    "affect": "self",
+    "flat_power_boost": 20
+  },
+  {
+    "move": "Taunt",
+    "status_name": "Taunt",
+    "zh_name": "嘲弄",
+    "usage": "attack_only",
+    "affect": "self",
+    "mag_atk_boost": 90
+  },
+  {
+    "move": "Underhanded Dealings",
+    "status_name": "Underhanded Dealings",
+    "zh_name": "暗箱操作",
+    "usage": "attack_only",
+    "affect": "self",
+    "phy_atk_boost": -100,
+    "mag_atk_boost": -100,
+    "phy_def_boost": -100,
+    "mag_def_boost": -100
+  },
+  {
+    "move": "Power Devour",
+    "status_name": "Power Devour",
+    "zh_name": "力量吞噬",
+    "usage": "attack_only",
+    "affect": "self",
+    "flat_power_boost": -20
+  },
+  {
+    "move": "Gear Transfer",
+    "status_name": "Gear Transfer",
+    "zh_name": "啮合传递",
+    "usage": "attack_only",
+    "affect": "self",
+    "phy_atk_boost": 60
   }
 ]

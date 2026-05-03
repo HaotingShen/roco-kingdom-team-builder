@@ -1139,10 +1139,10 @@ function GameTermsTab() {
 export default function DexPage() {
   const { t, lang } = useI18n();
   useSeoMeta({
-    title: lang === "zh" ? "精灵图鉴 | 洛克王国: 世界" : "Monster Dex | Roco Kingdom: World",
+    title: lang === "zh" ? "精灵图鉴 | 洛克王国: 世界" : "Jingling Dex | Roco Kingdom: World",
     description: lang === "zh"
       ? "浏览完整的洛克王国: 世界精灵图鉴，按属性、数值和招式搜索。"
-      : "Browse the complete Roco Kingdom: World monster dex. Search by type, stats, and moves.",
+      : "Browse the complete Roco Kingdom: World jingling dex. Search by type, stats, and moves.",
     canonicalPath: "/dex",
   });
   const [sp, setSp] = useSearchParams();

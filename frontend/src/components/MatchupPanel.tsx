@@ -74,14 +74,20 @@ export default function MatchupPanel({
 
   // ----- Status toggle options -----
   // "Original" (no status active) plus one option per status that any of
-  // the defender's moves grants. We don't pre-filter to DEFENSE-category
-  // moves: per the V1 model, attack and status moves can also grant
-  // self-statuses, and the toggle should expose all of them. Future
-  // refinement (filter by self-vs-target) lives elsewhere.
-  type ToggleOption = { id: string; label: string; status: StatusOut | null };
+  // the defender's moves grants. Statuses with affect="opponent" debuff the
+  // attacker (e.g. Roar lowers attacker Phy Atk); affect="self" (default)
+  // buffs the defender. Both are surfaced in the toggle so the user can
+  // simulate "defender just used Roar" as well as "defender just used Defend".
+  type ToggleOption = {
+    id: string;
+    label: string;
+    status: StatusOut | null;
+    /** True when the status targets the attacker (affect="opponent"). */
+    targetsAttacker: boolean;
+  };
   const statusOptions = useMemo<ToggleOption[]>(() => {
     const options: ToggleOption[] = [
-      { id: "none", label: t("analysis.matchupOriginal"), status: null },
+      { id: "none", label: t("analysis.matchupOriginal"), status: null, targetsAttacker: false },
     ];
     const seen = new Set<number>();
     for (const move of defenderMoves) {
@@ -92,13 +98,40 @@ export default function MatchupPanel({
           id: String(status.id),
           label: pickName(status, lang) || status.name,
           status,
+          targetsAttacker: status.affect === "opponent",
         });
       }
     }
     return options;
   }, [defenderMoves, lang, t]);
 
+  // ----- Attacker status toggle options -----
+  // Self-buff statuses on the attacker's own moves (affect="self" or unset).
+  // affect="opponent" statuses on the attacker's moves would target the
+  // defender — not yet modelled in the UI (rare case, skip for now).
+  type AttackerToggleOption = { id: string; label: string; status: StatusOut | null };
+  const attackerStatusOptions = useMemo<AttackerToggleOption[]>(() => {
+    const options: AttackerToggleOption[] = [
+      { id: "none", label: t("analysis.matchupOriginal"), status: null },
+    ];
+    const seen = new Set<number>();
+    for (const move of attackerMoves) {
+      for (const status of move.statuses ?? []) {
+        if (seen.has(status.id)) continue;
+        if (status.affect === "opponent") continue;
+        seen.add(status.id);
+        options.push({
+          id: String(status.id),
+          label: pickName(status, lang) || status.name,
+          status,
+        });
+      }
+    }
+    return options;
+  }, [attackerMoves, lang, t]);
+
   const [activeStatusId, setActiveStatusId] = useState<string>("none");
+  const [activeAtkStatusId, setActiveAtkStatusId] = useState<string>("none");
 
   // I4: When the defender changes (different monster_id => different moves,
   // different status option list), reset the toggle back to "none". Without
@@ -115,8 +148,15 @@ export default function MatchupPanel({
   const activeOption =
     statusOptions.find((o) => o.id === activeStatusId) ?? statusOptions[0];
   const activeStatus = activeOption?.status ?? null;
+  const activeTargetsAttacker = activeOption?.targetsAttacker ?? false;
+
+  const activeAtkOption =
+    attackerStatusOptions.find((o) => o.id === activeAtkStatusId) ?? attackerStatusOptions[0];
+  const activeAtkStatus = activeAtkOption?.status ?? null;
 
   // ----- Run the matchup pipeline -----
+  // Defender-side toggle: affect="self" → defenderStatuses; affect="opponent" → attackerStatuses.
+  // Attacker-side toggle: always self-buff → attackerStatuses (merged with any opponent debuff).
   const matchup = useMemo(
     () =>
       computeMatchup(
@@ -132,7 +172,11 @@ export default function MatchupPanel({
           personality: defenderPersonality,
         },
         {
-          defenderStatuses: activeStatus ? [activeStatus] : [],
+          attackerStatuses: [
+            ...(activeStatus && activeTargetsAttacker ? [activeStatus] : []),
+            ...(activeAtkStatus ? [activeAtkStatus] : []),
+          ],
+          defenderStatuses: activeStatus && !activeTargetsAttacker ? [activeStatus] : [],
         },
       ),
     [
@@ -144,13 +188,15 @@ export default function MatchupPanel({
       defender.talent,
       defenderPersonality,
       activeStatus,
+      activeTargetsAttacker,
+      activeAtkStatus,
     ],
   );
 
   // ----- Render -----
   return (
     <PanelCard>
-      <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-[220px_1fr] lg:grid-cols-[260px_1fr] gap-4">
         <div>
           <MonsterCard
             monsterId={defender.monster_id}
@@ -166,7 +212,34 @@ export default function MatchupPanel({
           />
         </div>
         <div className="space-y-3 min-w-0">
-          {/* Status toggle (top of RHS) */}
+          {/* Attacker status toggle — only shown when attacker has self-buff statuses */}
+          {attackerStatusOptions.length > 1 && (
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
+              <span className="text-xs font-semibold text-zinc-600 mr-1">
+                {t("analysis.matchupAttackerStatus")}
+              </span>
+              {attackerStatusOptions.map((opt) => {
+                const active = opt.id === activeAtkOption?.id;
+                return (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    onClick={() => setActiveAtkStatusId(opt.id)}
+                    aria-pressed={active}
+                    className={`inline-flex items-center text-xs sm:text-sm rounded-full border px-2.5 sm:px-3 py-0.5 sm:py-1 transition-colors ${
+                      active
+                        ? "bg-indigo-600 text-white border-indigo-600 shadow-sm"
+                        : "bg-white text-zinc-700 border-zinc-300 hover:bg-zinc-50 hover:border-zinc-400"
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Defender status toggle */}
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
             <span className="text-xs font-semibold text-zinc-600 mr-1">
               {t("analysis.matchupDefenderStatus")}

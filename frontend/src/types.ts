@@ -89,6 +89,11 @@ export interface StatusOut extends Named {
 
   dmg_reduction_pct: number;
   dmg_bonus_pct: number;
+
+  /** Serialized enum value from backend: "all" | "attack_only" | "defense_only" | "move_specific" */
+  usage?: string;
+  /** Serialized enum value from backend: "self" | "opponent" */
+  affect?: string;
 }
 
 export interface MoveOut extends Named {
