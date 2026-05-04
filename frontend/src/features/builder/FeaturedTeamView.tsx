@@ -1,8 +1,6 @@
 import { useMemo } from "react";
 import { useI18n } from "@/i18n";
 import { useMonstersByIds } from "@/hooks/useMonstersByIds";
-import { useMovesByIds } from "@/hooks/useMovesByIds";
-import { usePersonalities } from "@/hooks/usePersonalities";
 import MatchupPanel from "@/components/MatchupPanel";
 import PanelCard from "@/components/PanelCard";
 import type {
@@ -11,35 +9,46 @@ import type {
   PersonalityOut,
   StatusOut,
   TalentUpsert,
+  TeamOut,
+  UserMonsterCreate,
+  UserMonsterOut,
 } from "@/types";
-import type { MockFeaturedTeam } from "./featuredTeamsMock";
 
 /**
- * Renders ONE active featured team's defender lineup against the configured
- * attacker.
+ * Map a hydrated UserMonsterOut to the ID-only UserMonsterCreate shape
+ * that MonsterCard and MatchupPanel's `defender` prop expect.
+ * Strips TalentOut.id — UserMonsterCreate.talent is TalentUpsert (no id).
+ */
+function toCreate(um: UserMonsterOut): UserMonsterCreate {
+  return {
+    monster_id: um.monster.id,
+    personality_id: um.personality.id,
+    legacy_type_id: um.legacy_type.id,
+    move1_id: um.move1.id,
+    move2_id: um.move2.id,
+    move3_id: um.move3.id,
+    move4_id: um.move4.id,
+    talent: {
+      hp_boost: um.talent.hp_boost,
+      phy_atk_boost: um.talent.phy_atk_boost,
+      mag_atk_boost: um.talent.mag_atk_boost,
+      phy_def_boost: um.talent.phy_def_boost,
+      mag_def_boost: um.talent.mag_def_boost,
+      spd_boost: um.talent.spd_boost,
+    },
+  };
+}
+
+/**
+ * Renders ONE featured team's defender lineup against the attacker.
  *
- * Owns ALL defender-side data fetching for this team:
- *   - useMonstersByIds   — every defender's monster detail (one batched
- *                          set of fetches; cache-shared with MonsterCard)
- *   - useMovesByIds      — every defender's 4 move ids, deduped/sorted into
- *                          one batched fetch
- *   - usePersonalities   — app-wide cached, just resolves the per-defender
- *                          personality_id from the same list
- *
- * Why a per-team component (instead of inlining in VsFeaturedTeamsTab):
- *   - **Mounting boundary** — switching sub-tabs unmounts this component and
- *     mounts a fresh one for the next team. Inactive teams don't fetch.
- *     React-query still caches the previous team's data, so going back is
- *     instant.
- *   - **Per-team isolation** — an error in one team's data doesn't break
- *     the sub-tab strip; the user can still click to a different team.
- *   - **Real-data swap point** — this is the component that will eventually
- *     consume `team: TeamOut` (instead of MockFeaturedTeam). The translation
- *     from `UserMonsterOut` (hydrated) → ID-only fields lives here so the
- *     change is one file in the next PR.
+ * Uses `team: TeamOut` (fully hydrated from /teams/featured). Personality
+ * and moves come directly from UserMonsterOut, so no re-fetching those.
+ * useMonstersByIds is kept for full MonsterOut (includes type effectiveness
+ * data — vulnerable_to/resistant_to — needed by computeMatchup).
  */
 interface Props {
-  team: MockFeaturedTeam;
+  team: TeamOut;
   attackerMonster: MonsterOut;
   attackerTalent: TalentUpsert;
   attackerPersonality: PersonalityOut;
@@ -57,106 +66,48 @@ export default function FeaturedTeamView({
 }: Props) {
   const { t } = useI18n();
 
-  // Aggregate every defender's IDs for batch fetching. Both arrays are
-  // memoized on `team` so the dep arrays in the hooks below see a stable
-  // identity until the user switches sub-tabs.
   const allMonsterIds = useMemo(
-    () => team.user_monsters.map((um) => um.monster_id),
-    [team],
-  );
-  const allMoveIds = useMemo(
-    () =>
-      team.user_monsters.flatMap((um) => [
-        um.move1_id,
-        um.move2_id,
-        um.move3_id,
-        um.move4_id,
-      ]),
+    () => team.user_monsters.map((um) => um.monster.id),
     [team],
   );
 
   const monstersResult = useMonstersByIds(allMonsterIds);
-  const movesResult = useMovesByIds(allMoveIds);
-  const personalitiesQ = usePersonalities();
 
-  const isLoading =
-    monstersResult.isLoading ||
-    movesResult.query.isLoading ||
-    personalitiesQ.isLoading;
-  const isError =
-    monstersResult.isError ||
-    movesResult.query.isError ||
-    personalitiesQ.isError;
+  const isLoading = monstersResult.isLoading;
+  const isError = monstersResult.isError;
 
-  // Build a moves map for fast per-defender lookup. Rebuilt only when the
-  // batched moves data changes.
-  const moveMap = useMemo(() => {
-    const m = new Map<number, MoveOut>();
-    (movesResult.query.data ?? []).forEach((mv) => m.set(mv.id, mv));
-    return m;
-  }, [movesResult.query.data]);
-
-  // For each defender in the team, hydrate its bundle by looking up the
-  // monster + personality + ordered moves from the maps. Skip defenders
-  // whose monster is missing (probably a bad mock id, or a freshly added
-  // monster the local DB doesn't have yet) — we render an inline error in
-  // its place rather than crashing the whole team view.
   const defenderRows = useMemo(() => {
     return team.user_monsters.map((um, idx) => {
-      const monster = monstersResult.monsters.get(um.monster_id);
-      const personality =
-        personalitiesQ.data?.find((p) => p.id === um.personality_id) ?? null;
-      const moves = [um.move1_id, um.move2_id, um.move3_id, um.move4_id]
-        .map((id) => moveMap.get(id))
-        .filter((mv): mv is MoveOut => !!mv);
+      const monster = monstersResult.monsters.get(um.monster.id);
+      const moves: MoveOut[] = [um.move1, um.move2, um.move3, um.move4];
       return {
         key: `${team.id}-${idx}`,
-        defender: um,
+        defender: toCreate(um),
         monster,
-        personality,
+        personality: um.personality,
         moves,
       };
     });
-  }, [team, monstersResult.monsters, moveMap, personalitiesQ.data]);
-
-  // Placeholder info panel — leave the body as a single hint line for now.
-  // Real implementation (magic item, team-level matchups, win conditions)
-  // comes in the next PR alongside the real /teams/featured fetch.
-  const infoPanel = (
-    <PanelCard title={team.name}>
-      <div className="text-sm text-zinc-500">
-        {t("analysis.featuredTeamInfoPlaceholder")}
-      </div>
-    </PanelCard>
-  );
+  }, [team, monstersResult.monsters]);
 
   if (isLoading) {
     return (
-      <div className="space-y-3">
-        {infoPanel}
-        <PanelCard>
-          <div className="text-sm text-zinc-500">{t("common.loading")}</div>
-        </PanelCard>
-      </div>
+      <PanelCard>
+        <div className="text-sm text-zinc-500">{t("common.loading")}</div>
+      </PanelCard>
     );
   }
 
   if (isError) {
     return (
-      <div className="space-y-3">
-        {infoPanel}
-        <PanelCard>
-          <div className="text-sm text-rose-600">
-            {t("analysis.matchupDataUnavailable")}
-          </div>
-        </PanelCard>
-      </div>
+      <PanelCard>
+        <div className="text-sm text-rose-600">{t("analysis.matchupDataUnavailable")}</div>
+      </PanelCard>
     );
   }
 
   return (
     <div className="space-y-3">
-      {infoPanel}
       {defenderRows.map((row) =>
         row.monster && row.personality ? (
           <MatchupPanel
