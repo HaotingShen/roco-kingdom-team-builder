@@ -1023,7 +1023,7 @@ const ui: Record<Lang, Dict> = {
       leaderFormActive: "当前查看：{name}",
       // 对战伤害面板（单攻对单防）
       matchupOriginal: "原始",
-      matchupAttackerStatus: "进攻方状态",
+      matchupAttackerStatus: "攻击方状态",
       matchupDefenderStatus: "防守方状态",
       matchupNonAttack: "—",
       matchupNoMoves: "请至少选择一个物理或魔法攻击技能以查看伤害。",

@@ -77,14 +77,20 @@ export default function MatchupPanel({
 
   // ----- Status toggle options -----
   // "Original" (no status active) plus one option per status that any of
-  // the defender's moves grants. We don't pre-filter to DEFENSE-category
-  // moves: per the V1 model, attack and status moves can also grant
-  // self-statuses, and the toggle should expose all of them. Future
-  // refinement (filter by self-vs-target) lives elsewhere.
-  type ToggleOption = { id: string; label: string; status: StatusOut | null };
+  // the defender's moves grants. Statuses with affect="opponent" debuff the
+  // attacker (e.g. Roar lowers attacker Phy Atk); affect="self" (default)
+  // buffs the defender. Both are surfaced in the toggle so the user can
+  // simulate "defender just used Roar" as well as "defender just used Defend".
+  type ToggleOption = {
+    id: string;
+    label: string;
+    status: StatusOut | null;
+    /** True when the status targets the attacker (affect="opponent"). */
+    targetsAttacker: boolean;
+  };
   const statusOptions = useMemo<ToggleOption[]>(() => {
     const options: ToggleOption[] = [
-      { id: "none", label: t("analysis.matchupOriginal"), status: null },
+      { id: "none", label: t("analysis.matchupOriginal"), status: null, targetsAttacker: false },
     ];
     const seen = new Set<number>();
     for (const move of defenderMoves) {
@@ -95,6 +101,7 @@ export default function MatchupPanel({
           id: String(status.id),
           label: pickName(status, lang) || status.name,
           status,
+          targetsAttacker: status.affect === "opponent",
         });
       }
     }
@@ -118,8 +125,10 @@ export default function MatchupPanel({
   const activeOption =
     statusOptions.find((o) => o.id === activeStatusId) ?? statusOptions[0];
   const activeStatus = activeOption?.status ?? null;
+  const activeTargetsAttacker = activeOption?.targetsAttacker ?? false;
 
   // ----- Run the matchup pipeline -----
+  // Defender-side toggle: affect="self" -> defenderStatuses; affect="opponent" -> attackerStatuses.
   const matchup = useMemo(
     () =>
       computeMatchup(
@@ -135,8 +144,11 @@ export default function MatchupPanel({
           personality: defenderPersonality,
         },
         {
-          attackerStatuses,
-          defenderStatuses: activeStatus ? [activeStatus] : [],
+          attackerStatuses: [
+            ...attackerStatuses,
+            ...(activeStatus && activeTargetsAttacker ? [activeStatus] : []),
+          ],
+          defenderStatuses: activeStatus && !activeTargetsAttacker ? [activeStatus] : [],
         },
       ),
     [
@@ -149,13 +161,14 @@ export default function MatchupPanel({
       defender.talent,
       defenderPersonality,
       activeStatus,
+      activeTargetsAttacker,
     ],
   );
 
   // ----- Render -----
   return (
     <PanelCard>
-      <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-[220px_1fr] lg:grid-cols-[260px_1fr] gap-4">
         <div>
           <MonsterCard
             monsterId={defender.monster_id}
@@ -171,7 +184,7 @@ export default function MatchupPanel({
           />
         </div>
         <div className="space-y-3 min-w-0">
-          {/* Status toggle (top of RHS) */}
+          {/* Defender status toggle */}
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
             <span className="text-xs font-semibold text-zinc-600 mr-1">
               {t("analysis.matchupDefenderStatus")}
