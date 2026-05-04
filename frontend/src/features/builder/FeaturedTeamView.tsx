@@ -9,6 +9,7 @@ import type {
   MonsterOut,
   MoveOut,
   PersonalityOut,
+  StatusOut,
   TalentUpsert,
 } from "@/types";
 import type { MockFeaturedTeam } from "./featuredTeamsMock";
@@ -43,6 +44,7 @@ interface Props {
   attackerTalent: TalentUpsert;
   attackerPersonality: PersonalityOut;
   attackerMoves: readonly MoveOut[];
+  attackerStatuses: readonly StatusOut[];
 }
 
 export default function FeaturedTeamView({
@@ -51,6 +53,7 @@ export default function FeaturedTeamView({
   attackerTalent,
   attackerPersonality,
   attackerMoves,
+  attackerStatuses,
 }: Props) {
   const { t } = useI18n();
 
@@ -162,6 +165,7 @@ export default function FeaturedTeamView({
             attackerTalent={attackerTalent}
             attackerPersonality={attackerPersonality}
             attackerMoves={attackerMoves}
+            attackerStatuses={attackerStatuses}
             defender={row.defender}
             defenderMonster={row.monster}
             defenderPersonality={row.personality}

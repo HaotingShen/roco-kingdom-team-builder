@@ -26,6 +26,6 @@
     "status_name": "Defend",
     "zh_name": "防御",
     "usage": "defense_only",
-    "dmg_reduction_pct": 0.7
+    "dmg_reduction_pct": 70
   }
 ]

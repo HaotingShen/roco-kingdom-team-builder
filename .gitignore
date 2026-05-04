@@ -216,6 +216,7 @@ coverage/
 # Claude artifacts
 CLAUDE.md
 .claude
+AGENTS.md
 
 # Local maintenance scripts (wiki/external data tools — not for version control)
 backend/scripts/maintenance/compare_moves_with_wiki.mjs

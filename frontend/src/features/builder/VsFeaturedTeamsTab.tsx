@@ -7,6 +7,7 @@ import type {
   MonsterOut,
   MoveOut,
   PersonalityOut,
+  StatusOut,
   TalentUpsert,
 } from "@/types";
 
@@ -41,6 +42,8 @@ interface Props {
   attackerPersonality: PersonalityOut;
   /** The user's slot's 4 moves, already fetched (attacker). */
   attackerMoves: readonly MoveOut[];
+  /** Active attacker statuses shared across every defender matchup. */
+  attackerStatuses: readonly StatusOut[];
 }
 
 export default function VsFeaturedTeamsTab({
@@ -48,6 +51,7 @@ export default function VsFeaturedTeamsTab({
   attackerTalent,
   attackerPersonality,
   attackerMoves,
+  attackerStatuses,
 }: Props) {
   const { t } = useI18n();
 
@@ -78,6 +82,7 @@ export default function VsFeaturedTeamsTab({
         attackerTalent={attackerTalent}
         attackerPersonality={attackerPersonality}
         attackerMoves={attackerMoves}
+        attackerStatuses={attackerStatuses}
       />
     ),
   }));

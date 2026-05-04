@@ -12,6 +12,8 @@ import PageTabs from "@/components/PageTabs";
 import TypeDefensePanel from "@/components/TypeDefensePanel";
 import MoveCoveragePanel from "@/components/MoveCoveragePanel";
 import EffectiveStatsPanel from "@/components/EffectiveStatsPanel";
+import AttackerStatusSelector from "@/components/AttackerStatusSelector";
+import { getAttackerStatusOptions } from "@/lib/attackerStatusOptions";
 import VsFeaturedTeamsTab from "./VsFeaturedTeamsTab";
 import type { MonsterOut, MonsterLiteOut, TypeOut } from "@/types";
 
@@ -58,6 +60,8 @@ export default function MonsterAnalysisPage() {
   const monsterId = slot?.monster_id ?? 0;
   const personalityId = slot?.personality_id ?? 0;
   const talent = slot?.talent ?? EMPTY_TALENT;
+  const [activeAnalysisTab, setActiveAnalysisTab] = useState("stats");
+  const [activeAttackerStatusIds, setActiveAttackerStatusIds] = useState<number[]>([]);
 
   // Leader form toggle state — resets whenever the user navigates to a different slot.
   const [showLeaderForm, setShowLeaderForm] = useState(false);
@@ -82,6 +86,28 @@ export default function MonsterAnalysisPage() {
   const attackerMovesResult = useMovesByIds(attackerRawMoveIds);
   const attackerMovesData = attackerMovesResult.query.data;
   const attackerHasSelectedMoves = attackerMovesResult.ids.length > 0;
+
+  const attackerStatusOptions = useMemo(
+    () => getAttackerStatusOptions(attackerMovesData ?? []),
+    [attackerMovesData],
+  );
+
+  useEffect(() => {
+    setActiveAttackerStatusIds((ids) => {
+      const validIds = new Set(attackerStatusOptions.map((status) => status.id));
+      const next = ids.filter((id) => validIds.has(id));
+      return next.length === ids.length ? ids : next;
+    });
+  }, [attackerStatusOptions]);
+
+  useEffect(() => {
+    setActiveAttackerStatusIds([]);
+  }, [slotIdx]);
+
+  const activeAttackerStatuses = useMemo(() => {
+    const activeIds = new Set(activeAttackerStatusIds);
+    return attackerStatusOptions.filter((status) => activeIds.has(status.id));
+  }, [attackerStatusOptions, activeAttackerStatusIds]);
 
   const personalitiesQ = usePersonalities();
   const attackerPersonality = useMemo(
@@ -292,6 +318,7 @@ export default function MonsterAnalysisPage() {
       attackerTalent={talent}
       attackerPersonality={attackerPersonality!}
       attackerMoves={attackerMovesData ?? []}
+      attackerStatuses={activeAttackerStatuses}
     />
   ) : null;
 
@@ -313,7 +340,14 @@ export default function MonsterAnalysisPage() {
       </div>
 
       <div className="grid gap-4 grid-cols-1 lg:grid-cols-[340px_1fr] xl:grid-cols-[420px_1fr]">
-        <div>
+        <div className="space-y-3">
+          {activeAnalysisTab === "vsFeatured" ? (
+            <AttackerStatusSelector
+              moves={attackerMovesData ?? []}
+              activeStatusIds={activeAttackerStatusIds}
+              onChange={setActiveAttackerStatusIds}
+            />
+          ) : null}
           <MonsterInspector
             activeIdx={slotIdx}
             context="analyze"
@@ -321,7 +355,11 @@ export default function MonsterAnalysisPage() {
           />
         </div>
         <div>
-          <PageTabs tabs={tabs} />
+          <PageTabs
+            tabs={tabs}
+            activeTab={activeAnalysisTab}
+            onTabChange={setActiveAnalysisTab}
+          />
         </div>
       </div>
     </div>

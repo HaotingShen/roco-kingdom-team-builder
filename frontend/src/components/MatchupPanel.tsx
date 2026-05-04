@@ -46,6 +46,8 @@ interface Props {
   attackerPersonality: PersonalityOut;
   /** Attacker moves in slot order, with any non-picked slots dropped (hydrated by parent). */
   attackerMoves: readonly MoveOut[];
+  /** Active attacker statuses selected once in the analysis inspector. */
+  attackerStatuses: readonly StatusOut[];
 
   /**
    * Defender configuration — preserved on the props for the reset-effect
@@ -65,6 +67,7 @@ export default function MatchupPanel({
   attackerTalent,
   attackerPersonality,
   attackerMoves,
+  attackerStatuses,
   defender,
   defenderMonster,
   defenderPersonality,
@@ -132,6 +135,7 @@ export default function MatchupPanel({
           personality: defenderPersonality,
         },
         {
+          attackerStatuses,
           defenderStatuses: activeStatus ? [activeStatus] : [],
         },
       ),
@@ -140,6 +144,7 @@ export default function MatchupPanel({
       attackerTalent,
       attackerPersonality,
       attackerMoves,
+      attackerStatuses,
       defenderMonster,
       defender.talent,
       defenderPersonality,

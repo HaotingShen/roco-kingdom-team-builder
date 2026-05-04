@@ -89,6 +89,11 @@ export interface StatusOut extends Named {
 
   dmg_reduction_pct: number;
   dmg_bonus_pct: number;
+
+  /** When the status applies in battle. Backend serializes StatusUsage.value. */
+  usage: "all" | "attack_only" | "defense_only" | "move_specific" | string;
+  /** Whether the status affects the move user or the opponent. */
+  affect: "self" | "opponent" | string;
 }
 
 export interface MoveOut extends Named {

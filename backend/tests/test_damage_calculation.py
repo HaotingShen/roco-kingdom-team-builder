@@ -126,6 +126,37 @@ def test_combine_defender_statuses_additive_def_multiplicative_reduction():
     assert abs(deltas.dmg_factor - 0.72) < 1e-12
 
 
+def test_defend_status_reduces_damage_by_70_percent():
+    baseline = compute_move_damage(
+        move_power=100,
+        move_type_name="Normal",
+        is_magic=False,
+        attacker_atk=200,
+        attacker_main_type="Normal",
+        attacker_sub_type=None,
+        defender_def=100,
+        defender_main_vuln=[],
+        defender_main_resist=[],
+    )
+    defended = compute_move_damage(
+        move_power=100,
+        move_type_name="Normal",
+        is_magic=False,
+        attacker_atk=200,
+        attacker_main_type="Normal",
+        attacker_sub_type=None,
+        defender_def=100,
+        defender_main_vuln=[],
+        defender_main_resist=[],
+        defender_statuses=[Status(dmg_reduction_pct=70)],
+    )
+
+    # Baseline: round(0.9 * 100 * 200 / 100 * 1.25) = 225.
+    # Defend:   round(225 * 0.30) = round(67.5) = 68.
+    assert baseline == 225
+    assert defended == 68
+
+
 # ---------------------------------------------------------------------
 # Fixture 1 — single-type defender, single attacker status, STAB on, vuln 2×
 # ---------------------------------------------------------------------
