@@ -40,7 +40,7 @@ function MonsterAvatar({ monster, size = 60 }: { monster: any; size?: number }) 
     >
       <img
         src={imgSrc || monsterPlaceholder}
-        alt={monster?.name || "Monster"}
+        alt={monster?.name || "Jingling"}
         className="w-full h-full object-cover"
         onError={handleError}
       />
