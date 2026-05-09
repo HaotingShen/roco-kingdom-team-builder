@@ -1,6 +1,8 @@
-import { useMemo } from "react";
-import { useI18n } from "@/i18n";
+import { useMemo, useState, useEffect } from "react";
+import { Link, useLocation } from "react-router-dom";
+import { useI18n, pickName } from "@/i18n";
 import { useMonstersByIds } from "@/hooks/useMonstersByIds";
+import { typeIconUrl, monsterImageFallbackChain, monsterPlaceholder } from "@/lib/images";
 import MatchupPanel from "@/components/MatchupPanel";
 import PanelCard from "@/components/PanelCard";
 import type {
@@ -13,6 +15,152 @@ import type {
   UserMonsterCreate,
   UserMonsterOut,
 } from "@/types";
+
+// ─── TeamCompositionStrip ─────────────────────────────────────────────────────
+
+const TALENT_STAT_LABELS: [string, string, string][] = [
+  ["hp_boost",       "生命",  "HP"],
+  ["phy_atk_boost",  "物攻",  "P.Atk"],
+  ["mag_atk_boost",  "魔攻",  "M.Atk"],
+  ["phy_def_boost",  "物防",  "P.Def"],
+  ["mag_def_boost",  "魔防",  "M.Def"],
+  ["spd_boost",      "速度",  "Spd"],
+];
+
+const PERSONALITY_STAT_LABELS: [string, string, string][] = [
+  ["hp_mod_pct",      "生命",  "HP"],
+  ["phy_atk_mod_pct", "物攻",  "P.Atk"],
+  ["mag_atk_mod_pct", "魔攻",  "M.Atk"],
+  ["phy_def_mod_pct", "物防",  "P.Def"],
+  ["mag_def_mod_pct", "魔防",  "M.Def"],
+  ["spd_mod_pct",     "速度",  "Spd"],
+];
+
+function MonsterMiniCard({ um }: { um: UserMonsterOut }) {
+  const { lang, t } = useI18n();
+  const location = useLocation();
+  const matchupBack = encodeURIComponent(location.pathname + "?tab=vsFeatured");
+  const images = useMemo(() => monsterImageFallbackChain(um.monster, 180), [um.monster]);
+  const [imgSrc, setImgSrc] = useState(images[0] ?? monsterPlaceholder);
+  const [fallIdx, setFallIdx] = useState(0);
+
+  useEffect(() => {
+    setImgSrc(images[0] ?? monsterPlaceholder);
+    setFallIdx(0);
+  }, [images]);
+
+  const name = pickName(um.monster, lang) || um.monster.name;
+  const legacyType = um.legacy_type;
+  const legacyIcon = typeIconUrl(legacyType.name, 30);
+  const moves = [um.move1, um.move2, um.move3, um.move4];
+
+  const personalityRec = um.personality as unknown as Record<string, number>;
+  const talentRec = um.talent as unknown as Record<string, number>;
+
+  const personalityEffects = PERSONALITY_STAT_LABELS.filter(([k]) => personalityRec[k] !== 0);
+  const activeTalents = TALENT_STAT_LABELS.filter(([k]) => (talentRec[k] ?? 0) > 0);
+
+  return (
+    <div className="flex-none w-32 sm:w-36 rounded-lg border border-zinc-200 bg-white p-2 space-y-1.5 overflow-hidden">
+      {/* Avatar */}
+      <Link
+        to={`/dex/monsters/${um.monster.id}?from=analysis&back=${matchupBack}`}
+        className="block w-14 h-14 mx-auto rounded-lg overflow-hidden bg-zinc-100 border border-zinc-100 hover:opacity-80 transition-opacity"
+      >
+        <img
+          src={imgSrc}
+          alt={name}
+          className="w-full h-full object-contain"
+          onError={() => {
+            const next = fallIdx + 1;
+            const url = images[next];
+            if (next < images.length && url) { setImgSrc(url); setFallIdx(next); }
+          }}
+        />
+      </Link>
+
+      {/* Name */}
+      <p className="text-sm font-semibold text-zinc-800 truncate text-center leading-tight">{name}</p>
+
+      {/* Legacy type */}
+      <div className="flex items-center justify-center gap-1">
+        <span className="text-xs font-medium text-zinc-600 shrink-0">
+          {t("labels.legacy")}
+        </span>
+        <span className="inline-flex items-center gap-0.5 rounded-full bg-zinc-100 px-1.5 py-0.5 text-xs font-medium text-zinc-600 min-w-0">
+          {legacyIcon && <img src={legacyIcon} alt={legacyType.name} className="w-4 h-4 shrink-0" />}
+          <span className="truncate">{pickName(legacyType, lang) || legacyType.name}</span>
+        </span>
+      </div>
+
+      {/* Personality effects — boosts first, then penalties */}
+      {personalityEffects.length > 0 && (
+        <div className="flex items-center justify-center gap-1.5 flex-wrap">
+          {[...personalityEffects]
+            .sort(([ka], [kb]) => (personalityRec[kb] ?? 0) - (personalityRec[ka] ?? 0))
+            .map(([k, zhLabel, enLabel]) => {
+              const val = personalityRec[k] ?? 0;
+              const up = val > 0;
+              return (
+                <span
+                  key={k}
+                  className={`text-xs font-semibold ${up ? "text-emerald-600" : "text-rose-500"}`}
+                >
+                  {lang === "zh" ? zhLabel : enLabel}{up ? "↑" : "↓"}
+                </span>
+              );
+            })}
+        </div>
+      )}
+
+      {/* Moves */}
+      <ul className="space-y-0.5">
+        {moves.map((move, i) => {
+          const moveName = pickName(move, lang) || move.name;
+          const moveTypeName = move.move_type?.name ?? move.type?.name;
+          const icon = moveTypeName ? typeIconUrl(moveTypeName, 30) : null;
+          return (
+            <li key={i} className="flex items-center gap-1 min-w-0">
+              {icon
+                ? <img src={icon} alt={moveTypeName} className="w-4 h-4 shrink-0" />
+                : <div className="w-4 h-4 shrink-0" />}
+              <span className="text-xs font-medium text-zinc-600 truncate">{moveName}</span>
+            </li>
+          );
+        })}
+      </ul>
+
+      {/* Talents — only non-zero boosts */}
+      {activeTalents.length > 0 && (
+        <div className="border-t border-zinc-100 pt-1.5 flex flex-wrap gap-x-1.5 gap-y-0.5">
+          {activeTalents.map(([k, zhLabel, enLabel]) => (
+            <span key={k} className="text-xs text-zinc-500 font-medium whitespace-nowrap">
+              {lang === "zh" ? zhLabel : enLabel}+{talentRec[k]}
+            </span>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function TeamCompositionStrip({ team }: { team: TeamOut }) {
+  const { t } = useI18n();
+  return (
+    <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-3">
+      <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-2">
+        {t("analysis.featuredTeamComposition")}
+      </p>
+      <div className="flex gap-2 overflow-x-auto pb-1 -mb-1">
+        {team.user_monsters.map((um) => (
+          <MonsterMiniCard key={um.id} um={um} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─── toCreate ─────────────────────────────────────────────────────────────────
 
 /**
  * Map a hydrated UserMonsterOut to the ID-only UserMonsterCreate shape
@@ -108,8 +256,9 @@ export default function FeaturedTeamView({
 
   return (
     <div className="space-y-3">
+      <TeamCompositionStrip team={team} />
       {defenderRows.map((row) =>
-        row.monster && row.personality ? (
+        row.monster ? (
           <MatchupPanel
             key={row.key}
             attackerMonster={attackerMonster}

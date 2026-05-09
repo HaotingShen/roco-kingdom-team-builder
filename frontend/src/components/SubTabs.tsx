@@ -50,10 +50,10 @@ export default function SubTabs({ tabs, activeTab, onTabChange }: SubTabsProps) 
             type="button"
             onClick={() => setActive(t.key)}
             aria-pressed={active === t.key}
-            className={`px-3 py-1.5 text-xs sm:text-sm rounded-md transition-colors whitespace-nowrap ${
+            className={`px-3 py-1.5 text-xs sm:text-sm rounded-md transition-colors whitespace-nowrap cursor-pointer ${
               active === t.key
-                ? "bg-zinc-100 text-zinc-900 font-semibold"
-                : "text-zinc-500 hover:text-zinc-700 hover:bg-zinc-50"
+                ? "bg-zinc-200 text-zinc-900 font-semibold"
+                : "text-zinc-500 hover:text-zinc-700 hover:bg-zinc-100"
             }`}
           >
             {t.label}

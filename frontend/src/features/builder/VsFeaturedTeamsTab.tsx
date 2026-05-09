@@ -35,7 +35,7 @@ export default function VsFeaturedTeamsTab({
   const { data: teams, isLoading, isError } = useQuery<TeamOut[]>({
     queryKey: QUERY_KEYS.FEATURED_TEAMS,
     queryFn: () => endpoints.getFeaturedTeams().then((r) => r.data as TeamOut[]),
-    staleTime: 5 * 60 * 1000,
+    staleTime: 0,
   });
 
   if (isLoading) {

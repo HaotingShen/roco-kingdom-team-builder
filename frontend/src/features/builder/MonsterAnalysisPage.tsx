@@ -1,4 +1,4 @@
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useSearchParams } from "react-router-dom";
 import { useEffect, useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { endpoints } from "@/lib/api";
@@ -50,6 +50,7 @@ import type { MonsterOut, MonsterLiteOut, TypeOut } from "@/types";
  */
 export default function MonsterAnalysisPage() {
   const { slot: slotParam } = useParams();
+  const [sp] = useSearchParams();
   const { t, lang } = useI18n();
   const slots = useBuilderStore((s) => s.slots);
 
@@ -60,7 +61,8 @@ export default function MonsterAnalysisPage() {
   const monsterId = slot?.monster_id ?? 0;
   const personalityId = slot?.personality_id ?? 0;
   const talent = slot?.talent ?? EMPTY_TALENT;
-  const [activeAnalysisTab, setActiveAnalysisTab] = useState("stats");
+  const initialTab = sp.get("tab") === "vsFeatured" ? "vsFeatured" : "stats";
+  const [activeAnalysisTab, setActiveAnalysisTab] = useState(initialTab);
   const [activeAttackerStatusIds, setActiveAttackerStatusIds] = useState<number[]>([]);
 
   // Leader form toggle state — resets whenever the user navigates to a different slot.
@@ -84,7 +86,19 @@ export default function MonsterAnalysisPage() {
   );
 
   const attackerMovesResult = useMovesByIds(attackerRawMoveIds);
-  const attackerMovesData = attackerMovesResult.query.data;
+  // useMovesByIds sorts IDs ascending for cache-key stability, so query.data
+  // comes back sorted by move ID rather than slot order. Re-map to slot order
+  // (move1→move2→move3→move4) so panels display moves in the same order as
+  // the inspector.
+  const attackerMovesData = useMemo(() => {
+    const raw = attackerMovesResult.query.data;
+    if (!raw) return undefined;
+    const byId = new Map(raw.map((m) => m && [m.id, m] as const).filter(Boolean) as [number, typeof raw[number]][]);
+    return attackerRawMoveIds
+      .filter((id): id is number => typeof id === "number" && id > 0)
+      .map((id) => byId.get(id))
+      .filter((m): m is NonNullable<typeof m> => m != null);
+  }, [attackerMovesResult.query.data, attackerRawMoveIds]);
   const attackerHasSelectedMoves = attackerMovesResult.ids.length > 0;
 
   const attackerStatusOptions = useMemo(
@@ -114,6 +128,12 @@ export default function MonsterAnalysisPage() {
     () => personalitiesQ.data?.find((p) => p.id === personalityId) ?? null,
     [personalitiesQ.data, personalityId],
   );
+
+  const attackerMonsterName = useMemo(() => {
+    const m = attackerMonsterQ.data;
+    if (!m) return undefined;
+    return pickName(m, lang) || m.name || undefined;
+  }, [attackerMonsterQ.data, lang]);
 
   // ----- Leader form queries -----
 
@@ -329,24 +349,26 @@ export default function MonsterAnalysisPage() {
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center">
-        <Link
-          to="/build"
-          className="inline-flex items-center gap-1 text-sm font-medium rounded-lg border border-zinc-300 bg-white px-4 py-2 shadow-sm hover:bg-zinc-50 hover:border-zinc-400 hover:shadow transition-all duration-200"
-        >
-          <span aria-hidden className="text-xl leading-none text-zinc-600 -translate-y-[1px]">←</span>
-          <span className="text-zinc-700">{t("dex.backToBuilder")}</span>
-        </Link>
-      </div>
-
       <div className="grid gap-4 grid-cols-1 lg:grid-cols-[340px_1fr] xl:grid-cols-[420px_1fr]">
-        <div className="space-y-3">
+        <div className={`space-y-3 ${activeAnalysisTab === "vsFeatured" ? "lg:sticky lg:top-[72px] lg:self-start lg:max-h-[calc(100vh-72px)] lg:overflow-y-auto" : ""}`}>
+          <div className="flex items-center">
+            <Link
+              to="/build"
+              className="inline-flex items-center gap-1 text-sm font-medium rounded-lg border border-zinc-300 bg-white px-4 py-2 shadow-sm hover:bg-zinc-50 hover:border-zinc-400 hover:shadow transition-all duration-200"
+            >
+              <span aria-hidden className="text-xl leading-none text-zinc-600 -translate-y-[1px]">←</span>
+              <span className="text-zinc-700">{t("dex.backToBuilder")}</span>
+            </Link>
+          </div>
           {activeAnalysisTab === "vsFeatured" ? (
-            <AttackerStatusSelector
-              moves={attackerMovesData ?? []}
-              activeStatusIds={activeAttackerStatusIds}
-              onChange={setActiveAttackerStatusIds}
-            />
+            <div className="hidden lg:block">
+              <AttackerStatusSelector
+                moves={attackerMovesData ?? []}
+                activeStatusIds={activeAttackerStatusIds}
+                onChange={setActiveAttackerStatusIds}
+                monsterName={attackerMonsterName}
+              />
+            </div>
           ) : null}
           <MonsterInspector
             activeIdx={slotIdx}
@@ -354,7 +376,18 @@ export default function MonsterAnalysisPage() {
             dexMonsterId={showLeaderForm && leaderDetailQ.data ? leaderDetailQ.data.id : undefined}
           />
         </div>
-        <div>
+        <div className="min-w-0">
+          {/* Mobile-only sticky attacker status — desktop version lives in the left column */}
+          {activeAnalysisTab === "vsFeatured" && (
+            <div className="block lg:hidden sticky top-14 z-[9] mb-3">
+              <AttackerStatusSelector
+                moves={attackerMovesData ?? []}
+                activeStatusIds={activeAttackerStatusIds}
+                onChange={setActiveAttackerStatusIds}
+                monsterName={attackerMonsterName}
+              />
+            </div>
+          )}
           <PageTabs
             tabs={tabs}
             activeTab={activeAnalysisTab}

@@ -54,6 +54,7 @@ export default function MonsterDetailPage() {
   const which = movesParam === "legacy" ? "legacy" : movesParam === "stones" ? "stones" : "pool";
   const fromParam = sp.get("from");
   const fromBuilder = fromParam === "builder";
+  const fromMatchup = fromParam === "analysis";
   // "analyze" mode: launched from MonsterAnalysisPage via MonsterInspector.
   // Carries the originating slot index so the back link can return to
   // /build/analyze/:slot. Only accept strict non-negative integers — any
@@ -78,6 +79,7 @@ export default function MonsterDetailPage() {
     fromBuilder,
     fromAnalyze: hasAnalyzeReturn,
     analyzeSlot,
+    fromMatchup,
   });
 
   // Back-link target + label derived from ONE flag (hasAnalyzeReturn) so the
@@ -87,11 +89,15 @@ export default function MonsterDetailPage() {
     ? `/build/analyze/${analyzeSlot}`
     : fromBuilder
     ? "/build"
+    : fromMatchup
+    ? (backRaw ?? "/build")
     : dexUrl;
   const backLabelKey = hasAnalyzeReturn
     ? "dex.backToMonsterAnalysis"
     : fromBuilder
     ? "dex.backToBuilder"
+    : fromMatchup
+    ? "dex.backToMatchup"
     : "dex.backToDex";
   const { lang, t } = useI18n();
   const navigate = useNavigate();
@@ -472,6 +478,7 @@ export default function MonsterDetailPage() {
             fromBuilder={fromBuilder}
             fromAnalyze={hasAnalyzeReturn}
             analyzeSlot={analyzeSlot}
+            fromMatchup={fromMatchup}
             back={backRaw ?? undefined}
           />
         </section>

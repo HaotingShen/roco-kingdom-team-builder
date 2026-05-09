@@ -6,6 +6,7 @@
  *
  *   - `from=builder`                       → back to /build (team builder)
  *   - `from=analyze&slot=N`                → back to /build/analyze/N (slot analysis page)
+ *   - `from=analysis`                      → Link to `back=` param (encoded matchup URL with ?tab=vsFeatured)
  *   - neither                              → back to the dex listing
  *
  * Optionally the original dex listing URL is preserved as `back=<encoded>`
@@ -32,6 +33,8 @@ export interface DexForwardContext {
   fromAnalyze?: boolean;
   /** Slot index (as a string) when `fromAnalyze` is true. Required for the analyze-return link to work. */
   analyzeSlot?: string | null;
+  /** True if this dex view was launched from the matchup panel (vs featured teams). Uses navigate(-1) to return. */
+  fromMatchup?: boolean;
 }
 
 /**
@@ -59,6 +62,9 @@ export function buildDexForwardQuery(ctx: DexForwardContext): string {
   if (ctx.fromAnalyze && ctx.analyzeSlot != null) {
     fwd.set("from", "analyze");
     fwd.set("slot", ctx.analyzeSlot);
+  }
+  if (ctx.fromMatchup) {
+    fwd.set("from", "analysis");
   }
 
   return fwd.toString();

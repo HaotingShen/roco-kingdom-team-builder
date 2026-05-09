@@ -13,6 +13,7 @@ interface EvolutionTreeProps {
   fromBuilder: boolean;
   fromAnalyze?: boolean;
   analyzeSlot?: string;
+  fromMatchup?: boolean;
   back?: string;
 }
 
@@ -23,6 +24,7 @@ export default function EvolutionTree({
   fromBuilder,
   fromAnalyze = false,
   analyzeSlot,
+  fromMatchup = false,
   back,
 }: EvolutionTreeProps) {
   const { lang } = useI18n();
@@ -32,6 +34,7 @@ export default function EvolutionTree({
     fromBuilder,
     fromAnalyze,
     analyzeSlot,
+    fromMatchup,
   });
 
   if (!treeData || !treeData.stages || treeData.stages.length <= 1) {

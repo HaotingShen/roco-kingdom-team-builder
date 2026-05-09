@@ -7,6 +7,7 @@ interface Props {
   moves: readonly MoveOut[];
   activeStatusIds: readonly number[];
   onChange: (ids: number[]) => void;
+  monsterName?: string;
 }
 
 /**
@@ -19,6 +20,7 @@ export default function AttackerStatusSelector({
   moves,
   activeStatusIds,
   onChange,
+  monsterName,
 }: Props) {
   const { lang, t } = useI18n();
   const activeIds = useMemo(() => new Set(activeStatusIds), [activeStatusIds]);
@@ -36,16 +38,21 @@ export default function AttackerStatusSelector({
   };
 
   return (
-    <div className="sticky top-16 z-[9] rounded-lg border border-zinc-200 bg-white/95 px-3 py-2.5 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-white/85">
-      <div className="text-sm font-semibold text-zinc-800 mb-2">
-        {t("analysis.matchupAttackerStatus")}
+    <div className="lg:sticky lg:top-0 z-[9] rounded-lg border border-zinc-200 bg-white/95 px-3 py-2.5 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-white/85 border-l-4 border-l-indigo-400">
+      <div className="flex items-baseline gap-1.5 mb-2">
+        <span className="text-sm font-semibold text-zinc-800">
+          {t("analysis.matchupMyJinglingStatus")}
+        </span>
+        {monsterName && (
+          <span className="text-sm text-zinc-800 font-normal">· {monsterName}</span>
+        )}
       </div>
       <div className="flex flex-wrap items-center gap-1.5">
         <button
           type="button"
           onClick={() => onChange([])}
           aria-pressed={activeStatusIds.length === 0}
-          className={`inline-flex items-center text-xs rounded-full border px-2.5 py-1 transition-colors ${
+          className={`inline-flex items-center text-xs rounded-full border px-2.5 py-1 transition-colors cursor-pointer ${
             activeStatusIds.length === 0
               ? "bg-zinc-800 text-white border-zinc-800 shadow-sm"
               : "bg-white text-zinc-700 border-zinc-300 hover:bg-zinc-50 hover:border-zinc-400"
@@ -62,7 +69,7 @@ export default function AttackerStatusSelector({
               type="button"
               onClick={() => toggleStatus(status.id)}
               aria-pressed={active}
-              className={`inline-flex items-center text-xs rounded-full border px-2.5 py-1 transition-colors ${
+              className={`inline-flex items-center text-xs rounded-full border px-2.5 py-1 transition-colors cursor-pointer ${
                 active
                   ? "bg-zinc-800 text-white border-zinc-800 shadow-sm"
                   : "bg-white text-zinc-700 border-zinc-300 hover:bg-zinc-50 hover:border-zinc-400"
