@@ -53,7 +53,6 @@ export default function MonsterAnalysisPage() {
   const [sp] = useSearchParams();
   const { t, lang } = useI18n();
   const slots = useBuilderStore((s) => s.slots);
-
   const slotIdx = Number(slotParam);
   const validSlot =
     Number.isInteger(slotIdx) && slotIdx >= 0 && slotIdx < slots.length;
@@ -135,9 +134,9 @@ export default function MonsterAnalysisPage() {
     return pickName(m, lang) || m.name || undefined;
   }, [attackerMonsterQ.data, lang]);
 
-  // ----- Leader form queries -----
+  // ----- Leader form + Willpower Impact queries -----
 
-  // Types list — needed to resolve the Leader type ID.
+  // Types list — needed to resolve the Leader type ID and attacker's legacy type.
   const typesQ = useQuery({
     queryKey: QUERY_KEYS.TYPES,
     queryFn: () => endpoints.types().then((r) => r.data as TypeOut[]),
@@ -148,6 +147,15 @@ export default function MonsterAnalysisPage() {
     () => typesQ.data?.find((tp) => tp.name === "Leader")?.id ?? null,
     [typesQ.data],
   );
+
+  // Attacker's legacy type — used for Willpower Impact damage calculation.
+  const attackerLegacyType = useMemo<TypeOut | null>(() => {
+    if (!typesQ.data || !slot?.legacy_type_id) return null;
+    return typesQ.data.find((tp) => tp.id === slot.legacy_type_id) ?? null;
+  }, [typesQ.data, slot?.legacy_type_id]);
+
+  // Willpower Impact is always relevant unless the player selected the Leader legacy type.
+  const willpowerActive = attackerLegacyType !== null && attackerLegacyType?.name !== "Leader";
 
   const detail: MonsterOut | undefined = attackerMonsterQ.data;
 
@@ -339,6 +347,8 @@ export default function MonsterAnalysisPage() {
       attackerPersonality={attackerPersonality!}
       attackerMoves={attackerMovesData ?? []}
       attackerStatuses={activeAttackerStatuses}
+      attackerLegacyType={attackerLegacyType}
+      willpowerActive={willpowerActive}
     />
   ) : null;
 

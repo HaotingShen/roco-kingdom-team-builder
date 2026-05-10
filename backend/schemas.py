@@ -332,6 +332,9 @@ class StatusOut(BaseModel):
     # Combo (inert until move.combo_count lands)
     combo_bonus: int
 
+    # Move-specific conditional power bonus (usage=move_specific; always-shown alt row)
+    power_bonus: int = 0
+
     # Damage modifiers
     dmg_reduction_pct: float
     dmg_bonus_pct: float
@@ -356,6 +359,11 @@ class MoveOut(MoveLiteOut):
     move_category: MoveCategory
     energy_cost: int
     power: Optional[int] = None
+    base_combo: Optional[int] = None
+    counter_power_multiplier: Optional[float] = None
+    alt_power_total: Optional[float] = None
+    alt_condition_zh: Optional[str] = None
+    alt_condition_en: Optional[str] = None
     description: str
     # Default empty list keeps existing consumers backwards-compatible until the
     # move_statuses join table is populated.

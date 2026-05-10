@@ -629,5 +629,23 @@
     "usage": "attack_only",
     "affect": "self",
     "phy_atk_boost": 60
+  },
+  {
+    "move": "All or Nothing",
+    "status_name": "Debuff Bonus",
+    "zh_name": "有减益时",
+    "en_name": "With any Debuff",
+    "usage": "move_specific",
+    "affect": "self",
+    "power_bonus": 60
+  },
+  {
+    "move": "Extreme Cold Zone",
+    "status_name": "Freeze Bonus",
+    "zh_name": "敌方有冻结时",
+    "en_name": "Opponent has Freeze",
+    "usage": "move_specific",
+    "affect": "opponent",
+    "power_bonus": 60
   }
 ]

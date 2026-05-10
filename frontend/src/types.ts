@@ -90,6 +90,9 @@ export interface StatusOut extends Named {
   dmg_reduction_pct: number;
   dmg_bonus_pct: number;
 
+  /** Flat power added to the move when its condition is met (move_specific only). */
+  power_bonus: number;
+
   /** Serialized enum value from backend: "all" | "attack_only" | "defense_only" | "move_specific" */
   usage?: string;
   /** Serialized enum value from backend: "self" | "opponent" */
@@ -114,6 +117,14 @@ export interface MoveOut extends Named {
   /** Backend extras (optional in FE) */
   energy_cost?: number;
   power?: number | null;
+  /** Static base combo count (>1 for multi-hit moves). Multiply by power for total damage. */
+  base_combo?: number | null;
+  /** Multiplier applied to (power × base_combo) when Counter Status is triggered. */
+  counter_power_multiplier?: number | null;
+  /** Precomputed total effective power (= power × alt_combo or power + flat_bonus) when alt condition applies. */
+  alt_power_total?: number | null;
+  alt_condition_zh?: string | null;
+  alt_condition_en?: string | null;
   description?: string;
 
   /**

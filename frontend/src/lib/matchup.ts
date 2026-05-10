@@ -55,6 +55,16 @@ export interface MoveMatchupResult {
   typeMultiplier: number;
   /** STAB multiplier (1 or 1.25). */
   stab: number;
+  /** Number of hits (≥2 for multi-hit moves). 1 when not a combo move. */
+  baseCombo: number;
+  /**
+   * Conditional alt damage for move_specific statuses (always shown, no toggle).
+   * Undefined when the move has no conditional power bonus.
+   */
+  altDamage?: number;
+  altHpPercent?: number;
+  /** Localized condition label, e.g. { zh: "有减益时", en: "With any Debuff" } */
+  altCondition?: { zh: string; en: string };
 }
 
 /** The full result of one matchup evaluation. */
@@ -133,11 +143,13 @@ export function computeMatchup(
         hpPercent: 0,
         typeMultiplier: 1,
         stab: 1,
+        baseCombo: 1,
       };
     }
 
+    const baseCombo = Math.max(1, move.base_combo ?? 1);
     const result: DamageResult = computeMoveDamage({
-      movePower: move.power,
+      movePower: move.power * baseCombo,
       moveTypeName,
       isMagic: isMag,
       attackerAtk: isMag ? attackerStats.mag_atk : attackerStats.phy_atk,
@@ -153,6 +165,70 @@ export function computeMatchup(
     const hpPercent =
       defenderStats.hp > 0 ? (result.damage / defenderStats.hp) * 100 : 0;
 
+    // Alt damage: move_specific conditional status (power_bonus) takes priority;
+    // fall back to counter_power_multiplier if set.
+    const conditionalStatus = (move.statuses ?? []).find(
+      (s) => s.usage === "move_specific" && s.power_bonus > 0,
+    );
+    let altDamage: number | undefined;
+    let altHpPercent: number | undefined;
+    let altCondition: { zh: string; en: string } | undefined;
+    if (conditionalStatus) {
+      const altResult = computeMoveDamage({
+        movePower: (move.power + conditionalStatus.power_bonus) * baseCombo,
+        moveTypeName,
+        isMagic: isMag,
+        attackerAtk: isMag ? attackerStats.mag_atk : attackerStats.phy_atk,
+        attackerMainType,
+        attackerSubType,
+        defenderDef: isMag ? defenderStats.mag_def : defenderStats.phy_def,
+        defenderMainSets: defMainSets,
+        defenderSubSets: defSubSets,
+        attackerStatuses: scenario.attackerStatuses,
+        defenderStatuses: scenario.defenderStatuses,
+      });
+      altDamage = altResult.damage;
+      altHpPercent = defenderStats.hp > 0 ? (altResult.damage / defenderStats.hp) * 100 : 0;
+      altCondition = {
+        zh: (conditionalStatus.localized as Record<string, { name?: string }>)?.zh?.name ?? conditionalStatus.name,
+        en: (conditionalStatus.localized as Record<string, { name?: string }>)?.en?.name ?? conditionalStatus.name,
+      };
+    } else if (move.counter_power_multiplier) {
+      const altResult = computeMoveDamage({
+        movePower: move.power * baseCombo * move.counter_power_multiplier,
+        moveTypeName,
+        isMagic: isMag,
+        attackerAtk: isMag ? attackerStats.mag_atk : attackerStats.phy_atk,
+        attackerMainType,
+        attackerSubType,
+        defenderDef: isMag ? defenderStats.mag_def : defenderStats.phy_def,
+        defenderMainSets: defMainSets,
+        defenderSubSets: defSubSets,
+        attackerStatuses: scenario.attackerStatuses,
+        defenderStatuses: scenario.defenderStatuses,
+      });
+      altDamage = altResult.damage;
+      altHpPercent = defenderStats.hp > 0 ? (altResult.damage / defenderStats.hp) * 100 : 0;
+      altCondition = { zh: "应对状态", en: "Counter Status" };
+    } else if (move.alt_power_total && move.alt_condition_zh && move.alt_condition_en) {
+      const altResult = computeMoveDamage({
+        movePower: move.alt_power_total,
+        moveTypeName,
+        isMagic: isMag,
+        attackerAtk: isMag ? attackerStats.mag_atk : attackerStats.phy_atk,
+        attackerMainType,
+        attackerSubType,
+        defenderDef: isMag ? defenderStats.mag_def : defenderStats.phy_def,
+        defenderMainSets: defMainSets,
+        defenderSubSets: defSubSets,
+        attackerStatuses: scenario.attackerStatuses,
+        defenderStatuses: scenario.defenderStatuses,
+      });
+      altDamage = altResult.damage;
+      altHpPercent = defenderStats.hp > 0 ? (altResult.damage / defenderStats.hp) * 100 : 0;
+      altCondition = { zh: move.alt_condition_zh, en: move.alt_condition_en };
+    }
+
     return {
       move,
       nonAttack: false,
@@ -160,6 +236,10 @@ export function computeMatchup(
       hpPercent,
       typeMultiplier: result.typeMultiplier,
       stab: result.stab,
+      baseCombo,
+      altDamage,
+      altHpPercent,
+      altCondition,
     };
   });
 

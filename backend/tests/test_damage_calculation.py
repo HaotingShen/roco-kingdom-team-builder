@@ -333,3 +333,207 @@ def test_damage_fixture_4_cancelled_type_negative_boost_flat_power():
         defender_statuses=[],
     )
     assert damage == 105
+
+
+# ---------------------------------------------------------------------
+# Fixture 5 — counter_power_multiplier: orchestrator passes total power
+# ---------------------------------------------------------------------
+def test_counter_power_multiplier_flow():
+    # Multi-Claw Strike: power=30, base_combo=2, counter_power_multiplier=2.
+    # Orchestrator computes: move_power = 30 × 2 × 2 = 120 (counter alt row).
+    # Attacker: Normal (single), phy_atk=200, def=100, no statuses.
+    #
+    # Base row (move_power = 30 × 2 = 60):
+    #   power_term = 60, atk_term = 200, def_term = 100
+    #   STAB = 1.25 (Normal attacker, Normal move)
+    #   inner = 0.9 × 60 × 200 / 100 × 1.25 = 54 × 200 / 100 × 1.25 = 135
+    #
+    # Counter alt row (move_power = 120):
+    #   power_term = 120
+    #   inner = 0.9 × 120 × 200 / 100 × 1.25 = 108 × 200 / 100 × 1.25 = 270
+    base = compute_move_damage(
+        move_power=60,
+        move_type_name="Normal",
+        is_magic=False,
+        attacker_atk=200,
+        attacker_main_type="Normal",
+        attacker_sub_type=None,
+        defender_def=100,
+        defender_main_vuln=[],
+        defender_main_resist=[],
+    )
+    counter = compute_move_damage(
+        move_power=120,
+        move_type_name="Normal",
+        is_magic=False,
+        attacker_atk=200,
+        attacker_main_type="Normal",
+        attacker_sub_type=None,
+        defender_def=100,
+        defender_main_vuln=[],
+        defender_main_resist=[],
+    )
+    assert base == 135
+    assert counter == 270
+    assert counter == base * 2
+
+
+# ---------------------------------------------------------------------
+# Fixture 6 — alt_power_total: pre-computed conditional power
+# ---------------------------------------------------------------------
+def test_alt_power_total_flow():
+    # Extreme Cold Zone: power=105, alt_power_total=165 (if opponent has Freeze).
+    # Attacker: Ice (single), mag_atk=180, def=150, dual-type defender (both vuln Ice).
+    #
+    # Base (move_power=105):
+    #   power_term = 105, atk_term = 180, def_term = 150
+    #   STAB = 1.25 (Ice attacker, Ice move), type_eff = 3.0
+    #   inner = 0.9 × 105 × 180 / 150 × 1.25 × 3.0
+    #         = 94.5 × 180 = 17010 / 150 = 113.4 × 1.25 = 141.75 × 3.0 = 425.25 → 425
+    #
+    # Alt (move_power=165):
+    #   power_term = 165
+    #   inner = 0.9 × 165 × 180 / 150 × 1.25 × 3.0
+    #         = 148.5 × 180 = 26730 / 150 = 178.2 × 1.25 = 222.75 × 3.0 = 668.25 → 668
+    base = compute_move_damage(
+        move_power=105,
+        move_type_name="Ice",
+        is_magic=True,
+        attacker_atk=180,
+        attacker_main_type="Ice",
+        attacker_sub_type=None,
+        defender_def=150,
+        defender_main_vuln=["Ice"],
+        defender_main_resist=[],
+        defender_sub_vuln=["Ice"],
+        defender_sub_resist=[],
+    )
+    alt = compute_move_damage(
+        move_power=165,
+        move_type_name="Ice",
+        is_magic=True,
+        attacker_atk=180,
+        attacker_main_type="Ice",
+        attacker_sub_type=None,
+        defender_def=150,
+        defender_main_vuln=["Ice"],
+        defender_main_resist=[],
+        defender_sub_vuln=["Ice"],
+        defender_sub_resist=[],
+    )
+    assert base == 425
+    assert alt == 668
+
+
+# ---------------------------------------------------------------------
+# Fixture 7 — move_specific power_bonus: conditional power = base + bonus
+# ---------------------------------------------------------------------
+def test_move_specific_power_bonus_flow():
+    # All or Nothing: power=80, power_bonus=60 → conditional move_power=140.
+    # Attacker: Cute (single), mag_atk=160, def=100, STAB.
+    #
+    # Base (move_power=80):
+    #   power_term = 80, atk_term = 160, def_term = 100
+    #   STAB = 1.25, type_eff = 1.0
+    #   inner = 0.9 × 80 × 160 / 100 × 1.25 = 72 × 160 / 100 × 1.25 = 144
+    #
+    # Alt (move_power=140):
+    #   power_term = 140
+    #   inner = 0.9 × 140 × 160 / 100 × 1.25 = 126 × 160 / 100 × 1.25 = 252
+    base = compute_move_damage(
+        move_power=80,
+        move_type_name="Cute",
+        is_magic=True,
+        attacker_atk=160,
+        attacker_main_type="Cute",
+        attacker_sub_type=None,
+        defender_def=100,
+        defender_main_vuln=[],
+        defender_main_resist=[],
+    )
+    alt = compute_move_damage(
+        move_power=140,
+        move_type_name="Cute",
+        is_magic=True,
+        attacker_atk=160,
+        attacker_main_type="Cute",
+        attacker_sub_type=None,
+        defender_def=100,
+        defender_main_vuln=[],
+        defender_main_resist=[],
+    )
+    assert base == 144
+    assert alt == 252
+
+
+# ---------------------------------------------------------------------
+# Fixture 8 — opponent debuff (affect=opponent, negative def_boost)
+# ---------------------------------------------------------------------
+def test_opponent_debuff_negative_def_boost_raises_damage():
+    # Sharp Eyes: affect=opponent, phy_def_boost=-120.
+    # Passed as a defender_status — lowers the effective def_term.
+    # Attacker: Normal (single), phy_atk=200, move power=100, def=200.
+    #
+    # Baseline (no debuff):
+    #   def_term = round(200 × bm(0)) = 200
+    #   inner = 0.9 × 100 × 200 / 200 × 1.25 = 90 × 1.25 = 112.5 → 113
+    #
+    # With Sharp Eyes (phy_def_boost=-120):
+    #   bm(-120) = 100 / (100 + 120) = 100/220 = 0.4545…
+    #   def_term = round(200 × 0.4545…) = round(90.909…) = 91
+    #   inner = 0.9 × 100 × 200 / 91 × 1.25
+    #         = 90 × 200 / 91 × 1.25 = 18000 / 91 × 1.25 = 197.802… × 1.25 = 247.25… → 247
+    baseline = compute_move_damage(
+        move_power=100,
+        move_type_name="Normal",
+        is_magic=False,
+        attacker_atk=200,
+        attacker_main_type="Normal",
+        attacker_sub_type=None,
+        defender_def=200,
+        defender_main_vuln=[],
+        defender_main_resist=[],
+    )
+    debuffed = compute_move_damage(
+        move_power=100,
+        move_type_name="Normal",
+        is_magic=False,
+        attacker_atk=200,
+        attacker_main_type="Normal",
+        attacker_sub_type=None,
+        defender_def=200,
+        defender_main_vuln=[],
+        defender_main_resist=[],
+        defender_statuses=[Status(phy_def_boost=-120)],
+    )
+    assert baseline == 113
+    assert debuffed == 247
+    assert debuffed > baseline
+
+
+# ---------------------------------------------------------------------
+# Fixture 9 — flat + pct power: flat added first, then pct multiplied
+# ---------------------------------------------------------------------
+def test_flat_and_pct_power_order_of_operations():
+    # move.power=60, flat_power_boost=40, pct_power_boost=50.
+    # Correct:   power_term = round((60 + 40) × bm(+50)) = round(100 × 1.50) = 150
+    # Wrong ord: power_term = round(60 × 1.50) + 40 = 90 + 40 = 130
+    #
+    # Correct path:
+    #   power_term = 150, atk_term = 200, def_term = 100
+    #   STAB = 1.25 (Normal / Normal), type_eff = 1.0
+    #   inner = 0.9 × 150 × 200 / 100 × 1.25 = 135 × 2.0 × 1.25 = 337.5 → 338
+    damage = compute_move_damage(
+        move_power=60,
+        move_type_name="Normal",
+        is_magic=False,
+        attacker_atk=200,
+        attacker_main_type="Normal",
+        attacker_sub_type=None,
+        defender_def=100,
+        defender_main_vuln=[],
+        defender_main_resist=[],
+        attacker_statuses=[Status(flat_power_boost=40, pct_power_boost=50)],
+    )
+    assert damage == 338
+    assert damage != 293  # guard against wrong order (130 power_term path)

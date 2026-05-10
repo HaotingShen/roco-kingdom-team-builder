@@ -20,7 +20,7 @@
  *     -b → 100 / (100 - b)        # multiplicative inverse
  *
  *   For each attack-category move:
- *     atk_term   = round((power + flat_power_total) × bm(pct_power_total))
+ *     power_term = round((power + flat_power_total) × bm(pct_power_total))
  *     atk_used   = round(atk × bm(atk_boost_total))
  *     def_used   = round(def × bm(def_boost_total))
  *
@@ -28,7 +28,7 @@
  *     type_eff = 3 / 2 / 1 / 0.5 / 0.25 lookup
  *
  *     damage = round(
- *       0.9 × atk_term × atk_used / def_used
+ *       0.9 × power_term × atk_used / def_used
  *       × STAB × type_eff
  *       × defender_dmg_factor    (∏ (1 - red/100))
  *       × attacker_dmg_factor    (∏ (1 + bonus/100))

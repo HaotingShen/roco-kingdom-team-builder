@@ -12,6 +12,7 @@ import type {
   StatusOut,
   TalentUpsert,
   TeamOut,
+  TypeOut,
 } from "@/types";
 
 interface Props {
@@ -21,6 +22,8 @@ interface Props {
   attackerMoves: readonly MoveOut[];
   /** Active attacker statuses shared across every defender matchup. */
   attackerStatuses: readonly StatusOut[];
+  attackerLegacyType?: TypeOut | null;
+  willpowerActive?: boolean;
 }
 
 export default function VsFeaturedTeamsTab({
@@ -29,6 +32,8 @@ export default function VsFeaturedTeamsTab({
   attackerPersonality,
   attackerMoves,
   attackerStatuses,
+  attackerLegacyType,
+  willpowerActive,
 }: Props) {
   const { t } = useI18n();
 
@@ -73,6 +78,8 @@ export default function VsFeaturedTeamsTab({
         attackerPersonality={attackerPersonality}
         attackerMoves={attackerMoves}
         attackerStatuses={attackerStatuses}
+        attackerLegacyType={attackerLegacyType}
+        willpowerActive={willpowerActive}
       />
     ),
   }));

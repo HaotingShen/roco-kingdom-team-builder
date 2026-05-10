@@ -3,6 +3,13 @@ import react from "@vitejs/plugin-react";
 import path from "node:path";
 
 export default defineConfig(({ mode }) => ({
+  test: {
+    environment: "node",
+    include: ["src/**/*.test.ts"],
+    resolve: {
+      alias: { "@": path.resolve(__dirname, "src") },
+    },
+  },
   plugins: [react()],
   resolve: {
     alias: {

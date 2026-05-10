@@ -12,6 +12,7 @@ import type {
   StatusOut,
   TalentUpsert,
   TeamOut,
+  TypeOut,
   UserMonsterCreate,
   UserMonsterOut,
 } from "@/types";
@@ -202,6 +203,8 @@ interface Props {
   attackerPersonality: PersonalityOut;
   attackerMoves: readonly MoveOut[];
   attackerStatuses: readonly StatusOut[];
+  attackerLegacyType?: TypeOut | null;
+  willpowerActive?: boolean;
 }
 
 export default function FeaturedTeamView({
@@ -211,6 +214,8 @@ export default function FeaturedTeamView({
   attackerPersonality,
   attackerMoves,
   attackerStatuses,
+  attackerLegacyType,
+  willpowerActive,
 }: Props) {
   const { t } = useI18n();
 
@@ -266,6 +271,8 @@ export default function FeaturedTeamView({
             attackerPersonality={attackerPersonality}
             attackerMoves={attackerMoves}
             attackerStatuses={attackerStatuses}
+            attackerLegacyType={attackerLegacyType}
+            willpowerActive={willpowerActive}
             defender={row.defender}
             defenderMonster={row.monster}
             defenderPersonality={row.personality}
