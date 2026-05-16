@@ -234,3 +234,5 @@ backend/data/*.txt
 backend/data/*_backup_*.json
 backend/data/monsters.json.backup*
 backend/data/traits.json.backup*
+*.xlsx
+~$*
