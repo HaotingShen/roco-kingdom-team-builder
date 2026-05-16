@@ -125,6 +125,8 @@ export interface MoveOut extends Named {
   alt_power_total?: number | null;
   alt_condition_zh?: string | null;
   alt_condition_en?: string | null;
+  /** Identifies moves whose base power is computed dynamically at runtime. */
+  power_formula?: "speed_diff" | "phy_def_diff" | "energy" | null;
   description?: string;
 
   /**

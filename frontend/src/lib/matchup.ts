@@ -35,6 +35,35 @@ export interface MatchupSide {
   personality: PersonalityOut;
 }
 
+// ─── Dynamic power formula helpers ───────────────────────────────────────────
+
+/**
+ * Step-table used by Swift Strike (speed_diff) and Sand Trap (phy_def_diff).
+ * Input: attacker stat − defender stat. Returns effective move power.
+ */
+function getStatDiffPower(diff: number): number {
+  if (diff < 0) return 60;
+  if (diff <= 14) return 100;
+  if (diff <= 29) return 130;
+  if (diff <= 44) return 140;
+  if (diff <= 59) return 150;
+  if (diff <= 74) return 160;
+  if (diff <= 89) return 170;
+  if (diff <= 104) return 180;
+  if (diff <= 119) return 190;
+  if (diff <= 134) return 194;
+  return 200;
+}
+
+/** Power lookup for Mana Burst at each energy level 0–10. */
+const ENERGY_POWER_TABLE = [46, 71, 91, 111, 136, 156, 166, 181, 191, 201, 211] as const;
+
+function getEnergyPower(level: number): number {
+  return ENERGY_POWER_TABLE[Math.max(0, Math.min(10, level)) as 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10];
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 /**
  * Per-move result line, ready to render in a damage list.
  *
@@ -65,6 +94,16 @@ export interface MoveMatchupResult {
   altHpPercent?: number;
   /** Localized condition label, e.g. { zh: "有减益时", en: "With any Debuff" } */
   altCondition?: { zh: string; en: string };
+  /**
+   * Present when power_formula is set. Carries the effective power used and the
+   * stat diff (for speed_diff / phy_def_diff) so the UI can render an annotation.
+   */
+  formulaAnnotation?: {
+    formula: "speed_diff" | "phy_def_diff" | "energy";
+    effectivePower: number;
+    /** Attacker stat − defender stat (only set for speed_diff / phy_def_diff). */
+    statDiff?: number;
+  };
 }
 
 /** The full result of one matchup evaluation. */
@@ -100,6 +139,8 @@ export function computeMatchup(
   scenario: {
     attackerStatuses?: readonly StatusOut[];
     defenderStatuses?: readonly StatusOut[];
+    /** Current energy level for Mana Burst (0–10). Defaults to 10. */
+    magicEnergyLevel?: number;
   } = {},
 ): MatchupResult {
   // Effective stats — shared formula with the per-slot stats panel.
@@ -148,8 +189,26 @@ export function computeMatchup(
     }
 
     const baseCombo = Math.max(1, move.base_combo ?? 1);
+
+    // Dynamic power formulas — override move.power for three special moves.
+    let effectivePower = move.power;
+    let formulaAnnotation: MoveMatchupResult["formulaAnnotation"];
+    if (move.power_formula === "speed_diff") {
+      const diff = attackerStats.spd - defenderStats.spd;
+      effectivePower = getStatDiffPower(diff);
+      formulaAnnotation = { formula: "speed_diff", effectivePower, statDiff: diff };
+    } else if (move.power_formula === "phy_def_diff") {
+      const diff = attackerStats.phy_def - defenderStats.phy_def;
+      effectivePower = getStatDiffPower(diff);
+      formulaAnnotation = { formula: "phy_def_diff", effectivePower, statDiff: diff };
+    } else if (move.power_formula === "energy") {
+      const level = Math.max(0, Math.min(10, scenario.magicEnergyLevel ?? 10));
+      effectivePower = getEnergyPower(level);
+      formulaAnnotation = { formula: "energy", effectivePower };
+    }
+
     const result: DamageResult = computeMoveDamage({
-      movePower: move.power * baseCombo,
+      movePower: effectivePower * baseCombo,
       moveTypeName,
       isMagic: isMag,
       attackerAtk: isMag ? attackerStats.mag_atk : attackerStats.phy_atk,
@@ -175,7 +234,7 @@ export function computeMatchup(
     let altCondition: { zh: string; en: string } | undefined;
     if (conditionalStatus) {
       const altResult = computeMoveDamage({
-        movePower: (move.power + conditionalStatus.power_bonus) * baseCombo,
+        movePower: (effectivePower + conditionalStatus.power_bonus) * baseCombo,
         moveTypeName,
         isMagic: isMag,
         attackerAtk: isMag ? attackerStats.mag_atk : attackerStats.phy_atk,
@@ -195,7 +254,7 @@ export function computeMatchup(
       };
     } else if (move.counter_power_multiplier) {
       const altResult = computeMoveDamage({
-        movePower: move.power * baseCombo * move.counter_power_multiplier,
+        movePower: effectivePower * baseCombo * move.counter_power_multiplier,
         moveTypeName,
         isMagic: isMag,
         attackerAtk: isMag ? attackerStats.mag_atk : attackerStats.phy_atk,
@@ -240,6 +299,7 @@ export function computeMatchup(
       altDamage,
       altHpPercent,
       altCondition,
+      formulaAnnotation,
     };
   });
 

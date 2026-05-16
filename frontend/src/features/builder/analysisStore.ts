@@ -13,6 +13,8 @@ type SlotAnalysisState = {
   // EffectiveStatsPanel damage calculator
   calcAtk: number;
   calcPower: number;
+  // Leader form toggle (shared across all analysis tabs for this slot)
+  showLeaderForm: boolean;
 };
 
 const DEFAULT_SLOT: SlotAnalysisState = {
@@ -23,6 +25,7 @@ const DEFAULT_SLOT: SlotAnalysisState = {
   blindMode: "single",
   calcAtk: 250,
   calcPower: 100,
+  showLeaderForm: false,
 };
 
 // ─── Per-MatchupPanel state ───────────────────────────────────────────────────
@@ -35,6 +38,9 @@ export type MatchupPanelState = {
   featuredAtkStatusIds: number[];
   outgoingDebuffIds: number[];
   incomingDebuffIds: number[];
+  defShowLeaderForm: boolean;
+  /** Energy level for Mana Burst (0–10). Default 10. */
+  magicEnergyLevel: number;
 };
 
 // ─── Store ────────────────────────────────────────────────────────────────────

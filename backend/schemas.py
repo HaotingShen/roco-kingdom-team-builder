@@ -364,6 +364,7 @@ class MoveOut(MoveLiteOut):
     alt_power_total: Optional[float] = None
     alt_condition_zh: Optional[str] = None
     alt_condition_en: Optional[str] = None
+    power_formula: Optional[str] = None
     description: str
     # Default empty list keeps existing consumers backwards-compatible until the
     # move_statuses join table is populated.

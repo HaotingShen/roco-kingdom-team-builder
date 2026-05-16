@@ -46,6 +46,7 @@ def load_moves():
                 alt_power_total=item.get("alt_power_total"),
                 alt_condition_zh=item.get("alt_condition_zh"),
                 alt_condition_en=item.get("alt_condition_en"),
+                power_formula=item.get("power_formula"),
                 localized=item["localized"]
             ).on_conflict_do_update(
                 index_elements=["name"],
@@ -61,6 +62,7 @@ def load_moves():
                     "alt_power_total": item.get("alt_power_total"),
                     "alt_condition_zh": item.get("alt_condition_zh"),
                     "alt_condition_en": item.get("alt_condition_en"),
+                    "power_formula": item.get("power_formula"),
                     "localized": item["localized"]
                 }
             )

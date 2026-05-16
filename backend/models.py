@@ -272,6 +272,7 @@ class Move(Base):
     alt_power_total: Mapped[float] = mapped_column(Float, nullable=True)
     alt_condition_zh: Mapped[str] = mapped_column(String(80), nullable=True)
     alt_condition_en: Mapped[str] = mapped_column(String(80), nullable=True)
+    power_formula: Mapped[str] = mapped_column(String(20), nullable=True)
     localized: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
     __table_args__ = (
         Index("ix_moves_localized_gin", "localized", postgresql_using="gin"),

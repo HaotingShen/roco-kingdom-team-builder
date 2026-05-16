@@ -1,5 +1,8 @@
 import { useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useI18n } from "@/i18n";
+import { endpoints } from "@/lib/api";
+import { QUERY_KEYS } from "@/lib/constants";
 import { useMonstersByIds } from "@/hooks/useMonstersByIds";
 import { useMovesByIds } from "@/hooks/useMovesByIds";
 import { usePersonalities } from "@/hooks/usePersonalities";
@@ -7,6 +10,7 @@ import MatchupPanel from "@/components/MatchupPanel";
 import PanelCard from "@/components/PanelCard";
 import CustomDefenderInspector from "./CustomDefenderInspector";
 import type {
+  MonsterLiteOut,
   MonsterOut,
   MoveOut,
   PersonalityOut,
@@ -24,6 +28,8 @@ interface Props {
   attackerStatuses: readonly StatusOut[];
   attackerLegacyType?: TypeOut | null;
   willpowerActive?: boolean;
+  /** Leader type ID — used to detect when the custom defender needs leader form fetching. */
+  leaderTypeId?: number | null;
   customDefenderSlot: UserMonsterCreate | null;
   onCustomDefenderChange: (slot: UserMonsterCreate | null) => void;
 }
@@ -36,6 +42,7 @@ export default function VsCustomDefenderTab({
   attackerStatuses,
   attackerLegacyType,
   willpowerActive,
+  leaderTypeId,
   customDefenderSlot,
   onCustomDefenderChange,
 }: Props) {
@@ -81,6 +88,34 @@ export default function VsCustomDefenderTab({
     [personalitiesQ.data, customDefenderSlot?.personality_id],
   );
 
+  // Defender leader form — eagerly pre-fetched when the defender has leader_potential
+  // AND selected the Leader legacy type, so the toggle in MatchupPanel is instant.
+  const defenderNeedsLeaderForm =
+    !!defenderMonster?.leader_potential &&
+    leaderTypeId != null &&
+    customDefenderSlot?.legacy_type_id === leaderTypeId;
+
+  const defenderLeaderInfoQ = useQuery({
+    queryKey: QUERY_KEYS.LEADER_MONSTER(defenderMonsterId),
+    queryFn: () =>
+      endpoints
+        .monsters({ evolves_from_id: defenderMonsterId, is_leader_form: true })
+        .then((r) => ((r.data as MonsterLiteOut[])[0] ?? null)),
+    enabled: defenderNeedsLeaderForm && defenderMonsterId > 0,
+    staleTime: Infinity,
+  });
+
+  const defenderLeaderDetailQ = useQuery({
+    queryKey: QUERY_KEYS.MONSTER_DETAIL(defenderLeaderInfoQ.data?.id ?? 0),
+    queryFn: () =>
+      endpoints.monsterById(defenderLeaderInfoQ.data!.id).then((r) => r.data as MonsterOut),
+    enabled: !!defenderLeaderInfoQ.data?.id,
+    staleTime: Infinity,
+  });
+
+  const defenderLeaderMonster: MonsterOut | undefined =
+    defenderNeedsLeaderForm ? (defenderLeaderDetailQ.data ?? undefined) : undefined;
+
   // Determine readiness for rendering MatchupPanel
   const defenderConfigured =
     customDefenderSlot !== null &&
@@ -124,6 +159,7 @@ export default function VsCustomDefenderTab({
               defenderMonster={defenderMonster!}
               defenderPersonality={defenderPersonality!}
               defenderMoves={defenderMovesData}
+              defenderLeaderMonster={defenderLeaderMonster}
               tabKey="vsCustom"
               defenderSideLabel={t("analysis.vsCustomDefenderLabel")}
             />

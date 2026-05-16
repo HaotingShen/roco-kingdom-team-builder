@@ -54,5 +54,13 @@
     "zh": "新功能：图鉴里新增双向属性克制查询！手机端需要在上方导航栏向右滑动才能看到哦。此外，技能详情里现在也能查看属性克制啦！",
     "date": "2026-04-27",
     "expiresAt": "2026-05-12"
+  },
+  {
+    "id": "2026-05-16-battle-simulator-and-vs-featured-teams-features",
+    "type": "info",
+    "en": "New: A PvP stats calculator has been added to the Build Page! Input a jingling's level, IVs, and nature to see the final stats used in PvP battles.",
+    "zh": "新功能：构筑页面新增PvP属性计算器！输入精灵的等级、个体值和性格，即可查看PvP战斗中使用的最终属性！",
+    "date": "2026-05-16",
+    "expiresAt": "2026-05-31"
   }
 ]

@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import type { ReactNode } from "react";
 
 interface PageTabsProps {
-  tabs: { key: string; label: string; content: ReactNode }[];
+  tabs: { key: string; label: ReactNode; content: ReactNode }[];
   activeTab?: string;
   onTabChange?: (key: string) => void;
 }
@@ -105,7 +105,7 @@ export default function PageTabs({
             <button
               key={t.key}
               onClick={(e) => handleTabClick(t.key, e.currentTarget, idx)}
-              className={`px-3 py-2 text-sm border-b-2 -mb-px whitespace-nowrap shrink-0 ${active === t.key ? "border-zinc-900" : "border-transparent text-zinc-500"}`}
+              className={`relative overflow-visible px-3 py-2 text-sm border-b-2 -mb-px whitespace-nowrap shrink-0 ${active === t.key ? "border-zinc-900" : "border-transparent text-zinc-500"}`}
             >
               {t.label}
             </button>

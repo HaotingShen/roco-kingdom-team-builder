@@ -1,5 +1,5 @@
 import { Link, useParams, useSearchParams } from "react-router-dom";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { endpoints } from "@/lib/api";
 import { useI18n, pickName, pickFormName } from "@/i18n";
@@ -17,6 +17,7 @@ import AttackerStatusSelector from "@/components/AttackerStatusSelector";
 import { getAttackerStatusOptions } from "@/lib/attackerStatusOptions";
 import VsFeaturedTeamsTab from "./VsFeaturedTeamsTab";
 import VsCustomDefenderTab from "./VsCustomDefenderTab";
+import HotLabel from "@/components/HotLabel";
 import type { MonsterOut, MonsterLiteOut, TypeOut, UserMonsterCreate } from "@/types";
 
 /**
@@ -50,6 +51,91 @@ import type { MonsterOut, MonsterLiteOut, TypeOut, UserMonsterCreate } from "@/t
  * hydrated and is responsible for hydrating any defender-side data for
  * each matchup panel it renders.
  */
+// ─── Leader Form Toggle ───────────────────────────────────────────────────────
+
+interface LeaderFormToggleProps {
+  showLeaderForm: boolean;
+  leaderFormName?: string;
+  onToggle: (v: boolean) => void;
+}
+
+function LeaderFormToggle({ showLeaderForm, leaderFormName, onToggle }: LeaderFormToggleProps) {
+  const { t } = useI18n();
+  const [hintOpen, setHintOpen] = useState(false);
+  const [flipDown, setFlipDown] = useState(false);
+  const btnRef = useRef<HTMLButtonElement>(null);
+  const hintRef = useRef<HTMLSpanElement>(null);
+
+  useEffect(() => {
+    if (!hintOpen) return;
+    const close = (e: MouseEvent) => {
+      if (hintRef.current && !hintRef.current.contains(e.target as Node)) setHintOpen(false);
+    };
+    document.addEventListener("mousedown", close);
+    return () => document.removeEventListener("mousedown", close);
+  }, [hintOpen]);
+
+  const openHint = useCallback(() => {
+    if (btnRef.current) setFlipDown(btnRef.current.getBoundingClientRect().top < 160);
+    setHintOpen((v) => !v);
+  }, []);
+
+  return (
+    <div className="rounded-lg border border-indigo-200 bg-indigo-50 px-4 py-2.5 flex flex-wrap items-center gap-x-4 gap-y-1.5">
+      <span className="text-xs font-semibold text-indigo-600 shrink-0 uppercase tracking-wide">
+        {t("analysis.attackerFormLabel")}
+      </span>
+      <div className="flex items-center gap-2 shrink-0">
+        <span
+          className={`text-sm cursor-pointer select-none transition-colors duration-150 ${!showLeaderForm ? "font-semibold text-zinc-800" : "text-zinc-400"}`}
+          onClick={() => onToggle(false)}
+        >
+          {t("analysis.regularForm")}
+        </span>
+        <button
+          type="button"
+          role="switch"
+          aria-checked={showLeaderForm}
+          onClick={() => onToggle(!showLeaderForm)}
+          className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 ${showLeaderForm ? "bg-indigo-500" : "bg-zinc-300"}`}
+        >
+          <span
+            className={`pointer-events-none inline-block h-4 w-4 rounded-full bg-white shadow-sm transition-transform duration-200 ${showLeaderForm ? "translate-x-4" : "translate-x-0"}`}
+          />
+        </button>
+        <span
+          className={`text-sm cursor-pointer select-none transition-colors duration-150 ${showLeaderForm ? "font-semibold text-zinc-800" : "text-zinc-400"}`}
+          onClick={() => onToggle(true)}
+        >
+          {t("analysis.leaderForm")}
+        </span>
+      </div>
+      <span ref={hintRef} className="relative ml-auto shrink-0">
+        <button
+          ref={btnRef}
+          type="button"
+          onClick={openHint}
+          className="w-5 h-5 rounded-full border border-indigo-300 bg-white text-indigo-400 hover:text-indigo-600 hover:border-indigo-400 text-[11px] font-bold leading-none flex items-center justify-center cursor-pointer transition-colors"
+          aria-label="Help"
+        >
+          ?
+        </button>
+        {hintOpen && (
+          <span onMouseDown={e => e.stopPropagation()} className={`absolute z-20 right-0 w-64 rounded-md bg-zinc-800 px-2.5 py-2 text-xs leading-snug text-white shadow-lg ${flipDown ? "top-full mt-2" : "bottom-full mb-2"}`}>
+            {t("analysis.attackerFormHint")}
+            <span className={`absolute right-3 border-4 border-transparent ${flipDown ? "bottom-full border-b-zinc-800" : "top-full border-t-zinc-800"}`} />
+          </span>
+        )}
+      </span>
+      <span className="text-xs text-zinc-500 leading-tight w-full sm:w-auto">
+        {leaderFormName ?? t("analysis.leaderFormNote")}
+      </span>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 export default function MonsterAnalysisPage() {
   const { slot: slotParam } = useParams();
   const [sp] = useSearchParams();
@@ -90,9 +176,11 @@ export default function MonsterAnalysisPage() {
     useAnalysisStore.getState().setAttackerStatusIds(slotIdx, activeAttackerStatusIds);
   }, [slotIdx, activeAttackerStatusIds]);
 
-  // Leader form toggle state — resets whenever the user navigates to a different slot.
-  const [showLeaderForm, setShowLeaderForm] = useState(false);
-  useEffect(() => { setShowLeaderForm(false); }, [slotIdx]);
+  // Leader form toggle — stored per slot so it persists across navigation and is
+  // shared across all three analysis tabs (Stats, vsCustom, vsFeatured).
+  const showLeaderForm = useAnalysisStore((s) => s.slots[slotIdx]?.showLeaderForm ?? false);
+  const setShowLeaderForm = (v: boolean) =>
+    useAnalysisStore.getState().patchSlot(slotIdx, { showLeaderForm: v });
 
   // ----- Attacker fetches (single source for all 3 analysis panels) -----
 
@@ -155,12 +243,6 @@ export default function MonsterAnalysisPage() {
     [personalitiesQ.data, personalityId],
   );
 
-  const attackerMonsterName = useMemo(() => {
-    const m = attackerMonsterQ.data;
-    if (!m) return undefined;
-    return pickName(m, lang) || m.name || undefined;
-  }, [attackerMonsterQ.data, lang]);
-
   // ----- Leader form + Willpower Impact queries -----
 
   // Types list — needed to resolve the Leader type ID and attacker's legacy type.
@@ -215,10 +297,18 @@ export default function MonsterAnalysisPage() {
     leaderDetailQ.data != null &&
     !leaderDetailQ.isLoading;
 
-  // Only EffectiveStatsPanel switches monster on toggle — TypeDefensePanel
-  // always uses `detail` because leader forms share the same elemental typing.
-  const activeStatsMonster: MonsterOut | undefined =
+  // Resolved attacker monster: leader form when the toggle is ON and data is ready,
+  // regular form otherwise. Shared across all three tabs — Stats panel (EffectiveStatsPanel
+  // only; TypeDefensePanel always uses `detail`), vsCustom, and vsFeatured.
+  const activeAttackerMonster: MonsterOut | undefined =
     showLeaderForm && leaderDetailQ.data ? leaderDetailQ.data : detail;
+
+  // Reflects leader form name when the toggle is ON.
+  const attackerMonsterName = useMemo(() => {
+    const m = activeAttackerMonster;
+    if (!m) return undefined;
+    return pickName(m, lang) || m.name || undefined;
+  }, [activeAttackerMonster, lang]);
 
   // Match MonsterDetailPage's behavior: scroll to top whenever the slot changes.
   useEffect(() => { window.scrollTo(0, 0); }, [slotParam]);
@@ -255,58 +345,27 @@ export default function MonsterAnalysisPage() {
     );
   }
 
-  // Leader Form Toggle row — only rendered when showLeaderToggle is true.
-  const leaderToggle = showLeaderToggle ? (
-    <div className="rounded-lg border border-indigo-200 bg-indigo-50 px-4 py-2.5 flex flex-wrap items-center gap-x-4 gap-y-1.5">
-      {/* Pill toggle */}
-      <div className="flex items-center gap-2 shrink-0">
-        <span
-          className={`text-sm cursor-pointer select-none transition-colors duration-150 ${
-            !showLeaderForm ? "font-semibold text-zinc-800" : "text-zinc-400"
-          }`}
-          onClick={() => setShowLeaderForm(false)}
-        >
-          {t("analysis.regularForm")}
-        </span>
-        <button
-          type="button"
-          role="switch"
-          aria-checked={showLeaderForm}
-          onClick={() => setShowLeaderForm((v) => !v)}
-          className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 ${
-            showLeaderForm ? "bg-indigo-500" : "bg-zinc-300"
-          }`}
-        >
-          <span
-            className={`pointer-events-none inline-block h-4 w-4 rounded-full bg-white shadow-sm transition-transform duration-200 ${
-              showLeaderForm ? "translate-x-4" : "translate-x-0"
-            }`}
-          />
-        </button>
-        <span
-          className={`text-sm cursor-pointer select-none transition-colors duration-150 ${
-            showLeaderForm ? "font-semibold text-zinc-800" : "text-zinc-400"
-          }`}
-          onClick={() => setShowLeaderForm(true)}
-        >
-          {t("analysis.leaderForm")}
-        </span>
-      </div>
-      {/* Explanatory note — shows active leader form name when toggle is ON */}
-      <span className="text-xs text-zinc-500 leading-tight">
-        {showLeaderForm && leaderDetailQ.data
-          ? (() => {
-              const lm = leaderDetailQ.data;
-              const name = pickName(lm, lang) || lm.name;
-              const form = pickFormName(lm, lang);
-              return (t("analysis.leaderFormActive") ?? "Viewing: {name}").replace(
-                "{name}",
-                form ? `${name} (${form})` : name,
-              );
-            })()
-          : t("analysis.leaderFormNote")}
-      </span>
-    </div>
+  // Pre-compute the active leader form label string passed down to each toggle instance.
+  const leaderFormActiveName = showLeaderForm && leaderDetailQ.data
+    ? (() => {
+        const lm = leaderDetailQ.data;
+        const name = pickName(lm, lang) || lm.name;
+        const form = pickFormName(lm, lang);
+        return (t("analysis.leaderFormActive") ?? "Viewing: {name}").replace(
+          "{name}",
+          form ? `${name} (${form})` : name,
+        );
+      })()
+    : undefined;
+
+  // LeaderFormToggle is a proper component — each render site gets independent
+  // state and refs, so the tooltip works correctly regardless of viewport size.
+  const leaderToggleBlock = showLeaderToggle ? (
+    <LeaderFormToggle
+      showLeaderForm={showLeaderForm}
+      leaderFormName={leaderFormActiveName}
+      onToggle={setShowLeaderForm}
+    />
   ) : null;
 
   // ----- Tab 1 content (stats) -----
@@ -323,7 +382,6 @@ export default function MonsterAnalysisPage() {
     </section>
   ) : (
     <div className="space-y-3">
-      {leaderToggle}
       {/* TypeDefensePanel always uses the regular form — leader forms share the same typing. */}
       <TypeDefensePanel monster={detail} />
       <MoveCoveragePanel
@@ -337,7 +395,7 @@ export default function MonsterAnalysisPage() {
         onBlindModeChange={(m) => useAnalysisStore.getState().patchSlot(slotIdx, { blindMode: m })}
       />
       <EffectiveStatsPanel
-        monster={activeStatsMonster}
+        monster={activeAttackerMonster}
         talent={talent}
         personality={attackerPersonality}
         initialCalcAtk={storedSlot?.calcAtk}
@@ -383,13 +441,14 @@ export default function MonsterAnalysisPage() {
 
   const vsCustomTabContent = attackerGuard(
     <VsCustomDefenderTab
-      attackerMonster={detail!}
+      attackerMonster={activeAttackerMonster!}
       attackerTalent={talent}
       attackerPersonality={attackerPersonality!}
       attackerMoves={attackerMovesData ?? []}
       attackerStatuses={activeAttackerStatuses}
       attackerLegacyType={attackerLegacyType}
       willpowerActive={willpowerActive}
+      leaderTypeId={leaderTypeId}
       customDefenderSlot={customDefenderSlot}
       onCustomDefenderChange={setCustomDefenderSlot}
     />,
@@ -397,7 +456,7 @@ export default function MonsterAnalysisPage() {
 
   const vsFeaturedTabContent = attackerGuard(
     <VsFeaturedTeamsTab
-      attackerMonster={detail!}
+      attackerMonster={activeAttackerMonster!}
       attackerTalent={talent}
       attackerPersonality={attackerPersonality!}
       attackerMoves={attackerMovesData ?? []}
@@ -411,8 +470,8 @@ export default function MonsterAnalysisPage() {
 
   const tabs = [
     { key: "stats", label: t("analysis.tabStats"), content: statsTabContent },
-    { key: "vsCustom", label: t("analysis.tabVsCustom"), content: vsCustomTabContent },
-    { key: "vsFeatured", label: t("analysis.tabVsFeatured"), content: vsFeaturedTabContent },
+    { key: "vsCustom", label: <HotLabel>{t("analysis.tabVsCustom")}</HotLabel>, content: vsCustomTabContent },
+    { key: "vsFeatured", label: <HotLabel>{t("analysis.tabVsFeatured")}</HotLabel>, content: vsFeaturedTabContent },
   ];
 
   return (
@@ -428,6 +487,8 @@ export default function MonsterAnalysisPage() {
               <span className="text-zinc-700">{t("dex.backToBuilder")}</span>
             </Link>
           </div>
+          {/* Desktop: leader toggle sits above the status selector and inspector */}
+          <div className="hidden lg:block">{leaderToggleBlock}</div>
           {showMatchupStatus ? (
             <div className="hidden lg:block">
               <AttackerStatusSelector
@@ -443,8 +504,21 @@ export default function MonsterAnalysisPage() {
             context="analyze"
             dexMonsterId={showLeaderForm && leaderDetailQ.data ? leaderDetailQ.data.id : undefined}
           />
+          {/* Mobile matchup tabs: leader toggle below inspector, non-sticky.
+              Stats tab: toggle is rendered in the right column instead (see below)
+              so it can actually stick while scrolling through the stats panels. */}
+          {showMatchupStatus && leaderToggleBlock && (
+            <div className="lg:hidden">{leaderToggleBlock}</div>
+          )}
         </div>
         <div className="min-w-0">
+          {/* Mobile Stats tab: leader toggle at top of the right column so it sits in the
+              same scroll area as the stats panels and can actually stick to the top. */}
+          {!showMatchupStatus && leaderToggleBlock && (
+            <div className="block lg:hidden sticky top-14 z-[8] mb-3">
+              {leaderToggleBlock}
+            </div>
+          )}
           {/* Mobile-only sticky attacker status — desktop version lives in the left column */}
           {showMatchupStatus && (
             <div className="block lg:hidden sticky top-14 z-[9] mb-3">

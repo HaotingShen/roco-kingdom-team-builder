@@ -47,10 +47,10 @@ if __name__ == "__main__":
     print("8/10 Importing monsters...")
     import_monsters.main()
 
-    print("9/10 Importing monster-move associations...")
+    print("9/11 Importing monster-move associations...")
     import_monster_moves.main()
 
-    print("10/10 Importing legacy moves...")
+    print("10/11 Importing legacy moves...")
     import_legacy_moves.main()
 
     print("11/11 Importing statuses...")

@@ -1,11 +1,14 @@
 import { useMemo, useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import { useI18n, pickName } from "@/i18n";
+import { endpoints } from "@/lib/api";
 import { useMonstersByIds } from "@/hooks/useMonstersByIds";
-import { typeIconUrl, monsterImageFallbackChain, monsterPlaceholder } from "@/lib/images";
+import { typeIconUrl, monsterImageFallbackChain, monsterPlaceholder, magicItemImageUrl, magicItemPlaceholder } from "@/lib/images";
 import MatchupPanel from "@/components/MatchupPanel";
 import PanelCard from "@/components/PanelCard";
 import type {
+  MonsterLiteOut,
   MonsterOut,
   MoveOut,
   PersonalityOut,
@@ -146,12 +149,27 @@ function MonsterMiniCard({ um }: { um: UserMonsterOut }) {
 }
 
 function TeamCompositionStrip({ team }: { team: TeamOut }) {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
+  const itemName = pickName(team.magic_item, lang);
+  const itemImg = magicItemImageUrl(team.magic_item) ?? magicItemPlaceholder;
   return (
     <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-3">
-      <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-2">
-        {t("analysis.featuredTeamComposition")}
-      </p>
+      <div className="flex items-center justify-between gap-3 mb-2">
+        <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wider shrink-0">
+          {t("analysis.featuredTeamComposition")}
+        </p>
+        {team.magic_item && (
+          <div className="flex items-center gap-1.5 shrink-0">
+            <span className="text-xs text-zinc-600">{t("analysis.magicItem")}</span>
+            <img
+              src={itemImg}
+              alt={itemName}
+              width={20}
+              height={20}
+            />
+          </div>
+        )}
+      </div>
       <div className="flex gap-2 overflow-x-auto pb-1 -mb-1">
         {team.user_monsters.map((um) => (
           <MonsterMiniCard key={um.id} um={um} />
@@ -226,6 +244,62 @@ export default function FeaturedTeamView({
 
   const monstersResult = useMonstersByIds(allMonsterIds);
 
+  // ── Defender leader form pre-fetching ────────────────────────────────────────
+  // Identify defenders that have leader_potential AND selected the Leader legacy
+  // type. Eagerly fetch their leader forms in the background so the toggle in
+  // MatchupPanel is instant when the user clicks it.
+
+  const leaderCandidateIds = useMemo(
+    () =>
+      team.user_monsters
+        .filter((um) => !!um.monster.leader_potential && um.legacy_type.name === "Leader")
+        .map((um) => um.monster.id),
+    [team],
+  );
+
+  // Step 1: find each candidate's leader-form MonsterLiteOut (by evolves_from_id).
+  const leaderInfosQ = useQuery({
+    queryKey: ["leader_infos_batch", leaderCandidateIds],
+    queryFn: async () => {
+      const results = await Promise.all(
+        leaderCandidateIds.map((id) =>
+          endpoints
+            .monsters({ evolves_from_id: id, is_leader_form: true })
+            .then((r) => ({
+              regularId: id,
+              leaderInfo: (r.data as MonsterLiteOut[])[0] ?? null,
+            })),
+        ),
+      );
+      return results;
+    },
+    enabled: leaderCandidateIds.length > 0,
+    staleTime: Infinity,
+  });
+
+  // Step 2: batch-fetch full MonsterOut for each discovered leader-form ID.
+  const leaderFormIdsToFetch = useMemo(
+    () =>
+      (leaderInfosQ.data ?? [])
+        .filter((r) => r.leaderInfo !== null)
+        .map((r) => r.leaderInfo!.id),
+    [leaderInfosQ.data],
+  );
+  const leaderDetailResults = useMonstersByIds(leaderFormIdsToFetch);
+
+  // Map: regular monster ID → leader-form MonsterOut (only when fully loaded).
+  const leaderFormMap = useMemo(() => {
+    const map = new Map<number, MonsterOut>();
+    for (const result of leaderInfosQ.data ?? []) {
+      if (!result.leaderInfo) continue;
+      const leaderMonster = leaderDetailResults.monsters.get(result.leaderInfo.id);
+      if (leaderMonster) map.set(result.regularId, leaderMonster);
+    }
+    return map;
+  }, [leaderInfosQ.data, leaderDetailResults.monsters]);
+
+  // ─────────────────────────────────────────────────────────────────────────────
+
   const isLoading = monstersResult.isLoading;
   const isError = monstersResult.isError;
 
@@ -239,9 +313,10 @@ export default function FeaturedTeamView({
         monster,
         personality: um.personality,
         moves,
+        leaderMonster: leaderFormMap.get(um.monster.id),
       };
     });
-  }, [team, monstersResult.monsters]);
+  }, [team, monstersResult.monsters, leaderFormMap]);
 
   if (isLoading) {
     return (
@@ -277,6 +352,7 @@ export default function FeaturedTeamView({
             defenderMonster={row.monster}
             defenderPersonality={row.personality}
             defenderMoves={row.moves}
+            defenderLeaderMonster={row.leaderMonster}
           />
         ) : (
           <PanelCard key={row.key}>

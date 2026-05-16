@@ -68,7 +68,7 @@ function AltDamageTooltip({ damage, hpPercent }: { damage: number; hpPercent: nu
       onClick={() => setOpen((v) => !v)}
     >
       <span className="text-sm font-bold tabular-nums text-violet-500">{damage}</span>
-      <span className="text-xs tabular-nums text-violet-500">({hpPercent.toFixed(1)}%)</span>
+      <span className="text-sm tabular-nums text-violet-500">({hpPercent.toFixed(1)}%)</span>
       <span
         className={`pointer-events-none absolute z-20 bottom-full right-0 mb-2 w-max max-w-[220px] rounded-md bg-zinc-800 px-2.5 py-1.5 text-[11px] leading-snug text-white shadow-lg transition-opacity duration-150 ${
           open ? "opacity-100" : "opacity-0"
@@ -123,7 +123,7 @@ function DamageTooltip({
       onClick={() => setOpen((v) => !v)}
     >
       <span className={`text-sm font-bold tabular-nums ${colorCls}`}>{damage}</span>
-      <span className={`text-xs tabular-nums ${colorCls}`}>({hpPercent.toFixed(1)}%)</span>
+      <span className={`text-sm tabular-nums ${colorCls}`}>({hpPercent.toFixed(1)}%)</span>
 
       {/* Tooltip */}
       <span
@@ -209,9 +209,80 @@ function MonsterStrip({
   );
 }
 
+// ─── PowerFormulaIcon ─────────────────────────────────────────────────────────
+
+function PowerFormulaIcon({
+  formula,
+  effectivePower,
+  statDiff,
+}: {
+  formula: "speed_diff" | "phy_def_diff" | "energy";
+  effectivePower: number;
+  statDiff?: number;
+}) {
+  const { t } = useI18n();
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLSpanElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const close = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", close);
+    return () => document.removeEventListener("mousedown", close);
+  }, [open]);
+
+  let label = "";
+  if (formula === "speed_diff" && statDiff !== undefined) {
+    const sign = statDiff >= 0 ? "+" : "";
+    label = t("analysis.matchupFormulaSpeedDiff")
+      .replace("{sign}", sign)
+      .replace("{diff}", String(statDiff))
+      .replace("{power}", String(effectivePower));
+  } else if (formula === "phy_def_diff" && statDiff !== undefined) {
+    const sign = statDiff >= 0 ? "+" : "";
+    label = t("analysis.matchupFormulaPhyDefDiff")
+      .replace("{sign}", sign)
+      .replace("{diff}", String(statDiff))
+      .replace("{power}", String(effectivePower));
+  }
+
+  if (!label) return null;
+
+  return (
+    <span ref={ref} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="w-3.5 h-3.5 rounded-full border border-zinc-300 bg-white text-zinc-400 hover:text-zinc-600 text-[9px] font-bold leading-none flex items-center justify-center cursor-pointer transition-colors"
+        aria-label="Formula info"
+      >
+        i
+      </button>
+      {open && (
+        <span className="absolute z-20 bottom-full left-1/2 -translate-x-1/2 mb-2 whitespace-nowrap rounded-md bg-zinc-800 px-2 py-1 text-[11px] leading-snug text-white shadow-lg">
+          {label}
+          <span className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-zinc-800" />
+        </span>
+      )}
+    </span>
+  );
+}
+
 // ─── MoveRow ──────────────────────────────────────────────────────────────────
 
-function MoveRow({ row, defenderHp }: { row: MoveMatchupResult; defenderHp: number }) {
+function MoveRow({
+  row,
+  defenderHp,
+  magicEnergyLevel,
+  onMagicEnergyChange,
+}: {
+  row: MoveMatchupResult;
+  defenderHp: number;
+  magicEnergyLevel?: number;
+  onMagicEnergyChange?: (level: number) => void;
+}) {
   const { lang, t } = useI18n();
 
   const moveName = pickName(row.move, lang) || row.move.name;
@@ -259,10 +330,19 @@ function MoveRow({ row, defenderHp }: { row: MoveMatchupResult; defenderHp: numb
         <span className="flex items-center gap-2 flex-1 min-w-0">
           {typeIconEl}
           <span className="text-sm font-medium text-zinc-800 leading-snug min-w-0">{moveName}</span>
-          {(cat === "PHY_ATTACK" || cat === "MAG_ATTACK") && row.move.power != null && (
+          {(cat === "PHY_ATTACK" || cat === "MAG_ATTACK") && (row.formulaAnnotation?.effectivePower ?? row.move.power) != null && (
             <span className="flex items-center gap-1 shrink-0 ml-1">
               <img src={catIconUrl} alt={cat} className="w-3 h-3 opacity-80" />
-              <span className="text-xs font-medium text-zinc-500 tabular-nums">{row.move.power}</span>
+              <span className="text-xs font-medium text-zinc-500 tabular-nums">
+                {row.formulaAnnotation?.effectivePower ?? row.move.power}
+              </span>
+              {row.formulaAnnotation && row.formulaAnnotation.formula !== "energy" && (
+                <PowerFormulaIcon
+                  formula={row.formulaAnnotation.formula}
+                  effectivePower={row.formulaAnnotation.effectivePower}
+                  statDiff={row.formulaAnnotation.statDiff}
+                />
+              )}
             </span>
           )}
           {comboCount > 1 && (
@@ -271,10 +351,11 @@ function MoveRow({ row, defenderHp }: { row: MoveMatchupResult; defenderHp: numb
             </span>
           )}
         </span>
-        <span className="flex items-center gap-1 shrink-0 leading-none">
+        <span className="flex items-center gap-1.5 shrink-0">
           {kill && (
-            <span className={`text-[10px] font-bold rounded-full px-1.5 py-0.5 ${kill.cls}`}>{kill.text}</span>
+            <span className={`inline-flex items-center text-[10px] font-bold rounded-full px-1.5 py-0.5 ${kill.cls}`}>{kill.text}</span>
           )}
+          <span className="inline-flex items-center text-xs text-zinc-400 select-none">{t("analysis.matchupDmgLabel")}</span>
           <DamageTooltip
             damage={row.damage}
             hpPercent={row.hpPercent}
@@ -285,15 +366,32 @@ function MoveRow({ row, defenderHp }: { row: MoveMatchupResult; defenderHp: numb
       {moveDesc && (
         <p className="text-xs text-zinc-400 mt-0.5 leading-relaxed line-clamp-3 pl-7">{moveDesc}</p>
       )}
+      {row.move.power_formula === "energy" && onMagicEnergyChange && (
+        <div className="flex items-center gap-2 pl-7 mt-1">
+          <span className="text-xs text-zinc-400 shrink-0">{t("analysis.matchupEnergyLabel")}</span>
+          <select
+            value={magicEnergyLevel ?? 10}
+            onChange={(e) => onMagicEnergyChange(Number(e.target.value))}
+            className="border border-zinc-300 rounded px-1 py-0 text-xs text-zinc-600 bg-white cursor-pointer focus:outline-none focus:ring-1 focus:ring-zinc-400"
+          >
+            {Array.from({ length: 11 }, (_, i) => (
+              <option key={i} value={i}>{i}</option>
+            ))}
+          </select>
+        </div>
+      )}
       {row.altDamage != null && row.altCondition && (
         <div className="flex items-center justify-between gap-2 sm:gap-3 pl-7 mt-1">
           <span className="text-xs text-violet-500 truncate">
             {lang === "zh" ? row.altCondition.zh : row.altCondition.en}
           </span>
-          <AltDamageTooltip
-            damage={row.altDamage}
-            hpPercent={row.altHpPercent ?? 0}
-          />
+          <span className="flex items-center gap-1.5 shrink-0">
+            <span className="inline-flex items-center text-xs text-zinc-400 select-none">{t("analysis.matchupDmgLabel")}</span>
+            <AltDamageTooltip
+              damage={row.altDamage}
+              hpPercent={row.altHpPercent ?? 0}
+            />
+          </span>
         </div>
       )}
     </div>
@@ -317,6 +415,9 @@ interface Props {
   defenderMonster: MonsterOut;
   defenderPersonality: PersonalityOut;
   defenderMoves: readonly MoveOut[];
+  /** Pre-fetched leader-form MonsterOut for the defender. When provided, a toggle
+   *  appears so the user can switch between regular and leader form calculations. */
+  defenderLeaderMonster?: MonsterOut;
   /** Which analysis tab to link back to in Dex URLs. Defaults to "vsFeatured". */
   tabKey?: string;
   /** Override the defender side-label. Defaults to the "Featured" translation. */
@@ -335,6 +436,7 @@ export default function MatchupPanel({
   defenderMonster,
   defenderPersonality,
   defenderMoves,
+  defenderLeaderMonster,
   tabKey = "vsFeatured",
   defenderSideLabel,
 }: Props) {
@@ -349,6 +451,7 @@ export default function MatchupPanel({
   const stored = useAnalysisStore.getState().matchupStates[storeKey];
 
   const [isReversed, setIsReversed] = useState(stored?.isReversed ?? false);
+  const [showDefLeaderForm, setShowDefLeaderForm] = useState(stored?.defShowLeaderForm ?? false);
 
   // Defense-reducing options for each side (only moves with dmg_reduction_pct).
   const defenderDefenseOptions = useMemo<DefenseOption[]>(() => {
@@ -427,6 +530,7 @@ export default function MatchupPanel({
   const [featuredAtkStatusIds, setFeaturedAtkStatusIds] = useState<number[]>(stored?.featuredAtkStatusIds ?? []);
   const [outgoingDebuffIds, setOutgoingDebuffIds] = useState<number[]>(stored?.outgoingDebuffIds ?? []);
   const [incomingDebuffIds, setIncomingDebuffIds] = useState<number[]>(stored?.incomingDebuffIds ?? []);
+  const [magicEnergyLevel, setMagicEnergyLevel] = useState(stored?.magicEnergyLevel ?? 10);
 
   // When the defender changes within a mounted component (vsCustom tab, cached
   // monster data): restore previously stored state for the new defender, or
@@ -438,21 +542,25 @@ export default function MatchupPanel({
     mountedMonsterIdRef.current = defender.monster_id;
     const saved = useAnalysisStore.getState().matchupStates[storeKey];
     setIsReversed(saved?.isReversed ?? false);
+    setShowDefLeaderForm(saved?.defShowLeaderForm ?? false);
     setDefDefenseId(saved?.defDefenseId ?? "none");
     setAtkDefenseId(saved?.atkDefenseId ?? "none");
     setFeaturedAtkStatusIds(saved?.featuredAtkStatusIds ?? []);
     setOutgoingDebuffIds(saved?.outgoingDebuffIds ?? []);
     setIncomingDebuffIds(saved?.incomingDebuffIds ?? []);
+    setMagicEnergyLevel(saved?.magicEnergyLevel ?? 10);
   }, [defender.monster_id, storeKey]);
 
   // Sync current state to the store imperatively — no reactive subscription needed.
   useEffect(() => {
     useAnalysisStore.getState().setMatchupState(storeKey, {
-      isReversed, defDefenseId, atkDefenseId,
+      isReversed, defShowLeaderForm: showDefLeaderForm,
+      defDefenseId, atkDefenseId,
       featuredAtkStatusIds, outgoingDebuffIds, incomingDebuffIds,
+      magicEnergyLevel,
     });
-  }, [storeKey, isReversed, defDefenseId, atkDefenseId,
-      featuredAtkStatusIds, outgoingDebuffIds, incomingDebuffIds]);
+  }, [storeKey, isReversed, showDefLeaderForm, defDefenseId, atkDefenseId,
+      featuredAtkStatusIds, outgoingDebuffIds, incomingDebuffIds, magicEnergyLevel]);
 
   const featuredAtkStatuses = useMemo(() => {
     const active = new Set(featuredAtkStatusIds);
@@ -469,18 +577,24 @@ export default function MatchupPanel({
     return incomingOpponentDebuffOptions.filter((s) => active.has(s.id));
   }, [incomingOpponentDebuffOptions, incomingDebuffIds]);
 
+  // Resolved defender: switches to leader form when the toggle is ON and data is available.
+  const resolvedDefenderMonster = showDefLeaderForm && defenderLeaderMonster
+    ? defenderLeaderMonster
+    : defenderMonster;
+
   // Willpower Impact damage — computed only when willpowerActive and legacy type is known.
   const willpowerDamage = useMemo(() => {
     if (!willpowerActive || !attackerLegacyType || attackerLegacyType.name === "Leader") return null;
     const atkStats = computeEffectiveStats(attackerMonster, attackerTalent, attackerPersonality);
     const isMagic = atkStats.mag_atk >= atkStats.phy_atk;
     const atkValue = isMagic ? atkStats.mag_atk : atkStats.phy_atk;
-    const defMainSets = defenderMonster.main_type ? setsFor(defenderMonster.main_type) : null;
-    const defSubSets = defenderMonster.sub_type ? setsFor(defenderMonster.sub_type) : null;
+    const defMainSets = resolvedDefenderMonster.main_type ? setsFor(resolvedDefenderMonster.main_type) : null;
+    const defSubSets = resolvedDefenderMonster.sub_type ? setsFor(resolvedDefenderMonster.sub_type) : null;
     if (!defMainSets) return null;
-    const defValue = isMagic ? computeEffectiveStats(defenderMonster, defender.talent, defenderPersonality).mag_def
-                             : computeEffectiveStats(defenderMonster, defender.talent, defenderPersonality).phy_def;
-    const defHp = computeEffectiveStats(defenderMonster, defender.talent, defenderPersonality).hp;
+    const defValue = isMagic
+      ? computeEffectiveStats(resolvedDefenderMonster, defender.talent, defenderPersonality).mag_def
+      : computeEffectiveStats(resolvedDefenderMonster, defender.talent, defenderPersonality).phy_def;
+    const defHp = computeEffectiveStats(resolvedDefenderMonster, defender.talent, defenderPersonality).hp;
     const base = computeMoveDamage({
       movePower: 80,
       moveTypeName: attackerLegacyType.name,
@@ -517,7 +631,7 @@ export default function MatchupPanel({
       defHp,
     };
   }, [willpowerActive, attackerLegacyType, attackerMonster, attackerTalent, attackerPersonality,
-      defenderMonster, defender.talent, defenderPersonality, attackerStatuses, activeOutgoingDebuffs]);
+      resolvedDefenderMonster, defender.talent, defenderPersonality, attackerStatuses, activeOutgoingDebuffs]);
 
   const toggleFeaturedAtkStatus = (id: number) => {
     setFeaturedAtkStatusIds((prev) =>
@@ -547,23 +661,25 @@ export default function MatchupPanel({
     () => computeMatchup(
       { monster: attackerMonster, talent: attackerTalent, personality: attackerPersonality },
       attackerMoves,
-      { monster: defenderMonster, talent: defender.talent, personality: defenderPersonality },
+      { monster: resolvedDefenderMonster, talent: defender.talent, personality: defenderPersonality },
       {
         attackerStatuses: [...attackerStatuses],
         defenderStatuses: [
           ...(activeDefenderStatus ? [activeDefenderStatus] : []),
           ...activeOutgoingDebuffs,
         ],
+        magicEnergyLevel,
       },
     ),
     [attackerMonster, attackerTalent, attackerPersonality, attackerMoves, attackerStatuses,
-     defenderMonster, defender.talent, defenderPersonality, activeDefenderStatus, activeOutgoingDebuffs],
+     resolvedDefenderMonster, defender.talent, defenderPersonality, activeDefenderStatus,
+     activeOutgoingDebuffs, magicEnergyLevel],
   );
 
   // Incoming: the featured team member attacks my jingling.
   const incoming = useMemo(
     () => computeMatchup(
-      { monster: defenderMonster, talent: defender.talent, personality: defenderPersonality },
+      { monster: resolvedDefenderMonster, talent: defender.talent, personality: defenderPersonality },
       defenderMoves,
       { monster: attackerMonster, talent: attackerTalent, personality: attackerPersonality },
       {
@@ -572,11 +688,12 @@ export default function MatchupPanel({
           ...(activeAttackerDefenseStatus ? [activeAttackerDefenseStatus] : []),
           ...activeIncomingDebuffs,
         ],
+        magicEnergyLevel,
       },
     ),
-    [defenderMonster, defender.talent, defenderPersonality, defenderMoves,
+    [resolvedDefenderMonster, defender.talent, defenderPersonality, defenderMoves,
      attackerMonster, attackerTalent, attackerPersonality,
-     featuredAtkStatuses, activeAttackerDefenseStatus, activeIncomingDebuffs],
+     featuredAtkStatuses, activeAttackerDefenseStatus, activeIncomingDebuffs, magicEnergyLevel],
   );
 
   const displayResult = isReversed ? incoming : outgoing;
@@ -586,6 +703,13 @@ export default function MatchupPanel({
     if (isReversed) setAtkDefenseId(id);
     else setDefDefenseId(id);
   };
+
+  const sameMonster = attackerMonster.id === resolvedDefenderMonster.id;
+  const atkName = pickName(attackerMonster, lang) || attackerMonster.name;
+  const defName = pickName(resolvedDefenderMonster, lang) || resolvedDefenderMonster.name;
+  const atkNameLabeled = sameMonster ? atkName + (lang === "zh" ? "（我方）" : " (Mine)") : atkName;
+  const defNameLabeled = sameMonster ? defName + (lang === "zh" ? "（防守方）" : " (Defender)") : defName;
+  const defAsAtkNameLabeled = sameMonster ? defName + (lang === "zh" ? "（攻击方）" : " (Attacker)") : defName;
 
   return (
     <PanelCard>
@@ -604,12 +728,54 @@ export default function MatchupPanel({
             <div className="h-px w-3 bg-zinc-300 rounded-full" />
           </div>
           <MonsterStrip
-            monster={defenderMonster}
+            monster={resolvedDefenderMonster}
             sideLabel={defenderSideLabel ?? t("analysis.matchupFeaturedJingling")}
-            dexBackUrl={`/dex/monsters/${defenderMonster.id}?from=analysis&back=${matchupBack}`}
+            dexBackUrl={`/dex/monsters/${resolvedDefenderMonster.id}?from=analysis&back=${matchupBack}`}
             align="right"
           />
         </div>
+
+        {/* ── Defender leader form toggle — only when leader form data is available ── */}
+        {defenderLeaderMonster && (
+          <div className="flex items-center justify-end gap-3 rounded-lg border border-rose-100 bg-rose-50 px-3 py-2">
+            <span className="text-xs font-semibold text-rose-500 uppercase tracking-wide shrink-0">
+              {t("analysis.matchupDefenderFormLabel")}
+            </span>
+            <div className="flex items-center gap-2">
+              <span
+                className={`text-xs cursor-pointer select-none transition-colors duration-150 ${
+                  !showDefLeaderForm ? "font-semibold text-zinc-800" : "text-zinc-400"
+                }`}
+                onClick={() => setShowDefLeaderForm(false)}
+              >
+                {t("analysis.regularForm")}
+              </span>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={showDefLeaderForm}
+                onClick={() => setShowDefLeaderForm((v) => !v)}
+                className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 ${
+                  showDefLeaderForm ? "bg-rose-500" : "bg-zinc-300"
+                }`}
+              >
+                <span
+                  className={`pointer-events-none inline-block h-4 w-4 rounded-full bg-white shadow-sm transition-transform duration-200 ${
+                    showDefLeaderForm ? "translate-x-4" : "translate-x-0"
+                  }`}
+                />
+              </button>
+              <span
+                className={`text-xs cursor-pointer select-none transition-colors duration-150 ${
+                  showDefLeaderForm ? "font-semibold text-zinc-800" : "text-zinc-400"
+                }`}
+                onClick={() => setShowDefLeaderForm(true)}
+              >
+                {t("analysis.leaderForm")}
+              </span>
+            </div>
+          </div>
+        )}
 
         {/* ── Direction tabs ── */}
         <div className="flex rounded-lg border border-zinc-200 bg-zinc-50 p-0.5 gap-0.5">
@@ -664,6 +830,8 @@ export default function MatchupPanel({
                 key={`${isReversed ? "in" : "out"}-${row.move.id}-${i}`}
                 row={row}
                 defenderHp={displayResult.defenderEffectiveHp}
+                magicEnergyLevel={magicEnergyLevel}
+                onMagicEnergyChange={setMagicEnergyLevel}
               />
             ))
           )}
@@ -695,20 +863,26 @@ export default function MatchupPanel({
                   <span className="text-xs font-medium text-zinc-500 tabular-nums">80</span>
                 </span>
               </span>
-              <DamageTooltip
-                damage={willpowerDamage.damage}
-                hpPercent={willpowerDamage.hpPercent}
-                typeMultiplier={willpowerDamage.typeMultiplier}
-              />
+              <span className="flex items-center gap-1.5 shrink-0">
+                <span className="inline-flex items-center text-xs text-zinc-400 select-none">{t("analysis.matchupDmgLabel")}</span>
+                <DamageTooltip
+                  damage={willpowerDamage.damage}
+                  hpPercent={willpowerDamage.hpPercent}
+                  typeMultiplier={willpowerDamage.typeMultiplier}
+                />
+              </span>
             </div>
             <div className="flex items-center justify-between gap-2 sm:gap-3 pl-7 mt-1">
               <span className="text-xs text-violet-500 truncate">
                 {t("analysis.matchupWillpowerCounter")}
               </span>
-              <AltDamageTooltip
-                damage={willpowerDamage.counterDamage}
-                hpPercent={willpowerDamage.counterHpPercent}
-              />
+              <span className="flex items-center gap-1.5 shrink-0">
+                <span className="inline-flex items-center text-xs text-zinc-400 select-none">{t("analysis.matchupDmgLabel")}</span>
+                <AltDamageTooltip
+                  damage={willpowerDamage.counterDamage}
+                  hpPercent={willpowerDamage.counterHpPercent}
+                />
+              </span>
             </div>
           </div>
         )}
@@ -773,7 +947,7 @@ export default function MatchupPanel({
         {isReversed && featuredAttackerOptions.length > 0 && (
           <div className="border-t border-zinc-100 pt-2.5">
             <p className="text-xs font-semibold text-zinc-500 mb-1.5">
-              {t("analysis.matchupAttackerStatus")}
+              {t("analysis.matchupAttackerStatusNamed", { name: defAsAtkNameLabeled })}
             </p>
             <div className="flex flex-wrap gap-1.5">
               <button
@@ -815,8 +989,8 @@ export default function MatchupPanel({
           <div className="border-t border-zinc-100 pt-2.5">
             <p className="text-xs font-semibold text-zinc-500 mb-1.5">
               {isReversed
-                ? t("analysis.matchupMyMoveThisTurn")
-                : t("analysis.matchupDefenderMoveThisTurn")}
+                ? t("analysis.matchupMoveThisTurn", { name: atkNameLabeled })
+                : t("analysis.matchupMoveThisTurn", { name: defNameLabeled })}
             </p>
             <div className="flex flex-wrap gap-1.5">
               {displayDefenseOptions.map((opt) => (

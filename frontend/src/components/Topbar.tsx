@@ -43,8 +43,8 @@ export default function Topbar() {
     : t("topbar.builder");
 
   const isOnBuilder =
-    loc.pathname === "/" ||
-    loc.pathname.startsWith("/build");
+    (loc.pathname === "/" || loc.pathname.startsWith("/build")) &&
+    !loc.pathname.startsWith("/build/analyze");
 
   const [showDonation, setShowDonation] = useState(false);
   const [confirmDialog, setConfirmDialog] = useState<{

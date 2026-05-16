@@ -574,7 +574,8 @@
         "name": "魔能爆",
         "description": "造成魔伤，使用时消耗所有能量，消耗越高，伤害越高。"
       }
-    }
+    },
+    "power_formula": "energy"
   },
   {
     "name": "Energy Cannon",
@@ -3056,7 +3057,8 @@
         "name": "鸣沙陷阱",
         "description": "造成物伤，物防比敌方越高，本次技能威力越高。"
       }
-    }
+    },
+    "power_formula": "phy_def_diff"
   },
   {
     "name": "Mud Shot",
@@ -5594,7 +5596,8 @@
         "name": "闪击",
         "description": "造成物伤，速度比敌方越高，本次技能威力越高。"
       }
-    }
+    },
+    "power_formula": "speed_diff"
   },
   {
     "name": "Fanning Wind",

@@ -9,6 +9,7 @@ import CustomSelect from "@/components/CustomSelect";
 import { MonsterImage } from "@/components/MonsterImage";
 import { typeIconUrl } from "@/lib/images";
 import { extractLegacyInfo, useLegacyMap, sortLegacyMoves } from "@/lib/monsterMoveOptions";
+import { computeEffectiveStats } from "@/lib/effectiveStats";
 import type { ID, MoveOut, MonsterLiteOut, PersonalityOut, TypeOut, UserMonsterCreate } from "@/types";
 import { formatRowEffects, formatSentenceEffects } from "@/lib/personality";
 
@@ -51,14 +52,14 @@ function DefenderDexLink({
   return (
     <Link
       to={`/dex/monsters/${monsterId}?from=analysis&back=${back}`}
-      className="shrink-0 w-12 h-12 overflow-hidden rounded-lg bg-white border border-zinc-200 hover:opacity-80 transition-opacity"
+      className="shrink-0 w-14 h-14 overflow-hidden rounded-lg bg-white border border-zinc-200 hover:opacity-80 transition-opacity"
     >
       <MonsterImage
         monster={detail ?? { id: monsterId }}
         size={180}
         alt={monsterName}
-        width={48}
-        height={48}
+        width={56}
+        height={56}
         className="w-full h-full object-contain"
       />
     </Link>
@@ -441,6 +442,17 @@ export default function CustomDefenderInspector({ slot, onChange }: Props) {
     onChange({ ...slot, ...patch });
   };
 
+  // These hooks must stay above the early return to satisfy the Rules of Hooks.
+  const selectedPersonality = useMemo(
+    () => personalities.find((p) => p.id === slot?.personality_id) ?? null,
+    [personalities, slot?.personality_id],
+  );
+
+  const effectiveStats = useMemo(() => {
+    if (!detail || !selectedPersonality || !slot) return null;
+    return computeEffectiveStats(detail as any, slot.talent ?? EMPTY_DEFENDER_TALENT, selectedPersonality);
+  }, [detail, selectedPersonality, slot]);
+
   // ── No monster selected → show picker ──
   if (!slot || slot.monster_id === 0) {
     return (
@@ -461,6 +473,16 @@ export default function CustomDefenderInspector({ slot, onChange }: Props) {
   const mainType = (detail as any)?.main_type;
   const subType = (detail as any)?.sub_type;
 
+  type StatKey = "hp" | "phy_atk" | "mag_atk" | "phy_def" | "mag_def" | "spd";
+  const STAT_ROWS: { key: StatKey; label: string }[] = [
+    { key: "hp",      label: t("labels.hp") },
+    { key: "phy_atk", label: t("labels.phyAtk") },
+    { key: "mag_atk", label: t("labels.magAtk") },
+    { key: "phy_def", label: t("labels.phyDef") },
+    { key: "mag_def", label: t("labels.magDef") },
+    { key: "spd",     label: t("labels.spd") },
+  ];
+
   return (
     <div className="rounded-lg border border-zinc-200 bg-white shadow-sm p-4 space-y-3">
       {/* Header */}
@@ -478,23 +500,24 @@ export default function CustomDefenderInspector({ slot, onChange }: Props) {
         </button>
       </div>
 
-      {/* Monster identity bar */}
-      <div className="flex items-center gap-3 p-2.5 rounded-lg bg-zinc-50 border border-zinc-200">
-        <DefenderDexLink monsterId={slot.monster_id} monsterName={monsterName} detail={detail} />
-        <div className="min-w-0 flex-1">
+      {/* Monster identity + stats: two side-by-side blocks */}
+      <div className="flex gap-2">
+        {/* Left: icon + name + types */}
+        <div className="flex-[4] flex flex-col items-center justify-center gap-1.5 p-2.5 rounded-lg bg-zinc-50 border border-zinc-200 min-w-0">
+          <DefenderDexLink monsterId={slot.monster_id} monsterName={monsterName} detail={detail} />
           {detailQ.isLoading ? (
             <div className="text-sm text-zinc-400">{t("common.loading")}</div>
           ) : (
             <>
-              <p className="text-sm font-semibold text-zinc-900 truncate leading-tight">
+              <p className="text-sm font-semibold text-zinc-900 truncate leading-tight text-center w-full">
                 {monsterName}{formName ? ` (${formName})` : ""}
               </p>
-              <div className="flex items-center gap-1 mt-1.5 flex-wrap">
+              <div className="flex items-center justify-center gap-1 flex-wrap">
                 {[mainType, subType].filter(Boolean).map((tp: any) => {
                   const icon = typeIconUrl(tp.name, 30);
                   return (
-                    <span key={tp.id} className="inline-flex items-center gap-0.5 rounded-full bg-zinc-100 px-1.5 py-0.5 text-xs font-medium text-zinc-600">
-                      {icon && <img src={icon} alt={tp.name} className="w-4 h-4 shrink-0" />}
+                    <span key={tp.id} className="inline-flex items-center gap-1 rounded-full bg-zinc-100 px-1.5 py-0.5 text-xs font-medium text-zinc-600">
+                      {icon && <img src={icon} alt={tp.name} className="w-[18px] h-[18px] shrink-0" />}
                       <span>{pickName(tp, lang) || tp.name}</span>
                     </span>
                   );
@@ -502,6 +525,22 @@ export default function CustomDefenderInspector({ slot, onChange }: Props) {
               </div>
             </>
           )}
+        </div>
+        {/* Right: PvP final stats */}
+        <div className="flex-[6] flex flex-col justify-between rounded-lg border border-zinc-200 bg-white px-3 py-3">
+          <div className="text-xs font-semibold text-zinc-400 uppercase tracking-wide">
+            {t("analysis.vsCustomPvpStats")}
+          </div>
+          <div className="grid grid-cols-3 gap-x-2 gap-y-2">
+            {STAT_ROWS.map(({ key, label }) => (
+              <div key={key} className="flex flex-col items-center">
+                <span className="text-xs text-zinc-400 leading-none">{label}</span>
+                <span className="text-sm font-bold text-zinc-700 tabular-nums leading-tight mt-1">
+                  {effectiveStats ? effectiveStats[key] : "—"}
+                </span>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 
