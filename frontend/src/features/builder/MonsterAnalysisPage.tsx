@@ -5,6 +5,7 @@ import { endpoints } from "@/lib/api";
 import { useI18n, pickName, pickFormName } from "@/i18n";
 import { QUERY_KEYS } from "@/lib/constants";
 import { useBuilderStore, EMPTY_TALENT } from "./builderStore";
+import { useAnalysisStore } from "./analysisStore";
 import { useMovesByIds } from "@/hooks/useMovesByIds";
 import { usePersonalities } from "@/hooks/usePersonalities";
 import MonsterInspector from "./MonsterInspector";
@@ -15,7 +16,8 @@ import EffectiveStatsPanel from "@/components/EffectiveStatsPanel";
 import AttackerStatusSelector from "@/components/AttackerStatusSelector";
 import { getAttackerStatusOptions } from "@/lib/attackerStatusOptions";
 import VsFeaturedTeamsTab from "./VsFeaturedTeamsTab";
-import type { MonsterOut, MonsterLiteOut, TypeOut } from "@/types";
+import VsCustomDefenderTab from "./VsCustomDefenderTab";
+import type { MonsterOut, MonsterLiteOut, TypeOut, UserMonsterCreate } from "@/types";
 
 /**
  * Builder-scoped analysis page for a single configured monster slot.
@@ -60,9 +62,33 @@ export default function MonsterAnalysisPage() {
   const monsterId = slot?.monster_id ?? 0;
   const personalityId = slot?.personality_id ?? 0;
   const talent = slot?.talent ?? EMPTY_TALENT;
-  const initialTab = sp.get("tab") === "vsFeatured" ? "vsFeatured" : "stats";
-  const [activeAnalysisTab, setActiveAnalysisTab] = useState(initialTab);
-  const [activeAttackerStatusIds, setActiveAttackerStatusIds] = useState<number[]>([]);
+  // Imperative read — no reactive subscription needed; only used for useState init.
+  // useAnalysisStore.getState() avoids triggering re-renders from store writes.
+  const storedSlot = useAnalysisStore.getState().slots[slotIdx];
+
+  // URL ?tab= param wins (explicit back-from-matchup links encode the tab);
+  // stored value wins over default (back from MonsterInspector's dex path, which has no ?tab=)
+  const urlTab = sp.get("tab");
+  const resolvedInitialTab =
+    urlTab === "vsFeatured" ? "vsFeatured" :
+    urlTab === "vsCustom" ? "vsCustom" :
+    storedSlot?.activeTab ?? "stats";
+
+  const [activeAnalysisTab, setActiveAnalysisTab] = useState(resolvedInitialTab);
+  const [activeAttackerStatusIds, setActiveAttackerStatusIds] = useState<number[]>(storedSlot?.attackerStatusIds ?? []);
+  const [customDefenderSlot, setCustomDefenderSlot] = useState<UserMonsterCreate | null>(storedSlot?.customDefender ?? null);
+
+  // Sync all three to the store so they survive navigation — access store
+  // imperatively inside each effect to avoid creating reactive subscriptions.
+  useEffect(() => {
+    useAnalysisStore.getState().setActiveTab(slotIdx, activeAnalysisTab);
+  }, [slotIdx, activeAnalysisTab]);
+  useEffect(() => {
+    useAnalysisStore.getState().setCustomDefender(slotIdx, customDefenderSlot);
+  }, [slotIdx, customDefenderSlot]);
+  useEffect(() => {
+    useAnalysisStore.getState().setAttackerStatusIds(slotIdx, activeAttackerStatusIds);
+  }, [slotIdx, activeAttackerStatusIds]);
 
   // Leader form toggle state — resets whenever the user navigates to a different slot.
   const [showLeaderForm, setShowLeaderForm] = useState(false);
@@ -105,17 +131,18 @@ export default function MonsterAnalysisPage() {
     [attackerMovesData],
   );
 
+  // Remove status IDs that no longer correspond to moves the attacker has.
+  // Guard: skip when moves haven't loaded yet — attackerStatusOptions would be []
+  // and would incorrectly wipe out any stored IDs before data arrives.
   useEffect(() => {
+    if (!attackerMovesData) return;
     setActiveAttackerStatusIds((ids) => {
       const validIds = new Set(attackerStatusOptions.map((status) => status.id));
       const next = ids.filter((id) => validIds.has(id));
       return next.length === ids.length ? ids : next;
     });
-  }, [attackerStatusOptions]);
+  }, [attackerStatusOptions, attackerMovesData]);
 
-  useEffect(() => {
-    setActiveAttackerStatusIds([]);
-  }, [slotIdx]);
 
   const activeAttackerStatuses = useMemo(() => {
     const activeIds = new Set(activeAttackerStatusIds);
@@ -304,16 +331,23 @@ export default function MonsterAnalysisPage() {
         movesLoading={attackerMovesResult.query.isLoading}
         movesError={attackerMovesResult.query.isError}
         hasSelectedMoves={attackerHasSelectedMoves}
+        initialEffectiveMode={storedSlot?.effectiveMode}
+        initialBlindMode={storedSlot?.blindMode}
+        onEffectiveModeChange={(m) => useAnalysisStore.getState().patchSlot(slotIdx, { effectiveMode: m })}
+        onBlindModeChange={(m) => useAnalysisStore.getState().patchSlot(slotIdx, { blindMode: m })}
       />
       <EffectiveStatsPanel
         monster={activeStatsMonster}
         talent={talent}
         personality={attackerPersonality}
+        initialCalcAtk={storedSlot?.calcAtk}
+        initialCalcPower={storedSlot?.calcPower}
+        onCalcChange={(atk, power) => useAnalysisStore.getState().patchSlot(slotIdx, { calcAtk: atk, calcPower: power })}
       />
     </div>
   );
 
-  // ----- Tab 2 content (vs featured teams) -----
+  // ----- Tabs 2 & 3 content (custom defender + vs featured teams) -----
   const attackerFetching =
     !detail ||
     attackerMovesResult.query.isLoading ||
@@ -328,19 +362,40 @@ export default function MonsterAnalysisPage() {
   const attackerLoaded =
     !attackerFetching && !attackerError && !!attackerPersonality;
 
-  const vsFeaturedTabContent = attackerError ? (
-    <section className="rounded-lg border border-zinc-200 bg-white shadow-sm p-4">
-      <div className="text-sm text-rose-600">{t("analysis.loadFailed")}</div>
-    </section>
-  ) : attackerFetching ? (
-    <section className="rounded-lg border border-zinc-200 bg-white shadow-sm p-4">
-      <div className="text-sm text-zinc-500">{t("common.loading")}</div>
-    </section>
-  ) : attackerNeedsPersonality ? (
-    <section className="rounded-lg border border-zinc-200 bg-white shadow-sm p-4">
-      <div className="text-sm text-zinc-500">{t("analysis.pickPersonality")}</div>
-    </section>
-  ) : attackerLoaded ? (
+  function attackerGuard(content: React.ReactNode): React.ReactNode {
+    if (attackerError) return (
+      <section className="rounded-lg border border-zinc-200 bg-white shadow-sm p-4">
+        <div className="text-sm text-rose-600">{t("analysis.loadFailed")}</div>
+      </section>
+    );
+    if (attackerFetching) return (
+      <section className="rounded-lg border border-zinc-200 bg-white shadow-sm p-4">
+        <div className="text-sm text-zinc-500">{t("common.loading")}</div>
+      </section>
+    );
+    if (attackerNeedsPersonality) return (
+      <section className="rounded-lg border border-zinc-200 bg-white shadow-sm p-4">
+        <div className="text-sm text-zinc-500">{t("analysis.pickPersonality")}</div>
+      </section>
+    );
+    return attackerLoaded ? content : null;
+  }
+
+  const vsCustomTabContent = attackerGuard(
+    <VsCustomDefenderTab
+      attackerMonster={detail!}
+      attackerTalent={talent}
+      attackerPersonality={attackerPersonality!}
+      attackerMoves={attackerMovesData ?? []}
+      attackerStatuses={activeAttackerStatuses}
+      attackerLegacyType={attackerLegacyType}
+      willpowerActive={willpowerActive}
+      customDefenderSlot={customDefenderSlot}
+      onCustomDefenderChange={setCustomDefenderSlot}
+    />,
+  );
+
+  const vsFeaturedTabContent = attackerGuard(
     <VsFeaturedTeamsTab
       attackerMonster={detail!}
       attackerTalent={talent}
@@ -349,18 +404,21 @@ export default function MonsterAnalysisPage() {
       attackerStatuses={activeAttackerStatuses}
       attackerLegacyType={attackerLegacyType}
       willpowerActive={willpowerActive}
-    />
-  ) : null;
+    />,
+  );
+
+  const showMatchupStatus = activeAnalysisTab === "vsFeatured" || activeAnalysisTab === "vsCustom";
 
   const tabs = [
     { key: "stats", label: t("analysis.tabStats"), content: statsTabContent },
+    { key: "vsCustom", label: t("analysis.tabVsCustom"), content: vsCustomTabContent },
     { key: "vsFeatured", label: t("analysis.tabVsFeatured"), content: vsFeaturedTabContent },
   ];
 
   return (
     <div className="space-y-3">
       <div className="grid gap-4 grid-cols-1 lg:grid-cols-[340px_1fr] xl:grid-cols-[420px_1fr]">
-        <div className={`space-y-3 ${activeAnalysisTab === "vsFeatured" ? "lg:sticky lg:top-[72px] lg:self-start lg:max-h-[calc(100vh-72px)] lg:overflow-y-auto" : ""}`}>
+        <div className={`space-y-3 ${showMatchupStatus ? "lg:sticky lg:top-[72px] lg:self-start lg:max-h-[calc(100vh-72px)] lg:overflow-y-auto" : ""}`}>
           <div className="flex items-center">
             <Link
               to="/build"
@@ -370,7 +428,7 @@ export default function MonsterAnalysisPage() {
               <span className="text-zinc-700">{t("dex.backToBuilder")}</span>
             </Link>
           </div>
-          {activeAnalysisTab === "vsFeatured" ? (
+          {showMatchupStatus ? (
             <div className="hidden lg:block">
               <AttackerStatusSelector
                 moves={attackerMovesData ?? []}
@@ -388,7 +446,7 @@ export default function MonsterAnalysisPage() {
         </div>
         <div className="min-w-0">
           {/* Mobile-only sticky attacker status — desktop version lives in the left column */}
-          {activeAnalysisTab === "vsFeatured" && (
+          {showMatchupStatus && (
             <div className="block lg:hidden sticky top-14 z-[9] mb-3">
               <AttackerStatusSelector
                 moves={attackerMovesData ?? []}

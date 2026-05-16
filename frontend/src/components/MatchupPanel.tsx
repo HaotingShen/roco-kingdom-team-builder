@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
+import { useAnalysisStore } from "@/features/builder/analysisStore";
 import { useI18n, pickName, pickDesc } from "@/i18n";
 import { computeMatchup } from "@/lib/matchup";
 import { computeMoveDamage } from "@/lib/damageCalc";
@@ -316,6 +317,10 @@ interface Props {
   defenderMonster: MonsterOut;
   defenderPersonality: PersonalityOut;
   defenderMoves: readonly MoveOut[];
+  /** Which analysis tab to link back to in Dex URLs. Defaults to "vsFeatured". */
+  tabKey?: string;
+  /** Override the defender side-label. Defaults to the "Featured" translation. */
+  defenderSideLabel?: string;
 }
 
 export default function MatchupPanel({
@@ -330,11 +335,20 @@ export default function MatchupPanel({
   defenderMonster,
   defenderPersonality,
   defenderMoves,
+  tabKey = "vsFeatured",
+  defenderSideLabel,
 }: Props) {
   const { lang, t } = useI18n();
   const location = useLocation();
-  const matchupBack = encodeURIComponent(location.pathname + "?tab=vsFeatured");
-  const [isReversed, setIsReversed] = useState(false);
+  const matchupBack = encodeURIComponent(location.pathname + `?tab=${tabKey}`);
+
+  // Persistent state — survives navigation away and back within the same session.
+  // Key is unique per attacker slot (encoded in pathname) + defender monster.
+  const storeKey = `${location.pathname}:${defender.monster_id}`;
+  // Imperative read — no reactive subscription; value only matters for useState init.
+  const stored = useAnalysisStore.getState().matchupStates[storeKey];
+
+  const [isReversed, setIsReversed] = useState(stored?.isReversed ?? false);
 
   // Defense-reducing options for each side (only moves with dmg_reduction_pct).
   const defenderDefenseOptions = useMemo<DefenseOption[]>(() => {
@@ -408,20 +422,37 @@ export default function MatchupPanel({
     return opts;
   }, [defenderMoves]);
 
-  const [defDefenseId, setDefDefenseId] = useState("none");
-  const [atkDefenseId, setAtkDefenseId] = useState("none");
-  const [featuredAtkStatusIds, setFeaturedAtkStatusIds] = useState<number[]>([]);
-  const [outgoingDebuffIds, setOutgoingDebuffIds] = useState<number[]>([]);
-  const [incomingDebuffIds, setIncomingDebuffIds] = useState<number[]>([]);
+  const [defDefenseId, setDefDefenseId] = useState(stored?.defDefenseId ?? "none");
+  const [atkDefenseId, setAtkDefenseId] = useState(stored?.atkDefenseId ?? "none");
+  const [featuredAtkStatusIds, setFeaturedAtkStatusIds] = useState<number[]>(stored?.featuredAtkStatusIds ?? []);
+  const [outgoingDebuffIds, setOutgoingDebuffIds] = useState<number[]>(stored?.outgoingDebuffIds ?? []);
+  const [incomingDebuffIds, setIncomingDebuffIds] = useState<number[]>(stored?.incomingDebuffIds ?? []);
 
+  // When the defender changes within a mounted component (vsCustom tab, cached
+  // monster data): restore previously stored state for the new defender, or
+  // reset to defaults if never visited. Skip on initial mount to preserve the
+  // state already loaded from the store via useState.
+  const mountedMonsterIdRef = useRef(defender.monster_id);
   useEffect(() => {
-    setDefDefenseId("none");
-    setAtkDefenseId("none");
-    setFeaturedAtkStatusIds([]);
-    setOutgoingDebuffIds([]);
-    setIncomingDebuffIds([]);
-    setIsReversed(false);
-  }, [defender.monster_id]);
+    if (mountedMonsterIdRef.current === defender.monster_id) return;
+    mountedMonsterIdRef.current = defender.monster_id;
+    const saved = useAnalysisStore.getState().matchupStates[storeKey];
+    setIsReversed(saved?.isReversed ?? false);
+    setDefDefenseId(saved?.defDefenseId ?? "none");
+    setAtkDefenseId(saved?.atkDefenseId ?? "none");
+    setFeaturedAtkStatusIds(saved?.featuredAtkStatusIds ?? []);
+    setOutgoingDebuffIds(saved?.outgoingDebuffIds ?? []);
+    setIncomingDebuffIds(saved?.incomingDebuffIds ?? []);
+  }, [defender.monster_id, storeKey]);
+
+  // Sync current state to the store imperatively — no reactive subscription needed.
+  useEffect(() => {
+    useAnalysisStore.getState().setMatchupState(storeKey, {
+      isReversed, defDefenseId, atkDefenseId,
+      featuredAtkStatusIds, outgoingDebuffIds, incomingDebuffIds,
+    });
+  }, [storeKey, isReversed, defDefenseId, atkDefenseId,
+      featuredAtkStatusIds, outgoingDebuffIds, incomingDebuffIds]);
 
   const featuredAtkStatuses = useMemo(() => {
     const active = new Set(featuredAtkStatusIds);
@@ -574,7 +605,7 @@ export default function MatchupPanel({
           </div>
           <MonsterStrip
             monster={defenderMonster}
-            sideLabel={t("analysis.matchupFeaturedJingling")}
+            sideLabel={defenderSideLabel ?? t("analysis.matchupFeaturedJingling")}
             dexBackUrl={`/dex/monsters/${defenderMonster.id}?from=analysis&back=${matchupBack}`}
             align="right"
           />

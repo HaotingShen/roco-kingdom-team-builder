@@ -66,6 +66,10 @@ interface Props {
   movesLoading: boolean;
   movesError: boolean;
   hasSelectedMoves: boolean;
+  initialEffectiveMode?: "single" | "dual";
+  initialBlindMode?: "single" | "dual";
+  onEffectiveModeChange?: (mode: "single" | "dual") => void;
+  onBlindModeChange?: (mode: "single" | "dual") => void;
 }
 
 export default function MoveCoveragePanel({
@@ -73,15 +77,18 @@ export default function MoveCoveragePanel({
   movesLoading,
   movesError,
   hasSelectedMoves,
+  initialEffectiveMode,
+  initialBlindMode,
+  onEffectiveModeChange,
+  onBlindModeChange,
 }: Props) {
   const { lang, t } = useI18n();
 
-  // V3: each coverage row has its own independent Single|Dual toggle.
-  // Both default to "single" for backward compatibility — anyone who already
-  // learned the panel sees no change until they click. In "dual" mode the row
-  // shows a comprehensive view: single-type results PLUS dual-type results.
-  const [effectiveMode, setEffectiveMode] = useState<"single" | "dual">("single");
-  const [blindMode, setBlindMode] = useState<"single" | "dual">("single");
+  const [effectiveMode, setEffectiveMode] = useState<"single" | "dual">(initialEffectiveMode ?? "single");
+  const [blindMode, setBlindMode] = useState<"single" | "dual">(initialBlindMode ?? "single");
+
+  const handleEffectiveModeChange = (m: "single" | "dual") => { setEffectiveMode(m); onEffectiveModeChange?.(m); };
+  const handleBlindModeChange = (m: "single" | "dual") => { setBlindMode(m); onBlindModeChange?.(m); };
 
   const typesQ = useQuery({
     queryKey: QUERY_KEYS.TYPES,
@@ -376,7 +383,7 @@ export default function MoveCoveragePanel({
               text={effectiveMode === "single" ? t("analysis.coverageEffectiveHintSingle") : t("analysis.coverageEffectiveHintDual")}
               ariaLabel={t("analysis.coverageEffective")}
             />
-            {renderToggle(effectiveMode, setEffectiveMode)}
+            {renderToggle(effectiveMode, handleEffectiveModeChange)}
           </div>
           {/* Pills on their own line, always wrapping cleanly */}
           <div className="flex flex-wrap gap-1.5">
@@ -405,7 +412,7 @@ export default function MoveCoveragePanel({
               text={blindMode === "single" ? t("analysis.coverageBlindSpotHintSingle") : t("analysis.coverageBlindSpotHintDual")}
               ariaLabel={t("analysis.coverageBlindSpot")}
             />
-            {renderToggle(blindMode, setBlindMode)}
+            {renderToggle(blindMode, handleBlindModeChange)}
           </div>
           {/* Pills on their own line, always wrapping cleanly */}
           <div className="flex flex-wrap gap-1.5">

@@ -1,6 +1,7 @@
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { endpoints, adminEndpoints } from "@/lib/api";
 import { useBuilderStore } from "./builderStore";
+import { useAnalysisStore } from "./analysisStore";
 import MonsterCard from "@/components/MonsterCard";
 import CustomSelect from "@/components/CustomSelect";
 import AnalysisResults from "@/components/AnalysisResults";
@@ -267,7 +268,12 @@ export default function BuilderPage() {
     setIsAnalyzing,
   } = useBuilderStore();
 
-  const [activeIdx, setActiveIdx] = useState<number>(0);
+  const [activeIdx, setActiveIdx] = useState<number>(
+    () => useAnalysisStore.getState().builderActiveSlot,
+  );
+  useEffect(() => {
+    useAnalysisStore.getState().setBuilderActiveSlot(activeIdx);
+  }, [activeIdx]);
   const [serverErr, setServerErr] = useState<string | null>(null);
   const [serverOk, setServerOk] = useState<string | null>(null);
   const [activeDragId, setActiveDragId] = useState<string | null>(null);

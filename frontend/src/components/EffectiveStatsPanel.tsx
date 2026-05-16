@@ -27,29 +27,37 @@ interface Props {
   monster: MonsterOut | null | undefined;
   talent: TalentUpsert;
   personality: PersonalityOut | null;
+  initialCalcAtk?: number;
+  initialCalcPower?: number;
+  onCalcChange?: (atk: number, power: number) => void;
 }
 
 export default function EffectiveStatsPanel({
   monster,
   talent,
   personality,
+  initialCalcAtk,
+  initialCalcPower,
+  onCalcChange,
 }: Props) {
   const { t } = useI18n();
 
-  const [calcAtkInput, setCalcAtkInput] = useState("250");
-  const [calcPowerInput, setCalcPowerInput] = useState("100");
-  const [calcAtk, setCalcAtk] = useState(250);
-  const [calcPower, setCalcPower] = useState(100);
+  const [calcAtkInput, setCalcAtkInput] = useState(String(initialCalcAtk ?? 250));
+  const [calcPowerInput, setCalcPowerInput] = useState(String(initialCalcPower ?? 100));
+  const [calcAtk, setCalcAtk] = useState(initialCalcAtk ?? 250);
+  const [calcPower, setCalcPower] = useState(initialCalcPower ?? 100);
 
   const commitAtk = (raw: string) => {
     const val = Math.max(1, parseInt(raw) || 1);
     setCalcAtk(val);
     setCalcAtkInput(String(val));
+    onCalcChange?.(val, calcPower);
   };
   const commitPower = (raw: string) => {
     const val = Math.max(1, parseInt(raw) || 1);
     setCalcPower(val);
     setCalcPowerInput(String(val));
+    onCalcChange?.(calcAtk, val);
   };
 
   const stats = useMemo(

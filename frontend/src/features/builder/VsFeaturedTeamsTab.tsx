@@ -1,7 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
 import { useI18n } from "@/i18n";
+import { useLocation } from "react-router-dom";
 import { endpoints } from "@/lib/api";
 import { QUERY_KEYS } from "@/lib/constants";
+import { useAnalysisStore } from "./analysisStore";
 import SubTabs from "@/components/SubTabs";
 import PanelCard from "@/components/PanelCard";
 import FeaturedTeamView from "./FeaturedTeamView";
@@ -36,6 +38,9 @@ export default function VsFeaturedTeamsTab({
   willpowerActive,
 }: Props) {
   const { t } = useI18n();
+  const { pathname } = useLocation();
+  const storedTeamTab = useAnalysisStore((s) => s.featuredTeamTabs[pathname]);
+  const storeSaveTeamTab = useAnalysisStore((s) => s.setFeaturedTeamTab);
 
   const { data: teams, isLoading, isError } = useQuery<TeamOut[]>({
     queryKey: QUERY_KEYS.FEATURED_TEAMS,
@@ -84,5 +89,16 @@ export default function VsFeaturedTeamsTab({
     ),
   }));
 
-  return <SubTabs tabs={tabs} />;
+  // Restore stored active team tab; validate it still exists in the current list.
+  const validStoredTab = storedTeamTab && tabs.some((t) => t.key === storedTeamTab)
+    ? storedTeamTab
+    : undefined;
+
+  return (
+    <SubTabs
+      tabs={tabs}
+      activeTab={validStoredTab}
+      onTabChange={(key) => storeSaveTeamTab(pathname, key)}
+    />
+  );
 }
