@@ -1,13 +1,14 @@
 import { Link, useParams, useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
+import ConfirmDialog from "@/components/ConfirmDialog";
 import { endpoints } from "@/lib/api";
 import { QUERY_KEYS } from "@/lib/constants";
 import { useBuilderStore } from "../builder/builderStore";
 import { useAuthStore } from "@/features/auth/authStore";
 import type { TeamOut, FullSavedAnalysisOut } from "@/types";
 import { pickName, pickFormName, useI18n, type Lang } from "@/i18n";
-import { monsterImageFallbackChain, typeIconUrl, magicItemImageUrl } from "@/lib/images";
+import { monsterImageFallbackChain, typeIconUrl, magicItemImageUrl, monsterPlaceholder } from "@/lib/images";
 import TeamShareModal from "@/features/share/TeamShareModal";
 import { useSeoMeta } from "@/hooks/useSeoMeta";
 import { formatRowEffects } from "@/lib/personality";
@@ -36,7 +37,7 @@ function MonsterImage({ monster, size = 180 }: { monster: any; size?: number }) 
   const fallbackChain = monsterImageFallbackChain(monster, size as 180 | 270 | 360);
 
   useEffect(() => {
-    setImgSrc(fallbackChain[0] || "/monster-images/placeholder.png");
+    setImgSrc(fallbackChain[0] || monsterPlaceholder);
   }, [monster]);
 
   const handleError = () => {
@@ -51,8 +52,8 @@ function MonsterImage({ monster, size = 180 }: { monster: any; size?: number }) 
 
   return (
     <img
-      src={imgSrc || "/monster-images/placeholder.png"}
-      alt={monster?.name || "Monster"}
+      src={imgSrc || monsterPlaceholder}
+      alt={monster?.name || "Jingling"}
       className="w-full h-full object-contain"
       onError={handleError}
     />
@@ -114,6 +115,12 @@ export default function SavedTeamPage() {
   const qc = useQueryClient();
   const { user } = useAuthStore();
   const [shareOpen, setShareOpen] = useState(false);
+  const [confirmDialog, setConfirmDialog] = useState<{
+    open: boolean; message: string; onConfirm: () => void;
+  }>({ open: false, message: "", onConfirm: () => {} });
+  const openConfirm = (message: string, onConfirm: () => void) =>
+    setConfirmDialog({ open: true, message, onConfirm });
+  const closeConfirm = () => setConfirmDialog(s => ({ ...s, open: false }));
 
   // Query for saved analysis
   const savedAnalysisQuery = useQuery<FullSavedAnalysisOut>({
@@ -145,11 +152,10 @@ export default function SavedTeamPage() {
 
   const onDeleteClick = () => {
     if (del.isPending) return;
-    const ok = window.confirm(
-      t("teams.confirmDelete") ?? "Delete this team? This cannot be undone."
+    openConfirm(
+      t("teams.confirmDelete") ?? "Delete this team? This cannot be undone.",
+      () => del.mutate()
     );
-    if (!ok) return;
-    del.mutate();
   };
 
   const [serverErr, setServerErr] = useState<string | null>(null);
@@ -479,6 +485,12 @@ export default function SavedTeamPage() {
           currentUsername={user && !user.is_guest ? user.username : undefined}
         />
       )}
+      <ConfirmDialog
+        isOpen={confirmDialog.open}
+        message={confirmDialog.message}
+        onConfirm={() => { closeConfirm(); confirmDialog.onConfirm(); }}
+        onCancel={closeConfirm}
+      />
     </div>
   );
 }

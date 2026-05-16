@@ -6,7 +6,7 @@ import { useI18n, pickName, pickDesc, pickFormName } from "@/i18n";
 import { useSeoMeta } from "@/hooks/useSeoMeta";
 import type { TypeOut, MoveOut, MonsterOut, StatKey } from "@/types";
 import { STAT_KEYS } from "@/types";
-import { typeIconUrl, monsterImageFallbackChain } from "@/lib/images";
+import { typeIconUrl, monsterImageFallbackChain, monsterPlaceholder, moveSubIconUrl, moveIconUrlFromCn } from "@/lib/images";
 import { useMonsterNavigation } from "./useMonsterNavigation";
 import { QUERY_KEYS, LEGACY_TYPES_ORDER } from "@/lib/constants";
 import { normalizeMoveCategory } from "@/lib/typeEffectiveness";
@@ -54,6 +54,7 @@ export default function MonsterDetailPage() {
   const which = movesParam === "legacy" ? "legacy" : movesParam === "stones" ? "stones" : "pool";
   const fromParam = sp.get("from");
   const fromBuilder = fromParam === "builder";
+  const fromMatchup = fromParam === "analysis";
   // "analyze" mode: launched from MonsterAnalysisPage via MonsterInspector.
   // Carries the originating slot index so the back link can return to
   // /build/analyze/:slot. Only accept strict non-negative integers — any
@@ -78,6 +79,7 @@ export default function MonsterDetailPage() {
     fromBuilder,
     fromAnalyze: hasAnalyzeReturn,
     analyzeSlot,
+    fromMatchup,
   });
 
   // Back-link target + label derived from ONE flag (hasAnalyzeReturn) so the
@@ -87,11 +89,15 @@ export default function MonsterDetailPage() {
     ? `/build/analyze/${analyzeSlot}`
     : fromBuilder
     ? "/build"
+    : fromMatchup
+    ? (backRaw ?? "/build")
     : dexUrl;
   const backLabelKey = hasAnalyzeReturn
     ? "dex.backToMonsterAnalysis"
     : fromBuilder
     ? "dex.backToBuilder"
+    : fromMatchup
+    ? "dex.backToMatchup"
     : "dex.backToDex";
   const { lang, t } = useI18n();
   const navigate = useNavigate();
@@ -109,14 +115,14 @@ export default function MonsterDetailPage() {
   useSeoMeta({
     title: monsterName
       ? lang === "zh" ? `${monsterName} | 洛手配队器` : `${monsterName} | RK Team Builder`
-      : lang === "zh" ? "精灵详情 | 洛手配队器" : "Monster Detail | RK Team Builder",
+      : lang === "zh" ? "精灵详情 | 洛手配队器" : "Jingling Detail | RK Team Builder",
     description: monsterName
       ? lang === "zh"
         ? `${monsterName} 的数值、招式、特性和进化 — 洛克王国: 世界。`
         : `${monsterName} — stats, moves, traits, and evolution for Roco Kingdom: World.`
       : lang === "zh"
         ? "查看精灵的数值、招式、特性和进化。"
-        : "View monster stats, moves, traits, and evolution for Roco Kingdom: World.",
+        : "View jingling stats, moves, traits, and evolution for Roco Kingdom: World.",
     canonicalPath: id ? `/dex/monsters/${id}` : "/dex",
   });
 
@@ -211,7 +217,7 @@ export default function MonsterDetailPage() {
 
   // Image fallback chain for leader form handling
   const fallbackChain = m ? monsterImageFallbackChain(m, 360) : [];
-  const mainImageSrc = fallbackChain[0] || "/monster-images/placeholder.png";
+  const mainImageSrc = fallbackChain[0] || monsterPlaceholder;
 
   if (q.isLoading) return <div>{t("common.loading")}</div>;
   if (!q.data) return <div>Not found.</div>;
@@ -238,7 +244,7 @@ export default function MonsterDetailPage() {
               <Link
                 to={`/dex/monsters/${prevMonsterId}?${forwardQuery}`}
                 className="absolute left-2 top-1/2 -translate-y-1/2 inline-flex items-center justify-center w-10 h-10 rounded-full bg-white border border-zinc-300 shadow-md hover:bg-zinc-50 hover:border-zinc-400 hover:shadow-lg transition-all duration-200 text-zinc-600 hover:text-zinc-900"
-                aria-label="Previous monster"
+                aria-label="Previous jingling"
               >
                 <span className="text-3xl leading-none -translate-y-[3px]">‹</span>
               </Link>
@@ -256,7 +262,7 @@ export default function MonsterDetailPage() {
               <Link
                 to={`/dex/monsters/${nextMonsterId}?${forwardQuery}`}
                 className="absolute right-2 top-1/2 -translate-y-1/2 inline-flex items-center justify-center w-10 h-10 rounded-full bg-white border border-zinc-300 shadow-md hover:bg-zinc-50 hover:border-zinc-400 hover:shadow-lg transition-all duration-200 text-zinc-600 hover:text-zinc-900"
-                aria-label="Next monster"
+                aria-label="Next jingling"
               >
                 <span className="text-3xl leading-none -translate-y-[3px]">›</span>
               </Link>
@@ -374,8 +380,8 @@ export default function MonsterDetailPage() {
                   if (next < fallbackChain.length) {
                     img.dataset.fallbackStep = String(next);
                     img.src = fallbackChain[next]!;
-                  } else if (img.src !== "/monster-images/placeholder.png") {
-                    img.src = "/monster-images/placeholder.png";
+                  } else if (img.src !== monsterPlaceholder) {
+                    img.src = monsterPlaceholder;
                   }
                 }}
               />
@@ -472,6 +478,7 @@ export default function MonsterDetailPage() {
             fromBuilder={fromBuilder}
             fromAnalyze={hasAnalyzeReturn}
             analyzeSlot={analyzeSlot}
+            fromMatchup={fromMatchup}
             back={backRaw ?? undefined}
           />
         </section>
@@ -588,16 +595,16 @@ function MovesList({ list, backUrl }: { list: any[]; backUrl: string }) {
         const isSta = normalizedCategory === "STATUS";
 
         const moveNameZh = pickName(m as any, "zh") || cname;
-        const moveImg = encodeURI(`/move-icons/${moveNameZh}.png`);
+        const moveImg = moveIconUrlFromCn(moveNameZh);
         const typeImg = tp?.name ? typeIconUrl(tp.name, 30) : null;
-        const energyImg = "/move-sub-icons/energy.png";
+        const energyImg = moveSubIconUrl("energy.png");
         const catToFile: Record<string, string> = {
           PHY_ATTACK: "physical-attack",
           MAG_ATTACK: "magic-attack",
           DEFENSE: "defense",
           STATUS: "status",
         };
-        const catImg = `/move-sub-icons/${catToFile[normalizedCategory] ?? "physical-attack"}.png`;
+        const catImg = moveSubIconUrl(`${catToFile[normalizedCategory] ?? "physical-attack"}.png`);
 
         // Get type color class, fallback to zinc if type not found
         // Convert type name to lowercase to match our mapping

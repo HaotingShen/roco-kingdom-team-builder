@@ -27,7 +27,10 @@
         "name": "愿力冲击",
         "description": "造成物理/魔法伤害，应对成功时，本次威力提高150%，应对状态。"
       }
-    }
+    },
+    "alt_power_total": 200,
+    "alt_condition_zh": "应对成功时",
+    "alt_condition_en": "If Counter succeeds"
   },
   {
     "name": "Control",
@@ -87,7 +90,10 @@
         "name": "触底强击",
         "description": "造成魔伤，使用后若能量耗尽，本次技能威力+110。"
       }
-    }
+    },
+    "alt_power_total": 175,
+    "alt_condition_zh": "能量耗尽时",
+    "alt_condition_en": "If energy depleted"
   },
   {
     "name": "Pierce",
@@ -102,7 +108,10 @@
         "name": "穿膛",
         "description": "造成物伤，若敌方能量小于等于2，造成5倍伤害。"
       }
-    }
+    },
+    "alt_power_total": 325,
+    "alt_condition_zh": "对方能量≤2时",
+    "alt_condition_en": "If opponent has ≤2 energy"
   },
   {
     "name": "Desperate Counterattack",
@@ -162,7 +171,10 @@
         "name": "当头棒喝",
         "description": "造成物伤，若敌方本回合更换精灵，本次技能威力+100。"
       }
-    }
+    },
+    "alt_power_total": 180,
+    "alt_condition_zh": "对方换场时",
+    "alt_condition_en": "If opponent switches"
   },
   {
     "name": "Weight Suppression",
@@ -185,7 +197,7 @@
     "category": "Defense",
     "energy_cost": 2,
     "power": null,
-    "description": "Damage taken -60%. Counter Attack: gains Attack +60%.",
+    "description": "Damage taken -60%. Counter Attack: gains Attack +40%.",
     "has_counter": true,
     "localized": {
       "zh": {
@@ -372,7 +384,10 @@
         "name": "见招拆招",
         "description": "造成物伤，若上回合使用状态技能，本次技能威力+55。"
       }
-    }
+    },
+    "alt_power_total": 120,
+    "alt_condition_zh": "上回合使用状态技能时",
+    "alt_condition_en": "After a Status-type move"
   },
   {
     "name": "Stomp",
@@ -462,7 +477,9 @@
         "name": "连续爪击",
         "description": "造成物伤，2连击，应对状态：本次技能连击数翻倍。"
       }
-    }
+    },
+    "base_combo": 2,
+    "counter_power_multiplier": 2
   },
   {
     "name": "Fury Swipes",
@@ -477,7 +494,8 @@
         "name": "乱打",
         "description": "造成魔伤，5连击。"
       }
-    }
+    },
+    "base_combo": 5
   },
   {
     "name": "Falling Star",
@@ -500,14 +518,18 @@
     "category": "Magic Attack",
     "energy_cost": 4,
     "power": 30,
-    "description": "Deals magic damage. 3 Combo. If the opponent switches monsters this turn, Combo Count +4.",
+    "description": "Deals magic damage. 3 Combo. If the opponent switches monsters this turn, Combo Count +3.",
     "has_counter": false,
     "localized": {
       "zh": {
         "name": "埋伏",
         "description": "造成魔伤，3连击，若敌方本回合更换精灵，本次技能连击数+3。"
       }
-    }
+    },
+    "base_combo": 3,
+    "alt_power_total": 180,
+    "alt_condition_zh": "对方换场时",
+    "alt_condition_en": "If opponent switches"
   },
   {
     "name": "Heavy Strike",
@@ -552,7 +574,8 @@
         "name": "魔能爆",
         "description": "造成魔伤，使用时消耗所有能量，消耗越高，伤害越高。"
       }
-    }
+    },
+    "power_formula": "energy"
   },
   {
     "name": "Energy Cannon",
@@ -567,7 +590,8 @@
         "name": "能量炮",
         "description": "造成魔伤，2连击。"
       }
-    }
+    },
+    "base_combo": 2
   },
   {
     "name": "Energy Blade",
@@ -657,7 +681,10 @@
         "name": "气势一击",
         "description": "造成物伤，若上回合应对成功，本次技能威力+180。"
       }
-    }
+    },
+    "alt_power_total": 260,
+    "alt_condition_zh": "上回合应对成功时",
+    "alt_condition_en": "After successful Counter"
   },
   {
     "name": "Pour",
@@ -807,7 +834,8 @@
         "name": "偷袭",
         "description": "造成物伤，应对状态：本次技能威力变为3倍。"
       }
-    }
+    },
+    "counter_power_multiplier": 3
   },
   {
     "name": "Assault",
@@ -822,7 +850,8 @@
         "name": "突袭",
         "description": "造成魔伤，应对状态：本次技能威力变为3倍。"
       }
-    }
+    },
+    "counter_power_multiplier": 3
   },
   {
     "name": "Devolve",
@@ -987,7 +1016,8 @@
         "name": "旋转突击",
         "description": "造成物伤，3连击。"
       }
-    }
+    },
+    "base_combo": 3
   },
   {
     "name": "Vitality",
@@ -1152,7 +1182,8 @@
         "name": "指指点点",
         "description": "造成物伤，10连击。"
       }
-    }
+    },
+    "base_combo": 10
   },
   {
     "name": "Heavy Blow",
@@ -1197,7 +1228,8 @@
         "name": "追打",
         "description": "造成魔伤，1连击，应对状态：本技能变为3连击。"
       }
-    }
+    },
+    "counter_power_multiplier": 3
   },
   {
     "name": "Block",
@@ -1512,7 +1544,10 @@
         "name": "筛管奔流",
         "description": "造成物伤，自己生命大于80%时，本次技能威力+75。"
       }
-    }
+    },
+    "alt_power_total": 155,
+    "alt_condition_zh": "血量>80%时",
+    "alt_condition_en": "If HP > 80%"
   },
   {
     "name": "Bloom",
@@ -1542,7 +1577,8 @@
         "name": "刺藤",
         "description": "造成物伤，2连击。"
       }
-    }
+    },
+    "base_combo": 2
   },
   {
     "name": "Vine Squeeze",
@@ -1662,7 +1698,8 @@
         "name": "种皮爆裂",
         "description": "造成物伤，2连击。"
       }
-    }
+    },
+    "base_combo": 2
   },
   {
     "name": "Seed Bullet",
@@ -1932,7 +1969,8 @@
         "name": "流火",
         "description": "造成魔伤，3连击。"
       }
-    }
+    },
+    "base_combo": 3
   },
   {
     "name": "Meteor Fire Rain",
@@ -2037,7 +2075,8 @@
         "name": "闪燃",
         "description": "造成物伤，应对状态：本次技能威力变为4倍。"
       }
-    }
+    },
+    "counter_power_multiplier": 4
   },
   {
     "name": "Double Cannon",
@@ -2052,7 +2091,8 @@
         "name": "双响炮",
         "description": "造成物伤，2连击。"
       }
-    }
+    },
+    "base_combo": 2
   },
   {
     "name": "Heavenly Fire",
@@ -2127,7 +2167,8 @@
         "name": "易燃物质",
         "description": "造成魔伤，2连击，每次连击使敌方获得2层灼烧。"
       }
-    }
+    },
+    "base_combo": 2
   },
   {
     "name": "Ignite",
@@ -2157,7 +2198,8 @@
         "name": "炙热波动",
         "description": "造成魔伤，敌方获得4层灼烧，应对状态：本次技能威力和赋予灼烧翻倍。"
       }
-    }
+    },
+    "counter_power_multiplier": 2
   },
   {
     "name": "Burn",
@@ -2457,7 +2499,8 @@
         "name": "水花四溅",
         "description": "造成魔伤，4连击。"
       }
-    }
+    },
+    "base_combo": 4
   },
   {
     "name": "Aqua Ring",
@@ -2667,7 +2710,8 @@
         "name": "光之矛",
         "description": "造成物伤，3连击。"
       }
-    }
+    },
+    "base_combo": 3
   },
   {
     "name": "Overexposure",
@@ -2907,7 +2951,8 @@
         "name": "地陷",
         "description": "造成物伤，自己获得物防+70%，应对状态：本次技能威力翻倍，且物防额外+70%。"
       }
-    }
+    },
+    "counter_power_multiplier": 2
   },
   {
     "name": "Earthquake",
@@ -3012,7 +3057,8 @@
         "name": "鸣沙陷阱",
         "description": "造成物伤，物防比敌方越高，本次技能威力越高。"
       }
-    }
+    },
+    "power_formula": "phy_def_diff"
   },
   {
     "name": "Mud Shot",
@@ -3447,7 +3493,8 @@
         "name": "打雪仗",
         "description": "造成魔伤，2连击。"
       }
-    }
+    },
+    "base_combo": 2
   },
   {
     "name": "Winter Solstice",
@@ -3492,7 +3539,10 @@
         "name": "极寒领域",
         "description": "造成魔伤，若敌方有冻结，本次技能威力+60，应对状态：使冻结翻倍。"
       }
-    }
+    },
+    "alt_power_total": 165,
+    "alt_condition_zh": "若敌方有冻结",
+    "alt_condition_en": "If opponent has Freeze"
   },
   {
     "name": "Cold Wind",
@@ -3702,7 +3752,8 @@
         "name": "滚雪球",
         "description": "造成物伤，敌方获得2层冻结，应对状态：额外获得2层，本次技能威力翻倍。"
       }
-    }
+    },
+    "counter_power_multiplier": 2
   },
   {
     "name": "Absolute Zero",
@@ -3732,7 +3783,8 @@
         "name": "吹炎",
         "description": "蓄力，造成物伤，应对状态：本次技能威力翻倍。"
       }
-    }
+    },
+    "counter_power_multiplier": 2
   },
   {
     "name": "Posture",
@@ -4257,7 +4309,8 @@
         "name": "闪击折返",
         "description": "造成物伤，2连击，自己脱离。"
       }
-    }
+    },
+    "base_combo": 2
   },
   {
     "name": "Twin Pulse",
@@ -4287,7 +4340,8 @@
         "name": "引雷",
         "description": "造成魔伤，2连击，迸发：本次技能威力+20。"
       }
-    }
+    },
+    "base_combo": 2
   },
   {
     "name": "Remote Access",
@@ -4512,7 +4566,8 @@
         "name": "连续毒针",
         "description": "造成物伤，2连击，每次连击使敌方获得1层中毒。"
       }
-    }
+    },
+    "base_combo": 2
   },
   {
     "name": "Double Down",
@@ -4595,7 +4650,7 @@
     "category": "Magic Attack",
     "energy_cost": 3,
     "power": 75,
-    "description": "Deals magic damage. For each Poison Effect stack on the opponent, this move's power +10. Counter Status: opponent gains 2 stacks of Poison.",
+    "description": "Deals magic damage. For each Poison Effect stack on the opponent, this move's power +10. Counter Status: this move's power +20 instead.",
     "has_counter": true,
     "localized": {
       "zh": {
@@ -4632,7 +4687,8 @@
         "name": "虫刺",
         "description": "造成魔伤，3连击。"
       }
-    }
+    },
+    "base_combo": 3
   },
   {
     "name": "Insect Hex",
@@ -4662,7 +4718,8 @@
         "name": "虫击",
         "description": "造成物伤，应对状态：本次技能威力变为2倍，无视敌方系别抵抗。"
       }
-    }
+    },
+    "counter_power_multiplier": 2
   },
   {
     "name": "Bug Cocoon",
@@ -4685,7 +4742,7 @@
     "category": "Defense",
     "energy_cost": 2,
     "power": null,
-    "description": "Damage taken -60%. Counter Attack: gains 1 random Devotion enhancement.",
+    "description": "Damage taken -80%. Counter Attack: gains 1 random Devotion enhancement.",
     "has_counter": true,
     "localized": {
       "zh": {
@@ -4737,7 +4794,8 @@
         "name": "虫群过境",
         "description": "造成物伤，2连击。己方队伍获得1次奉献：获得连击数+1。"
       }
-    }
+    },
+    "base_combo": 2
   },
   {
     "name": "Swarm Wisdom",
@@ -4947,7 +5005,10 @@
         "name": "草虫冲击",
         "description": "造成物伤，若敌方本回合更换精灵，本次威力+50且无视敌方系别抵抗。"
       }
-    }
+    },
+    "alt_power_total": 130,
+    "alt_condition_zh": "对方换场时",
+    "alt_condition_en": "If opponent switches"
   },
   {
     "name": "Burst Rush",
@@ -4962,7 +5023,8 @@
         "name": "爆冲",
         "description": "造成物伤，应对状态：本次技能威力变为5倍。"
       }
-    }
+    },
+    "counter_power_multiplier": 5
   },
   {
     "name": "Crushing Fist",
@@ -4992,7 +5054,8 @@
         "name": "缠丝劲",
         "description": "造成物伤，2连击。"
       }
-    }
+    },
+    "base_combo": 2
   },
   {
     "name": "Inch Punch",
@@ -5022,7 +5085,8 @@
         "name": "叠势",
         "description": "造成魔伤，2连击，每成功应对1次，本技能连击数永久+2。"
       }
-    }
+    },
+    "base_combo": 2
   },
   {
     "name": "Counter Punch",
@@ -5037,7 +5101,11 @@
         "name": "反击拳",
         "description": "造成物伤，2连击，若后手攻击，改为3连击。"
       }
-    }
+    },
+    "base_combo": 2,
+    "alt_power_total": 75,
+    "alt_condition_zh": "后手时",
+    "alt_condition_en": "If goes last"
   },
   {
     "name": "Defensive Counter",
@@ -5097,7 +5165,8 @@
         "name": "技巧打击",
         "description": "造成物伤，应对状态：本次技能威力变为10倍。"
       }
-    }
+    },
+    "counter_power_multiplier": 10
   },
   {
     "name": "Intercepting Fist",
@@ -5187,7 +5256,9 @@
         "name": "散手",
         "description": "造成物伤，2连击，应对状态：本技能改为6连击。"
       }
-    }
+    },
+    "base_combo": 2,
+    "counter_power_multiplier": 3
   },
   {
     "name": "Breath Focus",
@@ -5232,7 +5303,8 @@
         "name": "无影脚",
         "description": "造成物伤，应对状态：本次技能威力变为2倍。"
       }
-    }
+    },
+    "counter_power_multiplier": 2
   },
   {
     "name": "One Punch",
@@ -5322,7 +5394,10 @@
         "name": "回旋踢",
         "description": "造成物伤，若敌方本回合更换精灵，本次技能威力翻倍。"
       }
-    }
+    },
+    "alt_power_total": 160,
+    "alt_condition_zh": "对方换场时",
+    "alt_condition_en": "If opponent switches"
   },
   {
     "name": "Eye of the Storm",
@@ -5457,7 +5532,10 @@
         "name": "疾风刺",
         "description": "造成物伤，1连击，若先于敌方攻击，改为3连击。"
       }
-    }
+    },
+    "alt_power_total": 75,
+    "alt_condition_zh": "先手时",
+    "alt_condition_en": "If goes first"
   },
   {
     "name": "Gale Barrage",
@@ -5487,7 +5565,8 @@
         "name": "龙卷风",
         "description": "造成物伤，迅捷，应对状态：本次技能威力变为1.5倍。"
       }
-    }
+    },
+    "counter_power_multiplier": 1.5
   },
   {
     "name": "Chirp",
@@ -5517,7 +5596,8 @@
         "name": "闪击",
         "description": "造成物伤，速度比敌方越高，本次技能威力越高。"
       }
-    }
+    },
+    "power_formula": "speed_diff"
   },
   {
     "name": "Fanning Wind",
@@ -5532,7 +5612,10 @@
         "name": "扇风",
         "description": "造成物伤，若先于敌方攻击，本次技能威力+50%。"
       }
-    }
+    },
+    "alt_power_total": 113,
+    "alt_condition_zh": "先手时",
+    "alt_condition_en": "If goes first"
   },
   {
     "name": "Wing Bash",
@@ -5637,7 +5720,8 @@
         "name": "啄击",
         "description": "造成物伤，2连击。"
       }
-    }
+    },
+    "base_combo": 2
   },
   {
     "name": "Popcorn Explosion",
@@ -5682,7 +5766,10 @@
         "name": "超级糖果",
         "description": "造成物伤，自己获得萌化：本次技能威力+60。"
       }
-    }
+    },
+    "alt_power_total": 160,
+    "alt_condition_zh": "若精灵不处于最低进化形态",
+    "alt_condition_en": "If not at base evolution stage"
   },
   {
     "name": "Innocent Heart",
@@ -5772,7 +5859,8 @@
         "name": "撒娇",
         "description": "造成魔伤，3连击。自己获得萌化：威力永久+20。"
       }
-    }
+    },
+    "base_combo": 3
   },
   {
     "name": "Sugar Bounce",
@@ -5922,7 +6010,10 @@
         "name": "背袭",
         "description": "造成魔伤，若敌方能量等于0，造成20倍伤害。"
       }
-    }
+    },
+    "alt_power_total": 800,
+    "alt_condition_zh": "对方能量为0时",
+    "alt_condition_en": "If opponent has 0 energy"
   },
   {
     "name": "Taunt",
@@ -6072,7 +6163,11 @@
         "name": "灵光",
         "description": "造成魔伤，3连击，若敌方本回合更换精灵，本次技能连击数翻倍。"
       }
-    }
+    },
+    "base_combo": 3,
+    "alt_power_total": 150,
+    "alt_condition_zh": "对方换场时",
+    "alt_condition_en": "If opponent switches"
   },
   {
     "name": "Medium",
@@ -6102,7 +6197,8 @@
         "name": "午夜噪音",
         "description": "造成魔伤，5连击。"
       }
-    }
+    },
+    "base_combo": 5
   },
   {
     "name": "Phantomize",
@@ -6162,7 +6258,8 @@
         "name": "暗突袭",
         "description": "造成物伤，吸血50%，应对状态：本次技能威力翻倍。"
       }
-    }
+    },
+    "counter_power_multiplier": 2
   },
   {
     "name": "Underhanded Dealings",
@@ -6222,7 +6319,8 @@
         "name": "趁火打劫",
         "description": "造成物伤，2连击，若击败敌方，本技能连击数永久+2。"
       }
-    }
+    },
+    "base_combo": 2
   },
   {
     "name": "Impact",
@@ -6462,7 +6560,11 @@
         "name": "撕咬",
         "description": "造成物伤，3连击，若自己的生命低于50%，本次技能连击数+2。"
       }
-    }
+    },
+    "base_combo": 3,
+    "alt_power_total": 150,
+    "alt_condition_zh": "血量<50%时",
+    "alt_condition_en": "If HP < 50%"
   },
   {
     "name": "Greed",
@@ -6567,7 +6669,8 @@
         "name": "黑手",
         "description": "造成魔伤，2连击。"
       }
-    }
+    },
+    "base_combo": 2
   },
   {
     "name": "Dismantle",
@@ -6627,7 +6730,8 @@
         "name": "传感器",
         "description": "造成物伤，2连击，本技能位于1号或3号位时连击数+1，传动1。"
       }
-    }
+    },
+    "base_combo": 2
   },
   {
     "name": "Magnetic Storm",
@@ -7077,7 +7181,8 @@
         "name": "针状物",
         "description": "造成魔伤，3连击。"
       }
-    }
+    },
+    "base_combo": 3
   },
   {
     "name": "Nebula Vortex",

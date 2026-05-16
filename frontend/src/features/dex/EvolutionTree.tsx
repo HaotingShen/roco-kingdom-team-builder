@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { Fragment, useState, useRef, useEffect, useLayoutEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { useI18n, pickName, pickFormName, type Lang } from "@/i18n";
-import { monsterImageFallbackChain } from "@/lib/images";
+import { monsterImageFallbackChain, typeIconUrl, monsterPlaceholder } from "@/lib/images";
 import { buildDexForwardQuery } from "@/lib/dexNavigation";
 import type { EvolutionTreeData, EvolutionStageMonster } from "@/types";
 
@@ -13,6 +13,7 @@ interface EvolutionTreeProps {
   fromBuilder: boolean;
   fromAnalyze?: boolean;
   analyzeSlot?: string;
+  fromMatchup?: boolean;
   back?: string;
 }
 
@@ -23,6 +24,7 @@ export default function EvolutionTree({
   fromBuilder,
   fromAnalyze = false,
   analyzeSlot,
+  fromMatchup = false,
   back,
 }: EvolutionTreeProps) {
   const { lang } = useI18n();
@@ -32,6 +34,7 @@ export default function EvolutionTree({
     fromBuilder,
     fromAnalyze,
     analyzeSlot,
+    fromMatchup,
   });
 
   if (!treeData || !treeData.stages || treeData.stages.length <= 1) {
@@ -111,7 +114,7 @@ function EvolutionArrow({
     return (
       <div className="flex flex-col items-center justify-center shrink-0 px-1 sm:px-2">
         <img
-          src="/type-icons/30/leader.png"
+          src={typeIconUrl("leader", 30)!}
           alt="Evolves to Leader"
           className="w-6 h-6 sm:w-7 sm:h-7 drop-shadow-md"
         />
@@ -365,7 +368,7 @@ function MonsterEvolutionCard({
       : monsterName;
 
   const fallbackChain = monsterImageFallbackChain(monster as any, 360);
-  const imgSrc = fallbackChain[0] || "/monster-images/placeholder.png";
+  const imgSrc = fallbackChain[0] || monsterPlaceholder;
 
   // CRITICAL: Leader representatives navigate to first (lowest ID) leader form
   const targetId = monster.is_representative && monster.representative_id
@@ -413,8 +416,8 @@ function MonsterEvolutionCard({
               if (next < fallbackChain.length) {
                 img.dataset.fallbackStep = String(next);
                 img.src = fallbackChain[next]!;
-              } else if (img.src !== "/monster-images/placeholder.png") {
-                img.src = "/monster-images/placeholder.png";
+              } else if (img.src !== monsterPlaceholder) {
+                img.src = monsterPlaceholder;
               }
             }}
           />

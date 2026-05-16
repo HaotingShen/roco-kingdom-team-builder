@@ -9,8 +9,9 @@ import useDebounce from "@/hooks/useDebounce";
 import { useSeoMeta } from "@/hooks/useSeoMeta";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useWindowVirtualizer } from "@tanstack/react-virtual";
-import { typeIconUrl, magicItemImageUrl, monsterImageFallbackChain } from "@/lib/images";
+import { typeIconUrl, magicItemImageUrl, monsterImageFallbackChain, monsterPlaceholder, magicItemPlaceholder, moveIconUrlFromCn, moveSubIconUrl } from "@/lib/images";
 import { QUERY_KEYS } from "@/lib/constants";
+import { byLegacyTypeOrder, DEFENDER_TYPE_NAMES } from "@/lib/typeEffectiveness";
 import RichDescription from "@/components/RichDescription";
 
 /* ---------------- helpers ---------------- */
@@ -459,7 +460,7 @@ function MonstersTab() {
                     const formLabel = m.is_leader_form ? "" : pickFormName(m as any, lang);
                     const title = [titleName, formLabel ? `(${formLabel})` : ""].filter(Boolean).join(" ");
                     const fallbackChain = monsterImageFallbackChain(m, 360);
-                    const src = fallbackChain[0] || "/monster-images/placeholder.png";
+                    const src = fallbackChain[0] || monsterPlaceholder;
                     return (
                       <Link
                         key={m.id}
@@ -484,8 +485,8 @@ function MonstersTab() {
                               if (next < fallbackChain.length) {
                                 img.dataset.fallbackStep = String(next);
                                 img.src = fallbackChain[next]!;
-                              } else if (img.src !== "/monster-images/placeholder.png") {
-                                img.src = "/monster-images/placeholder.png";
+                              } else if (img.src !== monsterPlaceholder) {
+                                img.src = monsterPlaceholder;
                               }
                             }}
                           />
@@ -930,9 +931,9 @@ function MovesTab() {
 
                     // assets
                     const moveNameZh = pickName(m as any, "zh") || cname;
-                    const moveImg = encodeURI(`/move-icons/${moveNameZh}.png`); // 128x128 source
+                    const moveImg = moveIconUrlFromCn(moveNameZh);
                     const typeImg = tp?.name ? typeIconUrl(tp.name, 30) : null;
-                    const energyImg = "/move-sub-icons/energy.png";
+                    const energyImg = moveSubIconUrl("energy.png");
 
                     // Special handling for Willpower Impact - use conditional-attack icon
                     const isWillpower = m.name === "Willpower Impact" ||
@@ -946,8 +947,8 @@ function MovesTab() {
                       STATUS: "status",
                     };
                     const catImg = isWillpower
-                      ? "/move-sub-icons/conditional-attack.png"
-                      : `/move-sub-icons/${catToFile[normalizedCategory] ?? "physical-attack"}.png`;
+                      ? moveSubIconUrl("conditional-attack.png")
+                      : moveSubIconUrl(`${catToFile[normalizedCategory] ?? "physical-attack"}.png`);
 
                     // Get type color class, fallback to zinc if type not found
                     const typeName = tp?.name?.toLowerCase() || "";
@@ -962,7 +963,7 @@ function MovesTab() {
                       >
                         <div
                           className={`
-                            rounded-lg border border-zinc-200 bg-white p-3 shadow-sm
+                            h-full rounded-lg border border-zinc-200 bg-white p-3 shadow-sm
                             border-l-4 ${typeColorClass}
                             transition-all duration-200
                             hover:shadow-md hover:-translate-y-0.5
@@ -1071,7 +1072,7 @@ function MagicItemsTab() {
       {(items.data ?? []).map((it) => {
         const nm = pickName(it as any, lang) || it.name;
         const desc = pickDesc(it as any, lang) || it.description || "";
-        const img = magicItemImageUrl(it) || "/magic-items/placeholder.png";
+        const img = magicItemImageUrl(it) || magicItemPlaceholder;
 
         return (
           <div key={it.id} className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm hover:shadow-md transition-all duration-200 flex items-start gap-3">
@@ -1082,7 +1083,7 @@ function MagicItemsTab() {
                 width={48}
                 height={48}
                 className="w-full h-full object-contain drop-shadow-sm"
-                onError={(e) => { (e.currentTarget as HTMLImageElement).src = "/monster-images/placeholder.png"; }}
+                onError={(e) => { (e.currentTarget as HTMLImageElement).src = monsterPlaceholder; }}
               />
             </div>
             <div className="min-w-0 flex-1">
@@ -1133,16 +1134,250 @@ function GameTermsTab() {
 }
 
 /* ===========================================================
+   Types tab
+   =========================================================== */
+
+function TypesTab() {
+  const { lang, t } = useI18n();
+  const [mode, setMode] = useState<"attack" | "defense">("attack");
+  const [attackType, setAttackType] = useState<string | null>(null);
+  const [defTypes, setDefTypes] = useState<string[]>([]);
+
+  const typesQ = useQuery<TypeOut[]>({
+    queryKey: QUERY_KEYS.TYPES,
+    queryFn: () => endpoints.types().then((r) => r.data as TypeOut[]),
+    staleTime: Infinity,
+  });
+
+  // 18 real types — Leader excluded from picker and results
+  const displayTypes = useMemo(
+    () => (typesQ.data ?? []).filter((tp) => DEFENDER_TYPE_NAMES.has(tp.name)),
+    [typesQ.data],
+  );
+
+  const typeMap = useMemo(() => {
+    const m = new Map<string, TypeOut>();
+    (typesQ.data ?? []).forEach((tp) => m.set(tp.name, tp));
+    return m;
+  }, [typesQ.data]);
+
+  // Attack mode: invert the defender perspective to get attacker→defender effectiveness
+  const attackMatchups = useMemo(() => {
+    if (!attackType) return null;
+    const effective: string[] = [];
+    const resisted: string[] = [];
+    for (const T of displayTypes) {
+      if ((T.vulnerable_to ?? []).includes(attackType)) effective.push(T.name);
+      else if ((T.resistant_to ?? []).includes(attackType)) resisted.push(T.name);
+    }
+    return {
+      effective: effective.sort(byLegacyTypeOrder),
+      resisted: resisted.sort(byLegacyTypeOrder),
+    };
+  }, [attackType, displayTypes]);
+
+  // Defense mode: same set-intersection algorithm as TypeDefensePanel
+  const defMatchups = useMemo(() => {
+    const empty = { triple: [] as string[], double: [] as string[], half: [] as string[], quarter: [] as string[] };
+    if (defTypes.length === 0) return empty;
+
+    const mainT = typeMap.get(defTypes[0]!);
+    if (!mainT) return empty;
+
+    const mainVuln = new Set<string>(mainT.vulnerable_to ?? []);
+    const mainResist = new Set<string>(mainT.resistant_to ?? []);
+    const subT = defTypes[1] ? typeMap.get(defTypes[1]) : undefined;
+
+    if (!subT) {
+      return {
+        triple: [],
+        double: [...mainVuln].filter((n) => DEFENDER_TYPE_NAMES.has(n)).sort(byLegacyTypeOrder),
+        half: [...mainResist].filter((n) => DEFENDER_TYPE_NAMES.has(n)).sort(byLegacyTypeOrder),
+        quarter: [],
+      };
+    }
+
+    const subVuln = new Set<string>(subT.vulnerable_to ?? []);
+    const subResist = new Set<string>(subT.resistant_to ?? []);
+    const triple: string[] = [];
+    const double: string[] = [];
+    const half: string[] = [];
+    const quarter: string[] = [];
+
+    for (const tp of mainVuln) if (subVuln.has(tp) && DEFENDER_TYPE_NAMES.has(tp)) triple.push(tp);
+    for (const tp of mainVuln) if (!subVuln.has(tp) && !subResist.has(tp) && DEFENDER_TYPE_NAMES.has(tp)) double.push(tp);
+    for (const tp of subVuln) if (!mainVuln.has(tp) && !mainResist.has(tp) && DEFENDER_TYPE_NAMES.has(tp)) double.push(tp);
+    for (const tp of mainResist) if (subResist.has(tp) && DEFENDER_TYPE_NAMES.has(tp)) quarter.push(tp);
+    for (const tp of mainResist) if (!subResist.has(tp) && !subVuln.has(tp) && DEFENDER_TYPE_NAMES.has(tp)) half.push(tp);
+    for (const tp of subResist) if (!mainResist.has(tp) && !mainVuln.has(tp) && DEFENDER_TYPE_NAMES.has(tp)) half.push(tp);
+
+    return {
+      triple: triple.sort(byLegacyTypeOrder),
+      double: double.sort(byLegacyTypeOrder),
+      half: half.sort(byLegacyTypeOrder),
+      quarter: quarter.sort(byLegacyTypeOrder),
+    };
+  }, [defTypes, typeMap]);
+
+  const toggleDefType = (name: string) =>
+    setDefTypes((prev) =>
+      prev.includes(name)
+        ? prev.filter((x) => x !== name)
+        : prev.length < 2
+        ? [...prev, name]
+        : prev,
+    );
+
+  const renderTypePill = (name: string) => {
+    const tp = typeMap.get(name);
+    const displayName = tp ? pickName(tp as any, lang) : name;
+    const icon = typeIconUrl(name, 30);
+    return (
+      <span
+        key={name}
+        className="inline-flex items-center gap-1 rounded-full bg-white border border-zinc-200 text-sm px-3 py-1 shadow-sm"
+      >
+        {icon && <img src={icon} alt="" className="w-5 h-5 sm:w-[22px] sm:h-[22px]" loading="lazy" />}
+        <span className="font-medium text-zinc-700">{displayName}</span>
+      </span>
+    );
+  };
+
+  const renderRow = (label: string, types: string[], pillCls: string) =>
+    types.length > 0 ? (
+      <div className="space-y-1.5">
+        <span className={`inline-block text-sm font-semibold rounded-full border px-3 py-1 ${pillCls}`}>
+          {label}
+        </span>
+        <div className="flex flex-wrap gap-1.5">{types.map(renderTypePill)}</div>
+      </div>
+    ) : null;
+
+  const hasDefResults =
+    defMatchups.triple.length > 0 || defMatchups.double.length > 0 ||
+    defMatchups.half.length > 0 || defMatchups.quarter.length > 0;
+
+  return (
+    <div className="space-y-4">
+      {/* Controls card */}
+      <div className="rounded-lg border border-zinc-200 bg-white shadow-sm p-4 space-y-4">
+        {/* Title + mode toggle */}
+        <div className="flex flex-wrap items-center gap-3">
+          <span className="text-base font-semibold text-zinc-800">{t("dex.typeChartTitle")}</span>
+          <div className="inline-flex items-center rounded-full border border-zinc-200 bg-zinc-50 p-0.5 text-sm">
+            {(["attack", "defense"] as const).map((m) => (
+              <button
+                key={m}
+                type="button"
+                onClick={() => setMode(m)}
+                aria-pressed={mode === m}
+                className={`px-4 py-1 rounded-full transition-colors cursor-pointer ${
+                  mode === m
+                    ? "bg-white text-zinc-800 shadow-sm font-medium"
+                    : "text-zinc-500 hover:text-zinc-700"
+                }`}
+              >
+                {m === "attack" ? t("dex.attackModeLabel") : t("dex.defenseModeLabel")}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Hint */}
+        <p className="text-xs text-zinc-500">
+          {mode === "attack" ? t("dex.selectAttackType") : t("dex.selectDefenseTypes")}
+        </p>
+
+        {/* Type picker */}
+        {typesQ.isLoading ? (
+          <div className="text-sm text-zinc-500">{t("common.loading")}</div>
+        ) : typesQ.isError ? (
+          <div className="text-sm text-rose-600">{t("analysis.coverageDataUnavailable")}</div>
+        ) : (
+          <div className="flex flex-wrap gap-2">
+            {displayTypes.map((tp) => {
+              const isSelected =
+                mode === "attack" ? attackType === tp.name : defTypes.includes(tp.name);
+              const isDisabled =
+                mode === "defense" && defTypes.length >= 2 && !defTypes.includes(tp.name);
+              const icon = typeIconUrl(tp.name, 30);
+              return (
+                <button
+                  key={tp.id}
+                  type="button"
+                  disabled={isDisabled}
+                  onClick={() => {
+                    if (mode === "attack") {
+                      setAttackType((prev) => (prev === tp.name ? null : tp.name));
+                    } else {
+                      toggleDefType(tp.name);
+                    }
+                  }}
+                  className={`inline-flex h-9 items-center gap-0.5 px-3 rounded-full text-sm font-medium transition-all duration-150 ${
+                    isSelected
+                      ? "bg-zinc-800 text-white shadow-md cursor-pointer"
+                      : isDisabled
+                      ? "bg-zinc-50 border border-zinc-200 text-zinc-400 cursor-not-allowed opacity-50"
+                      : "bg-white border border-zinc-300 text-zinc-700 hover:bg-zinc-50 hover:border-zinc-400 cursor-pointer"
+                  }`}
+                >
+                  {icon && <img src={icon} alt="" width={22} height={22} />}
+                  {pickName(tp as any, lang) || tp.name}
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Attack mode results */}
+      {mode === "attack" && attackMatchups && (
+        <div className="rounded-lg border border-zinc-200 bg-white shadow-sm p-4">
+          {attackMatchups.effective.length === 0 && attackMatchups.resisted.length === 0 ? (
+            <div className="text-sm text-zinc-500">{t("analysis.noMatchupsHint")}</div>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-6 gap-y-3">
+              {attackMatchups.effective.length > 0 && <div>{renderRow(t("dex.attackEffective"), attackMatchups.effective, "bg-emerald-50 text-emerald-700 border-emerald-200")}</div>}
+              {attackMatchups.resisted.length > 0 && <div>{renderRow(t("dex.attackResisted"), attackMatchups.resisted, "bg-red-50 text-red-700 border-red-200")}</div>}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Defense mode results */}
+      {mode === "defense" && defTypes.length > 0 && (
+        <div className="rounded-lg border border-zinc-200 bg-white shadow-sm p-4">
+          {!hasDefResults ? (
+            <div className="text-sm text-zinc-500">{t("analysis.noMatchupsHint")}</div>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-6 gap-y-3">
+              <div className="space-y-3">
+                {renderRow(t("dex.weaknessTriple"), defMatchups.triple, "bg-red-50 text-red-700 border-red-200")}
+                {renderRow(t("dex.weaknessDouble"), defMatchups.double, "bg-orange-50 text-orange-700 border-orange-200")}
+              </div>
+              <div className="space-y-3">
+                {renderRow(t("dex.resistHalf"), defMatchups.half, "bg-blue-50 text-blue-700 border-blue-200")}
+                {renderRow(t("dex.resistQuarter"), defMatchups.quarter, "bg-emerald-50 text-emerald-700 border-emerald-200")}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ===========================================================
    Page
    =========================================================== */
 
 export default function DexPage() {
   const { t, lang } = useI18n();
   useSeoMeta({
-    title: lang === "zh" ? "精灵图鉴 | 洛克王国: 世界" : "Monster Dex | Roco Kingdom: World",
+    title: lang === "zh" ? "精灵图鉴 | 洛克王国: 世界" : "Jingling Dex | Roco Kingdom: World",
     description: lang === "zh"
       ? "浏览完整的洛克王国: 世界精灵图鉴，按属性、数值和招式搜索。"
-      : "Browse the complete Roco Kingdom: World monster dex. Search by type, stats, and moves.",
+      : "Browse the complete Roco Kingdom: World jingling dex. Search by type, stats, and moves.",
     canonicalPath: "/dex",
   });
   const [sp, setSp] = useSearchParams();
@@ -1166,6 +1401,7 @@ export default function DexPage() {
         { key: "moves",    label: t("dex.tab_moves"),    content: (<MovesTab />) as ReactNode },
         { key: "items",    label: t("dex.tab_items"),    content: (<MagicItemsTab />) as ReactNode },
         { key: "terms",    label: t("dex.tab_terms"),    content: (<GameTermsTab />) as ReactNode },
+        { key: "types",    label: t("dex.tab_types"),    content: (<TypesTab />) as ReactNode },
       ]}
     />
   );

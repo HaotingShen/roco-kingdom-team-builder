@@ -31,12 +31,41 @@ export function normalizeMoveCategory(category: string): string {
 /** Pre-built resist/vuln sets for one defender type. */
 export type TypeSets = { resist: Set<string>; vuln: Set<string> };
 
-/** Build the resist/vuln Sets for a single defender type once. */
+/**
+ * Module-level cache for `setsFor`.
+ *
+ * The resist/vuln arrays on a TypeOut are loaded once from /types and then
+ * never mutate for the lifetime of the app — so we can safely memoize the
+ * (small) derived Sets by type name. MoveCoveragePanel previously paid for
+ * up to ~20 Set allocations per render when iterating the 18 defender types;
+ * MatchupPanel rebuilds defender sets on every status-toggle click. This
+ * cache makes both effectively free after the first call per type.
+ *
+ * Invalidation: the backend /types payload is immutable per app session, so
+ * the only way for the sets to "change" is across a full page reload — at
+ * which point the module is re-imported and the cache starts fresh. A manual
+ * `clearTypeSetsCache()` escape hatch exists for tests that stub TypeOut.
+ */
+const typeSetsCache = new Map<string, TypeSets>();
+
+/**
+ * Build the resist/vuln Sets for a single defender type. Memoized by type
+ * name — the first call per name allocates, subsequent calls reuse.
+ */
 export function setsFor(t: TypeOut): TypeSets {
-  return {
+  const cached = typeSetsCache.get(t.name);
+  if (cached != null) return cached;
+  const sets: TypeSets = {
     resist: new Set<string>(t.resistant_to ?? []),
     vuln: new Set<string>(t.vulnerable_to ?? []),
   };
+  typeSetsCache.set(t.name, sets);
+  return sets;
+}
+
+/** Test hook: drop all memoized TypeSets. Not used by production code. */
+export function clearTypeSetsCache(): void {
+  typeSetsCache.clear();
 }
 
 /**
@@ -54,6 +83,47 @@ export function isResistedOnNet(a: TypeSets, b: TypeSets, m: string): boolean {
 
 export function isEffectiveOnNet(a: TypeSets, b: TypeSets, m: string): boolean {
   return (a.vuln.has(m) || b.vuln.has(m)) && !(a.resist.has(m) || b.resist.has(m));
+}
+
+/**
+ * Multiplier for an attacker's move type against a defender's types,
+ * on the game's 5-step scale: 3 / 2 / 1 / 0.5 / 0.25.
+ *
+ * Used by the damage formula in lib/damageCalc.ts. Mirrors
+ * backend.damage.type_effectiveness exactly.
+ *
+ *   3.0    if both halves are vulnerable
+ *   2.0    if exactly one half is vulnerable AND the other doesn't resist
+ *   1.0    cancelled (vuln + resist on the two halves) OR neither half cares
+ *   0.5    exactly one half resists AND the other doesn't make it vulnerable
+ *   0.25   if both halves resist
+ *
+ * Single-type defender (sub === null) is a degenerate case in {2, 1, 0.5}.
+ */
+export function typeEffectiveness(
+  moveTypeName: string,
+  main: TypeSets,
+  sub: TypeSets | null,
+): number {
+  const mainVuln = main.vuln.has(moveTypeName);
+  const mainResist = main.resist.has(moveTypeName);
+
+  if (sub === null) {
+    if (mainVuln) return 2;
+    if (mainResist) return 0.5;
+    return 1;
+  }
+
+  const subVuln = sub.vuln.has(moveTypeName);
+  const subResist = sub.resist.has(moveTypeName);
+
+  if (mainVuln && subVuln) return 3;
+  if (mainResist && subResist) return 0.25;
+  // vuln on one half + resist on the other → cancelled to neutral
+  if ((mainVuln && subResist) || (mainResist && subVuln)) return 1;
+  if (mainVuln || subVuln) return 2;
+  if (mainResist || subResist) return 0.5;
+  return 1;
 }
 
 /**

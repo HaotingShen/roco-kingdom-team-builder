@@ -36,9 +36,9 @@
     "spd_mod_pct": 0.2
   },
   {
-    "name": "Naive",
+    "name": "Rash",
     "localized": {
-      "zh": "天真"
+      "zh": "莽撞"
     },
     "hp_mod_pct": 0.0,
     "phy_atk_mod_pct": 0.0,
@@ -48,9 +48,9 @@
     "spd_mod_pct": 0.2
   },
   {
-    "name": "Restless",
+    "name": "Jolly",
     "localized": {
-      "zh": "浮躁"
+      "zh": "热情"
     },
     "hp_mod_pct": -0.1,
     "phy_atk_mod_pct": 0.0,
@@ -84,9 +84,9 @@
     "spd_mod_pct": 0.0
   },
   {
-    "name": "Lonely",
+    "name": "Bold",
     "localized": {
-      "zh": "孤僻"
+      "zh": "大胆"
     },
     "hp_mod_pct": 0.0,
     "phy_atk_mod_pct": 0.2,
@@ -96,9 +96,9 @@
     "spd_mod_pct": 0.0
   },
   {
-    "name": "Frank",
+    "name": "Gutsy",
     "localized": {
-      "zh": "坦率"
+      "zh": "逞强"
     },
     "hp_mod_pct": -0.1,
     "phy_atk_mod_pct": 0.2,
@@ -120,9 +120,9 @@
     "spd_mod_pct": -0.1
   },
   {
-    "name": "Modest",
+    "name": "Clever",
     "localized": {
-      "zh": "保守"
+      "zh": "聪明"
     },
     "hp_mod_pct": 0.0,
     "phy_atk_mod_pct": -0.1,
@@ -132,9 +132,9 @@
     "spd_mod_pct": 0.0
   },
   {
-    "name": "Steady",
+    "name": "Focused",
     "localized": {
-      "zh": "稳重"
+      "zh": "专注"
     },
     "hp_mod_pct": 0.0,
     "phy_atk_mod_pct": 0.0,
@@ -144,9 +144,9 @@
     "spd_mod_pct": 0.0
   },
   {
-    "name": "Careless",
+    "name": "Quirky",
     "localized": {
-      "zh": "马虎"
+      "zh": "偏执"
     },
     "hp_mod_pct": 0.0,
     "phy_atk_mod_pct": 0.0,
@@ -156,9 +156,9 @@
     "spd_mod_pct": 0.0
   },
   {
-    "name": "Serious",
+    "name": "Sober",
     "localized": {
-      "zh": "认真"
+      "zh": "理性"
     },
     "hp_mod_pct": -0.1,
     "phy_atk_mod_pct": 0.0,
@@ -180,9 +180,9 @@
     "spd_mod_pct": -0.1
   },
   {
-    "name": "Bold",
+    "name": "Hardy",
     "localized": {
-      "zh": "大胆"
+      "zh": "稳重"
     },
     "hp_mod_pct": 0.0,
     "phy_atk_mod_pct": -0.1,
@@ -192,9 +192,9 @@
     "spd_mod_pct": 0.0
   },
   {
-    "name": "Impish",
+    "name": "Naive",
     "localized": {
-      "zh": "淘气"
+      "zh": "天真"
     },
     "hp_mod_pct": 0.0,
     "phy_atk_mod_pct": 0.0,
@@ -216,9 +216,9 @@
     "spd_mod_pct": 0.0
   },
   {
-    "name": "Shy",
+    "name": "Frank",
     "localized": {
-      "zh": "害羞"
+      "zh": "坦率"
     },
     "hp_mod_pct": -0.1,
     "phy_atk_mod_pct": 0.0,
@@ -240,9 +240,9 @@
     "spd_mod_pct": -0.1
   },
   {
-    "name": "Composed",
+    "name": "Wary",
     "localized": {
-      "zh": "沉着"
+      "zh": "警惕"
     },
     "hp_mod_pct": 0.0,
     "phy_atk_mod_pct": -0.1,
@@ -252,9 +252,9 @@
     "spd_mod_pct": 0.0
   },
   {
-    "name": "Careful",
+    "name": "Shy",
     "localized": {
-      "zh": "慎重"
+      "zh": "害羞"
     },
     "hp_mod_pct": 0.0,
     "phy_atk_mod_pct": 0.0,
@@ -276,9 +276,9 @@
     "spd_mod_pct": 0.0
   },
   {
-    "name": "Practical",
+    "name": "Nervous",
     "localized": {
-      "zh": "实干"
+      "zh": "焦虑"
     },
     "hp_mod_pct": -0.1,
     "phy_atk_mod_pct": 0.0,
@@ -288,9 +288,9 @@
     "spd_mod_pct": 0.0
   },
   {
-    "name": "Reckless",
+    "name": "Careful",
     "localized": {
-      "zh": "狂妄"
+      "zh": "慎重"
     },
     "hp_mod_pct": 0.0,
     "phy_atk_mod_pct": 0.0,
@@ -324,9 +324,9 @@
     "spd_mod_pct": 0.0
   },
   {
-    "name": "Rational",
+    "name": "Gloomy",
     "localized": {
-      "zh": "理智"
+      "zh": "忧郁"
     },
     "hp_mod_pct": 0.2,
     "phy_atk_mod_pct": 0.0,
@@ -336,9 +336,9 @@
     "spd_mod_pct": 0.0
   },
   {
-    "name": "Melancholy",
+    "name": "Careless",
     "localized": {
-      "zh": "忧郁"
+      "zh": "粗心"
     },
     "hp_mod_pct": 0.2,
     "phy_atk_mod_pct": 0.0,
@@ -348,9 +348,9 @@
     "spd_mod_pct": 0.0
   },
   {
-    "name": "Nervous",
+    "name": "Grounded",
     "localized": {
-      "zh": "紧张"
+      "zh": "踏实"
     },
     "hp_mod_pct": 0.2,
     "phy_atk_mod_pct": 0.0,

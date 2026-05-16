@@ -5,6 +5,7 @@ import { useI18n, pickName } from "@/i18n";
 import { typeIconUrl } from "@/lib/images";
 import { QUERY_KEYS } from "@/lib/constants";
 import HintPopover from "./HintPopover";
+import PanelCard from "./PanelCard";
 import {
   DEFENDER_TYPE_NAMES,
   byLegacyTypeOrder,
@@ -35,8 +36,10 @@ import type { MoveOut, TypeOut } from "@/types";
  *             results where the same condition holds on net effectiveness
  *             (vuln on either type cancels resist on the other)
  *
- * Self-contained: takes the slot's 4 move IDs and fetches everything itself,
- * sharing react-query caches with the rest of the app (moves-by-ids + types).
+ * Data flow: the parent passes in the already-fetched `moves` (via the
+ * shared `useMovesByIds` hook in MonsterAnalysisPage). The panel still
+ * fetches /types itself since TypesQ is unrelated to moves and the query
+ * is shared app-wide via QUERY_KEYS.TYPES.
  */
 
 function isAttackCategory(m: MoveOut): boolean {
@@ -48,30 +51,44 @@ function isAttackCategory(m: MoveOut): boolean {
   return cat === "PHY_ATTACK" || cat === "MAG_ATTACK";
 }
 
-export default function MoveCoveragePanel({ moveIds }: { moveIds: Array<number | 0 | undefined | null> }) {
+/**
+ * Props for MoveCoveragePanel.
+ *
+ * `moves` is the already-fetched list of MoveOut (parent uses useMovesByIds).
+ * `movesLoading` / `movesError` let the panel render its own loading/error
+ * states consistently with when it was self-fetching.
+ * `hasSelectedMoves` is true if the slot has at least one non-zero move id —
+ * the panel uses it to distinguish "slot has no moves picked" (empty state)
+ * from "moves fetched but none are attack moves" (different empty state).
+ */
+interface Props {
+  moves: readonly MoveOut[] | undefined;
+  movesLoading: boolean;
+  movesError: boolean;
+  hasSelectedMoves: boolean;
+  initialEffectiveMode?: "single" | "dual";
+  initialBlindMode?: "single" | "dual";
+  onEffectiveModeChange?: (mode: "single" | "dual") => void;
+  onBlindModeChange?: (mode: "single" | "dual") => void;
+}
+
+export default function MoveCoveragePanel({
+  moves,
+  movesLoading,
+  movesError,
+  hasSelectedMoves,
+  initialEffectiveMode,
+  initialBlindMode,
+  onEffectiveModeChange,
+  onBlindModeChange,
+}: Props) {
   const { lang, t } = useI18n();
 
-  // V3: each coverage row has its own independent Single|Dual toggle.
-  // Both default to "single" for backward compatibility — anyone who already
-  // learned the panel sees no change until they click. In "dual" mode the row
-  // shows a comprehensive view: single-type results PLUS dual-type results.
-  const [effectiveMode, setEffectiveMode] = useState<"single" | "dual">("single");
-  const [blindMode, setBlindMode] = useState<"single" | "dual">("single");
+  const [effectiveMode, setEffectiveMode] = useState<"single" | "dual">(initialEffectiveMode ?? "single");
+  const [blindMode, setBlindMode] = useState<"single" | "dual">(initialBlindMode ?? "single");
 
-  // Dedupe + drop falsy IDs (slot.moveN_id is 0 when unset).
-  const uniqIds = useMemo(
-    () => Array.from(new Set(moveIds.filter((x): x is number => typeof x === "number" && x > 0))),
-    [moveIds],
-  );
-
-  const movesQ = useQuery({
-    queryKey: QUERY_KEYS.MOVES_BY_IDS(uniqIds.join(",")),
-    queryFn: () =>
-      endpoints
-        .moves({ ids: uniqIds.join(",") })
-        .then((r) => (r.data?.items ?? r.data) as MoveOut[]),
-    enabled: uniqIds.length > 0,
-  });
+  const handleEffectiveModeChange = (m: "single" | "dual") => { setEffectiveMode(m); onEffectiveModeChange?.(m); };
+  const handleBlindModeChange = (m: "single" | "dual") => { setBlindMode(m); onBlindModeChange?.(m); };
 
   const typesQ = useQuery({
     queryKey: QUERY_KEYS.TYPES,
@@ -81,9 +98,9 @@ export default function MoveCoveragePanel({ moveIds }: { moveIds: Array<number |
 
   // Filter to attack moves with a known move_type.
   const attackMoves = useMemo(() => {
-    const list = (movesQ.data ?? []).filter(isAttackCategory);
+    const list = (moves ?? []).filter(isAttackCategory);
     return list.filter((m) => !!m.move_type?.name);
-  }, [movesQ.data]);
+  }, [moves]);
 
   const moveTypeNames = useMemo(
     () => attackMoves.map((m) => m.move_type!.name),
@@ -206,34 +223,45 @@ export default function MoveCoveragePanel({ moveIds }: { moveIds: Array<number |
     return groupPairsByAnchor(dualEffectiveCoverage, single);
   }, [dualEffectiveCoverage, coverage.effectiveUnion]);
 
-  // Outer card shell — kept identical to TypeDefensePanel for visual rhythm.
-  const card = (body: React.ReactNode) => (
-    <section className="rounded-lg border border-zinc-200 bg-white shadow-sm p-4">
-      <div className="flex items-center gap-2 mb-3">
-        <span className="text-lg font-semibold text-zinc-800">{t("analysis.moveCoverage")}</span>
-      </div>
-      {body}
-    </section>
-  );
+  // Outer card shell is now the shared PanelCard component. Three of the
+  // analysis-surface panels render with the same title+body shape; this
+  // keeps them in lockstep.
+  const title = t("analysis.moveCoverage");
 
   // Loading: any required data still in flight.
-  if (movesQ.isLoading || typesQ.isLoading) {
-    return card(<div className="text-sm text-zinc-500">{t("common.loading")}</div>);
+  if (movesLoading || typesQ.isLoading) {
+    return (
+      <PanelCard title={title}>
+        <div className="text-sm text-zinc-500">{t("common.loading")}</div>
+      </PanelCard>
+    );
   }
 
   // Required data unavailable (fetch errored or returned empty).
-  if (movesQ.isError || typesQ.isError || typesQ.data == null) {
-    return card(<div className="text-sm text-rose-600">{t("analysis.coverageDataUnavailable")}</div>);
+  if (movesError || typesQ.isError || typesQ.data == null) {
+    return (
+      <PanelCard title={title}>
+        <div className="text-sm text-rose-600">{t("analysis.coverageDataUnavailable")}</div>
+      </PanelCard>
+    );
   }
 
   // No selected moves at all (slot has 0 moves picked yet).
-  if (uniqIds.length === 0) {
-    return card(<div className="text-sm text-zinc-500">{t("analysis.noAttackMoves")}</div>);
+  if (!hasSelectedMoves) {
+    return (
+      <PanelCard title={title}>
+        <div className="text-sm text-zinc-500">{t("analysis.noAttackMoves")}</div>
+      </PanelCard>
+    );
   }
 
   // Moves loaded but none of them are in attack categories.
   if (attackMoves.length === 0) {
-    return card(<div className="text-sm text-zinc-500">{t("analysis.noAttackMoves")}</div>);
+    return (
+      <PanelCard title={title}>
+        <div className="text-sm text-zinc-500">{t("analysis.noAttackMoves")}</div>
+      </PanelCard>
+    );
   }
 
   // ── Render helpers ────────────────────────────────────────────────────
@@ -341,65 +369,67 @@ export default function MoveCoveragePanel({ moveIds }: { moveIds: Array<number |
   const dualBlindGroupCount = groupedDualBlindSpots.length;
   const dualEffectiveGroupCount = groupedDualEffectiveCoverage.length;
 
-  return card(
-    <div className="space-y-3">
-      {/* Effective Against row */}
-      <div className="space-y-1.5">
-        {/* Header: label + hint + toggle — wraps if screen is too narrow for all three */}
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="shrink-0 inline-block text-sm font-semibold rounded-full border px-3 py-1 bg-emerald-50 text-emerald-700 border-emerald-200">
-            {t("analysis.coverageEffective")}
-          </span>
-          <HintPopover
-            text={effectiveMode === "single" ? t("analysis.coverageEffectiveHintSingle") : t("analysis.coverageEffectiveHintDual")}
-            ariaLabel={t("analysis.coverageEffective")}
-          />
-          {renderToggle(effectiveMode, setEffectiveMode)}
-        </div>
-        {/* Pills on their own line, always wrapping cleanly */}
-        <div className="flex flex-wrap gap-1.5">
-          {effectiveMode === "single" && coverage.effectiveUnion.map(renderSinglePill)}
-          {effectiveMode === "dual" && groupedDualEffectiveCoverage.map(renderDualGroup)}
-          {effectiveMode === "single" && coverage.effectiveUnion.length === 0 && (
-            <span className="text-xs text-zinc-500">{t("analysis.noEffectiveCoverage")}</span>
+  return (
+    <PanelCard title={title}>
+      <div className="space-y-3">
+        {/* Effective Against row */}
+        <div className="space-y-1.5">
+          {/* Header: label + hint + toggle — wraps if screen is too narrow for all three */}
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="shrink-0 inline-block text-sm font-semibold rounded-full border px-3 py-1 bg-emerald-50 text-emerald-700 border-emerald-200">
+              {t("analysis.coverageEffective")}
+            </span>
+            <HintPopover
+              text={effectiveMode === "single" ? t("analysis.coverageEffectiveHintSingle") : t("analysis.coverageEffectiveHintDual")}
+              ariaLabel={t("analysis.coverageEffective")}
+            />
+            {renderToggle(effectiveMode, handleEffectiveModeChange)}
+          </div>
+          {/* Pills on their own line, always wrapping cleanly */}
+          <div className="flex flex-wrap gap-1.5">
+            {effectiveMode === "single" && coverage.effectiveUnion.map(renderSinglePill)}
+            {effectiveMode === "dual" && groupedDualEffectiveCoverage.map(renderDualGroup)}
+            {effectiveMode === "single" && coverage.effectiveUnion.length === 0 && (
+              <span className="text-xs text-zinc-500">{t("analysis.noEffectiveCoverage")}</span>
+            )}
+            {effectiveMode === "dual" && dualEffectiveGroupCount === 0 && (
+              <span className="text-xs text-zinc-500">{t("analysis.noEffectiveCoverageDual")}</span>
+            )}
+          </div>
+          {effectiveMode === "dual" && dualEffectiveGroupCount > 0 && (
+            <p className="text-[10px] text-zinc-400 pl-1">{t("analysis.dualListCompleteEffective")}</p>
           )}
-          {effectiveMode === "dual" && dualEffectiveGroupCount === 0 && (
-            <span className="text-xs text-zinc-500">{t("analysis.noEffectiveCoverageDual")}</span>
-          )}
         </div>
-        {effectiveMode === "dual" && dualEffectiveGroupCount > 0 && (
-          <p className="text-[10px] text-zinc-400 pl-1">{t("analysis.dualListCompleteEffective")}</p>
-        )}
-      </div>
 
-      {/* No Effective Coverage (blind spot) row */}
-      <div className="space-y-1.5">
-        {/* Header: label + hint + toggle — wraps if screen is too narrow for all three */}
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="shrink-0 inline-block text-sm font-semibold rounded-full border px-3 py-1 bg-red-50 text-red-700 border-red-200">
-            {t("analysis.coverageBlindSpot")}
-          </span>
-          <HintPopover
-            text={blindMode === "single" ? t("analysis.coverageBlindSpotHintSingle") : t("analysis.coverageBlindSpotHintDual")}
-            ariaLabel={t("analysis.coverageBlindSpot")}
-          />
-          {renderToggle(blindMode, setBlindMode)}
-        </div>
-        {/* Pills on their own line, always wrapping cleanly */}
-        <div className="flex flex-wrap gap-1.5">
-          {blindMode === "single" && coverage.ineffectiveAll.map(renderSinglePill)}
-          {blindMode === "dual" && groupedDualBlindSpots.map(renderDualGroup)}
-          {blindMode === "single" && coverage.ineffectiveAll.length === 0 && (
-            <span className="text-xs text-zinc-500">{t("analysis.noBlindSpots")}</span>
+        {/* No Effective Coverage (blind spot) row */}
+        <div className="space-y-1.5">
+          {/* Header: label + hint + toggle — wraps if screen is too narrow for all three */}
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="shrink-0 inline-block text-sm font-semibold rounded-full border px-3 py-1 bg-red-50 text-red-700 border-red-200">
+              {t("analysis.coverageBlindSpot")}
+            </span>
+            <HintPopover
+              text={blindMode === "single" ? t("analysis.coverageBlindSpotHintSingle") : t("analysis.coverageBlindSpotHintDual")}
+              ariaLabel={t("analysis.coverageBlindSpot")}
+            />
+            {renderToggle(blindMode, handleBlindModeChange)}
+          </div>
+          {/* Pills on their own line, always wrapping cleanly */}
+          <div className="flex flex-wrap gap-1.5">
+            {blindMode === "single" && coverage.ineffectiveAll.map(renderSinglePill)}
+            {blindMode === "dual" && groupedDualBlindSpots.map(renderDualGroup)}
+            {blindMode === "single" && coverage.ineffectiveAll.length === 0 && (
+              <span className="text-xs text-zinc-500">{t("analysis.noBlindSpots")}</span>
+            )}
+            {blindMode === "dual" && dualBlindGroupCount === 0 && (
+              <span className="text-xs text-zinc-500">{t("analysis.noBlindSpotsDual")}</span>
+            )}
+          </div>
+          {blindMode === "dual" && dualBlindGroupCount > 0 && (
+            <p className="text-[10px] text-zinc-400 pl-1">{t("analysis.dualListCompleteBlindSpot")}</p>
           )}
-          {blindMode === "dual" && dualBlindGroupCount === 0 && (
-            <span className="text-xs text-zinc-500">{t("analysis.noBlindSpotsDual")}</span>
-          )}
         </div>
-        {blindMode === "dual" && dualBlindGroupCount > 0 && (
-          <p className="text-[10px] text-zinc-400 pl-1">{t("analysis.dualListCompleteBlindSpot")}</p>
-        )}
       </div>
-    </div>,
+    </PanelCard>
   );
 }

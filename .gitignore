@@ -216,6 +216,7 @@ coverage/
 # Claude artifacts
 CLAUDE.md
 .claude
+AGENTS.md
 
 # Local maintenance scripts (wiki/external data tools — not for version control)
 backend/scripts/maintenance/compare_moves_with_wiki.mjs
@@ -223,9 +224,15 @@ backend/scripts/maintenance/apply_wiki_move_updates.py
 backend/scripts/maintenance/csv_to_statuses.py
 frontend/scripts/download-move-images.mjs
 
+# TapTap build output (separate from dist/ to avoid accidental S3 deployment)
+dist-taptap/
+
 # Generated reports and temporary output files
+team_popularity_report*.md
 backend/scripts/maintenance/compare_moves_report.json
 backend/data/*.txt
 backend/data/*_backup_*.json
 backend/data/monsters.json.backup*
 backend/data/traits.json.backup*
+*.xlsx
+~$*

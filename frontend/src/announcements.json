@@ -26,7 +26,7 @@
   {
     "id": "2026-04-01-stats-moveset-update",
     "type": "warning",
-    "en": "Update: Some monster's move pools and base stats have been updated, please load your saved teams on Build Page to check if the moves are still valid!",
+    "en": "Update: Some jingling's move pools and base stats have been updated, please load your saved teams on Build Page to check if the moves are still valid!",
     "zh": "【更新】修复了部分精灵技能池以及种族值数据，建议在构筑页面重新打开已保存的队伍确认技能是否有效！",
     "date": "2026-04-01",
     "expiresAt": "2026-04-07"
@@ -34,7 +34,7 @@
   {
     "id": "2026-04-06-evolution-feature",
     "type": "info",
-    "en": "New: Evolution levels and special evolution conditions for all monsters have been added to the Dex!",
+    "en": "New: Evolution levels and special evolution conditions for all jinglings have been added to the Dex!",
     "zh": "新功能：图鉴已添加全部精灵的进化等级以及特殊进化条件！",
     "date": "2026-04-06",
     "expiresAt": "2026-04-12"
@@ -42,9 +42,25 @@
   {
     "id": "2026-04-12-monster-analysis-feature",
     "type": "info",
-    "en": "New: Click「Monster Analysis」on any monster slot in the builder to view type matchups, move coverage, and final PvP stats with a survivability calculator.",
+    "en": "New: Click「Jingling Analysis」on any jingling slot in the builder to view type matchups, move coverage, and final PvP stats with a survivability calculator.",
     "zh": "新功能：在构筑器精灵面板中点击「精灵分析」，即可查看属性克制关系、技能打击面与含性格和个体值的PvP最终属性，附带生存能力计算器！",
     "date": "2026-04-12",
-    "expiresAt": "2026-04-22"
+    "expiresAt": "2026-05-12"
+  },
+  {
+    "id": "2026-04-27-type-chart-feature",
+    "type": "info",
+    "en": "New: A built-in two-way type matchup calculator has been added to the Dex! On mobile, swipe the top tab bar right to find it. Also, type effectiveness is now shown in move details!",
+    "zh": "新功能：图鉴里新增双向属性克制查询！手机端需要在上方导航栏向右滑动才能看到哦。此外，技能详情里现在也能查看属性克制啦！",
+    "date": "2026-04-27",
+    "expiresAt": "2026-05-12"
+  },
+  {
+    "id": "2026-05-16-battle-simulator-feature",
+    "type": "info",
+    "en": "Jingling Analysis now has a Battle Simulator that handles all the damage math for you! Set your defender, toggle status effects and Leader form on either side, and instantly see exact damage and HP% for every move. Willpower Impact damage and all dynamic power moves like Swift Strike, Sand Trap, and Mana Burst are all calculated automatically. Also check your full output against every jingling in popular teams with one click!",
+    "zh": "精灵分析新增「对战模拟器」，帮你自动完成所有伤害计算！设置防守方精灵、切换攻守双方的状态增减益、开关首领化效果，模拟器即可算出每个技能的精确伤害和血量比例。愿力冲击伤害、闪击/鸣沙陷阱/魔能爆等动态威力技能均自动处理，无需手动查表。还可一键查看对阵热门队伍中每只精灵时的完整输出表现！",
+    "date": "2026-05-16",
+    "expiresAt": "2026-05-31"
   }
 ]

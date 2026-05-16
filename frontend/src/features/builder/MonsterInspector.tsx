@@ -11,6 +11,8 @@ import { typeIconUrl } from "@/lib/images";
 import { formatRowEffects, formatSentenceEffects } from "@/lib/personality";
 import { QUERY_KEYS, LEGACY_TYPES_ORDER } from "@/lib/constants";
 import { buildDexForwardQuery } from "@/lib/dexNavigation";
+import { extractLegacyInfo, useLegacyMap, sortLegacyMoves } from "@/lib/monsterMoveOptions";
+import HotLabel from "@/components/HotLabel";
 
 // ---------- helpers ----------
 function Warn({ children }: { children: React.ReactNode }) {
@@ -31,91 +33,6 @@ function useMonsterDetail(monsterId: ID | 0) {
     queryFn: () => endpoints.monsterById(monsterId!).then((r) => r.data),
     enabled: !!monsterId,
   });
-}
-
-// Build maps using raw IDs (no network fetch needed)
-function extractLegacyInfo(detail: any): {
-  byType: Map<number, number>;
-  idSet: Set<number>;
-} {
-  const byType = new Map<number, number>();
-  const idSet = new Set<number>();
-  if (!detail) return { byType, idSet };
-
-  if (detail.legacy_moves_by_type) {
-    for (const [k, v] of Object.entries(detail.legacy_moves_by_type)) {
-      const typeId = Number(k);
-      const moveId =
-        typeof v === "number"
-          ? v
-          : typeof (v as any)?.id === "number"
-          ? (v as any).id
-          : typeof (v as any)?.move_id === "number"
-          ? (v as any).move_id
-          : undefined;
-      if (typeId && typeof moveId === "number") {
-        byType.set(typeId, moveId);
-        idSet.add(moveId);
-      }
-    }
-  } else if (Array.isArray(detail?.legacy_moves)) {
-    for (const row of detail.legacy_moves) {
-      const typeId = Number(row?.type_id ?? row?.type?.id);
-      const moveId = Number(row?.move_id ?? row?.move?.id);
-      if (typeId && moveId) {
-        byType.set(typeId, moveId);
-        idSet.add(moveId);
-      }
-    }
-  }
-
-  return { byType, idSet };
-}
-
-function useLegacyMap(detail: any) {
-  const outPairs: Array<{ type_id: number; move_id: number }> = [];
-  if (detail) {
-    if (detail.legacy_moves_by_type) {
-      for (const [k, v] of Object.entries(detail.legacy_moves_by_type)) {
-        const typeId = Number(k);
-        const moveId =
-          typeof v === "number"
-            ? v
-            : typeof (v as any)?.id === "number"
-            ? (v as any).id
-            : typeof (v as any)?.move_id === "number"
-            ? (v as any).move_id
-            : 0;
-        if (typeId && moveId) outPairs.push({ type_id: typeId, move_id: moveId });
-      }
-    } else if (Array.isArray(detail?.legacy_moves)) {
-      for (const row of detail.legacy_moves) {
-        const typeId = Number(row?.type_id ?? row?.type?.id ?? 0);
-        const moveId = Number(row?.move_id ?? row?.move?.id ?? 0);
-        if (typeId && moveId) outPairs.push({ type_id: typeId, move_id: moveId });
-      }
-    }
-  }
-
-  const moveIds = Array.from(new Set(outPairs.map((x) => x.move_id)));
-  const moveIdToTypeId = new Map<number, number>();
-  outPairs.forEach(({ type_id, move_id }) => moveIdToTypeId.set(move_id, type_id));
-
-  const q = useQuery({
-    queryKey: ["moves-by-ids", moveIds.join(",")],
-    queryFn: () => endpoints.moves({ ids: moveIds.join(",") }).then((r) => (r.data?.items ?? r.data) as MoveOut[]),
-    enabled: moveIds.length > 0,
-  });
-
-  const loading = q.isLoading && moveIds.length > 0;
-
-  const legacyMap = new Map<number, MoveOut>();
-  (q.data ?? []).forEach((move) => {
-    const typeId = moveIdToTypeId.get(move.id);
-    if (typeof typeId === "number") legacyMap.set(typeId, move);
-  });
-
-  return { legacyMap, loading };
 }
 
 // Helper to extract type name from type object or string
@@ -157,35 +74,7 @@ function MovesSection({
 
   const allowedLegacy = legacyTypeId ? legacyMap.get(legacyTypeId) : undefined;
 
-  // Sort legacy moves by LEGACY_TYPES_ORDER (based on move type)
-  const allLegacyMoves = useMemo(() => {
-    if (!allTypes || allTypes.length === 0) {
-      // Fallback to unsorted if types not loaded
-      return Array.from(legacyMap.values());
-    }
-
-    // Create a map from type_id to type_name for fallback
-    const typeIdToName = new Map<number, string>();
-    allTypes.forEach(type => {
-      typeIdToName.set(type.id, type.name);
-    });
-
-    // Get all legacy moves and sort by MOVE type (not legacy type)
-    const moves = Array.from(legacyMap.values());
-
-    return moves.sort((a, b) => {
-      const typeA = (a as any).move_type || (a as any).type;
-      const typeB = (b as any).move_type || (b as any).type;
-
-      const nameA = typeA?.name || typeIdToName.get(typeA?.id) || "";
-      const nameB = typeB?.name || typeIdToName.get(typeB?.id) || "";
-
-      const indexA = LEGACY_TYPES_ORDER.indexOf(nameA as any);
-      const indexB = LEGACY_TYPES_ORDER.indexOf(nameB as any);
-
-      return (indexA === -1 ? 999 : indexA) - (indexB === -1 ? 999 : indexB);
-    });
-  }, [legacyMap, allTypes]);
+  const allLegacyMoves = useMemo(() => sortLegacyMoves(legacyMap, allTypes), [legacyMap, allTypes]);
 
   // Build candidate list: legacy moves at top, then learnable moves, then move stones
   const candidates: { move: MoveOut; isLegacy: boolean }[] = useMemo(() => {
@@ -650,11 +539,11 @@ export default function MonsterInspector({
             {context === "builder" && (
               <>
                 <button
-                  className="w-full min-[400px]:flex-1 min-[400px]:w-auto order-last min-[400px]:order-none min-w-0 h-9 rounded-lg border-2 border-zinc-300 bg-white text-xs font-medium text-zinc-700 cursor-pointer truncate hover:bg-zinc-50 hover:border-zinc-400 hover:shadow-sm transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400"
+                  className="relative overflow-visible w-full min-[400px]:flex-1 min-[400px]:w-auto order-last min-[400px]:order-none min-w-0 h-9 rounded-lg border-2 border-zinc-300 bg-white text-xs font-medium text-zinc-700 cursor-pointer hover:bg-zinc-50 hover:border-zinc-400 hover:shadow-sm transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400"
                   onClick={goAnalyzeForMonster}
                   title={t("builder.analyzeMonster")}
                 >
-                  {t("builder.analyzeMonster")}
+                  <HotLabel>{t("builder.analyzeMonster")}</HotLabel>
                 </button>
                 <button
                   className="flex-1 min-w-0 h-9 rounded-lg border-2 border-zinc-300 bg-white text-xs font-medium text-zinc-700 cursor-pointer truncate hover:bg-zinc-50 hover:border-zinc-400 hover:shadow-sm transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400"

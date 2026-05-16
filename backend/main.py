@@ -99,6 +99,9 @@ from backend.tier_limits import (
     mark_user_team_analyzed,
     seed_user_counter_from_device,
     transfer_monthly_quota_from_guest,
+    is_circuit_open,
+    record_llm_failures,
+    reset_llm_failure_counter,
 )
 from backend.email_service import (
     send_verification_email,
@@ -3380,7 +3383,7 @@ def get_monster_detail(monster_id: int, db: Session = Depends(get_db)):
         joinedload(models.Monster.legacy_moves)
     ).filter(models.Monster.id == monster_id).first()
     if not monster:
-        raise HTTPException(status_code=404, detail="Monster not found")
+        raise HTTPException(status_code=404, detail="Jingling not found")
 
     # Build evolution tree
     evolution_tree = build_evolution_tree(monster_id, db)
@@ -3959,7 +3962,7 @@ async def _perform_team_analysis(
     # Validate all monsters were found
     missing_monsters = monster_ids_to_load - set(monster_db_map.keys())
     if missing_monsters:
-        raise HTTPException(status_code=400, detail=f"Monster IDs not found: {sorted(missing_monsters)}")
+        raise HTTPException(status_code=400, detail=f"Jingling IDs not found: {sorted(missing_monsters)}")
 
     logger.debug("Loading moves...")
     move_ids_to_load = set()
@@ -4296,6 +4299,16 @@ async def _perform_team_analysis(
         # Log quota tracking info
         logger.info(f"Quota used: {successful_calls} successful LLM calls out of {len(llm_tasks)} total")
 
+    # Circuit breaker: track provider reliability based on real API call outcomes.
+    # Quota and auth errors are excluded — those are config/billing issues, not outages.
+    # Only act when actual_llm_calls > 0 (cache-only responses don't reflect API health).
+    failed_api_calls = len(server_errors) + len(rate_limit_errors) + len(other_errors)
+    if failed_api_calls > 0:
+        await record_llm_failures(failed_api_calls)
+    elif _actual_llm_calls[0] > 0:
+        # Real API calls were made and all succeeded — reset failure counter
+        await reset_llm_failure_counter()
+
     logger.debug("Finish creating prompt for LLM analysis!")
 
     # Build UserMonsterOuts and compute per-monster analysis
@@ -4543,7 +4556,17 @@ async def analyze_team(
         # Skip IP/per-team throughput rate limits (4, 5) — those protect LLM API cost,
         # not quota. Cached results have no LLM cost.
     else:
-        # Not cached - check retry grace before quota checks
+        # Not cached — check circuit breaker first, before any rate limit or grace
+        # consumption. If the LLM provider is in an outage, return 503 immediately
+        # so no quota is charged, no rate limit key is set, and no grace is consumed.
+        if await is_circuit_open():
+            if req.language == "zh":
+                circuit_detail = "AI 分析服务暂时不可用，您的次数未被扣除，请几分钟后重试。"
+            else:
+                circuit_detail = "AI analysis service is temporarily unavailable. Your quota has NOT been consumed. Please try again in a few minutes."
+            raise HTTPException(status_code=503, detail=circuit_detail)
+
+        # Check retry grace before quota checks
         has_grace = await check_retry_grace(
             effective_user, device_id, client_ip, team_hash, req.language
         )
@@ -4778,7 +4801,17 @@ async def analyze_team_by_id(
         # Skip IP/per-team throughput rate limits (4, 5) — those protect LLM API cost,
         # not quota. Cached results have no LLM cost.
     else:
-        # Not cached - check retry grace before quota checks
+        # Not cached — check circuit breaker first, before any rate limit or grace
+        # consumption. If the LLM provider is in an outage, return 503 immediately
+        # so no quota is charged, no rate limit key is set, and no grace is consumed.
+        if await is_circuit_open():
+            if req.language == "zh":
+                circuit_detail = "AI 分析服务暂时不可用，您的次数未被扣除，请几分钟后重试。"
+            else:
+                circuit_detail = "AI analysis service is temporarily unavailable. Your quota has NOT been consumed. Please try again in a few minutes."
+            raise HTTPException(status_code=503, detail=circuit_detail)
+
+        # Check retry grace before quota checks
         has_grace = await check_retry_grace(
             effective_user, device_id, client_ip, team_hash, req.language
         )

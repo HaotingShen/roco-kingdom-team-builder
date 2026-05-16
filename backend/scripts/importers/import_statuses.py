@@ -41,8 +41,13 @@ def load_statuses():
         for name, entry in unique_statuses.items():
             localized = {}
             zh_name = entry.get("zh_name")
-            if zh_name:
-                localized = {"zh": {"name": zh_name}}
+            en_name = entry.get("en_name")
+            if zh_name or en_name:
+                localized = {}
+                if zh_name:
+                    localized["zh"] = {"name": zh_name}
+                if en_name:
+                    localized["en"] = {"name": en_name}
 
             values = dict(
                 name=name,
@@ -58,6 +63,7 @@ def load_statuses():
                 combo_bonus=entry.get("combo_bonus", 0),
                 dmg_reduction_pct=entry.get("dmg_reduction_pct", 0.0),
                 dmg_bonus_pct=entry.get("dmg_bonus_pct", 0.0),
+                power_bonus=entry.get("power_bonus", 0),
                 usage=StatusUsage(entry.get("usage", "all")),
                 affect=StatusAffect(entry.get("affect", "self")),
             )

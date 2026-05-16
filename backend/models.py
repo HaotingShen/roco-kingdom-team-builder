@@ -265,8 +265,14 @@ class Move(Base):
     move_category: Mapped[MoveCategory] = mapped_column(Enum(MoveCategory, name="move_category_enum"), nullable=False)
     energy_cost: Mapped[int] = mapped_column(Integer, nullable=False)
     power: Mapped[int] = mapped_column(Integer, nullable=True)
+    base_combo: Mapped[int] = mapped_column(Integer, nullable=True)
     description: Mapped[str] = mapped_column(Text, nullable=False)
     has_counter: Mapped[bool] = mapped_column(Boolean, default=False)
+    counter_power_multiplier: Mapped[float] = mapped_column(Float, nullable=True)
+    alt_power_total: Mapped[float] = mapped_column(Float, nullable=True)
+    alt_condition_zh: Mapped[str] = mapped_column(String(80), nullable=True)
+    alt_condition_en: Mapped[str] = mapped_column(String(80), nullable=True)
+    power_formula: Mapped[str] = mapped_column(String(20), nullable=True)
     localized: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
     __table_args__ = (
         Index("ix_moves_localized_gin", "localized", postgresql_using="gin"),
@@ -318,6 +324,11 @@ class Status(Base):
 
     # ----- Combo (inert until move.combo_count column lands; see roadmap) -----
     combo_bonus: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+
+    # ----- Move-specific conditional power bonus (usage=MOVE_SPECIFIC only) -----
+    # Added to move.power when the condition encoded in the status name is met.
+    # Always shown as an extra damage row in the matchup panel (no toggle).
+    power_bonus: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
 
     # ----- Damage modifiers (multiplicative across statuses) -----
     dmg_reduction_pct: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)

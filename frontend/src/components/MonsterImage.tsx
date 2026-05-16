@@ -1,4 +1,4 @@
-import { monsterImageFallbackChain, monsterImageSrcSet } from "@/lib/images";
+import { monsterImageFallbackChain, monsterImageSrcSet, monsterPlaceholder } from "@/lib/images";
 
 interface MonsterImageProps {
   monster: any;
@@ -23,7 +23,7 @@ export function MonsterImage({
   useSrcSet = true,
 }: MonsterImageProps) {
   const fallbackChain = monsterImageFallbackChain(monster, size);
-  const initialSrc = fallbackChain[0] || "/monster-images/placeholder.png";
+  const initialSrc = fallbackChain[0] || monsterPlaceholder;
 
   // Generate srcset if enabled
   const srcSet = useSrcSet ? monsterImageSrcSet(monster) : undefined;
@@ -52,8 +52,8 @@ export function MonsterImage({
         if (next < fallbackChain.length) {
           img.dataset.fallbackStep = String(next);
           img.src = fallbackChain[next]!;
-        } else if (img.src !== "/monster-images/placeholder.png") {
-          img.src = "/monster-images/placeholder.png";
+        } else if (img.src !== monsterPlaceholder) {
+          img.src = monsterPlaceholder;
         }
       }}
     />

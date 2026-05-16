@@ -39,8 +39,14 @@ def load_moves():
                 move_category=MoveCategory[CATEGORY_MAP[item["category"]]],
                 energy_cost=item["energy_cost"],
                 power=item.get("power"),
+                base_combo=item.get("base_combo"),
                 description=item["description"],
                 has_counter=item.get("has_counter", False),
+                counter_power_multiplier=item.get("counter_power_multiplier"),
+                alt_power_total=item.get("alt_power_total"),
+                alt_condition_zh=item.get("alt_condition_zh"),
+                alt_condition_en=item.get("alt_condition_en"),
+                power_formula=item.get("power_formula"),
                 localized=item["localized"]
             ).on_conflict_do_update(
                 index_elements=["name"],
@@ -49,8 +55,14 @@ def load_moves():
                     "move_category": MoveCategory[CATEGORY_MAP[item["category"]]],
                     "energy_cost": item["energy_cost"],
                     "power": item.get("power"),
+                    "base_combo": item.get("base_combo"),
                     "description": item["description"],
                     "has_counter": item.get("has_counter", False),
+                    "counter_power_multiplier": item.get("counter_power_multiplier"),
+                    "alt_power_total": item.get("alt_power_total"),
+                    "alt_condition_zh": item.get("alt_condition_zh"),
+                    "alt_condition_en": item.get("alt_condition_en"),
+                    "power_formula": item.get("power_formula"),
                     "localized": item["localized"]
                 }
             )

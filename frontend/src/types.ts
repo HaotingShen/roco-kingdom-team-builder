@@ -61,6 +61,44 @@ export interface PersonalityOut extends Named {
   spd_mod_pct: number;
 }
 
+/**
+ * Status — a reusable named effect a move can grant. Mirrors
+ * backend.schemas.StatusOut. All boost columns are integer percentages
+ * (e.g. 20 = +20%); see frontend/src/lib/statusModel.ts for the combiner
+ * and frontend/src/lib/damageCalc.ts for how they feed the damage formula.
+ *
+ * Three columns (hp_boost, spd_boost, combo_bonus) are present for
+ * symmetry with the 6-stat model and future expansion but are NOT
+ * consumed by the current damage formula.
+ */
+export interface StatusOut extends Named {
+  id: ID;
+  description?: string | null;
+
+  hp_boost: number;
+  phy_atk_boost: number;
+  mag_atk_boost: number;
+  phy_def_boost: number;
+  mag_def_boost: number;
+  spd_boost: number;
+
+  flat_power_boost: number;
+  pct_power_boost: number;
+
+  combo_bonus: number;
+
+  dmg_reduction_pct: number;
+  dmg_bonus_pct: number;
+
+  /** Flat power added to the move when its condition is met (move_specific only). */
+  power_bonus: number;
+
+  /** Serialized enum value from backend: "all" | "attack_only" | "defense_only" | "move_specific" */
+  usage?: string;
+  /** Serialized enum value from backend: "self" | "opponent" */
+  affect?: string;
+}
+
 export interface MoveOut extends Named {
   id: ID;
 
@@ -79,7 +117,26 @@ export interface MoveOut extends Named {
   /** Backend extras (optional in FE) */
   energy_cost?: number;
   power?: number | null;
+  /** Static base combo count (>1 for multi-hit moves). Multiply by power for total damage. */
+  base_combo?: number | null;
+  /** Multiplier applied to (power × base_combo) when Counter Status is triggered. */
+  counter_power_multiplier?: number | null;
+  /** Precomputed total effective power (= power × alt_combo or power + flat_bonus) when alt condition applies. */
+  alt_power_total?: number | null;
+  alt_condition_zh?: string | null;
+  alt_condition_en?: string | null;
+  /** Identifies moves whose base power is computed dynamically at runtime. */
+  power_formula?: "speed_diff" | "phy_def_diff" | "energy" | null;
   description?: string;
+
+  /**
+   * Statuses this move grants (M:N via the move_statuses join).
+   * Backend always serializes this field, defaulting to `[]` when the
+   * move has no statuses. Optional here to guard against stale cached
+   * responses from before this field was added — always access as
+   * `move.statuses ?? []`.
+   */
+  statuses?: StatusOut[];
 }
 
 export interface MonsterSpeciesOut extends Named {
