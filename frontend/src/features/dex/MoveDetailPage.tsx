@@ -250,11 +250,11 @@ export default function MoveDetailPage() {
         : `${moveName} | RK Team Builder`
       : lang === "zh"
       ? "技能详情 | 洛手配队器"
-      : "Move Detail | RK Team Builder",
+      : "Skill Detail | RK Team Builder",
     description: moveName
       ? lang === "zh"
         ? `${moveName} — 技能详情与可学习精灵 — 洛克王国: 世界。`
-        : `${moveName} — move details and learnable jinglings for Roco Kingdom: World.`
+        : `${moveName} — skill details and learnable jinglings for Roco Kingdom: World.`
       : "",
     canonicalPath: id ? `/dex/moves/${id}` : "/dex",
   });
