@@ -1374,7 +1374,7 @@ function TypesTab() {
 export default function DexPage() {
   const { t, lang } = useI18n();
   useSeoMeta({
-    title: lang === "zh" ? "精灵图鉴 | 洛克王国: 世界" : "Jingling Dex | Roco Kingdom: World",
+    title: lang === "zh" ? "精灵图鉴 | 洛克王国：世界" : "Jingling Dex | Roco Kingdom: World",
     description: lang === "zh"
       ? "洛克王国：世界精灵图鉴与技能大全。按属性、数值筛选精灵，查看进化链，并支持双向属性克制查询。"
       : "Complete jingling dex and skill database for Roco Kingdom: World. Search by type and stats, explore evolution chains, and check two-way type matchups.",

@@ -118,7 +118,7 @@ export default function MonsterDetailPage() {
       : lang === "zh" ? "精灵详情 | 洛手配队器" : "Jingling Detail | RK Team Builder",
     description: monsterName
       ? lang === "zh"
-        ? `${monsterName} 的数值、技能、特性和进化链 — 洛克王国: 世界。`
+        ? `${monsterName} 的数值、技能、特性和进化链 — 洛克王国：世界。`
         : `${monsterName} — stats, skills, traits, and evolution chain for Roco Kingdom: World.`
       : lang === "zh"
         ? "查看精灵的数值、技能、特性和进化链。"

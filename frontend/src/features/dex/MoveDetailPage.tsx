@@ -253,7 +253,7 @@ export default function MoveDetailPage() {
       : "Skill Detail | RK Team Builder",
     description: moveName
       ? lang === "zh"
-        ? `${moveName} — 技能详情与可学习精灵 — 洛克王国: 世界。`
+        ? `${moveName} — 技能详情与可学习精灵 — 洛克王国：世界。`
         : `${moveName} — skill details and learnable jinglings for Roco Kingdom: World.`
       : "",
     canonicalPath: id ? `/dex/moves/${id}` : "/dex",
