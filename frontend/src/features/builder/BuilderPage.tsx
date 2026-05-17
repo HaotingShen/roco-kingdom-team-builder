@@ -301,7 +301,7 @@ export default function BuilderPage() {
   const showFieldErrors = attemptedAction !== null;
   const { lang, t } = useI18n();
   useSeoMeta({
-    title: lang === "zh" ? "洛手配队器 | 洛克王国对战配队工具" : "Team Builder | Roco Kingdom PvP Team Planner",
+    title: lang === "zh" ? "洛手配队器 | 洛克王国：世界 PvP 配队工具" : "RK Team Builder | Roco Kingdom: World PvP Team Builder",
     description: lang === "zh"
       ? "洛克王国：世界 PvP 配队工具，支持精灵图鉴、对战模拟、伤害计算、属性克制查询，并提供 AI 智能队伍分析。"
       : "All-in-one PvP team builder for Roco Kingdom: World. Browse the jingling dex, run battle simulations, calculate skill damage, check type matchups, and get AI team analysis.",
