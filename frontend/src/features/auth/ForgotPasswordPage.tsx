@@ -4,6 +4,7 @@ import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { authEndpoints } from "@/lib/api";
 import { useI18n } from "@/i18n";
+import NoIndex from "@/components/NoIndex";
 
 export default function ForgotPasswordPage() {
   const { t } = useI18n();
@@ -41,7 +42,9 @@ export default function ForgotPasswordPage() {
 
   if (submitted) {
     return (
-      <div className="min-h-[calc(100vh-3.5rem)] flex items-center justify-center bg-zinc-50 px-4">
+      <>
+        <NoIndex nofollow />
+        <div className="min-h-[calc(100vh-3.5rem)] flex items-center justify-center bg-zinc-50 px-4">
         <div className="w-full max-w-md bg-white rounded-lg shadow-sm border border-zinc-200 p-8 text-center">
           <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <svg className="w-8 h-8 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -74,11 +77,14 @@ export default function ForgotPasswordPage() {
           </div>
         </div>
       </div>
+      </>
     );
   }
 
   return (
-    <div className="min-h-[calc(100vh-3.5rem)] flex items-center justify-center bg-zinc-50 px-4">
+    <>
+      <NoIndex nofollow />
+      <div className="min-h-[calc(100vh-3.5rem)] flex items-center justify-center bg-zinc-50 px-4">
       <div className="w-full max-w-md bg-white rounded-lg shadow-sm border border-zinc-200 p-8">
         <h1 className="text-2xl font-semibold text-zinc-900 mb-2 text-center">
           {t("auth.forgotPasswordTitle")}
@@ -123,5 +129,6 @@ export default function ForgotPasswordPage() {
         </div>
       </div>
     </div>
+    </>
   );
 }

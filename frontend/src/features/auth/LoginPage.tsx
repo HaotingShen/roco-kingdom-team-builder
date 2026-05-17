@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { authEndpoints } from "@/lib/api";
 import { useAuthStore, hasDeviceRegistered } from "./authStore";
 import { useI18n } from "@/i18n";
+import NoIndex from "@/components/NoIndex";
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -90,7 +91,9 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-[calc(100vh-3.5rem)] flex items-center justify-center bg-zinc-50 px-4">
+    <>
+      <NoIndex nofollow />
+      <div className="min-h-[calc(100vh-3.5rem)] flex items-center justify-center bg-zinc-50 px-4">
       <div className="w-full max-w-md bg-white rounded-lg shadow-sm border border-zinc-200 p-8 relative">
         {/* Back button */}
         <button
@@ -202,5 +205,6 @@ export default function LoginPage() {
         )}
       </div>
     </div>
+    </>
   );
 }

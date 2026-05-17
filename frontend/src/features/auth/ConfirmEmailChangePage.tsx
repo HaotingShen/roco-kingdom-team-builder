@@ -3,6 +3,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import { useMutation } from "@tanstack/react-query";
 import { authEndpoints } from "@/lib/api";
 import { useI18n } from "@/i18n";
+import NoIndex from "@/components/NoIndex";
 
 export default function ConfirmEmailChangePage() {
   const { t } = useI18n();
@@ -36,7 +37,9 @@ export default function ConfirmEmailChangePage() {
   }, []);
 
   return (
-    <div className="min-h-[calc(100vh-3.5rem)] flex items-center justify-center bg-zinc-50 px-4">
+    <>
+      <NoIndex nofollow />
+      <div className="min-h-[calc(100vh-3.5rem)] flex items-center justify-center bg-zinc-50 px-4">
       <div className="w-full max-w-md bg-white rounded-lg shadow-sm border border-zinc-200 p-8">
         <h1 className="text-2xl font-semibold text-zinc-900 mb-6 text-center">
           {t("settings.confirmEmailChange")}
@@ -75,5 +78,6 @@ export default function ConfirmEmailChangePage() {
         )}
       </div>
     </div>
+    </>
   );
 }

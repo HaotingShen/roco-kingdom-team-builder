@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useI18n } from "@/i18n";
 import { useAuthStore } from "@/features/auth/authStore";
 import { api } from "@/lib/api";
+import NoIndex from "@/components/NoIndex";
 
 type Category = "bug" | "feature" | "experience" | "other";
 
@@ -115,7 +116,9 @@ export default function FeedbackPage() {
   };
 
   return (
-    <div className="max-w-lg mx-auto py-8 px-4">
+    <>
+      <NoIndex />
+      <div className="max-w-lg mx-auto py-8 px-4">
       {/* Header */}
       <div className="mb-4">
         <h1 className="text-2xl font-semibold text-zinc-900">{t("feedback.title")}</h1>
@@ -212,5 +215,6 @@ export default function FeedbackPage() {
         </button>
       </form>
     </div>
+    </>
   );
 }

@@ -6,6 +6,7 @@ import { adminEndpoints, type AdminStats } from "@/lib/api";
 import { useI18n } from "@/i18n";
 import UserTable from "./UserTable";
 import FeaturedTeamsTab from "./FeaturedTeamsTab";
+import NoIndex from "@/components/NoIndex";
 
 /**
  * Admin Dashboard Page
@@ -56,7 +57,9 @@ export default function AdminPage() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-6">
+    <>
+      <NoIndex nofollow />
+      <div className="max-w-7xl mx-auto px-4 py-6">
       {/* Header */}
       <div className="mb-6">
         <h1 className="text-2xl font-semibold text-zinc-900">
@@ -108,6 +111,7 @@ export default function AdminPage() {
       {activeTab === "users" && <UserTable />}
       {activeTab === "featured" && <FeaturedTeamsTab />}
     </div>
+    </>
   );
 }
 

@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { authEndpoints } from "@/lib/api";
 import { useAuthStore } from "./authStore";
 import { useI18n } from "@/i18n";
+import NoIndex from "@/components/NoIndex";
 
 export default function SettingsPage() {
   const navigate = useNavigate();
@@ -154,7 +155,9 @@ export default function SettingsPage() {
     emailPassword.length > 0;
 
   return (
-    <div className="min-h-[calc(100vh-3.5rem)] flex items-start justify-center bg-zinc-50 px-4 py-8">
+    <>
+      <NoIndex nofollow />
+      <div className="min-h-[calc(100vh-3.5rem)] flex items-start justify-center bg-zinc-50 px-4 py-8">
       <div className="w-full max-w-lg">
         {/* Header */}
         <div className="mb-6 relative">
@@ -339,5 +342,6 @@ export default function SettingsPage() {
         </div>
       </div>
     </div>
+    </>
   );
 }

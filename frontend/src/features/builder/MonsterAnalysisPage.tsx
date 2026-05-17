@@ -8,6 +8,7 @@ import { useBuilderStore, EMPTY_TALENT } from "./builderStore";
 import { useAnalysisStore } from "./analysisStore";
 import { useMovesByIds } from "@/hooks/useMovesByIds";
 import { usePersonalities } from "@/hooks/usePersonalities";
+import NoIndex from "@/components/NoIndex";
 import MonsterInspector from "./MonsterInspector";
 import PageTabs from "@/components/PageTabs";
 import TypeDefensePanel from "@/components/TypeDefensePanel";
@@ -475,7 +476,9 @@ export default function MonsterAnalysisPage() {
   ];
 
   return (
-    <div className="space-y-3">
+    <>
+      <NoIndex nofollow />
+      <div className="space-y-3">
       <div className="grid gap-4 grid-cols-1 lg:grid-cols-[340px_1fr] xl:grid-cols-[420px_1fr]">
         <div className={`space-y-3 ${showMatchupStatus ? "lg:sticky lg:top-[72px] lg:self-start lg:max-h-[calc(100vh-72px)] lg:overflow-y-auto" : ""}`}>
           <div className="flex items-center">
@@ -538,5 +541,6 @@ export default function MonsterAnalysisPage() {
         </div>
       </div>
     </div>
+    </>
   );
 }

@@ -7,6 +7,7 @@ import { useAuthStore } from "./authStore";
 import { useI18n } from "@/i18n";
 import { validateUsername } from "@/lib/usernameValidator";
 import EmailVerificationModal from "./EmailVerificationModal";
+import NoIndex from "@/components/NoIndex";
 
 export default function RegisterPage() {
   const navigate = useNavigate();
@@ -91,7 +92,9 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-[calc(100vh-3.5rem)] flex items-center justify-center bg-zinc-50 px-4">
+    <>
+      <NoIndex nofollow />
+      <div className="min-h-[calc(100vh-3.5rem)] flex items-center justify-center bg-zinc-50 px-4">
       <div className="w-full max-w-md bg-white rounded-lg shadow-sm border border-zinc-200 p-8 relative">
         {/* Back button */}
         <button
@@ -261,5 +264,6 @@ export default function RegisterPage() {
         }}
       />
     </div>
+    </>
   );
 }

@@ -8,6 +8,8 @@ interface SeoMeta {
   description: string;
   /** Override the canonical path (e.g. "/" for /build which shares the builder) */
   canonicalPath?: string;
+  noindex?: boolean;
+  nofollow?: boolean;
 }
 
 function setAttr(selector: string, attr: string, value: string) {
@@ -15,7 +17,7 @@ function setAttr(selector: string, attr: string, value: string) {
   if (el) el.setAttribute(attr, value);
 }
 
-export function useSeoMeta({ title, description, canonicalPath }: SeoMeta) {
+export function useSeoMeta({ title, description, canonicalPath, noindex, nofollow }: SeoMeta) {
   const { pathname } = useLocation();
   const canonical = canonicalPath ?? pathname;
 
@@ -30,5 +32,9 @@ export function useSeoMeta({ title, description, canonicalPath }: SeoMeta) {
     setAttr('meta[name="twitter:title"]', "content", title);
     setAttr('meta[name="twitter:description"]', "content", description);
     setAttr('link[rel="canonical"]', "href", url);
-  }, [title, description, canonical]);
+
+    const indexPart = noindex ? "noindex" : "index";
+    const followPart = nofollow ? "nofollow" : "follow";
+    setAttr('meta[name="robots"]', "content", `${indexPart}, ${followPart}`);
+  }, [title, description, canonical, noindex, nofollow]);
 }

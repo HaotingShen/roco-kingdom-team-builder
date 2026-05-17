@@ -107,6 +107,7 @@ export default function SavedTeamPage() {
         ? "查看此洛克王国对战队伍。"
         : "View this Roco Kingdom PvP team.",
     canonicalPath: id ? `/teams/${id}` : "/teams",
+    noindex: true,
   });
   const loadIntoBuilder = useBuilderStore(s => s.loadFromTeam);
   const setAnalysis = useBuilderStore(s => s.setAnalysis);

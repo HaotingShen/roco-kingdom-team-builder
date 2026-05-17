@@ -56,6 +56,7 @@ export default function TeamsListPage() {
       ? "查看和管理您保存的洛克王国对战队伍。"
       : "View and manage your saved Roco Kingdom PvP teams.",
     canonicalPath: "/teams",
+    noindex: true,
   });
   const qc = useQueryClient();
   const { quota } = useQuota();

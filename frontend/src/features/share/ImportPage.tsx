@@ -10,6 +10,7 @@ import { useBuilderStore } from '@/features/builder/builderStore';
 import { endpoints } from '@/lib/api';
 import { QUERY_KEYS } from '@/lib/constants';
 import TeamCard from './TeamCard';
+import NoIndex from '@/components/NoIndex';
 
 export default function ImportPage() {
   const { t, lang } = useI18n();
@@ -191,7 +192,9 @@ export default function ImportPage() {
   const isGuest = user?.is_guest;
 
   return (
-    <div className="min-h-screen bg-zinc-50 py-4 px-2 sm:py-8 sm:px-4">
+    <>
+      <NoIndex />
+      <div className="min-h-screen bg-zinc-50 py-4 px-2 sm:py-8 sm:px-4">
       <div className="max-w-3xl mx-auto space-y-3 sm:space-y-5">
 
         {/* Attribution */}
@@ -304,5 +307,6 @@ export default function ImportPage() {
         )}
       </div>
     </div>
+    </>
   );
 }
