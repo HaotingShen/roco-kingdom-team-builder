@@ -352,6 +352,30 @@
     "dmg_reduction_pct": 80
   },
   {
+    "move": "Phase Shift",
+    "status_name": "Phase Shift",
+    "zh_name": "相位移动",
+    "usage": "defense_only",
+    "affect": "self",
+    "dmg_reduction_pct": 50
+  },
+  {
+    "move": "Toxic Peptide",
+    "status_name": "Toxic Peptide",
+    "zh_name": "毒肽",
+    "usage": "defense_only",
+    "affect": "self",
+    "dmg_reduction_pct": 70
+  },
+  {
+    "move": "Guard Hex",
+    "status_name": "Guard Hex",
+    "zh_name": "守护咒",
+    "usage": "defense_only",
+    "affect": "self",
+    "dmg_reduction_pct": 90
+  },
+  {
     "move": "Encourage",
     "status_name": "Encourage",
     "zh_name": "鼓劲",

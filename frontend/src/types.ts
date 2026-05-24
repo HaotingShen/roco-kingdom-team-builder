@@ -49,6 +49,12 @@ export interface TypeOut extends Named {
 export interface TraitOut extends Named {
   id: ID;
   description?: string;
+  /**
+   * English move names this trait may carry in multiple build slots.
+   * When set, the team builder allows duplicates of these moves on a single
+   * jingling (otherwise unique-per-slot is enforced). Null/undefined = default.
+   */
+  allows_duplicate_moves?: string[] | null;
 }
 
 export interface PersonalityOut extends Named {
@@ -160,6 +166,8 @@ export interface MonsterLiteOut extends Named {
   base_mag_def: number | null;
   base_spd: number | null;
   evolves_from_id?: number | null;
+  /** Canonical wiki dex number; used to sort the dex list (falls back to id). */
+  dex_number?: number | null;
 }
 
 export interface MoveLearnersOut {

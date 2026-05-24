@@ -30,7 +30,19 @@ def sync_monsters():
     print()
 
     with Session(engine) as session:
-        monsters = session.query(Monster).order_by(Monster.id).all()
+        # Order by canonical dex_number first (matches monsters.json file order),
+        # falling back to id for any rows where dex_number is NULL. Sorting by
+        # raw id alone would corrupt the curated monsters.json sequence after
+        # we introduced the dex_number column.
+        from sqlalchemy import func as _func
+        monsters = (
+            session.query(Monster)
+            .order_by(
+                _func.coalesce(Monster.dex_number, Monster.id).asc(),
+                Monster.id.asc(),
+            )
+            .all()
+        )
 
         print(f"✓ Found {len(monsters)} monsters in database")
         print()
@@ -86,6 +98,7 @@ def sync_monsters():
                 "localized": monster.localized,
                 **({"evolution_level": monster.evolution_level} if monster.evolution_level is not None else {}),
                 **({"evolution_condition": monster.evolution_condition} if monster.evolution_condition is not None else {}),
+                **({"dex_number": monster.dex_number} if monster.dex_number is not None else {}),
             }
 
             monsters_data.append(entry)

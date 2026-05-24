@@ -906,9 +906,9 @@
     }
   },
   {
-    "name": "Fanyx",
+    "name": "Fanlet",
     "localized": {
-      "zh": "凡鹰"
+      "zh": "凡雀"
     }
   },
   {
@@ -921,6 +921,66 @@
     "name": "Flamtail",
     "localized": {
       "zh": "火红尾"
+    }
+  },
+  {
+    "name": "Filababy",
+    "localized": {
+      "zh": "钨丝贝贝"
+    }
+  },
+  {
+    "name": "Snowby",
+    "localized": {
+      "zh": "小雪人"
+    }
+  },
+  {
+    "name": "Blazelet",
+    "localized": {
+      "zh": "爆焰仔"
+    }
+  },
+  {
+    "name": "Discchimp",
+    "localized": {
+      "zh": "猴麦仔"
+    }
+  },
+  {
+    "name": "Cheernemone",
+    "localized": {
+      "zh": "加油海葵"
+    }
+  },
+  {
+    "name": "Jesterling",
+    "localized": {
+      "zh": "小丑豆豆"
+    }
+  },
+  {
+    "name": "Fizzkin",
+    "localized": {
+      "zh": "烟花团"
+    }
+  },
+  {
+    "name": "Coocap",
+    "localized": {
+      "zh": "咕咕帽"
+    }
+  },
+  {
+    "name": "Glowdi",
+    "localized": {
+      "zh": "炫光迪迪"
+    }
+  },
+  {
+    "name": "Drumlet",
+    "localized": {
+      "zh": "小鼓象"
     }
   }
 ]

@@ -61,6 +61,14 @@
     "en": "New: Click「Jingling Analysis」on any jingling slot in the builder to find the new Battle Simulator that handles all the damage math for you! Set your defender, toggle status effects and Leader form on either side, and instantly see exact damage and HP% for every move. Willpower Impact damage and all dynamic power moves like Swift Strike, Sand Trap, and Mana Burst are all calculated automatically. Also check your full output against every jingling in popular teams with one click!",
     "zh": "新功能：构筑页面的精灵面板中点击\"精灵分析\"按钮，新增「对战模拟器」帮你自动完成所有伤害计算！设置防守方精灵、切换攻守双方的状态增减益、开关首领化效果，模拟器即可算出每个技能的精确伤害和血量比例。愿力冲击伤害、闪击/鸣沙陷阱/魔能爆等动态威力技能均自动处理，无需手动查表。还可一键查看对阵热门队伍中每只精灵时的完整输出表现！",
     "date": "2026-05-16",
-    "expiresAt": "2026-05-31"
+    "expiresAt": "2026-06-01"
+  },
+  {
+    "id": "2026-05-24-s2-jinglings",
+    "type": "info",
+    "en": "🎪 New Season Update: Circus-themed jinglings have arrived in the Dex! Explore 12 new jinglings, 25 new skills, and 3 new game terms!",
+    "zh": "🎪新赛季更新：马戏团主题精灵现已加入图鉴！12只新精灵、25个新技能、3个新游戏术语等你探索！",
+    "date": "2026-05-24",
+    "expiresAt": "2026-06-01"
   }
 ]

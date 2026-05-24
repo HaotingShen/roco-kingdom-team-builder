@@ -118,6 +118,7 @@ def load_monsters_two_pass():
                 localized=item["localized"],
                 evolution_level=item.get("evolution_level"),
                 evolution_condition=item.get("evolution_condition"),
+                dex_number=item.get("dex_number"),
             ).on_conflict_do_update(
                 index_elements=["name", "form"],
                 set_={
@@ -139,6 +140,7 @@ def load_monsters_two_pass():
                     "localized": item["localized"],
                     "evolution_level": item.get("evolution_level"),
                     "evolution_condition": item.get("evolution_condition"),
+                    "dex_number": item.get("dex_number"),
                 }
             )
             session.execute(stmt)

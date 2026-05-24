@@ -141,7 +141,7 @@
   },
   {
     "name": "Poison Mushroom",
-    "description": "At the end of the turn, steals 1 energy from all monsters on the opponent's field.",
+    "description": "At the end of the turn, steals 1 energy from all jinglings on the opponent's field.",
     "localized": {
       "zh": {
         "name": "毒蘑菇",
@@ -161,7 +161,7 @@
   },
   {
     "name": "Polarization",
-    "description": "Resists the type of the move equipped by this monster. When resisting, damage taken -40%.",
+    "description": "Resists the type of the move equipped by this jingling. When resisting, damage taken -40%.",
     "localized": {
       "zh": {
         "name": "偏振",
@@ -171,7 +171,7 @@
   },
   {
     "name": "Complete Polarization",
-    "description": "For each type of move equipped by this monster, damage taken from that type -40%.",
+    "description": "For each type of move equipped by this jingling, damage taken from that type -40%.",
     "localized": {
       "zh": {
         "name": "完全偏振",
@@ -221,7 +221,7 @@
   },
   {
     "name": "Hoarding",
-    "description": "For each energy this monster has, gains Defense +10%.",
+    "description": "For each energy this jingling has, gains Defense +10%.",
     "localized": {
       "zh": {
         "name": "囤积",
@@ -231,7 +231,7 @@
   },
   {
     "name": "Startled",
-    "description": "Monsters that have 0 energy cannot deal damage to this monster.",
+    "description": "Jinglings that have 0 energy cannot deal damage to this jingling.",
     "localized": {
       "zh": {
         "name": "惊吓",
@@ -241,7 +241,7 @@
   },
   {
     "name": "Dissolving Diffusion",
-    "description": "For each Poison-type move this monster carries, Water-type moves inflict 1 stack of Poison on the opponent.",
+    "description": "For each Poison-type move this jingling carries, Water-type moves inflict 1 stack of Poison on the opponent.",
     "localized": {
       "zh": {
         "name": "溶解扩散",
@@ -251,7 +251,7 @@
   },
   {
     "name": "Dissolving Corrosion",
-    "description": "For each Poison-type move this monster carries, Water-type moves inflict 2 stacks of Poison on the opponent.",
+    "description": "For each Poison-type move this jingling carries, Water-type moves inflict 2 stacks of Poison on the opponent.",
     "localized": {
       "zh": {
         "name": "溶解腐蚀",
@@ -281,7 +281,7 @@
   },
   {
     "name": "Cocooning",
-    "description": "When this monster takes fatal damage, it becomes immune to that instance of damage and gains 1 stack of Regression. This effect can trigger up to two times. If this monster is in its lowest evolutionary form and takes fatal damage at any point, it will be immediately defeated.",
+    "description": "When this jingling takes fatal damage, it becomes immune to that instance of damage and gains 1 stack of Regression. This effect can trigger up to two times. If this jingling is in its lowest evolutionary form and takes fatal damage at any point, it will be immediately defeated.",
     "localized": {
       "zh": {
         "name": "化茧",
@@ -301,7 +301,7 @@
   },
   {
     "name": "Pickpocket",
-    "description": "When entering the battlefield, steals 2 energy from all of the opponent's monsters.",
+    "description": "When entering the battlefield, steals 2 energy from all of the opponent's jinglings.",
     "localized": {
       "zh": {
         "name": "小偷小摸",
@@ -311,7 +311,7 @@
   },
   {
     "name": "Big Score",
-    "description": "At the end of the turn, steals 2 energy from all of the opponent's monsters.",
+    "description": "At the end of the turn, steals 2 energy from all of the opponent's jinglings.",
     "localized": {
       "zh": {
         "name": "大捞一笔",
@@ -351,7 +351,7 @@
   },
   {
     "name": "Quick Charge",
-    "description": "Restores 10 energy when this monster triggers Leave Field.",
+    "description": "Restores 10 energy when this jingling triggers Leave Field.",
     "localized": {
       "zh": {
         "name": "快充",
@@ -361,7 +361,7 @@
   },
   {
     "name": "Bravery",
-    "description": "Moves that this monster carries with an energy cost greater than 3 gain move power +40%.",
+    "description": "Moves that this jingling carries with an energy cost greater than 3 gain move power +40%.",
     "localized": {
       "zh": {
         "name": "勇敢",
@@ -371,7 +371,7 @@
   },
   {
     "name": "Humus Cycle",
-    "description": "Each time this monster restores 1 energy, restore 5% HP.",
+    "description": "Each time this jingling restores 1 energy, restore 5% HP.",
     "localized": {
       "zh": {
         "name": "腐植循环",
@@ -401,7 +401,7 @@
   },
   {
     "name": "Nightmare",
-    "description": "After an opponent triggers Leave Field, the next monster to enter loses 3 energy.",
+    "description": "After an opponent triggers Leave Field, the next jingling to enter loses 3 energy.",
     "localized": {
       "zh": {
         "name": "做噩梦",
@@ -411,7 +411,7 @@
   },
   {
     "name": "Barrel Trick",
-    "description": "After this monster triggers Leave Field, the next teammate to enter the battlefield appears in Barrel Status.",
+    "description": "After this jingling triggers Leave Field, the next teammate to enter the battlefield appears in Barrel Status.",
     "localized": {
       "zh": {
         "name": "木桶戏法",
@@ -421,7 +421,7 @@
   },
   {
     "name": "Courage Boost",
-    "description": "If there is a Bug-type monster in the team, this monster gains Attack +50%.",
+    "description": "If there is a Bug-type jingling in the team, this jingling gains Attack +50%.",
     "localized": {
       "zh": {
         "name": "壮胆",
@@ -451,7 +451,7 @@
   },
   {
     "name": "Spike Skin",
-    "description": "When attacked, deals 50 move power physical damage to the attacking monster for each time it was attacked.",
+    "description": "When attacked, deals 50 move power physical damage to the attacking jingling for each time it was attacked.",
     "localized": {
       "zh": {
         "name": "刺肤",
@@ -461,7 +461,7 @@
   },
   {
     "name": "Swarm Inspiration",
-    "description": "For each other Bug-type monster in the team, this monster gains Attack +10%, Defense +10%, and Speed +10% upon entering the battlefield.",
+    "description": "For each other Bug-type jingling in the team, this jingling gains Attack +10%, Defense +10%, and Speed +10% upon entering the battlefield.",
     "localized": {
       "zh": {
         "name": "虫群鼓舞",
@@ -471,7 +471,7 @@
   },
   {
     "name": "Swarm Assault",
-    "description": "For each other Bug-type monster in the team, this monster gains Attack +15%, Defense +15%, and Speed +15% upon entering the battlefield.",
+    "description": "For each other Bug-type jingling in the team, this jingling gains Attack +15%, Defense +15%, and Speed +15% upon entering the battlefield.",
     "localized": {
       "zh": {
         "name": "虫群突袭",
@@ -501,7 +501,7 @@
   },
   {
     "name": "Clean Freak",
-    "description": "After this monster triggers Leave Field, the next monster to enter inherits this monster's Buffs and Debuffs.",
+    "description": "After this jingling triggers Leave Field, the next jingling to enter inherits this jingling's Buffs and Debuffs.",
     "localized": {
       "zh": {
         "name": "洁癖",
@@ -511,7 +511,7 @@
   },
   {
     "name": "Greed",
-    "description": "After the opponent triggers Leave Field, the next monster to enter inherits the opponent's Buffs and Debuffs.",
+    "description": "After the opponent triggers Leave Field, the next jingling to enter inherits the opponent's Buffs and Debuffs.",
     "localized": {
       "zh": {
         "name": "贪婪",
@@ -521,7 +521,7 @@
   },
   {
     "name": "Hydro Wing Boost",
-    "description": "Each time a teammate uses a Water-type move, this monster gains Move Energy Cost -1 when entering the battlefield.",
+    "description": "Each time a teammate uses a Water-type move, this jingling gains Move Energy Cost -1 when entering the battlefield.",
     "localized": {
       "zh": {
         "name": "水翼推进",
@@ -531,7 +531,7 @@
   },
   {
     "name": "Hydro Wing Ascension",
-    "description": "Each time a teammate uses a Water-type move, this monster gains Move Energy Cost -1 when entering the battlefield. Additionally, moves with 0 energy cost gain move power +30%.",
+    "description": "Each time a teammate uses a Water-type move, this jingling gains Move Energy Cost -1 when entering the battlefield. Additionally, moves with 0 energy cost gain move power +30%.",
     "localized": {
       "zh": {
         "name": "水翼飞升",
@@ -571,7 +571,7 @@
   },
   {
     "name": "Free Drift",
-    "description": "For each stack of Regression this monster has, gains Combo Count +2.",
+    "description": "For each stack of Regression this jingling has, gains Combo Count +2.",
     "localized": {
       "zh": {
         "name": "自由飘",
@@ -631,7 +631,7 @@
   },
   {
     "name": "Mercy",
-    "description": "For each defeated teammate in the team, this monster gains Attack +30%.",
+    "description": "For each defeated teammate in the team, this jingling gains Attack +30%.",
     "localized": {
       "zh": {
         "name": "悲悯",
@@ -641,7 +641,7 @@
   },
   {
     "name": "Mourning",
-    "description": "For each defeated monster on both teams, this monster gains Attack +20%.",
+    "description": "For each defeated jingling on both teams, this jingling gains Attack +20%.",
     "localized": {
       "zh": {
         "name": "悼亡",
@@ -651,7 +651,7 @@
   },
   {
     "name": "Stargazing",
-    "description": "For each stack of Starfall Mark on the opponent, this monster's Ground-type move power +15%.",
+    "description": "For each stack of Starfall Mark on the opponent, this jingling's Ground-type move power +15%.",
     "localized": {
       "zh": {
         "name": "观星",
@@ -661,7 +661,7 @@
   },
   {
     "name": "Starfall",
-    "description": "For each stack of Starfall Mark on the opponent, this monster's move power +15%.",
+    "description": "For each stack of Starfall Mark on the opponent, this jingling's move power +15%.",
     "localized": {
       "zh": {
         "name": "坠星",
@@ -672,6 +672,7 @@
   {
     "name": "Blind Obedience",
     "description": "Can carry multiple random-move-type moves (including Borrow, Rewrite, and Mind Grab), non-Illusion-type moves have move energy cost -2.",
+    "allows_duplicate_moves": ["Borrow", "Rewrite", "Mind Grab"],
     "localized": {
       "zh": {
         "name": "盲从",
@@ -691,7 +692,7 @@
   },
   {
     "name": "Vigilance",
-    "description": "At the end of the turn, if this monster has 0 energy, it triggers Exit.",
+    "description": "At the end of the turn, if this jingling has 0 energy, it triggers Exit.",
     "localized": {
       "zh": {
         "name": "警惕",
@@ -731,7 +732,7 @@
   },
   {
     "name": "Resonance",
-    "description": "This monster's carried 'Chitter' move gains move power +20.",
+    "description": "This jingling's carried 'Chitter' move gains move power +20.",
     "localized": {
       "zh": {
         "name": "共鸣",
@@ -751,7 +752,7 @@
   },
   {
     "name": "Underhand",
-    "description": "After the opponent triggers Leave Field, the next monster to enter gains 5 stacks of Poison.",
+    "description": "After the opponent triggers Leave Field, the next jingling to enter gains 5 stacks of Poison.",
     "localized": {
       "zh": {
         "name": "下黑手",
@@ -781,7 +782,7 @@
   },
   {
     "name": "Interval Training",
-    "description": "After using a Fighting-type move, this monster's Physical Attack +20% permanently, Speed -10 permanently.",
+    "description": "After using a Fighting-type move, this jingling's Physical Attack +20% permanently, Speed -10 permanently.",
     "localized": {
       "zh": {
         "name": "间歇式训练",
@@ -801,7 +802,7 @@
   },
   {
     "name": "Icebound",
-    "description": "While this monster is on the battlefield, opponent gains Move Energy Cost +1.",
+    "description": "While this jingling is on the battlefield, opponent gains Move Energy Cost +1.",
     "localized": {
       "zh": {
         "name": "冰封",
@@ -821,7 +822,7 @@
   },
   {
     "name": "Mechanical Variation",
-    "description": "When the position of this monster's carried moves changes every turn, those moves' energy cost -1.",
+    "description": "When the position of this jingling's carried moves changes every turn, those moves' energy cost -1.",
     "localized": {
       "zh": {
         "name": "机械变式",
@@ -871,7 +872,7 @@
   },
   {
     "name": "Wild Senses",
-    "description": "After a successful Counter, this monster's next action gains Priority +1.",
+    "description": "After a successful Counter, this jingling's next action gains Priority +1.",
     "localized": {
       "zh": {
         "name": "野性感官",
@@ -881,7 +882,7 @@
   },
   {
     "name": "Sacred Flame Knight",
-    "description": "After a successful Counter, the next Attack-type move used by this monster deals double damage.",
+    "description": "After a successful Counter, the next Attack-type move used by this jingling deals double damage.",
     "localized": {
       "zh": {
         "name": "圣火骑士",
@@ -891,7 +892,7 @@
   },
   {
     "name": "Shield of Thought",
-    "description": "After a successful Counter, this monster's next action's move energy cost -5.",
+    "description": "After a successful Counter, this jingling's next action's move energy cost -5.",
     "localized": {
       "zh": {
         "name": "思维之盾",
@@ -901,7 +902,7 @@
   },
   {
     "name": "Toughness King",
-    "description": "Poison Effect damage taken from the opponent heals this monster.",
+    "description": "Poison Effect damage taken from the opponent heals this jingling.",
     "localized": {
       "zh": {
         "name": "耐活王",
@@ -911,7 +912,7 @@
   },
   {
     "name": "Anadromous",
-    "description": "Each time this monster enters Charge state, it permanently gains Move Energy Cost -1.",
+    "description": "Each time this jingling enters Charge state, it permanently gains Move Energy Cost -1.",
     "localized": {
       "zh": {
         "name": "洄游",
@@ -931,7 +932,7 @@
   },
   {
     "name": "Diffuse Corrosion",
-    "description": "Each time this monster uses a Water-type move, the opponent gains Poison equal to 2 times the number of Poison Mark stacks.",
+    "description": "Each time this jingling uses a Water-type move, the opponent gains Poison equal to 2 times the number of Poison Mark stacks.",
     "localized": {
       "zh": {
         "name": "扩散侵蚀",
@@ -951,7 +952,7 @@
   },
   {
     "name": "Battle-Hardened",
-    "description": "Each time a teammate performs a successful Counter, this monster's Water-type move power +20% and Fighting-type move power +20% when entering the battlefield.",
+    "description": "Each time a teammate performs a successful Counter, this jingling's Water-type move power +20% and Fighting-type move power +20% when entering the battlefield.",
     "localized": {
       "zh": {
         "name": "身经百练",
@@ -981,7 +982,7 @@
   },
   {
     "name": "Coral Bone",
-    "description": "When the opponent triggers Leave Field, this monster gains Move Energy Cost -3. (Cannot be dispelled)",
+    "description": "When the opponent triggers Leave Field, this jingling gains Move Energy Cost -3. (Cannot be dispelled)",
     "localized": {
       "zh": {
         "name": "珊瑚骨",
@@ -991,7 +992,7 @@
   },
   {
     "name": "Dormitory",
-    "description": "This monster's energy can exceed the energy limit.",
+    "description": "This jingling's energy can exceed the energy limit.",
     "localized": {
       "zh": {
         "name": "多人宿舍",
@@ -1001,7 +1002,7 @@
   },
   {
     "name": "Tea Polyphenol",
-    "description": "After this monster triggers Leave Field, the next monster to enter restores 20% HP and is immune to Leech.",
+    "description": "After this jingling triggers Leave Field, the next jingling to enter restores 20% HP and is immune to Leech.",
     "localized": {
       "zh": {
         "name": "茶多酚",
@@ -1011,7 +1012,7 @@
   },
   {
     "name": "Gelatin Sheet",
-    "description": "When this monster triggers Leave Field, the next monster to enter gains Defense +20% and is immune to Freeze.",
+    "description": "When this jingling triggers Leave Field, the next jingling to enter gains Defense +20% and is immune to Freeze.",
     "localized": {
       "zh": {
         "name": "吉利丁片",
@@ -1021,7 +1022,7 @@
   },
   {
     "name": "Maillard Reaction",
-    "description": "After this monster triggers Leave Field, the next monster to enter gains Attack +20% and is immune to Burn.",
+    "description": "After this jingling triggers Leave Field, the next jingling to enter gains Attack +20% and is immune to Burn.",
     "localized": {
       "zh": {
         "name": "美拉德反应",
@@ -1041,7 +1042,7 @@
   },
   {
     "name": "Four-Axis Machine Tool",
-    "description": "If the move in Slot 4 is a move that this monster has not used before, that move's energy cost -3.",
+    "description": "If the move in Slot 4 is a move that this jingling has not used before, that move's energy cost -3.",
     "localized": {
       "zh": {
         "name": "四轴机床",
@@ -1051,7 +1052,7 @@
   },
   {
     "name": "Charge Cell",
-    "description": "Each time this monster enters the battlefield, it permanently gains Attack +20%.",
+    "description": "Each time this jingling enters the battlefield, it permanently gains Attack +20%.",
     "localized": {
       "zh": {
         "name": "蓄电池",
@@ -1061,7 +1062,7 @@
   },
   {
     "name": "Supercharged Cell",
-    "description": "Each time this monster enters the battlefield, it permanently gains Attack +30%.",
+    "description": "Each time this jingling enters the battlefield, it permanently gains Attack +30%.",
     "localized": {
       "zh": {
         "name": "超级电池",
@@ -1071,7 +1072,7 @@
   },
   {
     "name": "Overload Protection",
-    "description": "This monster triggers Exit after each action.",
+    "description": "This jingling triggers Exit after each action.",
     "localized": {
       "zh": {
         "name": "防过载保护",
@@ -1081,7 +1082,7 @@
   },
   {
     "name": "Blood Type Attraction",
-    "description": "For each type of move the opponent carries, this monster's move power +10.",
+    "description": "For each type of move the opponent carries, this jingling's move power +10.",
     "localized": {
       "zh": {
         "name": "血型吸引",
@@ -1091,7 +1092,7 @@
   },
   {
     "name": "Fair Measure",
-    "description": "Upon entering the battlefield, copies the opponent's Buffs. While on the battlefield, if the opponent gains Buffs, this monster also gains the same Buffs.",
+    "description": "Upon entering the battlefield, copies the opponent's Buffs. While on the battlefield, if the opponent gains Buffs, this jingling also gains the same Buffs.",
     "localized": {
       "zh": {
         "name": "衡量",
@@ -1101,7 +1102,7 @@
   },
   {
     "name": "Soul Chaser",
-    "description": "Attack-type moves with an energy cost of 1 or less cannot damage this monster.",
+    "description": "Attack-type moves with an energy cost of 1 or less cannot damage this jingling.",
     "localized": {
       "zh": {
         "name": "逐魂鸟",
@@ -1131,7 +1132,7 @@
   },
   {
     "name": "Windrider Combo",
-    "description": "Each time this monster uses a Flying-type move, it gains a cumulative Combo Count +1 bonus, which applies to all of its moves.",
+    "description": "Each time this jingling uses a Flying-type move, it gains a cumulative Combo Count +1 bonus, which applies to all of its moves.",
     "localized": {
       "zh": {
         "name": "乘风连击",
@@ -1141,7 +1142,7 @@
   },
   {
     "name": "Rally Breath",
-    "description": "When using a move with an energy cost of 3, this monster gains Attack +20% and Defense +20%.",
+    "description": "When using a move with an energy cost of 3, this jingling gains Attack +20% and Defense +20%.",
     "localized": {
       "zh": {
         "name": "鼓气",
@@ -1151,7 +1152,7 @@
   },
   {
     "name": "Full Rally",
-    "description": "When using a move with an energy cost of 3, this monster permanently gains Attack +20% and Defense +20%.",
+    "description": "When using a move with an energy cost of 3, this jingling permanently gains Attack +20% and Defense +20%.",
     "localized": {
       "zh": {
         "name": "三鼓作气",
@@ -1161,7 +1162,7 @@
   },
   {
     "name": "Jealousy",
-    "description": "While in Charge state, this monster can use any of its carried moves.",
+    "description": "While in Charge state, this jingling can use any of its carried moves.",
     "localized": {
       "zh": {
         "name": "嫉妒",
@@ -1171,7 +1172,7 @@
   },
   {
     "name": "Skirmish",
-    "description": "While in Charge state, this monster can use any of its carried moves, and gains Defense +100%.",
+    "description": "While in Charge state, this jingling can use any of its carried moves, and gains Defense +100%.",
     "localized": {
       "zh": {
         "name": "游弋",
@@ -1181,7 +1182,7 @@
   },
   {
     "name": "Wave Breaker",
-    "description": "For each Water-type move this monster carries, Ground-type moves' energy cost -1.",
+    "description": "For each Water-type move this jingling carries, Ground-type moves' energy cost -1.",
     "localized": {
       "zh": {
         "name": "消波块",
@@ -1191,7 +1192,7 @@
   },
   {
     "name": "Shifting Stance",
-    "description": "After this monster successfully performs Counter using an Attack-type move once, it fully restores HP and transforms into 'Chess Queen'. After transforming, its base stats and trait become those of Chess Queen, while its equipped moves remain unchanged. The Attack and Defense bonuses gained before transformation persist after transforming. Before transformation, Chess Queen’s trait can already be triggered normally, and its effects will take effect after transformation.",
+    "description": "After this jingling successfully performs Counter using an Attack-type move once, it fully restores HP and transforms into 'Chess Queen'. After transforming, its base stats and trait become those of Chess Queen, while its equipped moves remain unchanged. The Attack and Defense bonuses gained before transformation persist after transforming. Before transformation, Chess Queen’s trait can already be triggered normally, and its effects will take effect after transformation.",
     "localized": {
       "zh": {
         "name": "腾挪",
@@ -1201,7 +1202,7 @@
   },
   {
     "name": "Guard Duty",
-    "description": "After this monster successfully performs Counter using a Defense-type move twice, it fully restores HP and transforms into 'Chess Queen'. After transforming, its base stats and trait become those of Chess Queen, while its equipped moves remain unchanged. The Attack and Defense bonuses gained before transformation persist after transforming. Before transformation, Chess Queen’s trait can already be triggered normally, and its effects will take effect after transformation.",
+    "description": "After this jingling successfully performs Counter using a Defense-type move twice, it fully restores HP and transforms into 'Chess Queen'. After transforming, its base stats and trait become those of Chess Queen, while its equipped moves remain unchanged. The Attack and Defense bonuses gained before transformation persist after transforming. Before transformation, Chess Queen’s trait can already be triggered normally, and its effects will take effect after transformation.",
     "localized": {
       "zh": {
         "name": "保卫",
@@ -1211,7 +1212,7 @@
   },
   {
     "name": "Dual Omens",
-    "description": "After this monster successfully performs Counter using a Status-type move once, it fully restores HP and transforms into 'Chess Queen'. After transforming, its base stats and trait become those of Chess Queen, while its equipped moves remain unchanged. The Attack and Defense bonuses gained before transformation persist after transforming. Before transformation, Chess Queen’s trait can already be triggered normally, and its effects will take effect after transformation.",
+    "description": "After this jingling successfully performs Counter using a Status-type move once, it fully restores HP and transforms into 'Chess Queen'. After transforming, its base stats and trait become those of Chess Queen, while its equipped moves remain unchanged. The Attack and Defense bonuses gained before transformation persist after transforming. Before transformation, Chess Queen’s trait can already be triggered normally, and its effects will take effect after transformation.",
     "localized": {
       "zh": {
         "name": "好象坏象",
@@ -1221,7 +1222,7 @@
   },
   {
     "name": "Penetration",
-    "description": "For each time a teammate uses a Fighting-type or Ground-type move, this monster gains Attack +5% and Defense +5% when entering the battlefield.",
+    "description": "For each time a teammate uses a Fighting-type or Ground-type move, this jingling gains Attack +5% and Defense +5% when entering the battlefield.",
     "localized": {
       "zh": {
         "name": "渗透",
@@ -1271,7 +1272,7 @@
   },
   {
     "name": "Inch by Inch",
-    "description": "When the weather is Rain or the monster is in a Water-type environment, this monster gains Attack +100%.",
+    "description": "When the weather is Rain or the jingling is in a Water-type environment, this jingling gains Attack +100%.",
     "localized": {
       "zh": {
         "name": "得寸进尺",
@@ -1301,7 +1302,7 @@
   },
   {
     "name": "Continuous Load",
-    "description": "Extends the duration of this monster's Burst effects by 1 turn.",
+    "description": "Extends the duration of this jingling's Burst effects by 1 turn.",
     "localized": {
       "zh": {
         "name": "连续负荷",
@@ -1321,7 +1322,7 @@
   },
   {
     "name": "Scavenge",
-    "description": "For each time the opponent uses 'Focus' move or switches monsters, this monster gains Magic Attack +20% upon entering the battlefield.",
+    "description": "For each time the opponent uses 'Focus' move or switches jinglings, this jingling gains Magic Attack +20% upon entering the battlefield.",
     "localized": {
       "zh": {
         "name": "搜刮",
@@ -1331,7 +1332,7 @@
   },
   {
     "name": "Demon's Banquet",
-    "description": "When this monster actively defeats an opponent, this monster gains Attack +50%.",
+    "description": "When this jingling actively defeats an opponent, this jingling gains Attack +50%.",
     "localized": {
       "zh": {
         "name": "恶魔的晚宴",
@@ -1351,7 +1352,7 @@
   },
   {
     "name": "Directed Refinement",
-    "description": "For each time a teammate uses a Defense-type move, this monster's Mechanical-type and Ground-type moves gain move power +10% upon entering the battlefield.",
+    "description": "For each time a teammate uses a Defense-type move, this jingling's Mechanical-type and Ground-type moves gain move power +10% upon entering the battlefield.",
     "localized": {
       "zh": {
         "name": "定向精炼",
@@ -1361,7 +1362,7 @@
   },
   {
     "name": "Duelist",
-    "description": "After each successful Counter, this monster gains Move Power +20 permanently.",
+    "description": "After each successful Counter, this jingling gains Move Power +20 permanently.",
     "localized": {
       "zh": {
         "name": "斗技",
@@ -1371,7 +1372,7 @@
   },
   {
     "name": "Conductor",
-    "description": "After each successful Counter, this monster's Attack +20% permanently.",
+    "description": "After each successful Counter, this jingling's Attack +20% permanently.",
     "localized": {
       "zh": {
         "name": "指挥家",
@@ -1381,7 +1382,7 @@
   },
   {
     "name": "Cindershrub",
-    "description": "While this monster is on the battlefield, all Burn effects increase instead of decrease.",
+    "description": "While this jingling is on the battlefield, all Burn effects increase instead of decrease.",
     "localized": {
       "zh": {
         "name": "煤渣草",
@@ -1391,7 +1392,7 @@
   },
   {
     "name": "Rattle Drum",
-    "description": "For each time a teammate uses a Status-type move, this monster's Poison-type and Regression-type moves gain move power +10% upon entering the battlefield.",
+    "description": "For each time a teammate uses a Status-type move, this jingling's Poison-type and Regression-type moves gain move power +10% upon entering the battlefield.",
     "localized": {
       "zh": {
         "name": "拨浪鼓",
@@ -1401,7 +1402,7 @@
   },
   {
     "name": "False Treasure Chest",
-    "description": "When this monster is defeated, the opponent gains Defense +20%.",
+    "description": "When this jingling is defeated, the opponent gains Defense +20%.",
     "localized": {
       "zh": {
         "name": "虚假宝箱",
@@ -1431,7 +1432,7 @@
   },
   {
     "name": "Corrosion",
-    "description": "For each Poison Effect stack on the opponent, this monster's moves gain Combo Count +1.",
+    "description": "For each Poison Effect stack on the opponent, this jingling's moves gain Combo Count +1.",
     "localized": {
       "zh": {
         "name": "侵蚀",
@@ -1441,7 +1442,7 @@
   },
   {
     "name": "Spirit Drain",
-    "description": "When a teammate is defeated, upon entering the battlefield, this monster inherits that teammate's highest stat other than Speed.",
+    "description": "When a teammate is defeated, upon entering the battlefield, this jingling inherits that teammate's highest stat other than Speed.",
     "localized": {
       "zh": {
         "name": "吸灵",
@@ -1451,7 +1452,7 @@
   },
   {
     "name": "Resilient Armor",
-    "description": "For each time this monster takes attack damage, the allied team gain 1 random Devotion enhancement.",
+    "description": "For each time this jingling takes attack damage, the allied team gain 1 random Devotion enhancement.",
     "localized": {
       "zh": {
         "name": "坚韧铠甲",
@@ -1471,7 +1472,7 @@
   },
   {
     "name": "Indiscriminate Filter",
-    "description": "While this monster is on the battlefield, monsters on both sides have Combo Count 2.",
+    "description": "While this jingling is on the battlefield, jinglings on both sides have Combo Count 2.",
     "localized": {
       "zh": {
         "name": "无差别过滤",
@@ -1481,7 +1482,7 @@
   },
   {
     "name": "Dark Current",
-    "description": "Swaps HP percentage with the next monster to enter the battlefield.",
+    "description": "Swaps HP percentage with the next jingling to enter the battlefield.",
     "localized": {
       "zh": {
         "name": "暗流",
@@ -1491,7 +1492,7 @@
   },
   {
     "name": "Hang by a Thread",
-    "description": "The first time this monster takes fatal damage, it survives with 1 HP, and the opponent gains Stun for 1 turn.",
+    "description": "The first time this jingling takes fatal damage, it survives with 1 HP, and the opponent gains Stun for 1 turn.",
     "localized": {
       "zh": {
         "name": "悬一线",
@@ -1511,7 +1512,7 @@
   },
   {
     "name": "Dual Lightspeed",
-    "description": "While this monster is on the battlefield, all end-of-turn effects trigger an additional time.",
+    "description": "While this jingling is on the battlefield, all end-of-turn effects trigger an additional time.",
     "localized": {
       "zh": {
         "name": "双向光速",
@@ -1521,7 +1522,7 @@
   },
   {
     "name": "Fallen",
-    "description": "While this monster is on the battlefield, all end-of-turn effects trigger one fewer time.",
+    "description": "While this jingling is on the battlefield, all end-of-turn effects trigger one fewer time.",
     "localized": {
       "zh": {
         "name": "陨落",
@@ -1531,7 +1532,7 @@
   },
   {
     "name": "Premonition",
-    "description": "If an opponent's move is sufficient to defeat this monster, this monster gains Speed +50 at the start of the turn.",
+    "description": "If an opponent's move is sufficient to defeat this jingling, this jingling gains Speed +50 at the start of the turn.",
     "localized": {
       "zh": {
         "name": "预警",
@@ -1541,7 +1542,7 @@
   },
   {
     "name": "Foresight",
-    "description": "If an opponent's move is sufficient to defeat this monster, this monster gains Speed +50 and Attack +50% at the start of the turn.",
+    "description": "If an opponent's move is sufficient to defeat this jingling, this jingling gains Speed +50 and Attack +50% at the start of the turn.",
     "localized": {
       "zh": {
         "name": "先知",
@@ -1571,7 +1572,7 @@
   },
   {
     "name": "Stellar Kindness",
-    "description": "At the end of the turn, if a teammate on the battlefield has 0 energy, this monster immediately switch in to replace that teammate.",
+    "description": "At the end of the turn, if a teammate on the battlefield has 0 energy, this jingling immediately switch in to replace that teammate.",
     "localized": {
       "zh": {
         "name": "星地善良",
@@ -1611,7 +1612,7 @@
   },
   {
     "name": "Library Guardian",
-    "description": "Upon entering the battlefield, if the player has only 1 Life Point, this monster gains Attack +50%.",
+    "description": "Upon entering the battlefield, if the player has only 1 Life Point, this jingling gains Attack +50%.",
     "localized": {
       "zh": {
         "name": "图书守卫者",
@@ -1621,7 +1622,7 @@
   },
   {
     "name": "Constructed Covenanter",
-    "description": "Upon entering the battlefield, if the opponent has only 1 Life Point, this monster gains Defense +50%.",
+    "description": "Upon entering the battlefield, if the opponent has only 1 Life Point, this jingling gains Defense +50%.",
     "localized": {
       "zh": {
         "name": "构装契约者",
@@ -1661,7 +1662,7 @@
   },
   {
     "name": "Price Paid to the Devil",
-    "description": "When defeating an opponent, the opponent loses an additional 1 Life Point. When defeated by an opponent, this monster loses an additional 1 Life Point.",
+    "description": "When defeating an opponent, the opponent loses an additional 1 Life Point. When defeated by an opponent, this jingling loses an additional 1 Life Point.",
     "localized": {
       "zh": {
         "name": "付给恶魔的赎价",
@@ -1671,7 +1672,7 @@
   },
   {
     "name": "Hurricane",
-    "description": "If other Flying-type monsters also have the same move, this monster's moves gain Quick Entry. When defeated by an opponent, this monster loses an additional 1 Life Point.",
+    "description": "If other Flying-type jinglings also have the same move, this jingling's moves gain Quick Entry. When defeated by an opponent, this jingling loses an additional 1 Life Point.",
     "localized": {
       "zh": {
         "name": "飓风",
@@ -1681,7 +1682,7 @@
   },
   {
     "name": "Guardian",
-    "description": "For each stack of Regression on teammates, this monster gains Move Energy Cost -1 upon entering the battlefield.",
+    "description": "For each stack of Regression on teammates, this jingling gains Move Energy Cost -1 upon entering the battlefield.",
     "localized": {
       "zh": {
         "name": "守护者",
@@ -1691,7 +1692,7 @@
   },
   {
     "name": "Ice Drill",
-    "description": "For each point of total energy cost of opponent's carried moves, this monster's move power +10%.",
+    "description": "For each point of total energy cost of opponent's carried moves, this jingling's move power +10%.",
     "localized": {
       "zh": {
         "name": "冰钻",
@@ -1701,7 +1702,7 @@
   },
   {
     "name": "Grapple",
-    "description": "When this monster uses an Attack-type move that includes the Counter effect, if Counter is successful that turn, restores 25% HP.",
+    "description": "When this jingling uses an Attack-type move that includes the Counter effect, if Counter is successful that turn, restores 25% HP.",
     "localized": {
       "zh": {
         "name": "擒拿",
@@ -1711,7 +1712,7 @@
   },
   {
     "name": "Horse Stance",
-    "description": "When this monster uses a Status-type move that includes the Counter effect, if Counter is successful that turn, gains 10 energy.",
+    "description": "When this jingling uses a Status-type move that includes the Counter effect, if Counter is successful that turn, gains 10 energy.",
     "localized": {
       "zh": {
         "name": "马步",
@@ -1721,7 +1722,7 @@
   },
   {
     "name": "Ukemi",
-    "description": "Upon entering the battlefield, if the opponent switches monsters this turn, this monster gains all stats +100%.",
+    "description": "Upon entering the battlefield, if the opponent switches jinglings this turn, this jingling gains all stats +100%.",
     "localized": {
       "zh": {
         "name": "受身",
@@ -1741,7 +1742,7 @@
   },
   {
     "name": "Phylogenesis",
-    "description": "When gaining energy or HP, the same amount of energy or HP is randomly distributed to the monsters on the bench.",
+    "description": "When gaining energy or HP, the same amount of energy or HP is randomly distributed to the jinglings on the bench.",
     "localized": {
       "zh": {
         "name": "系统发育",
@@ -1761,11 +1762,11 @@
   },
   {
     "name": "Visiting Scholar",
-    "description": "This monster's Move Energy Cost +2, but it can learn all Attack-type moves.",
+    "description": "This jingling's Move Energy Cost +1, but it can learn all Attack-type moves.",
     "localized": {
       "zh": {
         "name": "留学生",
-        "description": "自己全技能能耗+2，可以学习全部攻击技能。"
+        "description": "自己全技能能耗+1，可以学习全部攻击技能。"
       }
     }
   },
@@ -1781,7 +1782,7 @@
   },
   {
     "name": "Steam Expansion",
-    "description": "For each time a Fire-type move is used by a teammate, this monster gains Move Power +10 upon entering the battlefield.",
+    "description": "For each time a Fire-type move is used by a teammate, this jingling gains Move Power +10 upon entering the battlefield.",
     "localized": {
       "zh": {
         "name": "蒸汽膨胀",
@@ -1791,7 +1792,7 @@
   },
   {
     "name": "Intimidation",
-    "description": "When this monster triggers Interrupt against the opponent, the interrupted move enters a 2-turn Cooldown.",
+    "description": "When this jingling triggers Interrupt against the opponent, the interrupted move enters a 2-turn Cooldown.",
     "localized": {
       "zh": {
         "name": "威慑",
@@ -1831,7 +1832,7 @@
   },
   {
     "name": "Restless Fate",
-    "description": "After using a Defense-type move, this monster triggers Exit at the end of the turn.",
+    "description": "After using a Defense-type move, this jingling triggers Exit at the end of the turn.",
     "localized": {
       "zh": {
         "name": "奔波命",
@@ -1861,7 +1862,7 @@
   },
   {
     "name": "Sentinel",
-    "description": "At the start of the turn, if an opponent's move is sufficient to defeat this monster, this monster gains Speed +50 and triggers Exit after acting.",
+    "description": "At the start of the turn, if an opponent's move is sufficient to defeat this jingling, this jingling gains Speed +50 and triggers Exit after acting.",
     "localized": {
       "zh": {
         "name": "哨兵",
@@ -1880,18 +1881,8 @@
     }
   },
   {
-    "name": "Pioneer",
-    "description": "After entering the battlefield, Normal-type moves become Flying-type moves.",
-    "localized": {
-      "zh": {
-        "name": "先锋",
-        "description": "进入战斗后普通系技能变为翼系。"
-      }
-    }
-  },
-  {
     "name": "Work-Life Balance",
-    "description": "On weekends, this monster gains Attack +40%. At other times, it gains Defense +40%.",
+    "description": "On weekends, this jingling gains Attack +40%. At other times, it gains Defense +40%.",
     "localized": {
       "zh": {
         "name": "张弛有度",
@@ -1906,6 +1897,116 @@
       "zh": {
         "name": "天通地明",
         "description": "攻击时，若敌方血脉是污染血脉，技能威力+100%。"
+      }
+    }
+  },
+  {
+    "name": "Carnival Begins",
+    "description": "While on the battlefield, random jinglings appear on the bench; these random jinglings can only be swapped in or out with this jingling. This jingling takes 25% more super effective damage.",
+    "localized": {
+      "zh": {
+        "name": "狂欢开始",
+        "description": "在场时，背包里会变化出随机精灵，随机精灵只能与本精灵相互更换。本精灵受到的克制伤害+25%。"
+      }
+    }
+  },
+  {
+    "name": "Giant Snowball",
+    "description": "After this jingling uses 2 different Ice-type moves, the opponent gains 4 stacks of Freeze, then the trait resets.",
+    "localized": {
+      "zh": {
+        "name": "大雪球",
+        "description": "自己使用2次不同的冰系技能后，对手获得4层冻结，随后特性重置。"
+      }
+    }
+  },
+  {
+    "name": "Giant Fireball",
+    "description": "After this jingling uses 2 different Fire-type moves, the next move requires no Charge, then the trait resets.",
+    "localized": {
+      "zh": {
+        "name": "大火球",
+        "description": "自己使用2次不同的火系技能后，下次技能无需蓄力，随后特性重置。"
+      }
+    }
+  },
+  {
+    "name": "Disc Swap",
+    "description": "This jingling's carried 'Sonic Bullet', 'Sonic Boom', 'Metal Sound', and 'Midnight Noise' moves gain increased power, and gain Variation: same-type moves.",
+    "localized": {
+      "zh": {
+        "name": "换碟",
+        "description": "自己携带的音波弹/音爆/金属噪音/午夜噪音威力提升，且获得巧变：同系别技能。"
+      }
+    }
+  },
+  {
+    "name": "Cheerleader",
+    "description": "If this jingling gains Regression while already in Regression state, the Regression is removed.",
+    "localized": {
+      "zh": {
+        "name": "啦啦队长",
+        "description": "若自己在萌化状态下再获得萌化会解除萌化。"
+      }
+    }
+  },
+  {
+    "name": "Toy With",
+    "description": "When this jingling would recover HP, the opponent loses an equal amount of HP instead.",
+    "localized": {
+      "zh": {
+        "name": "戏耍",
+        "description": "自己回复生命变为敌方扣除等量生命。"
+      }
+    }
+  },
+  {
+    "name": "Flame Test",
+    "description": "While this jingling is on the battlefield, decaying Burn stacks are converted into an equal number of Poison stacks.",
+    "localized": {
+      "zh": {
+        "name": "焰色反应",
+        "description": "在场时，衰减的灼烧变为相同层数的中毒。"
+      }
+    }
+  },
+  {
+    "name": "Magic Hat",
+    "description": "While this jingling is on the battlefield, moves carried by active jinglings on both sides gain Variation: same-type moves.",
+    "localized": {
+      "zh": {
+        "name": "魔术帽",
+        "description": "在场时，场上双方携带的技能获得巧变：同系别技能。"
+      }
+    }
+  },
+  {
+    "name": "Encore",
+    "description": "After using a Light-type move, this jingling triggers Re-Enter at the end of the turn.",
+    "localized": {
+      "zh": {
+        "name": "安可",
+        "description": "使用光系技能后，回合结束时自己返场。"
+      }
+    }
+  },
+  {
+    "name": "In Sync",
+    "description": "For each attribute (Type, Category, or Energy Cost) shared between this jingling's move and the opponent's move this turn, this jingling gains permanent Physical Attack +20% and Physical Defense +20% at the end of the turn.",
+    "localized": {
+      "zh": {
+        "name": "合拍",
+        "description": "若本回合自己与敌方使用的技能在系别/类型/能耗上每有1项相同，回合结束时获得物攻和物防永久+20%。"
+      }
+    }
+  },
+  {
+    "name": "Spread Wings",
+    "description": "While this jingling is on the battlefield, carried Normal-type moves become Flying-type. If acting after the opponent, this jingling takes 25% more damage.",
+    "localized": {
+      "zh": {
+        "name": "展翅",
+        "description": "在场时，自己携带的普通系技能变为翼系技能，若后于对手行动，自己受到的伤害+25%。"
       }
     }
   }

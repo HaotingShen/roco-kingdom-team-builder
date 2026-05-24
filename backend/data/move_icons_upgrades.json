@@ -1,0 +1,31 @@
+{
+  "_note": "Move icons that were produced from in-app screenshot crops. Source raw screenshots were ~86-92px (sub-Retina). Replace with higher-resolution wiki/official assets when available. After replacing, mark `status` as 'upgraded' and update `current_size` + `source`. Workflow: download new icon -> save to frontend/public/move-icons/<zh_name>.png (must be at least 96x96 RGBA, ideally 128x128 to match canonical existing icons).",
+  "_added_in_session": "2026-05-24",
+  "icons": [
+    { "zh_name": "色散",       "en_name": "Dispersion",       "type": "Light",      "current_size": "96x96", "source": "in-app screenshot crop", "status": "needs_upgrade" },
+    { "zh_name": "冰封",       "en_name": "Permafrost",       "type": "Ice",        "current_size": "96x96", "source": "in-app screenshot crop", "status": "needs_upgrade" },
+    { "zh_name": "寒潮",       "en_name": "Cold Snap",        "type": "Ice",        "current_size": "96x96", "source": "in-app screenshot crop", "status": "needs_upgrade" },
+    { "zh_name": "叠加态",     "en_name": "Superposition",    "type": "Illusion",   "current_size": "96x96", "source": "in-app screenshot crop", "status": "needs_upgrade" },
+    { "zh_name": "天体吸积",   "en_name": "Stellar Accretion","type": "Illusion",   "current_size": "96x96", "source": "in-app screenshot crop", "status": "needs_upgrade" },
+    { "zh_name": "入梦",       "en_name": "Dream Lull",       "type": "Ghost",      "current_size": "96x96", "source": "in-app screenshot crop", "status": "needs_upgrade" },
+    { "zh_name": "撞鬼",       "en_name": "Ghost Strike",     "type": "Ghost",      "current_size": "96x96", "source": "in-app screenshot crop", "status": "needs_upgrade" },
+    { "zh_name": "假冒",       "en_name": "Impersonate",      "type": "Dark",       "current_size": "96x96", "source": "in-app screenshot crop", "status": "needs_upgrade" },
+    { "zh_name": "杂耍",       "en_name": "Juggle",           "type": "Dark",       "current_size": "96x96", "source": "in-app screenshot crop", "status": "needs_upgrade" },
+    { "zh_name": "同频",       "en_name": "Sync Wave",        "type": "Normal",     "current_size": "96x96", "source": "in-app screenshot crop", "status": "needs_upgrade" },
+    { "zh_name": "减压阀",     "en_name": "Pressure Valve",   "type": "Mechanical", "current_size": "96x96", "source": "in-app screenshot crop", "status": "needs_upgrade" },
+    { "zh_name": "微型斥候",   "en_name": "Micro Scout",      "type": "Mechanical", "current_size": "96x96", "source": "in-app screenshot crop", "status": "needs_upgrade" },
+    { "zh_name": "排气",       "en_name": "Exhaust",          "type": "Mechanical", "current_size": "96x96", "source": "in-app screenshot crop", "status": "needs_upgrade" },
+    { "zh_name": "相位移动",   "en_name": "Phase Shift",      "type": "Mechanical", "current_size": "96x96", "source": "in-app screenshot crop", "status": "needs_upgrade" },
+    { "zh_name": "过山车",     "en_name": "Roller Coaster",   "type": "Mechanical", "current_size": "96x96", "source": "in-app screenshot crop", "status": "needs_upgrade" },
+    { "zh_name": "铁蒺藜",     "en_name": "Iron Caltrops",    "type": "Mechanical", "current_size": "96x96", "source": "in-app screenshot crop", "status": "needs_upgrade" },
+    { "zh_name": "毒肽",       "en_name": "Toxic Peptide",    "type": "Poison",     "current_size": "96x96", "source": "in-app screenshot crop", "status": "needs_upgrade" },
+    { "zh_name": "重金属粉尘", "en_name": "Heavy Metal Dust", "type": "Poison",     "current_size": "96x96", "source": "in-app screenshot crop", "status": "needs_upgrade" },
+    { "zh_name": "清洗",       "en_name": "Cleanse",          "type": "Water",      "current_size": "96x96", "source": "in-app screenshot crop", "status": "needs_upgrade" },
+    { "zh_name": "焚尽",       "en_name": "Immolation",       "type": "Fire",       "current_size": "96x96", "source": "in-app screenshot crop", "status": "needs_upgrade" },
+    { "zh_name": "踏雷",       "en_name": "Thunderwalk",      "type": "Electric",   "current_size": "96x96", "source": "in-app screenshot crop", "status": "needs_upgrade" },
+    { "zh_name": "加油",       "en_name": "Cheer",            "type": "Cute",       "current_size": "96x96", "source": "in-app screenshot crop", "status": "needs_upgrade" },
+    { "zh_name": "守护咒",     "en_name": "Guard Hex",        "type": "Dragon",     "current_size": "96x96", "source": "in-app screenshot crop", "status": "needs_upgrade" },
+    { "zh_name": "飞箭",       "en_name": "Wing Arrow",       "type": "Flying",     "current_size": "96x96", "source": "in-app screenshot crop", "status": "needs_upgrade" },
+    { "zh_name": "俯冲",       "en_name": "Dive",             "type": "Flying",     "current_size": "96x96", "source": "in-app screenshot crop", "status": "needs_upgrade" }
+  ]
+}

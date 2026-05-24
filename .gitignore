@@ -236,3 +236,10 @@ backend/data/monsters.json.backup*
 backend/data/traits.json.backup*
 *.xlsx
 ~$*
+
+# TapTap submission build artifacts
+/frontend/rk-team-builder/
+/frontend/taptap-submission.zip
+
+# Generated report output (matches move_reports/ convention)
+/backend/data/trait_reports/

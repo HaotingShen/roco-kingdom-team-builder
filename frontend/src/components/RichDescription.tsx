@@ -25,7 +25,10 @@ function splitByTerm(text: string, term: ParsedGameTerm, isZh: boolean): Segment
     }
   } else {
     const escaped = term.matchName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    const regex = new RegExp(`\\b(${escaped})\\b`, "gi");
+    // Case-sensitive: "Move Power" must match exactly, not "move power" / "Move power".
+    // Negative lookahead suppresses type-reference contexts like "Poison-type Status moves",
+    // where the term name is being used as a Pokémon-style elemental type, not the status.
+    const regex = new RegExp(`\\b(${escaped})\\b(?!-[Tt]ype)`, "g");
     let lastIndex = 0;
     let match: RegExpExecArray | null;
     while ((match = regex.exec(text)) !== null) {

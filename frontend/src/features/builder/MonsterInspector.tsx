@@ -107,9 +107,15 @@ function MovesSection({
     onChange({ [key]: id } as any);
   };
 
+  // Traits like "Blind Obedience" can carry the same move in multiple slots.
+  // The trait's allows_duplicate_moves field lists the English move names that bypass
+  // the standard unique-per-slot enforcement.
+  const dupeAllowedMoveNames: string[] = detail?.trait?.allows_duplicate_moves ?? [];
+
   const canPick = (n: 1 | 2 | 3 | 4, move: MoveOut, isLegacy: boolean) => {
     const currentId = (slot as any)[moveKeys[n]] as ID;
-    if (move.id !== currentId && selectedIds.includes(move.id)) return false;
+    const dupeAllowed = dupeAllowedMoveNames.includes(move.name);
+    if (!dupeAllowed && move.id !== currentId && selectedIds.includes(move.id)) return false;
     if (!isLegacy) return true;
     const selectedLegacyIds = selectedIds.filter((id) => legacyIdSet.has(id));
     const alreadyHasLegacy =

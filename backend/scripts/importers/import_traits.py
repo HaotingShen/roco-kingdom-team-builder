@@ -19,12 +19,14 @@ def load_traits():
             stmt = insert(Trait).values(
                 name=item["name"],
                 description=item["description"],
-                localized=item["localized"]
+                localized=item["localized"],
+                allows_duplicate_moves=item.get("allows_duplicate_moves"),
             ).on_conflict_do_update(
                 index_elements=["name"],
                 set_={
                     "description": item["description"],
-                    "localized": item["localized"]
+                    "localized": item["localized"],
+                    "allows_duplicate_moves": item.get("allows_duplicate_moves"),
                 }
             )
             session.execute(stmt)

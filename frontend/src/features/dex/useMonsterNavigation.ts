@@ -1,287 +1,106 @@
-import { useState, useEffect } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { endpoints } from "@/lib/api";
+import { QUERY_KEYS } from "@/lib/constants";
 import { pickName, type Lang } from "@/i18n";
-import type { MonsterOut } from "@/types";
+import type { MonsterLiteOut, MonsterOut } from "@/types";
 
+/**
+ * Returns the previous / next monster ids for the detail-page navigation
+ * arrows. Uses the same display sequence as the dex grid:
+ *
+ *   - Sort by COALESCE(dex_number, id) ASC, id ASC.
+ *   - Collapse leader-form variants: keep only the lowest-id form per species
+ *     name. Subsequent forms with the same species name are dropped from the
+ *     navigation order (they share a single dex card with the representative).
+ *
+ * If the user lands on a non-representative leader form (e.g., via a direct
+ * URL), we still anchor navigation off the representative so prev/next stay
+ * in step with what the dex grid shows.
+ *
+ * Shares a query cache (QUERY_KEYS.MONSTERS) with the dex page, so the list
+ * usually hits cache rather than triggering a fetch.
+ */
 export function useMonsterNavigation(
   currentMonster: MonsterOut | undefined,
   lang: Lang
 ) {
-  const queryClient = useQueryClient();
-  const [prevMonsterId, setPrevMonsterId] = useState<number | null>(null);
-  const [nextMonsterId, setNextMonsterId] = useState<number | null>(null);
-  const [isLoadingPrev, setIsLoadingPrev] = useState(false);
-  const [isLoadingNext, setIsLoadingNext] = useState(false);
+  const monstersQuery = useQuery<MonsterLiteOut[]>({
+    queryKey: QUERY_KEYS.MONSTERS,
+    queryFn: () =>
+      endpoints
+        .monsters()
+        .then((r) => (r.data?.items ?? r.data) as MonsterLiteOut[]),
+    staleTime: Infinity,
+  });
 
-  useEffect(() => {
-    if (!currentMonster) return;
+  const isLoading = monstersQuery.isLoading;
+  const list = monstersQuery.data ?? [];
 
-    const currentId = currentMonster.id; // Store ID to avoid TS undefined errors
-    const isLeaderForm = currentMonster.is_leader_form === true;
-
-    // For non-leader monsters, check if target is a leader form
-    if (!isLeaderForm) {
-      async function checkSimpleNext() {
-        if (currentId >= 503) {
-          setNextMonsterId(null);
-          setIsLoadingNext(false);
-          return;
-        }
-
-        setIsLoadingNext(true);
-        try {
-          const nextCandidate = await queryClient.fetchQuery({
-            queryKey: ["monster", currentId + 1],
-            queryFn: () => endpoints.monsterById(String(currentId + 1)).then(r => r.data),
-            staleTime: 5 * 60 * 1000,
-          });
-
-          // If next monster is a leader form, find its first form
-          if (nextCandidate.is_leader_form) {
-            const nextSpeciesName = pickName(nextCandidate, lang) || nextCandidate.name;
-            let firstFormId = currentId + 1;
-
-            for (let checkId = currentId; checkId >= 1; checkId--) {
-              try {
-                const checkCandidate = await queryClient.fetchQuery({
-                  queryKey: ["monster", checkId],
-                  queryFn: () => endpoints.monsterById(String(checkId)).then(r => r.data),
-                  staleTime: 5 * 60 * 1000,
-                });
-                const checkSpeciesName = pickName(checkCandidate, lang) || checkCandidate.name;
-                if (checkSpeciesName === nextSpeciesName) {
-                  firstFormId = checkId;
-                } else {
-                  break;
-                }
-              } catch {
-                break;
-              }
-            }
-            setNextMonsterId(firstFormId);
-          } else {
-            setNextMonsterId(currentId + 1);
-          }
-        } catch {
-          setNextMonsterId(null);
-        }
-        setIsLoadingNext(false);
-      }
-
-      async function checkSimplePrev() {
-        if (currentId <= 1) {
-          setPrevMonsterId(null);
-          setIsLoadingPrev(false);
-          return;
-        }
-
-        setIsLoadingPrev(true);
-        try {
-          const prevCandidate = await queryClient.fetchQuery({
-            queryKey: ["monster", currentId - 1],
-            queryFn: () => endpoints.monsterById(String(currentId - 1)).then(r => r.data),
-            staleTime: 5 * 60 * 1000,
-          });
-
-          // If prev monster is a leader form, find its first form
-          if (prevCandidate.is_leader_form) {
-            const prevSpeciesName = pickName(prevCandidate, lang) || prevCandidate.name;
-            let firstFormId = currentId - 1;
-
-            for (let checkId = currentId - 2; checkId >= 1; checkId--) {
-              try {
-                const checkCandidate = await queryClient.fetchQuery({
-                  queryKey: ["monster", checkId],
-                  queryFn: () => endpoints.monsterById(String(checkId)).then(r => r.data),
-                  staleTime: 5 * 60 * 1000,
-                });
-                const checkSpeciesName = pickName(checkCandidate, lang) || checkCandidate.name;
-                if (checkSpeciesName === prevSpeciesName) {
-                  firstFormId = checkId;
-                } else {
-                  break;
-                }
-              } catch {
-                break;
-              }
-            }
-            setPrevMonsterId(firstFormId);
-          } else {
-            setPrevMonsterId(currentId - 1);
-          }
-        } catch {
-          setPrevMonsterId(null);
-        }
-        setIsLoadingPrev(false);
-      }
-
-      checkSimpleNext();
-      checkSimplePrev();
-      return;
+  const { prevMonsterId, nextMonsterId } = useMemo(() => {
+    if (!currentMonster || list.length === 0) {
+      return { prevMonsterId: null, nextMonsterId: null };
     }
 
-    // For leader monsters, skip to different species
-    const currentSpeciesName = pickName(currentMonster, lang) || currentMonster.name;
-    const MAX_ID = 503; // Total monsters in database
-    const MAX_ATTEMPTS = 10; // Prevent infinite loops
-    const MAX_CONSECUTIVE_404s = 3; // Stop if hit end of list
+    // Sort full list by COALESCE(dex_number, id) ASC, id ASC. Matches backend.
+    const sorted = [...list].sort((a, b) => {
+      const ka = (a as any).dex_number ?? a.id;
+      const kb = (b as any).dex_number ?? b.id;
+      if (ka !== kb) return ka - kb;
+      return a.id - b.id;
+    });
 
-    // Find next monster with different species name
-    async function findNext() {
-      setIsLoadingNext(true);
-      let candidateId = currentId + 1;
-      let attempts = 0;
-      let consecutive404s = 0;
+    // Build display list: leaders collapsed by species name (lowest id wins).
+    // Mirrors DexPage's displayList logic so navigation matches the grid.
+    const leaderRep = new Map<string, MonsterLiteOut>();
+    const displayList: MonsterLiteOut[] = [];
 
-      while (candidateId <= MAX_ID && attempts < MAX_ATTEMPTS) {
-        try {
-          const candidate = await queryClient.fetchQuery({
-            queryKey: ["monster", candidateId],
-            queryFn: () => endpoints.monsterById(String(candidateId)).then(r => r.data),
-            staleTime: 5 * 60 * 1000, // Cache for 5 minutes
-          });
-
-          const candidateSpeciesName = pickName(candidate, lang) || candidate.name;
-
-          // Found different species!
-          if (candidateSpeciesName !== currentSpeciesName) {
-            // If it's a leader form, find the FIRST form (lowest ID) of this leader
-            if (candidate.is_leader_form) {
-              let firstFormId = candidateId;
-              // Search backwards to find the first form
-              for (let checkId = candidateId - 1; checkId >= 1; checkId--) {
-                try {
-                  const checkCandidate = await queryClient.fetchQuery({
-                    queryKey: ["monster", checkId],
-                    queryFn: () => endpoints.monsterById(String(checkId)).then(r => r.data),
-                    staleTime: 5 * 60 * 1000,
-                  });
-                  const checkSpeciesName = pickName(checkCandidate, lang) || checkCandidate.name;
-                  if (checkSpeciesName === candidateSpeciesName) {
-                    firstFormId = checkId;
-                  } else {
-                    break; // Different species, stop searching
-                  }
-                } catch {
-                  break; // Error or 404, stop searching
-                }
-              }
-              setNextMonsterId(firstFormId);
-            } else {
-              setNextMonsterId(candidateId);
-            }
-            setIsLoadingNext(false);
-            return;
-          }
-
-          // Same species, keep searching
-          candidateId++;
-          consecutive404s = 0;
-          attempts++;
-        } catch (error: any) {
-          // Handle 404 (ID gap in database)
-          if (error?.response?.status === 404) {
-            consecutive404s++;
-            if (consecutive404s >= MAX_CONSECUTIVE_404s) {
-              // Reached end of list
-              setNextMonsterId(null);
-              setIsLoadingNext(false);
-              return;
-            }
-            candidateId++;
-            attempts++;
-          } else {
-            // Network error or other issue
-            console.error("Error fetching next monster:", error);
-            setNextMonsterId(null);
-            setIsLoadingNext(false);
-            return;
-          }
+    for (const m of sorted) {
+      if (m.is_leader_form) {
+        const speciesName = pickName(m as any, lang) || m.name;
+        const existing = leaderRep.get(speciesName);
+        if (!existing) {
+          leaderRep.set(speciesName, m);
+          displayList.push(m);
+        } else if (m.id < existing.id) {
+          // Found a lower-id form first; swap to make it the representative.
+          // (Shouldn't usually happen since we iterate sorted; defensive only.)
+          const idx = displayList.indexOf(existing);
+          if (idx !== -1) displayList[idx] = m;
+          leaderRep.set(speciesName, m);
         }
+        // Otherwise skip — this form is collapsed under the existing rep.
+      } else {
+        displayList.push(m);
       }
-
-      // Max attempts reached
-      setNextMonsterId(null);
-      setIsLoadingNext(false);
     }
 
-    // Find previous monster with different species name (mirror logic)
-    async function findPrev() {
-      setIsLoadingPrev(true);
-      let candidateId = currentId - 1;
-      let attempts = 0;
-      let consecutive404s = 0;
-
-      while (candidateId >= 1 && attempts < MAX_ATTEMPTS) {
-        try {
-          const candidate = await queryClient.fetchQuery({
-            queryKey: ["monster", candidateId],
-            queryFn: () => endpoints.monsterById(String(candidateId)).then(r => r.data),
-            staleTime: 5 * 60 * 1000,
-          });
-
-          const candidateSpeciesName = pickName(candidate, lang) || candidate.name;
-
-          if (candidateSpeciesName !== currentSpeciesName) {
-            // If it's a leader form, find the FIRST form (lowest ID) of this leader
-            if (candidate.is_leader_form) {
-              let firstFormId = candidateId;
-              // Search backwards to find the first form
-              for (let checkId = candidateId - 1; checkId >= 1; checkId--) {
-                try {
-                  const checkCandidate = await queryClient.fetchQuery({
-                    queryKey: ["monster", checkId],
-                    queryFn: () => endpoints.monsterById(String(checkId)).then(r => r.data),
-                    staleTime: 5 * 60 * 1000,
-                  });
-                  const checkSpeciesName = pickName(checkCandidate, lang) || checkCandidate.name;
-                  if (checkSpeciesName === candidateSpeciesName) {
-                    firstFormId = checkId;
-                  } else {
-                    break; // Different species, stop searching
-                  }
-                } catch {
-                  break; // Error or 404, stop searching
-                }
-              }
-              setPrevMonsterId(firstFormId);
-            } else {
-              setPrevMonsterId(candidateId);
-            }
-            setIsLoadingPrev(false);
-            return;
-          }
-
-          candidateId--;
-          consecutive404s = 0;
-          attempts++;
-        } catch (error: any) {
-          if (error?.response?.status === 404) {
-            consecutive404s++;
-            if (consecutive404s >= MAX_CONSECUTIVE_404s) {
-              setPrevMonsterId(null);
-              setIsLoadingPrev(false);
-              return;
-            }
-            candidateId--;
-            attempts++;
-          } else {
-            console.error("Error fetching prev monster:", error);
-            setPrevMonsterId(null);
-            setIsLoadingPrev(false);
-            return;
-          }
-        }
-      }
-
-      setPrevMonsterId(null);
-      setIsLoadingPrev(false);
+    // Anchor: if the current monster is itself a non-representative leader
+    // form, navigate as if we're on its representative.
+    let anchorId = currentMonster.id;
+    if (currentMonster.is_leader_form) {
+      const speciesName = pickName(currentMonster as any, lang) || currentMonster.name;
+      const rep = leaderRep.get(speciesName);
+      if (rep) anchorId = rep.id;
     }
 
-    findNext();
-    findPrev();
-  }, [currentMonster?.id, lang, queryClient]);
+    const idx = displayList.findIndex((m) => m.id === anchorId);
+    if (idx < 0) {
+      return { prevMonsterId: null, nextMonsterId: null };
+    }
 
-  return { prevMonsterId, nextMonsterId, isLoadingPrev, isLoadingNext };
+    const prev = idx > 0 ? displayList[idx - 1] : undefined;
+    const next = idx < displayList.length - 1 ? displayList[idx + 1] : undefined;
+    return {
+      prevMonsterId: prev ? prev.id : null,
+      nextMonsterId: next ? next.id : null,
+    };
+  }, [currentMonster?.id, currentMonster?.is_leader_form, list, lang]);
+
+  return {
+    prevMonsterId,
+    nextMonsterId,
+    isLoadingPrev: isLoading,
+    isLoadingNext: isLoading,
+  };
 }

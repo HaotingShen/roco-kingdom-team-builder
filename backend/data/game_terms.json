@@ -2,7 +2,7 @@
   {
     "sort_order": 0,
     "key": "Marks",
-    "description": "A status effect that applies to an entire team, not just a single monster. Marks do not disappear when a monster leaves the field, and newly switched-in monsters inherit the mark's effect. Each side can only have one positive mark and one negative mark at a time.",
+    "description": "A status effect that applies to an entire team, not just a single jingling. Marks do not disappear when a jingling leaves the field, and newly switched-in jinglings inherit the mark's effect. Each side can only have one positive mark and one negative mark at a time.",
     "tooltip_description": null,
     "localized": {
       "zh": {
@@ -92,22 +92,22 @@
   },
   {
     "sort_order": 7,
-    "key": "Sluggish Mark",
-    "description": "Marks: When acting last, damage +30% per stack.",
-    "tooltip_description": "Marks: When acting last, damage +30% per stack.",
+    "key": "Sprout Mark",
+    "description": "Marks: When gaining Buffs, gain 1 additional stack.",
+    "tooltip_description": "Marks: When gaining Buffs, gain 1 additional stack.",
     "localized": {
       "zh": {
-        "name": "迟缓印记",
-        "description": "印记效果，后手攻击时，每层使伤害提升30%。",
-        "tooltip_description": "印记效果，后手攻击时，每层使伤害提升30%。"
+        "name": "萌芽印记",
+        "description": "印记效果，获得增益时，会额外获得1层。",
+        "tooltip_description": "印记效果，获得增益时，会额外获得1层。"
       }
     }
   },
   {
     "sort_order": 8,
     "key": "Spirit Mark",
-    "description": "Marks: When a monster enters the battlefield (in all situations), lose 1 energy per stack.",
-    "tooltip_description": "Marks: When any monster enters the battlefield, lose 1 energy per stack.",
+    "description": "Marks: When a jingling enters the battlefield (in all situations), lose 1 energy per stack.",
+    "tooltip_description": "Marks: When any jingling enters the battlefield, lose 1 energy per stack.",
     "localized": {
       "zh": {
         "name": "降灵印记",
@@ -158,8 +158,8 @@
   {
     "sort_order": 12,
     "key": "Spike Mark",
-    "description": "Marks: After a monster leaves the battlefield, the newly switched-in monster loses 6% of max HP.",
-    "tooltip_description": "Marks: After a monster leaves the battlefield, the newly switched-in monster loses 6% of max HP.",
+    "description": "Marks: After a jingling leaves the battlefield, the newly switched-in jingling loses 6% of max HP.",
+    "tooltip_description": "Marks: After a jingling leaves the battlefield, the newly switched-in jingling loses 6% of max HP.",
     "localized": {
       "zh": {
         "name": "棘刺印记",
@@ -171,8 +171,8 @@
   {
     "sort_order": 13,
     "key": "Starfall Mark",
-    "description": "Marks: When attacking a monster with this mark using a non-Illusion-type move, trigger Starfall Mark, removing all stacks of Starfall Mark and dealing 30 power of magic damage per stack.",
-    "tooltip_description": "Marks: When attacking a monster with this mark using a non-Illusion-type move, trigger Starfall Mark, removing all stacks of Starfall Mark and dealing 30 power of magic damage per stack.",
+    "description": "Marks: When attacking a jingling with this mark using a non-Illusion-type move, trigger Starfall Mark, removing all stacks of Starfall Mark and dealing 30 power of magic damage per stack.",
+    "tooltip_description": "Marks: When attacking a jingling with this mark using a non-Illusion-type move, trigger Starfall Mark, removing all stacks of Starfall Mark and dealing 30 power of magic damage per stack.",
     "localized": {
       "zh": {
         "name": "星陨印记",
@@ -184,7 +184,7 @@
   {
     "sort_order": 14,
     "key": "Leech",
-    "description": "At the end of each turn, each stack absorbs 6% of max HP from the target. All stacks are removed when the monster is switched out. (Grass-type monsters are immune to this effect.)",
+    "description": "At the end of each turn, each stack absorbs 6% of max HP from the target. All stacks are removed when the jingling is switched out. (Grass-type jinglings are immune to this effect.)",
     "tooltip_description": "Each stack absorbs 6% max HP from the target at the end of each turn. Removed when switched out. (Grass-type immune.)",
     "localized": {
       "zh": {
@@ -197,7 +197,7 @@
   {
     "sort_order": 15,
     "key": "Poison",
-    "description": "At the end of each turn, inflict Poison-type damage equal to 3% (rounded down) of max HP per stack. The damage is affected by type effectiveness. All stacks are removed when the monster is switched out.",
+    "description": "At the end of each turn, inflict Poison-type damage equal to 3% (rounded down) of max HP per stack. The damage is affected by type effectiveness. All stacks are removed when the jingling is switched out.",
     "tooltip_description": "Deal 3% max HP Poison damage per stack at the end of each turn. Affected by type effectiveness. Removed when switched out.",
     "localized": {
       "zh": {
@@ -210,8 +210,8 @@
   {
     "sort_order": 16,
     "key": "Freeze",
-    "description": "Each stack freezes 5% of max HP, making it unusable. If the remaining HP falls below the frozen amount, the monster is defeated. This effect persists even after switching out. (Ice-type monsters are immune to this effect.)",
-    "tooltip_description": "Each stack freezes 5% of max HP. If HP falls below frozen amount, monster is defeated. Persists after switching. (Ice-type immune.)",
+    "description": "Each stack freezes 5% of max HP, making it unusable. If the remaining HP falls below the frozen amount, the jingling is defeated. This effect persists even after switching out. (Ice-type jinglings are immune to this effect.)",
+    "tooltip_description": "Each stack freezes 5% of max HP. If HP falls below frozen amount, jingling is defeated. Persists after switching. (Ice-type immune.)",
     "localized": {
       "zh": {
         "name": "冻结",
@@ -223,7 +223,7 @@
   {
     "sort_order": 17,
     "key": "Burn",
-    "description": "At the end of each turn, inflict Fire-type damage equal to 2% of max HP per stack, affected by type effectiveness. The number of stacks is halved (rounded up) at the end of each turn, with a minimum reduction of 1 stack. All stacks are removed when the monster is switched out. (Fire-type monsters are immune to this effect.)",
+    "description": "At the end of each turn, inflict Fire-type damage equal to 2% of max HP per stack, affected by type effectiveness. The number of stacks is halved (rounded up) at the end of each turn, with a minimum reduction of 1 stack. All stacks are removed when the jingling is switched out. (Fire-type jinglings are immune to this effect.)",
     "tooltip_description": "Deal 2% max HP Fire-type damage per stack at the end of each turn. Stacks halved each turn. Removed when switched out. (Fire-type immune.)",
     "localized": {
       "zh": {
@@ -236,8 +236,8 @@
   {
     "sort_order": 18,
     "key": "Regression",
-    "description": "Reverts the monster to the previous stage of its evolutionary chain, lowering its base stats to that stage while retaining all unlocked traits; if already at the lowest stage, it cannot regress further, and effects that require Regression will not activate at the lowest stage. Regression can stack: each time Regression is applied, it adds 1 stack until reaching the lowest stage. Regression is categorized as a debuff, but some moves may grant additional buffs when Regression is applied. By default, damage resolves first, then Regression is applied.",
-    "tooltip_description": "Reverts monster to previous evolution stage, lowering base stats. Stackable. Cannot regress at lowest stage.",
+    "description": "Reverts the jingling to the previous stage of its evolutionary chain, lowering its base stats to that stage while retaining all unlocked traits; if already at the lowest stage, it cannot regress further, and effects that require Regression will not activate at the lowest stage. Regression can stack: each time Regression is applied, it adds 1 stack until reaching the lowest stage. Regression is categorized as a debuff, but some moves may grant additional buffs when Regression is applied. By default, damage resolves first, then Regression is applied.",
+    "tooltip_description": "Reverts jingling to previous evolution stage, lowering base stats. Stackable. Cannot regress at lowest stage.",
     "localized": {
       "zh": {
         "name": "萌化",
@@ -249,8 +249,8 @@
   {
     "sort_order": 19,
     "key": "Devotion",
-    "description": "When a move with the Devotion effect is used, it grants an enhancement to all 'Bite' and 'Bug Swarm' moves of the user's monsters. These enhancements can stack, and all active Devotion effects apply at the same time. A random Devotion enhancement includes: move power +20, attacks inflict 2 stacks of Poison, Lifesteal +20%, Combo Count +1, and move energy cost -2.",
-    "tooltip_description": "When a move with the Devotion effect is used, it grants an enhancement to all 'Bite' and 'Bug Swarm' moves of the user's monsters. These enhancements can stack, and all active Devotion effects apply at the same time.",
+    "description": "When a move with the Devotion effect is used, it grants an enhancement to all 'Bite' and 'Bug Swarm' moves of the user's jinglings. These enhancements can stack, and all active Devotion effects apply at the same time. A random Devotion enhancement includes: move power +20, attacks inflict 2 stacks of Poison, Lifesteal +20%, Combo Count +1, and move energy cost -2.",
+    "tooltip_description": "When a move with the Devotion effect is used, it grants an enhancement to all 'Bite' and 'Bug Swarm' moves of the user's jinglings. These enhancements can stack, and all active Devotion effects apply at the same time.",
     "localized": {
       "zh": {
         "name": "奉献",
@@ -288,7 +288,7 @@
   {
     "sort_order": 22,
     "key": "Blizzard",
-    "description": "Ice-type environment. When the weather is Blizzard, both sides gain 2 stacks of Freeze at the end of each turn. (Ice-type monsters are immune to this effect.)",
+    "description": "Ice-type environment. When the weather is Blizzard, both sides gain 2 stacks of Freeze at the end of each turn. (Ice-type jinglings are immune to this effect.)",
     "tooltip_description": "Ice-type environment. When the weather is Blizzard, both sides gain 2 stacks of Freeze at turn end. (Ice-type immune.)",
     "localized": {
       "zh": {
@@ -301,18 +301,44 @@
   {
     "sort_order": 23,
     "key": "Poison Effect",
-    "description": "This includes both the Poison and Poison Mark effects.",
-    "tooltip_description": null,
+    "description": "Includes both the Poison and Poison Mark effects.",
+    "tooltip_description": "Includes both the Poison and Poison Mark effects.",
     "localized": {
       "zh": {
         "name": "中毒效果",
         "description": "包括中毒和中毒印记效果。",
-        "tooltip_description": null
+        "tooltip_description": "包括中毒和中毒印记效果。"
       }
     }
   },
   {
     "sort_order": 24,
+    "key": "Inflict Poison",
+    "description": "When a move with Inflict Poison X is used, the opponent gains X stacks of Poison.",
+    "tooltip_description": "When a move with Inflict Poison X is used, the opponent gains X stacks of Poison.",
+    "localized": {
+      "zh": {
+        "name": "附加中毒",
+        "description": "使用附加中毒X的技能会使敌方获得X层中毒。",
+        "tooltip_description": "使用附加中毒X的技能会使敌方获得X层中毒。"
+      }
+    }
+  },
+  {
+    "sort_order": 25,
+    "key": "Variation",
+    "description": "After this move is used, it transforms into a random move from a specified pool, and its energy cost is reduced by 1. After the transformed move is used, it reverts to the original move.",
+    "tooltip_description": "After this move is used, it transforms into a random move from a specified pool, and its energy cost is reduced by 1. After the transformed move is used, it reverts to the original move.",
+    "localized": {
+      "zh": {
+        "name": "巧变",
+        "description": "使用后会变为指定范围内的随机技能，且能耗-1。使用该随机技能后会变回原技能。",
+        "tooltip_description": "使用后会变为指定范围内的随机技能，且能耗-1。使用该随机技能后会变回原技能。"
+      }
+    }
+  },
+  {
+    "sort_order": 26,
     "key": "Burst",
     "description": "When acting for the first time after entering the battlefield, gain an extra effect.",
     "tooltip_description": "When acting for the first time after entering the battlefield, gain an extra effect.",
@@ -325,10 +351,10 @@
     }
   },
   {
-    "sort_order": 25,
+    "sort_order": 27,
     "key": "Barrel Status",
-    "description": "The monster's appearance changes to a barrel, temporarily removing its type. When the monster uses a move, the Barrel status is removed, and the original form is restored.",
-    "tooltip_description": "The monster's appearance changes to a barrel, temporarily removing its type. When the monster uses a move, the Barrel status is removed, and the original form is restored.",
+    "description": "The jingling's appearance changes to a barrel, temporarily removing its type. When the jingling uses a move, the Barrel status is removed, and the original form is restored.",
+    "tooltip_description": "The jingling's appearance changes to a barrel, temporarily removing its type. When the jingling uses a move, the Barrel status is removed, and the original form is restored.",
     "localized": {
       "zh": {
         "name": "木桶状态",
@@ -338,10 +364,10 @@
     }
   },
   {
-    "sort_order": 26,
+    "sort_order": 28,
     "key": "Stun",
-    "description": "The monster cannot act under this effect.",
-    "tooltip_description": "The monster cannot act under this effect.",
+    "description": "The jingling cannot act under this effect.",
+    "tooltip_description": "The jingling cannot act under this effect.",
     "localized": {
       "zh": {
         "name": "眩晕",
@@ -351,9 +377,9 @@
     }
   },
   {
-    "sort_order": 27,
+    "sort_order": 29,
     "key": "Charge",
-    "description": "This turn, the monster charges up and spends energy, becoming immune to all Leave Field effects. Next turn, user can only use the charged move, use Focus, or switch out. If Focus is used during the charging turn, the charge status remains.",
+    "description": "This turn, the jingling charges up and spends energy, becoming immune to all Leave Field effects. Next turn, user can only use the charged move, use Focus, or switch out. If Focus is used during the charging turn, the charge status remains.",
     "tooltip_description": "Charges up this turn spending energy, immune to Leave Field effects. Next turn: can only use the charged move, Focus, or switch out.",
     "localized": {
       "zh": {
@@ -364,9 +390,9 @@
     }
   },
   {
-    "sort_order": 28,
+    "sort_order": 30,
     "key": "Charge Extension",
-    "description": "Allows the monster to continue Charge for one more turn. The charged move can be used one additional time.",
+    "description": "Allows the jingling to continue Charge for one more turn. The charged move can be used one additional time.",
     "tooltip_description": "Continue Charge for one more turn. The charged move can be used one additional time.",
     "localized": {
       "zh": {
@@ -377,10 +403,10 @@
     }
   },
   {
-    "sort_order": 29,
+    "sort_order": 31,
     "key": "Quick Entry",
-    "description": "When a monster is actively switched in (not as a result of another monster's defeat), it immediately uses the first available move with this effect and sufficient energy. The turn order for this move is determined by the Speed of the two monsters on the battlefield. However, if this move's Counter effect triggers, it is resolved using Counter's priority rules instead.",
-    "tooltip_description": "When a monster is actively switched in (not as a result of another monster's defeat), it immediately uses the first available move with this effect and sufficient energy. ",
+    "description": "When a jingling is actively switched in (not as a result of another jingling's defeat), it immediately uses the first available move with this effect and sufficient energy. The turn order for this move is determined by the Speed of the two jinglings on the battlefield. However, if this move's Counter effect triggers, it is resolved using Counter's priority rules instead.",
+    "tooltip_description": "When a jingling is actively switched in (not as a result of another jingling's defeat), it immediately uses the first available move with this effect and sufficient energy. ",
     "localized": {
       "zh": {
         "name": "迅捷",
@@ -390,7 +416,7 @@
     }
   },
   {
-    "sort_order": 30,
+    "sort_order": 32,
     "key": "Overload",
     "description": "The selected move is performed twice, consuming 1 stack of Overload.",
     "tooltip_description": "The selected move is performed twice, consuming 1 stack of Overload.",
@@ -403,7 +429,7 @@
     }
   },
   {
-    "sort_order": 31,
+    "sort_order": 33,
     "key": "Transmission",
     "description": "At the start of the turn, moves with 'Transmission X' will move down X Slot, and this effect can stack.",
     "tooltip_description": "At the start of the turn, moves with 'Transmission X' will move down X Slot, and this effect can stack.",
@@ -416,7 +442,7 @@
     }
   },
   {
-    "sort_order": 32,
+    "sort_order": 34,
     "key": "Interrupt",
     "description": "Interrupts the opponent's move this turn. Opponent's move is not executed and the interrupted move's energy cost is refunded to the opponent.",
     "tooltip_description": "Interrupts the opponent's move this turn. Move is not executed and energy is refunded.",
@@ -429,7 +455,7 @@
     }
   },
   {
-    "sort_order": 33,
+    "sort_order": 35,
     "key": "Lifesteal",
     "description": "When dealing damage, recover HP equal to a percentage of the damage dealt. When used as a single-use move effect, it applies lifesteal based on the damage dealt by that move. When used as Buffs, it triggers lifesteal on every attack while the buff is active.",
     "tooltip_description": "When dealing damage, recover HP equal to a percentage of the damage dealt.",
@@ -442,9 +468,9 @@
     }
   },
   {
-    "sort_order": 34,
+    "sort_order": 36,
     "key": "Defeated",
-    "description": "The monster is defeated and cannot be used.",
+    "description": "The jingling is defeated and cannot be used.",
     "tooltip_description": null,
     "localized": {
       "zh": {
@@ -455,9 +481,9 @@
     }
   },
   {
-    "sort_order": 35,
+    "sort_order": 37,
     "key": "Life Point",
-    "description": "Each player has 4 Life Points at the start of the battle. Generally, when a monster is defeated, the player loses 1 Life Point. Some traits can have different effects on Life Points. If a player runs out of Life Points, they lose the battle.",
+    "description": "Each player has 4 Life Points at the start of the battle. Generally, when a jingling is defeated, the player loses 1 Life Point. Some traits can have different effects on Life Points. If a player runs out of Life Points, they lose the battle.",
     "tooltip_description": null,
     "localized": {
       "zh": {
@@ -468,10 +494,10 @@
     }
   },
   {
-    "sort_order": 36,
+    "sort_order": 38,
     "key": "Move Power",
-    "description": "Modifiers to Move Power apply to the base power of all moves the monster currently has. Modifiers can stack, with each stack increasing or decreasing the total effect. All modifications are removed when the monster leaves the battlefield.",
-    "tooltip_description": "Modifiers to base power of all current moves. Stackable. Removed when monster leaves battlefield.",
+    "description": "Modifiers to Move Power apply to the base power of all moves the jingling currently has. Modifiers can stack, with each stack increasing or decreasing the total effect. All modifications are removed when the jingling leaves the battlefield.",
+    "tooltip_description": "Modifiers to base power of all current moves. Stackable. Removed when jingling leaves battlefield.",
     "localized": {
       "zh": {
         "name": "全技能威力",
@@ -481,10 +507,10 @@
     }
   },
   {
-    "sort_order": 37,
+    "sort_order": 39,
     "key": "Move Energy Cost",
-    "description": "Modifiers to Move Energy Cost apply to the amount of energy required to use each move the monster currently has. Modifiers can stack, with each stack increasing or decreasing the total effect. All modifications are removed when the monster leaves the battlefield.",
-    "tooltip_description": "Modifiers to energy cost of all current moves. Stackable. Removed when monster leaves battlefield.",
+    "description": "Modifiers to Move Energy Cost apply to the amount of energy required to use each move the jingling currently has. Modifiers can stack, with each stack increasing or decreasing the total effect. All modifications are removed when the jingling leaves the battlefield.",
+    "tooltip_description": "Modifiers to energy cost of all current moves. Stackable. Removed when jingling leaves battlefield.",
     "localized": {
       "zh": {
         "name": "全技能能耗",
@@ -494,10 +520,10 @@
     }
   },
   {
-    "sort_order": 38,
+    "sort_order": 40,
     "key": "Same-type Moves",
-    "description": "Moves whose type matches at least one of the monster's own types. For example, if a monster is Water/Grass, then both Water-type and Grass-type moves are considered same-type moves.",
-    "tooltip_description": "Moves whose type matches at least one of the monster's own types.",
+    "description": "Moves whose type matches at least one of the jingling's own types. For example, if a jingling is Water/Grass, then both Water-type and Grass-type moves are considered same-type moves.",
+    "tooltip_description": "Moves whose type matches at least one of the jingling's own types.",
     "localized": {
       "zh": {
         "name": "本系技能",
@@ -507,7 +533,7 @@
     }
   },
   {
-    "sort_order": 39,
+    "sort_order": 41,
     "key": "Cooldown",
     "description": "The number of turns that must pass before a move or magic item can be used again. Unless otherwise specified, all Defense-type moves have a 1-turn cooldown, while moves of other categories have no cooldown. For magic items, Willpower Enhancement has a 3-turn cooldown, while other magic item effects are single-use per battle.",
     "tooltip_description": null,
@@ -520,7 +546,7 @@
     }
   },
   {
-    "sort_order": 40,
+    "sort_order": 42,
     "key": "Combo Count",
     "description": "The number of consecutive attacks performed by a move with the Combo effect.",
     "tooltip_description": "The number of consecutive attacks performed by a move with the Combo effect.",
@@ -533,7 +559,7 @@
     }
   },
   {
-    "sort_order": 41,
+    "sort_order": 43,
     "key": "Combo",
     "description": "Perform x consecutive attacks, where x is the Combo Count. Each hit uses the move's base power.",
     "tooltip_description": null,
@@ -546,10 +572,10 @@
     }
   },
   {
-    "sort_order": 42,
+    "sort_order": 44,
     "key": "Priority",
-    "description": "The order in which moves are executed. Moves with higher priority ignore speed differences between the two monsters and are executed first. If priority values are the same, the monster with higher speed acts first.",
-    "tooltip_description": "Higher priority moves are executed first, ignoring speed differences between the two monsters. If same priority, monster with higher speed acts first.",
+    "description": "The order in which moves are executed. Moves with higher priority ignore speed differences between the two jinglings and are executed first. If priority values are the same, the jingling with higher speed acts first.",
+    "tooltip_description": "Higher priority moves are executed first, ignoring speed differences between the two jinglings. If same priority, jingling with higher speed acts first.",
     "localized": {
       "zh": {
         "name": "先手",
@@ -559,7 +585,7 @@
     }
   },
   {
-    "sort_order": 43,
+    "sort_order": 45,
     "key": "Slot",
     "description": "Refers to the move in the xth position, counting from top to bottom.",
     "tooltip_description": null,
@@ -572,7 +598,7 @@
     }
   },
   {
-    "sort_order": 44,
+    "sort_order": 46,
     "key": "Counter Attack",
     "description": "Counter succeeds when the opponent uses an Attack-type move against the user. On success, this move is immediately used with priority and triggers its counter effect.",
     "tooltip_description": "Counter succeeds when the opponent uses an Attack-type move against the user. On success, this move is immediately used with priority and triggers its counter effect.",
@@ -585,7 +611,7 @@
     }
   },
   {
-    "sort_order": 45,
+    "sort_order": 47,
     "key": "Counter Defense",
     "description": "Counter succeeds when the opponent uses a Defense-type move against the user. On success, this move is immediately used with priority and triggers its counter effect.",
     "tooltip_description": "Counter succeeds when the opponent uses a Defense-type move against the user. On success, this move is immediately used with priority and triggers its counter effect.",
@@ -598,7 +624,7 @@
     }
   },
   {
-    "sort_order": 46,
+    "sort_order": 48,
     "key": "Counter Status",
     "description": "Counter succeeds when the opponent uses a Status-type move against the user. On success, this move is immediately used with priority and triggers its counter effect.",
     "tooltip_description": "Counter succeeds when the opponent uses a Status-type move against the user. On success, this move is immediately used with priority and triggers its counter effect.",
@@ -611,7 +637,7 @@
     }
   },
   {
-    "sort_order": 47,
+    "sort_order": 49,
     "key": "Counter",
     "description": "If, during the turn, the opponent uses a move of a type that this move is designated to counter, Counter succeeds. When Counter succeeds, this move is immediately triggered and used with priority before other moves.",
     "tooltip_description": null,
@@ -624,10 +650,10 @@
     }
   },
   {
-    "sort_order": 48,
+    "sort_order": 50,
     "key": "Emergency Exit",
-    "description": "This monster triggers Leave Field, then a random other team member enters the battlefield. Monsters that enter the battlefield this turn are immune to this effect.",
-    "tooltip_description": "This monster triggers Leave Field, then a random other team member enters the battlefield.",
+    "description": "This jingling triggers Leave Field, then a random other team member enters the battlefield. Jinglings that enter the battlefield this turn are immune to this effect.",
+    "tooltip_description": "This jingling triggers Leave Field, then a random other team member enters the battlefield.",
     "localized": {
       "zh": {
         "name": "紧急脱离",
@@ -637,10 +663,10 @@
     }
   },
   {
-    "sort_order": 49,
+    "sort_order": 51,
     "key": "Exit",
-    "description": "This monster triggers Leave Field, then selects another team member to enter the battlefield. Monsters that enter the battlefield this turn are immune to this effect.",
-    "tooltip_description": "This monster triggers Leave Field, then selects another team member to enter the battlefield.",
+    "description": "This jingling triggers Leave Field, then selects another team member to enter the battlefield. Jinglings that enter the battlefield this turn are immune to this effect.",
+    "tooltip_description": "This jingling triggers Leave Field, then selects another team member to enter the battlefield.",
     "localized": {
       "zh": {
         "name": "脱离",
@@ -650,10 +676,10 @@
     }
   },
   {
-    "sort_order": 50,
+    "sort_order": 52,
     "key": "Leave Field",
-    "description": "Leave the battlefield by actively switching out or triggering an Exit effect (not including leaving due to monster defeat).",
-    "tooltip_description": "Leave the battlefield by actively switching out or triggering an Exit effect (not including leaving due to monster defeat).",
+    "description": "Leave the battlefield by actively switching out or triggering an Exit effect (not including leaving due to jingling defeat).",
+    "tooltip_description": "Leave the battlefield by actively switching out or triggering an Exit effect (not including leaving due to jingling defeat).",
     "localized": {
       "zh": {
         "name": "离场",
@@ -663,10 +689,10 @@
     }
   },
   {
-    "sort_order": 51,
+    "sort_order": 53,
     "key": "Re-Enter",
-    "description": "This monster triggers Leave Field, then immediately re-enters the battlefield. This counts as the first entry for this monster. Monsters that enter the battlefield this turn are immune to this effect.",
-    "tooltip_description": "This monster triggers Leave Field, then immediately re-enters the battlefield. This counts as the first entry for this monster.",
+    "description": "This jingling triggers Leave Field, then immediately re-enters the battlefield. This counts as the first entry for this jingling. Jinglings that enter the battlefield this turn are immune to this effect.",
+    "tooltip_description": "This jingling triggers Leave Field, then immediately re-enters the battlefield. This counts as the first entry for this jingling.",
     "localized": {
       "zh": {
         "name": "返场",
@@ -676,10 +702,10 @@
     }
   },
   {
-    "sort_order": 52,
+    "sort_order": 54,
     "key": "Buffs",
-    "description": "Effects that increase Attack, Defense, Speed, move power, Combo Count, Lifesteal, Overload or decrease move energy cost. (Does not include effects from Marks and monster traits.)",
-    "tooltip_description": "Effects that increase Attack, Defense, Speed, move power, Combo Count, Lifesteal, Overload or decrease move energy cost. (Does not include effects from Marks and monster traits.)",
+    "description": "Effects that increase Attack, Defense, Speed, move power, Combo Count, Lifesteal, Overload or decrease move energy cost. (Does not include effects from Marks and jingling traits.)",
+    "tooltip_description": "Effects that increase Attack, Defense, Speed, move power, Combo Count, Lifesteal, Overload or decrease move energy cost. (Does not include effects from Marks and jingling traits.)",
     "localized": {
       "zh": {
         "name": "增益",
@@ -689,10 +715,10 @@
     }
   },
   {
-    "sort_order": 53,
+    "sort_order": 55,
     "key": "Debuffs",
-    "description": "Effects that decrease Attack, Defense, Speed, move power, Combo Count, or increase move energy cost, and effects that include Leech, Freeze, Burn, Poison, Regression. (Does not include effects from Marks and monster traits.)",
-    "tooltip_description": "Effects that decrease Attack, Defense, Speed, move power, Combo Count, or increase move energy cost, and effects that include Leech, Freeze, Burn, Poison, Regression. (Does not include effects from Marks and monster traits.)",
+    "description": "Effects that decrease Attack, Defense, Speed, move power, Combo Count, or increase move energy cost, and effects that include Leech, Freeze, Burn, Poison, Regression. (Does not include effects from Marks and jingling traits.)",
+    "tooltip_description": "Effects that decrease Attack, Defense, Speed, move power, Combo Count, or increase move energy cost, and effects that include Leech, Freeze, Burn, Poison, Regression. (Does not include effects from Marks and jingling traits.)",
     "localized": {
       "zh": {
         "name": "减益",

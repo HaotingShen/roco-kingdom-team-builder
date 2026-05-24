@@ -1,7 +1,7 @@
 [
   {
     "name": "Evolution Power",
-    "description": "Can be applied only to monsters with Leader legacy type, allowing them to evolve into a Leader form.",
+    "description": "Can be applied only to jinglings with Leader legacy type, allowing them to evolve into a Leader form.",
     "localized": {
       "zh": {
         "name": "进化之力",
@@ -17,7 +17,7 @@
   },
   {
     "name": "Sun Healing",
-    "description": "Can be applied to Grass (or Grass legacy type) monsters. Restores 50% max HP.",
+    "description": "Can be applied to Grass (or Grass legacy type) jinglings. Restores 50% max HP.",
     "localized": {
       "zh": {
         "name": "光合治愈",
@@ -33,7 +33,7 @@
   },
   {
     "name": "Flare Burst",
-    "description": "Can be applied to Fire (or Fire legacy type) monsters. Move power +150% this turn.",
+    "description": "Can be applied to Fire (or Fire legacy type) jinglings. Move power +150% this turn.",
     "localized": {
       "zh": {
         "name": "闪焰爆发",
@@ -49,7 +49,7 @@
   },
   {
     "name": "Flow Spell",
-    "description": "Can be applied to Water (or Water legacy type) monsters. Moves do not consume energy this turn.",
+    "description": "Can be applied to Water (or Water legacy type) jinglings. Moves do not consume energy this turn.",
     "localized": {
       "zh": {
         "name": "节流术",
@@ -65,7 +65,7 @@
   },
   {
     "name": "Willpower Enhancement",
-    "description": "Can be applied to any monster except those with Leader legacy type. Replaces the first move in monster's move list with the 'Willpower Impact' move for 1 turn. The move has type the same as the monster's legacy type. Cooldown is 3 turns. Can be used up to 2 times per battle.",
+    "description": "Can be applied to any jingling except those with Leader legacy type. Replaces the first move in jingling's move list with the 'Willpower Impact' move for 1 turn. The move has type the same as the jingling's legacy type. Cooldown is 3 turns. Can be used up to 2 times per battle.",
     "localized": {
       "zh": {
         "name": "愿力强化",

@@ -138,27 +138,27 @@ BATTLE_MECHANICS_ZH = """每位玩家携带6只精灵对战，每只精灵有6�
 
 在进行队伍与精灵分析时，请默认对战结算遵循以上关于魔力值、力竭、能量、技能类别、应对系统、增减益、迅捷、先手与速度、层数定义、冷却定义及血脉魔法的规则。"""
 
-BATTLE_MECHANICS_EN = """Each player brings 6 monsters into battle. Each monster has 6 stats (HP, Physical Attack, Magic Attack, Physical Defense, Magic Defense, Speed). In battle, each monster can only carry 4 moves. In move descriptions, "Attack" affects both Physical and Magic Attack; "Defense" affects both Physical and Magic Defense.
+BATTLE_MECHANICS_EN = """Each player brings 6 jinglings into battle. Each jingling has 6 stats (HP, Physical Attack, Magic Attack, Physical Defense, Magic Defense, Speed). In battle, each jingling can only carry 4 moves. In move descriptions, "Attack" affects both Physical and Magic Attack; "Defense" affects both Physical and Magic Defense.
 
-At battle start, each player has 4 Life Points. Only 1 monster per side can be on the field at once. When a monster is defeated, the player loses 1 Life Point (some traits alter this). When Life Points reach 0, that player loses. After defeat, manually select a new monster to enter.
+At battle start, each player has 4 Life Points. Only 1 jingling per side can be on the field at once. When a jingling is defeated, the player loses 1 Life Point (some traits alter this). When Life Points reach 0, that player loses. After defeat, manually select a new jingling to enter.
 
-Each monster starts with 10 energy (some traits affect initial energy). Energy is tracked per monster. Using moves consumes their marked energy cost.
+Each jingling starts with 10 energy (some traits affect initial energy). Energy is tracked per jingling. Using moves consumes their marked energy cost.
 
-Each turn, both players simultaneously choose one action: (1) Use a move: select 1 of 4 moves and pay its energy cost; (2) Focus: skip this turn, restore 5 energy (classified as Status-type move); (3) Actively switch monsters. Magic Item does not count as an action. If available this turn, it may be used at any time without consuming an action or energy, and it takes effect before your chosen action resolves.
+Each turn, both players simultaneously choose one action: (1) Use a move: select 1 of 4 moves and pay its energy cost; (2) Focus: skip this turn, restore 5 energy (classified as Status-type move); (3) Actively switch jinglings. Magic Item does not count as an action. If available this turn, it may be used at any time without consuming an action or energy, and it takes effect before your chosen action resolves.
 
-Active switching executes before all move resolutions. When a monster enters via active switch, if it has any move with "Quick Entry" effect and enough energy to use it, it immediately and automatically uses the first eligible Quick Entry move in moveset slot order. Quick Entry only triggers on active switch-in, not passive entry.
+Active switching executes before all move resolutions. When a jingling enters via active switch, if it has any move with "Quick Entry" effect and enough energy to use it, it immediately and automatically uses the first eligible Quick Entry move in moveset slot order. Quick Entry only triggers on active switch-in, not passive entry.
 
 All moves fall into three categories: Attack-type (Physical/Magic Attack), Defense-type, Status-type. A "Counter" system exists: if the opponent's move category matches this move's counterable category, counter succeeds and this move resolves immediately with highest priority, ignoring speed order. Both sides cannot counter simultaneously. Without counter triggers, turn order is determined by priority value; if equal, higher speed acts first. Active switching always executes before move resolution.
 
 Counter relationships: All Defense moves have Counter Attack; some Status moves have Counter Defense; some Attack moves have Counter Status. This forms a counter triangle—predicting opponent's move category to select counters is key PvP strategy.
 
-Buffs increase Attack, Defense, Speed, move power, Combo count, Lifesteal, or decrease move energy cost; Debuffs do the opposite. "All Move Power/Move Energy Cost" affects all moves currently carried by that monster. When monsters leave the field, non-permanent buffs/debuffs and most of status effects are removed (except marks).
+Buffs increase Attack, Defense, Speed, move power, Combo count, Lifesteal, or decrease move energy cost; Debuffs do the opposite. "All Move Power/Move Energy Cost" affects all moves currently carried by that jingling. When jinglings leave the field, non-permanent buffs/debuffs and most of status effects are removed (except marks).
 
 Stack definition: When "stacks" are used for buffs/debuffs, convert using 10 as the base unit. For percentage changes, every 10% = 1 stack (e.g., Physical Attack +150% = +15 stacks of Physical Attack). For flat value changes (non-percentage and a multiple of 10), every 10 points = 1 stack (e.g., Move Power +20 = +2 stacks of Move Power). When "stacks" refer to status/mark effects, stacks follow their own stacking rules and do not use the above conversion.
 
 Cooldown definition: The number of turns that must pass before a move or magic item can be used again. Unless otherwise specified, all Defense-type moves have a 1-turn cooldown, while moves of other categories have no cooldown. For magic items, "Willpower Enhancement" has a 3-turn cooldown and can be used at most 2 times per battle, while other magic item effects are single-use per battle.
 
-When performing monster and team analysis, assume battle resolution follows the above rules regarding Life Points, defeated state, energy, move categories, counter system, buffs/debuffs, Quick Entry, priority and speed, stack definitions, cooldown definitions, and Magic Items."""
+When performing jingling and team analysis, assume battle resolution follows the above rules regarding Life Points, defeated state, energy, move categories, counter system, buffs/debuffs, Quick Entry, priority and speed, stack definitions, cooldown definitions, and Magic Items."""
 
 app = FastAPI()
 
@@ -442,7 +442,11 @@ def compute_energy_profile(moves):
     costs = [c for c in costs if c is not None]
 
     avg_cost = sum(costs) / len(costs) if costs else 0.0
-    zero_cost_moves = [m.id for m in moves if m and getattr(m, "energy_cost", None) == 0]
+    # dict.fromkeys preserves first-seen order while removing duplicate IDs that
+    # arise from traits like Blind Obedience (Borrow/Rewrite/Mind Grab x4 builds).
+    zero_cost_moves = list(dict.fromkeys(
+        m.id for m in moves if m and getattr(m, "energy_cost", None) == 0
+    ))
     has_zero_cost = len(zero_cost_moves) > 0
 
     # Energy restore pattern
@@ -455,10 +459,10 @@ def compute_energy_profile(moves):
     ]
     combined_pattern = re.compile("|".join(energy_patterns), flags=re.IGNORECASE)
 
-    energy_restore_moves = [
+    energy_restore_moves = list(dict.fromkeys(
         m.id for m in moves
         if m and hasattr(m, "description") and m.description and combined_pattern.search(m.description)
-    ]
+    ))
     has_energy_restore = len(energy_restore_moves) > 0
 
     return schemas.EnergyProfile(
@@ -496,12 +500,20 @@ def compute_counter_coverage(moves):
     has_attack_counter_status = False
     has_defense_counter_attack = False
     has_status_counter_defense = False
+    # Track per-slot to keep `total_counter_moves` reflecting slot-fill count
+    # (used by warning logic). The returned ID list dedupes for clean display
+    # when traits like Blind Obedience permit duplicate moves.
+    counter_slot_count = 0
     counter_move_ids = []
+    seen_ids = set()
 
     for m in moves:
         if not m or not getattr(m, "has_counter", False):
             continue
-        counter_move_ids.append(m.id)
+        counter_slot_count += 1
+        if m.id not in seen_ids:
+            seen_ids.add(m.id)
+            counter_move_ids.append(m.id)
         cat = getattr(m, "move_category", None)
         if cat in [models.MoveCategory.PHY_ATTACK, models.MoveCategory.MAG_ATTACK]:
             has_attack_counter_status = True
@@ -509,23 +521,31 @@ def compute_counter_coverage(moves):
             has_defense_counter_attack = True
         elif cat == models.MoveCategory.STATUS:
             has_status_counter_defense = True
-        
+
     return schemas.CounterCoverage(
         has_attack_counter_status=has_attack_counter_status,
         has_defense_counter_attack=has_defense_counter_attack,
         has_status_counter_defense=has_status_counter_defense,
-        total_counter_moves=len(counter_move_ids),
+        total_counter_moves=counter_slot_count,
         counter_move_ids=counter_move_ids
     )
     
 # Count and record defense/status moves
 def compute_defense_status_move(moves):
+    # Track per-slot for the count (used by the "<2 moves" warning) and
+    # dedupe the displayed ID list. Matters when traits like Blind Obedience
+    # let the same move occupy multiple slots.
+    slot_count = 0
     defense_status_move_ids = []
+    seen_ids = set()
     for m in moves:
         if m.move_category in [models.MoveCategory.DEFENSE, models.MoveCategory.STATUS]:
-            defense_status_move_ids.append(m.id)
+            slot_count += 1
+            if m.id not in seen_ids:
+                seen_ids.add(m.id)
+                defense_status_move_ids.append(m.id)
     return schemas.DefenseStatusMove(
-        defense_status_move_count=len(defense_status_move_ids),
+        defense_status_move_count=slot_count,
         defense_status_move=defense_status_move_ids,
     )
     
@@ -1084,12 +1104,12 @@ def build_team_synergy_prompt(user_monsters, monster_db_map, move_db_map, type_d
                 )
             else:
                 willpower_enhancement_section = (
-                    f"Note: The team has selected \"Willpower Enhancement\" magic item. This item can be used by {eligible_count} monsters in the team (except those with Leader legacy type). \n"
-                    f"The item has a 3-turn cooldown and can be used at most 2 times per battle (can be used on different monsters).\n\n"
-                    f"When used, the monster's 1st move is replaced with \"Willpower Impact\" for that turn:\n"
+                    f"Note: The team has selected \"Willpower Enhancement\" magic item. This item can be used by {eligible_count} jinglings in the team (except those with Leader legacy type). \n"
+                    f"The item has a 3-turn cooldown and can be used at most 2 times per battle (can be used on different jinglings).\n\n"
+                    f"When used, the jingling's 1st move is replaced with \"Willpower Impact\" for that turn:\n"
                     f"- Willpower Impact (Type: Dynamically matches user's legacy type, Category: Physical/Magic Attack, Energy Cost:2, Power:80): "
                     f"Deals physical or magic damage (based on user's higher attack stat). If this move counters successfully, power +150%. Counter Status.\n\n"
-                    f"This is the core tactical value of this magic item: gaining additional offensive coverage and counter coverage through legacy types. Here's what Willpower Impact will be for each eligible monster:\n"
+                    f"This is the core tactical value of this magic item: gaining additional offensive coverage and counter coverage through legacy types. Here's what Willpower Impact will be for each eligible jingling:\n"
                     + "\n".join(willpower_lines)
                 )
 
@@ -1618,17 +1638,17 @@ def generate_recommendations(per_monster_analysis, type_coverage, magic_item_eva
         if language == "zh":
             add("magic_item", "danger", "当前队伍中没有精灵可以使用所选择的血脉魔法！")
         else:
-            add("magic_item", "danger", "Your selected magic item cannot be used by any monster in your current team!")
+            add("magic_item", "danger", "Your selected magic item cannot be used by any jingling in your current team!")
     elif len(vt) == 1:
         if language == "zh":
             add("magic_item", "info", "只有一只精灵可以使用所选择的血脉魔法。", monster_ids=vt)
         else:
-            add("magic_item", "info", "Only one monster can use the selected magic item.", monster_ids=vt)
+            add("magic_item", "info", "Only one jingling can use the selected magic item.", monster_ids=vt)
     else:
         if language == "zh":
             add("magic_item", "info", "多个精灵可以使用所选择的血脉魔法。", monster_ids=vt)
         else:
-            add("magic_item", "info", "Multiple monsters can use the selected magic item.", monster_ids=vt)
+            add("magic_item", "info", "Multiple jinglings can use the selected magic item.", monster_ids=vt)
 
     # 4) Redundant typing
     from collections import Counter
@@ -1648,7 +1668,7 @@ def generate_recommendations(per_monster_analysis, type_coverage, magic_item_eva
                 type_ids=common_type_ids)
         else:
             add("weakness", "warn",
-                f"Many monsters share these types: {', '.join(names)}. This increases vulnerability to specific counters.",
+                f"Many jinglings share these types: {', '.join(names)}. This increases vulnerability to specific counters.",
                 type_ids=common_type_ids)
 
     # 5) Per-monster checks
@@ -1705,7 +1725,7 @@ def generate_recommendations(per_monster_analysis, type_coverage, magic_item_eva
         if language == "zh":
             add("general", "warn", f"所有精灵都是{styles[0]}风格的攻击者。这可能使队伍变得可预测。")
         else:
-            add("general", "warn", f"All monsters are {styles[0]}-style attackers. This may make the team predictable.")
+            add("general", "warn", f"All jinglings are {styles[0]}-style attackers. This may make the team predictable.")
 
     # 7) Stat and role highlights
     stat_roles_en = {
@@ -3220,9 +3240,14 @@ def get_monsters(
     if evolves_from_id is not None:
         query = query.filter(models.Monster.evolves_from_id == evolves_from_id)
 
-    # Enforce deterministic order
-    query = query.order_by(models.Monster.id.asc())
-    
+    # Sort by canonical wiki dex_number when available; fall back to id so
+    # monsters without a wiki match keep their existing relative position.
+    # id is also used as a tie-breaker between equal effective dex positions.
+    query = query.order_by(
+        func.coalesce(models.Monster.dex_number, models.Monster.id).asc(),
+        models.Monster.id.asc(),
+    )
+
     return query.offset(offset).limit(limit).all()
 
 def build_evolution_tree(monster_id: int, db: Session) -> dict | None:
@@ -3462,6 +3487,13 @@ def get_move_learners(move_id: int, db: Session = Depends(get_db)):
         ~models.Monster.id.in_(parent_ids_subq),
     ]
 
+    # Use the same dex-order sort as the /monsters endpoint so the move
+    # learners list matches the dex grid's visual sequence.
+    dex_order = (
+        func.coalesce(models.Monster.dex_number, models.Monster.id).asc(),
+        models.Monster.id.asc(),
+    )
+
     pool = (
         db.query(models.Monster)
         .join(models.monster_moves, models.Monster.id == models.monster_moves.c.monster_id)
@@ -3471,7 +3503,7 @@ def get_move_learners(move_id: int, db: Session = Depends(get_db)):
             *highest_form_filters,
         )
         .options(*base_opts)
-        .order_by(models.Monster.id)
+        .order_by(*dex_order)
         .all()
     )
 
@@ -3484,7 +3516,7 @@ def get_move_learners(move_id: int, db: Session = Depends(get_db)):
             *highest_form_filters,
         )
         .options(*base_opts)
-        .order_by(models.Monster.id)
+        .order_by(*dex_order)
         .all()
     )
 
@@ -3501,7 +3533,7 @@ def get_move_learners(move_id: int, db: Session = Depends(get_db)):
             *highest_form_filters,
         )
         .options(*base_opts)
-        .order_by(models.Monster.id)
+        .order_by(*dex_order)
         .all()
     ) if legacy_ids else []
 

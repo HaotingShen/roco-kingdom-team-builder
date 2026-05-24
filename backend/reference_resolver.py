@@ -30,7 +30,7 @@ ENGLISH_BLACKLIST = {
     "Attack", "Defense", "Speed", "HP", "Type", "Move", "Moves",
     "Physical", "Magic", "Special", "Normal", "Power", "Energy",
     "Damage", "Turn", "Turns", "Field", "Team", "Enemy", "Opponent",
-    "Monster", "Monsters", "When", "After", "Before", "While", "During",
+    "Monster", "Monsters", "Jingling", "Jinglings", "When", "After", "Before", "While", "During",
     "If", "Then", "Else", "Can", "Cannot", "All", "Each", "Every",
     "This", "That", "These", "Those", "The", "A", "An", "And", "Or",
     "But", "Not", "Is", "Are", "Was", "Were", "Be", "Been", "Being"

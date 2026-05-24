@@ -286,7 +286,8 @@ class TraitOut(BaseModel):
     name: str
     description: str
     localized: Dict
-    
+    allows_duplicate_moves: Optional[List[str]] = None
+
     model_config = ConfigDict(from_attributes=True)
 
 class PersonalityOut(BaseModel):
@@ -409,6 +410,7 @@ class MonsterLiteOut(BaseModel):
     base_mag_def: Optional[int] = None
     base_spd: Optional[int] = None
     evolves_from_id: Optional[int] = None
+    dex_number: Optional[int] = None
 
     model_config = ConfigDict(from_attributes=True)
 

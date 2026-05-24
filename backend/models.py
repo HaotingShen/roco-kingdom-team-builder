@@ -202,10 +202,12 @@ class Trait(Base):
     name: Mapped[str] = mapped_column(String(32), nullable=False, unique=True)
     description: Mapped[str] = mapped_column(Text, nullable=False)
     localized: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
+    # English move names this trait may carry in multiple build slots (otherwise UI enforces unique moves per slot).
+    allows_duplicate_moves: Mapped[Optional[list]] = mapped_column(JSONB, nullable=True)
     __table_args__ = (
         Index("ix_traits_localized_gin", "localized", postgresql_using="gin"),
     )
-    
+
     # Relationships
     monster = relationship("Monster", back_populates="trait") # one-to-many with Monster
     
@@ -397,6 +399,9 @@ class Monster(Base):
     localized: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
     evolution_level: Mapped[int | None] = mapped_column(Integer, nullable=True)
     evolution_condition: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    # Wiki dex number from monsters_all.json's t_id. Used by /monsters list endpoint
+    # to sort by the canonical game dex order. NULL falls back to id at query time.
+    dex_number: Mapped[int | None] = mapped_column(Integer, nullable=True)
     __table_args__ = (
         Index("ix_monsters_localized_gin", "localized", postgresql_using="gin"),
         UniqueConstraint("name", "form", name="uq_monster_name_form"),

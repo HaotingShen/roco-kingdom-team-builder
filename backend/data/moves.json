@@ -164,7 +164,7 @@
     "category": "Physical Attack",
     "energy_cost": 3,
     "power": 80,
-    "description": "Deals physical damage. If the opponent switches monsters this turn, this move's power +100.",
+    "description": "Deals physical damage. If the opponent switches jinglings this turn, this move's power +100.",
     "has_counter": false,
     "localized": {
       "zh": {
@@ -242,7 +242,7 @@
     "category": "Status",
     "energy_cost": 0,
     "power": null,
-    "description": "Each turn, this move becomes a random uncarried move from this monster, and its energy cost -2.",
+    "description": "Each turn, this move becomes a random uncarried move from this jingling, and its energy cost -2.",
     "has_counter": false,
     "localized": {
       "zh": {
@@ -518,7 +518,7 @@
     "category": "Magic Attack",
     "energy_cost": 4,
     "power": 30,
-    "description": "Deals magic damage. 3 Combo. If the opponent switches monsters this turn, Combo Count +3.",
+    "description": "Deals magic damage. 3 Combo. If the opponent switches jinglings this turn, Combo Count +3.",
     "has_counter": false,
     "localized": {
       "zh": {
@@ -599,7 +599,7 @@
     "category": "Physical Attack",
     "energy_cost": 3,
     "power": 80,
-    "description": "Deals physical damage. Each time this monster performs a successful Counter, this move's power +90 permanently.",
+    "description": "Deals physical damage. Each time this jingling performs a successful Counter, this move's power +90 permanently.",
     "has_counter": true,
     "localized": {
       "zh": {
@@ -707,7 +707,7 @@
     "category": "Status",
     "energy_cost": 0,
     "power": null,
-    "description": "Each turn, this move becomes a random move from any of the opponent's monsters, and its energy cost -2.",
+    "description": "Each turn, this move becomes a random move from any of the opponent's jinglings, and its energy cost -2.",
     "has_counter": false,
     "localized": {
       "zh": {
@@ -797,7 +797,7 @@
     "category": "Defense",
     "energy_cost": 2,
     "power": null,
-    "description": "Damage taken -80%. Counter Attack: each time this monster is damaged, gains Attack +40%.",
+    "description": "Damage taken -80%. Counter Attack: each time this jingling is damaged, gains Attack +40%.",
     "has_counter": true,
     "localized": {
       "zh": {
@@ -1247,6 +1247,21 @@
     }
   },
   {
+    "name": "Sync Wave",
+    "type": "Normal",
+    "category": "Magic Attack",
+    "energy_cost": 3,
+    "power": 125,
+    "description": "Deals magic damage. Variation: Magic Attack moves.",
+    "has_counter": false,
+    "localized": {
+      "zh": {
+        "name": "同频",
+        "description": "造成魔法伤害，巧变：魔攻技能。"
+      }
+    }
+  },
+  {
     "name": "Spore Burst",
     "type": "Grass",
     "category": "Physical Attack",
@@ -1342,7 +1357,7 @@
     "category": "Status",
     "energy_cost": 3,
     "power": null,
-    "description": "Restores 3 energy to each other monster on the user's team.",
+    "description": "Restores 3 energy to each other jingling on the user's team.",
     "has_counter": false,
     "localized": {
       "zh": {
@@ -1722,7 +1737,7 @@
     "category": "Physical Attack",
     "energy_cost": 3,
     "power": 80,
-    "description": "Deals physical damage. If the opponent switches monster this turn, user restores 7 energy.",
+    "description": "Deals physical damage. If the opponent switches jingling this turn, user restores 7 energy.",
     "has_counter": false,
     "localized": {
       "zh": {
@@ -2262,6 +2277,21 @@
     }
   },
   {
+    "name": "Immolation",
+    "type": "Fire",
+    "category": "Status",
+    "energy_cost": 1,
+    "power": null,
+    "description": "Dispels all Marks on this jingling. Gains Physical Attack +50% per Mark dispelled. Variation: Fire-type Attack moves.",
+    "has_counter": false,
+    "localized": {
+      "zh": {
+        "name": "焚尽",
+        "description": "驱散自己所有印记，每驱散1层，获得物攻+50%。巧变：火系攻击技能。"
+      }
+    }
+  },
+  {
     "name": "Tide",
     "type": "Water",
     "category": "Defense",
@@ -2653,6 +2683,21 @@
     }
   },
   {
+    "name": "Cleanse",
+    "type": "Water",
+    "category": "Status",
+    "energy_cost": 0,
+    "power": null,
+    "description": "Dispels this jingling's Debuffs. Move energy cost -1 per debuff stack on this jingling. Variation: Water-type Attack moves.",
+    "has_counter": false,
+    "localized": {
+      "zh": {
+        "name": "清洗",
+        "description": "驱散自己的减益，自己每有1层减益，本技能能耗-1，巧变：水系攻击技能。"
+      }
+    }
+  },
+  {
     "name": "Sunny Day",
     "type": "Light",
     "category": "Status",
@@ -2877,6 +2922,24 @@
         "description": "对敌方精灵造成物理伤害。"
       }
     }
+  },
+  {
+    "name": "Dispersion",
+    "type": "Light",
+    "category": "Magic Attack",
+    "energy_cost": 3,
+    "power": 80,
+    "description": "Deals magic damage. Move power +50% against jinglings with a hybrid legacy type (legacy type differs from main type, e.g., Leader, Wonder, Corruption).",
+    "has_counter": false,
+    "localized": {
+      "zh": {
+        "name": "色散",
+        "description": "造成魔伤，对混血精灵（非本系血脉的精灵，包括非本系的系别血脉、首领血脉、奇异血脉、污染血脉等）造成伤害+50%。"
+      }
+    },
+    "alt_power_total": 120,
+    "alt_condition_zh": "对混血精灵",
+    "alt_condition_en": "Against hybrid-legacy jinglings"
   },
   {
     "name": "Barrier",
@@ -3171,7 +3234,7 @@
     "category": "Physical Attack",
     "energy_cost": 3,
     "power": 50,
-    "description": "Deals physical damage. Opponent cannot switch monsters for 3 turns.",
+    "description": "Deals physical damage. Opponent cannot switch jinglings for 3 turns.",
     "has_counter": false,
     "localized": {
       "zh": {
@@ -3306,7 +3369,7 @@
     "category": "Physical Attack",
     "energy_cost": 3,
     "power": 80,
-    "description": "Deals physical damage. If the opponent switches monster this turn, user gains Physical Defense +100%.",
+    "description": "Deals physical damage. If the opponent switches jingling this turn, user gains Physical Defense +100%.",
     "has_counter": false,
     "localized": {
       "zh": {
@@ -3771,6 +3834,36 @@
     }
   },
   {
+    "name": "Permafrost",
+    "type": "Ice",
+    "category": "Physical Attack",
+    "energy_cost": 4,
+    "power": 95,
+    "description": "Deals physical damage. This jingling recovers 1 energy per stack of Freeze on the opponent.",
+    "has_counter": false,
+    "localized": {
+      "zh": {
+        "name": "冰封",
+        "description": "造成物伤，敌方每有1层冻结，自己回复1能量。"
+      }
+    }
+  },
+  {
+    "name": "Cold Snap",
+    "type": "Ice",
+    "category": "Magic Attack",
+    "energy_cost": 3,
+    "power": 95,
+    "description": "Deals magic damage. Opponent gains 1 stack of Freeze. Counter Status: opponent gains 4 additional stacks of Freeze. Variation: Freeze-related moves.",
+    "has_counter": true,
+    "localized": {
+      "zh": {
+        "name": "寒潮",
+        "description": "造成魔伤，敌方获得1层冻结，应对状态：额外获得4层冻结，巧变：冻结相关技能。"
+      }
+    }
+  },
+  {
     "name": "Flame Blow",
     "type": "Dragon",
     "category": "Physical Attack",
@@ -3997,6 +4090,21 @@
     }
   },
   {
+    "name": "Guard Hex",
+    "type": "Dragon",
+    "category": "Defense",
+    "energy_cost": 1,
+    "power": null,
+    "description": "Damage taken -90%. Counter Attack. Variation: Dragon-type Status moves.",
+    "has_counter": true,
+    "localized": {
+      "zh": {
+        "name": "守护咒",
+        "description": "减伤90%，应对攻击。巧变：龙系状态技能。"
+      }
+    }
+  },
+  {
     "name": "Superconduct",
     "type": "Electric",
     "category": "Magic Attack",
@@ -4137,7 +4245,7 @@
     "category": "Magic Attack",
     "energy_cost": 2,
     "power": 60,
-    "description": "Deals magic damage. Each time this monster leaves the battlefield, this move is performed one extra time permanently.",
+    "description": "Deals magic damage. Each time this jingling leaves the battlefield, this move is performed one extra time permanently.",
     "has_counter": false,
     "localized": {
       "zh": {
@@ -4182,7 +4290,7 @@
     "category": "Status",
     "energy_cost": 4,
     "power": null,
-    "description": "User triggers Exit. The next monster switched in restores 8 energy.",
+    "description": "User triggers Exit. The next jingling switched in restores 8 energy.",
     "has_counter": false,
     "localized": {
       "zh": {
@@ -4242,7 +4350,7 @@
     "category": "Magic Attack",
     "energy_cost": 4,
     "power": 100,
-    "description": "Deals magic damage. Each time this monster enters the battlefield, this move's power +20 permanently.",
+    "description": "Deals magic damage. Each time this jingling enters the battlefield, this move's power +20 permanently.",
     "has_counter": false,
     "localized": {
       "zh": {
@@ -4370,6 +4478,21 @@
       "zh": {
         "name": "增程电池",
         "description": "自己获得1层蓄电印记。"
+      }
+    }
+  },
+  {
+    "name": "Thunderwalk",
+    "type": "Electric",
+    "category": "Status",
+    "energy_cost": 2,
+    "power": null,
+    "description": "This jingling triggers Re-Enter at end of turn. Next turn, carried Attack-type moves gain 1 already-triggered Burst effect. Counter Defense: gain ALL triggered Burst effects instead.",
+    "has_counter": true,
+    "localized": {
+      "zh": {
+        "name": "踏雷",
+        "description": "自己回合结束时返场，携带的攻击技能下回合获得1个已触发过的迸发效果，应对防御：改为获得所有触发过的迸发效果。"
       }
     }
   },
@@ -4660,6 +4783,36 @@
     }
   },
   {
+    "name": "Toxic Peptide",
+    "type": "Poison",
+    "category": "Defense",
+    "energy_cost": 2,
+    "power": null,
+    "description": "Damage taken -70%. Counter Attack. Variation: Poison-type Status moves.",
+    "has_counter": true,
+    "localized": {
+      "zh": {
+        "name": "毒肽",
+        "description": "减伤70%，巧变：毒系状态技能，应对攻击。"
+      }
+    }
+  },
+  {
+    "name": "Heavy Metal Dust",
+    "type": "Poison",
+    "category": "Status",
+    "energy_cost": 1,
+    "power": null,
+    "description": "Carried Attack-type moves gain Inflict Poison 3. Counter Defense: gain Inflict Poison 6 instead.",
+    "has_counter": true,
+    "localized": {
+      "zh": {
+        "name": "重金属粉尘",
+        "description": "携带的攻击技能获得附加中毒3，应对防御：改为获得附加中毒6。"
+      }
+    }
+  },
+  {
     "name": "Wing Blade",
     "type": "Bug",
     "category": "Physical Attack",
@@ -4757,7 +4910,7 @@
     "category": "Magic Attack",
     "energy_cost": 2,
     "power": 15,
-    "description": "Deals magic damage. For each 'Chitter' move held by the monsters in the team, this move's Combo Count +1.",
+    "description": "Deals magic damage. For each 'Chitter' move held by the jinglings in the team, this move's Combo Count +1.",
     "has_counter": false,
     "localized": {
       "zh": {
@@ -4953,7 +5106,7 @@
     "category": "Defense",
     "energy_cost": 2,
     "power": null,
-    "description": "Damage taken -70%, Emergency Exit. Counter Attack: next monster to enter gains damage reduction.",
+    "description": "Damage taken -70%, Emergency Exit. Counter Attack: next jingling to enter gains damage reduction.",
     "has_counter": true,
     "localized": {
       "zh": {
@@ -4998,7 +5151,7 @@
     "category": "Physical Attack",
     "energy_cost": 3,
     "power": 80,
-    "description": "Deals physical damage. If the opponent switches monster this turn, this move's power +50 and ignores opponent's type resistance.",
+    "description": "Deals physical damage. If the opponent switches jingling this turn, this move's power +50 and ignores opponent's type resistance.",
     "has_counter": false,
     "localized": {
       "zh": {
@@ -5078,7 +5231,7 @@
     "category": "Magic Attack",
     "energy_cost": 3,
     "power": 25,
-    "description": "Deals magic damage, 2 Combo. Each time this monster performs a successful Counter, this move's Combo Count +2 permanently.",
+    "description": "Deals magic damage, 2 Combo. Each time this jingling performs a successful Counter, this move's Combo Count +2 permanently.",
     "has_counter": true,
     "localized": {
       "zh": {
@@ -5234,7 +5387,7 @@
     "category": "Status",
     "energy_cost": 10,
     "power": null,
-    "description": "User restores 60% HP and gains Physical Attack +130%. Each time this monster performs a successful Counter, this move's energy cost -3, but resets after use.",
+    "description": "User restores 60% HP and gains Physical Attack +130%. Each time this jingling performs a successful Counter, this move's energy cost -3, but resets after use.",
     "has_counter": false,
     "localized": {
       "zh": {
@@ -5266,7 +5419,7 @@
     "category": "Status",
     "energy_cost": 4,
     "power": null,
-    "description": "User gains Move Power +40. If the opponent switches monster this turn, gains Move Power +50 additionally.",
+    "description": "User gains Move Power +40. If the opponent switches jingling this turn, gains Move Power +50 additionally.",
     "has_counter": false,
     "localized": {
       "zh": {
@@ -5387,7 +5540,7 @@
     "category": "Physical Attack",
     "energy_cost": 3,
     "power": 80,
-    "description": "Deals physical damage. If the opponent switches monster this turn, this move's power is doubled.",
+    "description": "Deals physical damage. If the opponent switches jingling this turn, this move's power is doubled.",
     "has_counter": false,
     "localized": {
       "zh": {
@@ -5543,7 +5696,7 @@
     "category": "Status",
     "energy_cost": 0,
     "power": null,
-    "description": "Releases the Quick Entry moves this monster has previously used. Half of their total energy cost is added to this move's energy cost. Each time this move is used, its energy cost increases by 1.",
+    "description": "Releases the Quick Entry moves this jingling has previously used. Half of their total energy cost is added to this move's energy cost. Each time this move is used, its energy cost increases by 1.",
     "has_counter": false,
     "localized": {
       "zh": {
@@ -5722,6 +5875,37 @@
       }
     },
     "base_combo": 2
+  },
+  {
+    "name": "Wing Arrow",
+    "type": "Flying",
+    "category": "Magic Attack",
+    "energy_cost": 3,
+    "power": 40,
+    "description": "Deals magic damage, 3 Combo. Variation: Flying-type Defense moves.",
+    "has_counter": false,
+    "localized": {
+      "zh": {
+        "name": "飞箭",
+        "description": "造成魔伤，3连击。巧变：翼系防御技能。"
+      }
+    },
+    "base_combo": 3
+  },
+  {
+    "name": "Dive",
+    "type": "Flying",
+    "category": "Physical Attack",
+    "energy_cost": 7,
+    "power": 170,
+    "description": "Deals physical damage. Priority +1.",
+    "has_counter": false,
+    "localized": {
+      "zh": {
+        "name": "俯冲",
+        "description": "造成物伤，先手+1。"
+      }
+    }
   },
   {
     "name": "Popcorn Explosion",
@@ -5913,7 +6097,7 @@
     "category": "Physical Attack",
     "energy_cost": 3,
     "power": 30,
-    "description": "Deals physical damage, 1 Combo. For each stack of Regression on all monsters on both teams, this move's Combo Count +1.",
+    "description": "Deals physical damage, 1 Combo. For each stack of Regression on all jinglings on both teams, this move's Combo Count +1.",
     "has_counter": false,
     "localized": {
       "zh": {
@@ -5928,7 +6112,7 @@
     "category": "Status",
     "energy_cost": 3,
     "power": null,
-    "description": "User triggers Exit. The next monster switched in gains all of user's Buffs.",
+    "description": "User triggers Exit. The next jingling switched in gains all of user's Buffs.",
     "has_counter": false,
     "localized": {
       "zh": {
@@ -5983,6 +6167,21 @@
     }
   },
   {
+    "name": "Cheer",
+    "type": "Cute",
+    "category": "Status",
+    "energy_cost": 2,
+    "power": null,
+    "description": "This jingling gains 1 stack of Sprout Mark.",
+    "has_counter": false,
+    "localized": {
+      "zh": {
+        "name": "加油",
+        "description": "自己获得1层萌芽印记。"
+      }
+    }
+  },
+  {
     "name": "Revenge",
     "type": "Ghost",
     "category": "Defense",
@@ -6021,7 +6220,7 @@
     "category": "Status",
     "energy_cost": 2,
     "power": null,
-    "description": "User gains Magic Attack +90%. If opponent switches monster this turn, user gains Speed +70.",
+    "description": "User gains Magic Attack +90%. If opponent switches jingling this turn, user gains Speed +70.",
     "has_counter": false,
     "localized": {
       "zh": {
@@ -6156,7 +6355,7 @@
     "category": "Magic Attack",
     "energy_cost": 3,
     "power": 25,
-    "description": "Deals magic damage, 3 Combo. If the opponent switches monster this turn, this move's Combo Count is doubled.",
+    "description": "Deals magic damage, 3 Combo. If the opponent switches jingling this turn, this move's Combo Count is doubled.",
     "has_counter": false,
     "localized": {
       "zh": {
@@ -6242,6 +6441,36 @@
       "zh": {
         "name": "勾魂",
         "description": "偷取敌方3能量。"
+      }
+    }
+  },
+  {
+    "name": "Dream Lull",
+    "type": "Ghost",
+    "category": "Status",
+    "energy_cost": 1,
+    "power": null,
+    "description": "Opponent's energy recovery next turn -5. 2-turn Cooldown.",
+    "has_counter": false,
+    "localized": {
+      "zh": {
+        "name": "入梦",
+        "description": "敌方下回合回复的能量-5，冷却2回合。"
+      }
+    }
+  },
+  {
+    "name": "Ghost Strike",
+    "type": "Ghost",
+    "category": "Physical Attack",
+    "energy_cost": 4,
+    "power": 120,
+    "description": "Deals physical damage to the opponent.",
+    "has_counter": false,
+    "localized": {
+      "zh": {
+        "name": "撞鬼",
+        "description": "对敌方精灵造成物理伤害。"
       }
     }
   },
@@ -6523,7 +6752,7 @@
     "category": "Magic Attack",
     "energy_cost": 4,
     "power": 85,
-    "description": "Deals magic damage. For each defeated monster on the opponent's side, this move's power +30.",
+    "description": "Deals magic damage. For each defeated jingling on the opponent's side, this move's power +30.",
     "has_counter": false,
     "localized": {
       "zh": {
@@ -6671,6 +6900,36 @@
       }
     },
     "base_combo": 2
+  },
+  {
+    "name": "Impersonate",
+    "type": "Dark",
+    "category": "Status",
+    "energy_cost": 2,
+    "power": null,
+    "description": "Sets this jingling's HP percentage equal to the opponent's HP percentage. Variation: Dark-type Attack moves.",
+    "has_counter": false,
+    "localized": {
+      "zh": {
+        "name": "假冒",
+        "description": "自己的生命比例变为与敌方生命比例相同，巧变：恶系攻击技能。"
+      }
+    }
+  },
+  {
+    "name": "Juggle",
+    "type": "Dark",
+    "category": "Magic Attack",
+    "energy_cost": 3,
+    "power": 115,
+    "description": "Deals magic damage. Variation: Lifesteal-related moves.",
+    "has_counter": false,
+    "localized": {
+      "zh": {
+        "name": "杂耍",
+        "description": "造成魔伤，巧变：吸血相关技能。"
+      }
+    }
   },
   {
     "name": "Dismantle",
@@ -6912,6 +7171,99 @@
         "description": "造成物伤，此技能位置不会改变。"
       }
     }
+  },
+  {
+    "name": "Pressure Valve",
+    "type": "Mechanical",
+    "category": "Status",
+    "energy_cost": 1,
+    "power": null,
+    "description": "Active: When used, this move's passive permanently gains +20 power. Passive: Adjacent moves' power +10. Transmission 1.",
+    "has_counter": false,
+    "localized": {
+      "zh": {
+        "name": "减压阀",
+        "description": "主动：本技能被动永久额外+20威力，被动：两侧技能威力+10，传动1。"
+      }
+    }
+  },
+  {
+    "name": "Micro Scout",
+    "type": "Mechanical",
+    "category": "Magic Attack",
+    "energy_cost": 3,
+    "power": 75,
+    "description": "Deals magic damage. This move's power permanently +20 each time this jingling takes resisted damage.",
+    "has_counter": false,
+    "localized": {
+      "zh": {
+        "name": "微型斥候",
+        "description": "造成魔伤，自己每受到一次抵抗伤害，本技能威力永久+20。"
+      }
+    }
+  },
+  {
+    "name": "Exhaust",
+    "type": "Mechanical",
+    "category": "Status",
+    "energy_cost": 2,
+    "power": null,
+    "description": "Opponent gains Move Power -20. If this jingling has taken resisted damage, opponent additionally gains Move Power -20. Resets after use.",
+    "has_counter": false,
+    "localized": {
+      "zh": {
+        "name": "排气",
+        "description": "敌方获得全技能威力-20，若自己受到抵抗伤害，敌方额外获得全技能威力-20，使用后重置。"
+      }
+    }
+  },
+  {
+    "name": "Phase Shift",
+    "type": "Mechanical",
+    "category": "Defense",
+    "energy_cost": 1,
+    "power": null,
+    "description": "Damage taken -50%. When this move is in Slot 1 or Slot 3, damage taken additionally -40%. Counter Attack. Transmission 1.",
+    "has_counter": true,
+    "localized": {
+      "zh": {
+        "name": "相位移动",
+        "description": "减伤50%，本技能位于1号位或3号位时，额外减伤40%，应对攻击，传动1。"
+      }
+    }
+  },
+  {
+    "name": "Roller Coaster",
+    "type": "Mechanical",
+    "category": "Status",
+    "energy_cost": 8,
+    "power": null,
+    "description": "All moves carried by this jingling's team shift down 1 position across jinglings. Variation: Mechanical-type moves.",
+    "has_counter": false,
+    "localized": {
+      "zh": {
+        "name": "过山车",
+        "description": "使己方队伍中的所有精灵携带的技能跨精灵向下移动1个位置，巧变：机械系技能。"
+      }
+    }
+  },
+  {
+    "name": "Iron Caltrops",
+    "type": "Mechanical",
+    "category": "Magic Attack",
+    "energy_cost": 3,
+    "power": 85,
+    "description": "Deals magic damage. Counter Status: damage is doubled.",
+    "has_counter": true,
+    "localized": {
+      "zh": {
+        "name": "铁蒺藜",
+        "description": "造成魔伤，应对状态：本次伤害翻倍。"
+      }
+    },
+    "alt_power_total": 170,
+    "alt_condition_zh": "应对成功时",
+    "alt_condition_en": "If Counter succeeds"
   },
   {
     "name": "Hyper Projection",
@@ -7196,6 +7548,36 @@
       "zh": {
         "name": "星云漩涡",
         "description": "对敌方精灵造成物理伤害。"
+      }
+    }
+  },
+  {
+    "name": "Superposition",
+    "type": "Illusion",
+    "category": "Status",
+    "energy_cost": 1,
+    "power": null,
+    "description": "This jingling gains 16 random stacks of stat buffs. Variation: Illusion-type Attack moves.",
+    "has_counter": false,
+    "localized": {
+      "zh": {
+        "name": "叠加态",
+        "description": "自己获得随机16层属性增益，巧变：幻系攻击技能。"
+      }
+    }
+  },
+  {
+    "name": "Stellar Accretion",
+    "type": "Illusion",
+    "category": "Physical Attack",
+    "energy_cost": 4,
+    "power": 20,
+    "description": "Deals physical damage. For each stack of opponent's Marks, this move's power +20.",
+    "has_counter": false,
+    "localized": {
+      "zh": {
+        "name": "天体吸积",
+        "description": "造成物伤，敌方每有1层印记，本次攻击威力+20。"
       }
     }
   }

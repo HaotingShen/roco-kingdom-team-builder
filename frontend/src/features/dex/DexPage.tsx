@@ -228,7 +228,15 @@ function MonstersTab() {
         return diff !== 0 ? diff : (a.name || "").localeCompare(b.name || "");
       });
     }
-    return combined.sort((a, b) => (a as any).id - (b as any).id);
+    // Sort by canonical wiki dex_number when present; fall back to id so
+    // monsters without a wiki match keep their current relative position.
+    // Mirrors the backend ORDER BY COALESCE(dex_number, id), id.
+    return combined.sort((a, b) => {
+      const aKey = (a as any).dex_number ?? (a as any).id;
+      const bKey = (b as any).dex_number ?? (b as any).id;
+      if (aKey !== bKey) return aKey - bKey;
+      return (a as any).id - (b as any).id;
+    });
   }, [filtered, lang, sortStat, sortDir]);
 
   const toggleType = (id: number) =>

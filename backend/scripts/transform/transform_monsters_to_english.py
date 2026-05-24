@@ -14,6 +14,7 @@ Requirements:
 """
 
 import json
+import re
 from pathlib import Path
 from collections import defaultdict
 
@@ -119,6 +120,87 @@ def build_trait_lookup_map_from_json() -> dict:
             trait_map[zh_name] = english_name
 
     return trait_map
+
+
+def parse_evolution_condition(raw):
+    """
+    Parse the evolution_condition string from monsters_all.json.
+
+    Source format examples:
+        "40级,15次滚雪球"  -> level=40, condition="15次滚雪球"
+        "28级,成长1星"     -> level=28, condition="成长1星"
+        "36级"            -> level=36, condition=None
+        "亲密度进化"        -> level=None, condition="亲密度进化"
+        ""/None           -> level=None, condition=None
+
+    Returns:
+        (evolution_level: Optional[int], evolution_condition: Optional[str])
+    """
+    if not raw:
+        return None, None
+
+    level_match = re.search(r'(\d+)\s*级', raw)
+    level = int(level_match.group(1)) if level_match else None
+
+    if level is not None:
+        remaining = re.sub(r'\d+\s*级\s*,?\s*', '', raw, count=1).strip(' ,，')
+        condition = remaining if remaining else None
+    else:
+        condition = raw.strip() or None
+
+    return level, condition
+
+
+def derive_species_and_parent(monster, name_mapping, monsters_by_chain_group):
+    """
+    Derive (species_en, evolves_from_en) from chain_group + evolution_stage.
+
+    Rules:
+      - Species = English name of the lowest-stage monster in this chain_group.
+      - Evolves_from = English name of the stage-(N-1) monster in the same
+        chain_group, where N is this monster's evolution_stage. None for stage 1.
+      - For branching evolutions (multiple monsters at the same stage), match
+        on `attributes` (Chinese type string) to disambiguate; fall back to the
+        first candidate when nothing matches.
+    """
+    chain_group = monster.get('chain_group')
+    current_stage = int(monster.get('evolution_stage') or 1)
+    current_name = monster['name']
+    current_attrs = monster.get('attributes', '') or ''
+
+    if not chain_group:
+        return name_mapping.get(current_name), None
+
+    family = monsters_by_chain_group.get(chain_group, [])
+
+    def pick_best(candidates):
+        if not candidates:
+            return None
+        if len(candidates) == 1:
+            return candidates[0]
+        for cand in candidates:
+            if (cand.get('attributes') or '') == current_attrs:
+                return cand
+        return candidates[0]
+
+    # Species: lowest evolution_stage in the chain_group
+    if family:
+        min_stage = min(int(m.get('evolution_stage') or 1) for m in family)
+        base_candidates = [m for m in family if int(m.get('evolution_stage') or 1) == min_stage]
+        base = pick_best(base_candidates)
+        species_en = name_mapping.get(base['name']) if base else name_mapping.get(current_name)
+    else:
+        species_en = name_mapping.get(current_name)
+
+    # Evolves_from: stage N-1 in the same chain_group, only if N > min_stage
+    evolves_from_en = None
+    if family and current_stage > 1:
+        parent_candidates = [m for m in family if int(m.get('evolution_stage') or 1) == current_stage - 1]
+        parent = pick_best(parent_candidates)
+        if parent:
+            evolves_from_en = name_mapping.get(parent['name'])
+
+    return species_en, evolves_from_en
 
 
 def determine_moveset_key(monster, evolution_chain, name_mapping, monsters_by_chain_group):
@@ -234,6 +316,15 @@ def transform_monsters():
     print(f"✓ Found {len(monsters_by_chain_group)} evolution families")
     print()
 
+    # Build canonical Chinese name lookup (English -> first Chinese name in mapping).
+    # When monster_name_mapping.json lists multiple Chinese names for the same
+    # English name (e.g., a canonical name plus a wiki-typo alias), the first
+    # entry is treated as canonical and used for the output's localized.zh.name.
+    en_to_canonical_zh = {}
+    for zh, en in name_mapping.items():
+        if en and en not in en_to_canonical_zh:
+            en_to_canonical_zh[en] = zh
+
     # Step 5: Transform each monster
     print("Step 5: Transforming monsters...")
     transformed = []
@@ -294,36 +385,28 @@ def transform_monsters():
         else:
             form = "default"
 
-        # Derive species from evolution chain (first monster's English name)
-        evolution_chain = monster.get('evolution_chain', [])
-        species = None
-        evolves_from = None
-
-        if evolution_chain:
-            # Species is the first monster in the chain
-            first_monster_zh = evolution_chain[0].get('pokemon_name')
-            species = name_mapping.get(first_monster_zh)
-
-            if not species:
-                errors.append(f"Line {idx}: Cannot find species (first in chain: '{first_monster_zh}') for '{chinese_name}'")
-                continue
-
-            # Evolves_from is the previous monster in the chain
-            current_stage = monster.get('evolution_stage', 1)
-            if current_stage > 1:
-                # Find the monster at previous stage
-                for chain_entry in evolution_chain:
-                    if chain_entry.get('evolution_stage') == current_stage - 1:
-                        prev_monster_zh = chain_entry.get('pokemon_name')
-                        evolves_from = name_mapping.get(prev_monster_zh)
-                        break
+        # Derive species and evolves_from from chain_group + evolution_stage
+        # (monsters_all.json has flat fields, not a nested evolution_chain array)
+        species, evolves_from = derive_species_and_parent(
+            monster, name_mapping, monsters_by_chain_group
+        )
 
         if not species:
-            # Fallback: use own name as species
+            # Fallback: use own English name as species
             species = english_name
 
-        # Determine moveset_key (Chinese name)
-        moveset_key = determine_moveset_key(monster, evolution_chain, name_mapping, monsters_by_chain_group)
+        # Parse evolution_level (e.g., "40") and evolution_condition (e.g., "15次滚雪球")
+        evolution_level, evolution_condition = parse_evolution_condition(
+            monster.get('evolution_condition')
+        )
+
+        # Determine moveset_key (Chinese name), then canonicalize via English
+        # roundtrip so any wiki-typo Chinese names are normalized to the
+        # canonical form listed first in monster_name_mapping.json.
+        moveset_key = determine_moveset_key(monster, None, name_mapping, monsters_by_chain_group)
+        moveset_key_en = name_mapping.get(moveset_key)
+        if moveset_key_en:
+            moveset_key = en_to_canonical_zh.get(moveset_key_en, moveset_key)
 
         # Map stats (handle None values with 'or 0')
         base_hp = monster.get('hp') or 0
@@ -365,10 +448,16 @@ def transform_monsters():
             "moveset_key": moveset_key,
             "localized": {
                 "zh": {
-                    "name": chinese_name
+                    "name": en_to_canonical_zh.get(english_name, chinese_name)
                 }
             }
         }
+
+        # Append evolution fields only when present (mirrors monsters.json style)
+        if evolution_level is not None:
+            transformed_entry["evolution_level"] = evolution_level
+        if evolution_condition:
+            transformed_entry["evolution_condition"] = evolution_condition
 
         transformed.append(transformed_entry)
 
