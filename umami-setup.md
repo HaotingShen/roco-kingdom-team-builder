@@ -76,12 +76,19 @@ aws ssm put-parameter \
 
 # Build the Umami DATABASE_URL:
 # Same RDS host + credentials as main app, just change the database name to `umami`
-# Format: postgresql://rktb_admin:<PASSWORD>@rktb-postgres.cnwseow4y66l.ap-southeast-1.rds.amazonaws.com:5432/umami
+# Format: postgresql://rktb_admin:<PASSWORD>@rktb-postgres-1a.cnwseow4y66l.ap-southeast-1.rds.amazonaws.com:5432/umami
 # The <PASSWORD> is: 26c50b538a8a5444ff7458424d9b9d2209d773e0c592370e
+#
+# Note: RDS host is rktb-postgres-1a (in AZ 1a). The original instance was named
+# rktb-postgres in AZ 1b but was migrated to 1a to eliminate inter-AZ transfer cost.
+# See rds-az-migration-runbook.md for migration details.
+# `connection_limit=5` prevents Umami's Prisma pool (defaults to 9) from consuming
+# too many slots of RDS's max_connections=80 ceiling. See the post-deploy section
+# at the bottom of this doc for context.
 
 aws ssm put-parameter \
   --name /rktb/prod/UMAMI_DATABASE_URL \
-  --value "postgresql://rktb_admin:26c50b538a8a5444ff7458424d9b9d2209d773e0c592370e@rktb-postgres.cnwseow4y66l.ap-southeast-1.rds.amazonaws.com:5432/umami?sslmode=require" \
+  --value "postgresql://rktb_admin:26c50b538a8a5444ff7458424d9b9d2209d773e0c592370e@rktb-postgres-1a.cnwseow4y66l.ap-southeast-1.rds.amazonaws.com:5432/umami?sslmode=require&connection_limit=5" \
   --type SecureString --region ap-southeast-1
 ```
 
@@ -235,6 +242,9 @@ curl -I https://analytics.rkteambuilder.com/script.js
 ---
 
 ## Post-deploy: Connection Pool Cap (added 2026-03-29)
+
+> The `&connection_limit=5` suffix is now baked into the initial Phase 1.4 command above.
+> This section is retained as historical context — read it if you ever need to change the cap.
 
 Umami shares the same RDS instance as the backend. Its Prisma connection pool defaults to 9 connections (CPU cores × 2 + 1), which silently consumes slots from the shared `max_connections=80` limit.
 

@@ -253,24 +253,35 @@ export default function LoginPage() {
 
 File: `frontend/public/sitemap.xml`
 
+Phase 1 (the original SEO fix) removed `/teams` and left only `/` + `/dex`. A subsequent
+enhancement (post-Phase-1) populated the sitemap with every `/dex/monsters/:id` and
+`/dex/moves/:id` — the highest-SEO-value pages. The file is now ~1000+ URLs.
+
+Current shape (truncated):
+
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://rkteambuilder.com/</loc>
+    <lastmod>2026-05-24</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
     <loc>https://rkteambuilder.com/dex</loc>
+    <lastmod>2026-05-24</lastmod>
     <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
+    <priority>0.9</priority>
   </url>
+  <!-- One <url> entry per monster: /dex/monsters/1 ... /dex/monsters/N (priority 0.8) -->
+  <!-- One <url> entry per move:    /dex/moves/1    ... /dex/moves/M    (priority 0.8) -->
 </urlset>
 ```
 
-Removed: `/teams` (user-specific content, should not be in sitemap).  
-Not added yet: `/dex/monsters/:id` and `/dex/moves/:id` — these are the highest-value SEO pages but require a build-time data fetch to enumerate all valid IDs. Deferred as a separate future enhancement.
+Removed in Phase 1: `/teams` (user-specific content, should not be in sitemap).
+Added post-Phase-1: every `/dex/monsters/:id` and `/dex/moves/:id`. IDs are enumerated
+at build time; regenerate the sitemap whenever monsters or moves are added.
 
 ---
 

@@ -303,17 +303,30 @@ export default function MoveDetailPage() {
 
               {/* Details */}
               <div className="flex-1 min-w-0 space-y-2">
-                {/* Type icon + name — slight negative margin to compensate for type icon's visual weight */}
-                <div className="flex items-center gap-1 lg:gap-1.5 flex-wrap -ml-1">
+                {/* Type icon + name — slight negative margin to compensate for type icon's visual weight.
+                    No `flex-wrap` here: keeping the icon and h1 on a single flex line lets the h1
+                    wrap text internally (via `break-words` + `min-w-0`) instead of dropping below
+                    the type icon, which would leave the type icon orphaned on its own row. */}
+                <div className="flex items-center gap-1 lg:gap-1.5 -ml-1">
                   {typeImg ? (
                     <img
                       src={typeImg}
                       alt=""
                       aria-hidden
-                      className="shrink-0 w-8 h-8 sm:w-9 sm:h-9"
+                      className={`shrink-0 ${
+                        lang === "en"
+                          ? "w-7 h-7 mvcard:w-8 mvcard:h-8"
+                          : "w-8 h-8"
+                      } sm:w-9 sm:h-9`}
                     />
                   ) : null}
-                  <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-zinc-900 break-words leading-tight">
+                  <h1
+                    className={`min-w-0 ${
+                      lang === "en"
+                        ? "text-base mvcard:text-lg"
+                        : "text-lg"
+                    } sm:text-xl lg:text-2xl font-bold text-zinc-900 break-words leading-tight`}
+                  >
                     {moveName}
                   </h1>
                 </div>

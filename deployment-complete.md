@@ -1036,7 +1036,9 @@ services:
       - COOKIE_SAMESITE=none
       - COOKIE_SECURE=true
       - FRONTEND_URL=${FRONTEND_URL}  # CRITICAL: Used for email links, must be public URL
-      - ALLOWED_ORIGINS=${FRONTEND_URL}
+      # ALLOWED_ORIGINS includes TapTap's CDN webview so the static-bundle build
+      # (frontend/rk-team-builder/) loaded inside TapTap can call our API.
+      - ALLOWED_ORIGINS=${FRONTEND_URL},https://3rd-tool-h5-al.tapimg.com
       - RATE_LIMIT_ENABLED=true
       - ANALYSIS_RATE_LIMIT=1/2minutes
       # NOTE: Backend rate limiter MUST extract client IP from CloudFront-Viewer-Address header

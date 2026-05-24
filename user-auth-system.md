@@ -1,6 +1,6 @@
 # User System Documentation
 
-> **Last Updated:** 2026-03-01
+> **Last Updated:** 2026-05-24
 > **Status:** Phase 7G Complete (Concurrent Retry Race Fix + Navigate Fix + Clear Guest Data Fix)
 
 ---
@@ -29,7 +29,7 @@ The system supports three primary user types with different capabilities:
 | User Type | Account Status | How to Become | Can Save Teams | Analysis Limit |
 |-----------|---------------|---------------|----------------|----------------|
 | **Anonymous** | No account | Visit site | No | 1/day |
-| **Guest** | Temporary account | Click "Continue as Guest" | Yes (3 max) | 3/day |
+| **Guest** | Temporary account | Click "Continue as Guest" | Yes (3 max) | 2/day |
 | **Registered** | Permanent account | Register with email | Yes (20 max) | 5/day |
 
 ### User Journey Flow
@@ -58,7 +58,7 @@ New Visitor (Anonymous)
 | Tier | Daily Analyses | Monthly Analyses | Max Teams | Priority |
 |------|---------------|------------------|-----------|----------|
 | `anonymous` | 1 | 5 | 0 | 0 |
-| `guest` | 3 | 30 | 3 | 0 |
+| `guest` | 2 | 30 | 3 | 0 |
 | `free` | 5 | 100 | 20 | 0 |
 | `premium` | 10 | 200 | 100 | 1 |
 | `unlimited` | ∞ | ∞ | ∞ | 2 |
@@ -506,7 +506,7 @@ Migrations:
 
 | Method | Endpoint | Description | Rate Limit |
 |--------|----------|-------------|------------|
-| POST | `/auth/change-email` | Request email change | 3/hour |
+| POST | `/auth/change-email` | Request email change | 5/hour |
 | POST | `/auth/confirm-email-change` | Confirm with token | 5/hour |
 
 ### Account Management
@@ -542,6 +542,8 @@ Migrations:
 | `RegisterPage.tsx` | `/auth/register` | Registration form |
 | `ForgotPasswordPage.tsx` | `/auth/forgot-password` | Request password reset email |
 | `ResetPasswordPage.tsx` | `/auth/reset-password` | Enter token + new password |
+| `VerifyEmailPage.tsx` | `/auth/verify-email` | Email link landing page (token verification) |
+| `ConfirmEmailChangePage.tsx` | `/auth/confirm-email-change` | Email-change link landing page (token confirmation) |
 | `EmailVerificationModal.tsx` | Modal | Token entry + resend |
 | `DeleteAccountModal.tsx` | Modal | Account deletion confirmation |
 | `ClearGuestDataModal.tsx` | Modal | Guest data clearing confirmation |
@@ -627,7 +629,7 @@ Shows different UI based on user state:
 | Resend verification | 3 | 1 hour |
 | Password reset request | 3 | 1 hour |
 | Password reset confirm | 5 | 1 hour |
-| Email change request | 3 | 1 hour |
+| Email change request | 5 | 1 hour |
 
 ### Anti-Abuse Measures
 

@@ -14,6 +14,7 @@ import { buildDexForwardQuery } from "@/lib/dexNavigation";
 import EvolutionTree from "./EvolutionTree";
 import RichDescription from "@/components/RichDescription";
 import TypeDefensePanel from "@/components/TypeDefensePanel";
+import MoveCardInner from "@/components/MoveCardInner";
 
 /* ---------- helpers ---------- */
 
@@ -486,13 +487,18 @@ export default function MonsterDetailPage() {
 
       {/* Moves */}
       <section className="rounded-lg border border-zinc-200 bg-white shadow-sm p-4">
-        {/* Tab Switcher */}
+        {/* Tab Switcher — full-width pill on mobile (tabs share row via flex-1) so long
+            labels like "Learnable Moves" don't overflow the card. The pill omits
+            `items-center` so tabs use the default `items-stretch`, which keeps the three
+            segments at uniform height when one label wraps onto two lines. */}
         <div className="flex items-center justify-center mb-4">
-          <div className="inline-flex items-center gap-1 p-1 rounded-full bg-zinc-100 shadow-inner">
+          <div className="flex gap-1 p-1 rounded-full bg-zinc-100 shadow-inner w-full sm:w-fit">
             <Link
               to={`?${forwardQuery}&moves=pool`}
               className={`
-                inline-flex items-center justify-center h-9 px-6 rounded-full text-sm font-medium
+                flex-1 sm:flex-initial min-w-0
+                inline-flex items-center justify-center min-h-9 px-2 sm:px-6 py-1 rounded-full
+                text-sm font-medium leading-tight text-center
                 transition-all duration-200 ease-in-out
                 ${which === "pool"
                   ? "bg-white text-zinc-900 shadow-md"
@@ -505,7 +511,9 @@ export default function MonsterDetailPage() {
             <Link
               to={`?${forwardQuery}&moves=stones`}
               className={`
-                inline-flex items-center justify-center h-9 px-6 rounded-full text-sm font-medium
+                flex-1 sm:flex-initial min-w-0
+                inline-flex items-center justify-center min-h-9 px-2 sm:px-6 py-1 rounded-full
+                text-sm font-medium leading-tight text-center
                 transition-all duration-200 ease-in-out
                 ${which === "stones"
                   ? "bg-white text-zinc-900 shadow-md"
@@ -518,7 +526,9 @@ export default function MonsterDetailPage() {
             <Link
               to={`?${forwardQuery}&moves=legacy`}
               className={`
-                inline-flex items-center justify-center h-9 px-6 rounded-full text-sm font-medium
+                flex-1 sm:flex-initial min-w-0
+                inline-flex items-center justify-center min-h-9 px-2 sm:px-6 py-1 rounded-full
+                text-sm font-medium leading-tight text-center
                 transition-all duration-200 ease-in-out
                 ${which === "legacy"
                   ? "bg-white text-zinc-900 shadow-md"
@@ -622,74 +632,20 @@ function MovesList({ list, backUrl }: { list: any[]; backUrl: string }) {
               hover:shadow-md hover:-translate-y-0.5
             `}
           >
-            <div
-              className="
-                grid
-                grid-cols-[70px_minmax(0,1fr)_40px_8px_50px_4px]
-                sm:grid-cols-[80px_minmax(0,1fr)_40px_12px_50px_4px]
-                md:grid-cols-[80px_minmax(0,1fr)_40px_20px_50px_8px]
-                lg:grid-cols-[80px_minmax(0,1fr)_40px_28px_50px_12px]
-                grid-rows-[auto_auto]
-                items-start
-                gap-2
-                text-[13px] sm:text-sm
-              "
-            >
-              {/* Image (spans both rows) */}
-              <div className="row-[1/3] self-center h-[70px] w-[70px] sm:h-[80px] sm:w-[80px] rounded bg-zinc-100/60 overflow-hidden flex items-center justify-center">
-                <img
-                  src={moveImg}
-                  alt={cname}
-                  width={80}
-                  height={80}
-                  className="h-full w-full object-contain"
-                  loading="lazy"
-                  onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
-                />
-              </div>
-
-              {/* Type icon + Move name (col 2) */}
-              <div className="col-[2] self-center min-w-0">
-                <div className="flex items-center gap-1 min-w-0">
-                  {typeImg ? (
-                    <img
-                      src={typeImg}
-                      alt=""
-                      aria-hidden="true"
-                      width={30}
-                      height={30}
-                      className="block shrink-0"
-                    />
-                  ) : null}
-                  <div className="font-medium whitespace-normal break-words min-w-0">
-                    {cname}
-                  </div>
-                </div>
-              </div>
-
-              {/* Energy icon + value (col 3) */}
-              <div className="col-[3] self-center flex items-center justify-end gap-[6px]">
-                <img src={energyImg} alt="" aria-hidden="true" width={15} height={15} />
-                <span className="w-8 text-[13px] sm:text-xs text-left tabular-nums">{energy ?? "—"}</span>
-              </div>
-
-              {/* (col 4 is the spacer) */}
-
-              {/* Category icon + power/label (col 5) */}
-              <div className="col-[5] self-center flex items-center justify-end gap-x-[6px]">
-                <img src={catImg} alt="" aria-hidden="true" width={15} height={15} />
-                <span className="w-10 text-[13px] sm:text-xs text-left tabular-nums">
-                  {isDef ? t("dex.defense") : isSta ? t("dex.status") : (power ?? "—")}
-                </span>
-              </div>
-
-              {/* (col 6 is the end spacer) */}
-
-              {/* Description (row 2, spans full width from col 2 to end) */}
-              <div className="row-[2/3] col-[2/-1] text-[13px] sm:text-sm text-zinc-600 pl-1">
-                <RichDescription text={desc} />
-              </div>
-            </div>
+            <MoveCardInner
+              lang={lang}
+              cname={cname}
+              desc={desc}
+              moveImg={moveImg}
+              typeImg={typeImg}
+              energyImg={energyImg}
+              catImg={catImg}
+              energy={energy}
+              power={power}
+              isDef={isDef}
+              isSta={isSta}
+              t={t}
+            />
           </Link>
         );
       })}
