@@ -301,21 +301,21 @@
   },
   {
     "name": "Pickpocket",
-    "description": "When entering the battlefield, steals 2 energy from all of the opponent's jinglings.",
+    "description": "Upon entering the battlefield, steals 2 energy from all of the opponent's jinglings on the field.",
     "localized": {
       "zh": {
         "name": "小偷小摸",
-        "description": "入场时偷取所有敌方精灵2能量。"
+        "description": "入场时偷取敌方场上所有精灵2点能量。"
       }
     }
   },
   {
     "name": "Big Score",
-    "description": "At the end of the turn, steals 2 energy from all of the opponent's jinglings.",
+    "description": "Upon entering the battlefield, steals 3 energy from all of the opponent's jinglings on the field.",
     "localized": {
       "zh": {
         "name": "大捞一笔",
-        "description": "回合结束时，偷取所有敌方精灵2点能量。"
+        "description": "入场时偷取敌方场上所有精灵3点能量。"
       }
     }
   },
@@ -651,21 +651,21 @@
   },
   {
     "name": "Stargazing",
-    "description": "For each stack of Starfall Mark on the opponent, this jingling's Ground-type move power +15%.",
+    "description": "For each stack of Starfall Mark on the opponent, this jingling's Ground-type move power +20%.",
     "localized": {
       "zh": {
         "name": "观星",
-        "description": "敌方每有1层星陨印记，自己的地系技能威力+15%。"
+        "description": "敌方每有1层星陨印记，自己的地系技能威力+20%。"
       }
     }
   },
   {
     "name": "Starfall",
-    "description": "For each stack of Starfall Mark on the opponent, this jingling's move power +15%.",
+    "description": "For each stack of Starfall Mark on the opponent, this jingling's move power +20%.",
     "localized": {
       "zh": {
         "name": "坠星",
-        "description": "敌方每有1层星陨印记，自己的技能威力+15%。"
+        "description": "敌方每有1层星陨印记，自己的技能威力+20%。"
       }
     }
   },
@@ -762,11 +762,11 @@
   },
   {
     "name": "Toxic Fangs",
-    "description": "When the opponent is inflicted with Poison, they also receive Magic Attack -40% and Magic Defense -40%.",
+    "description": "When the opponent is inflicted with Poison, they also receive Physical Attack -40% and Speed -40.",
     "localized": {
       "zh": {
         "name": "毒牙",
-        "description": "使敌方获得中毒时，也会使其获得魔攻和魔防-40%。"
+        "description": "使敌方获得中毒时，也会使其获得物攻-40%和速度-40。"
       }
     }
   },
@@ -912,11 +912,11 @@
   },
   {
     "name": "Anadromous",
-    "description": "Each time this jingling enters Charge state, it permanently gains Move Energy Cost -1.",
+    "description": "Each time this jingling enters Charge state, it permanently gains Move Energy Cost -2.",
     "localized": {
       "zh": {
         "name": "洄游",
-        "description": "每次进入蓄力状态，获得全技能能耗永久-1。"
+        "description": "每次进入蓄力状态，获得全技能能耗永久-2。"
       }
     }
   },
@@ -1052,21 +1052,21 @@
   },
   {
     "name": "Charge Cell",
-    "description": "Each time this jingling enters the battlefield, it permanently gains Attack +20%.",
+    "description": "Each time this jingling enters the battlefield, it permanently gains Attack +30%.",
     "localized": {
       "zh": {
         "name": "蓄电池",
-        "description": "每入场1次，永久获得双攻+20%。"
+        "description": "每入场1次，永久获得双攻+30%。"
       }
     }
   },
   {
     "name": "Supercharged Cell",
-    "description": "Each time this jingling enters the battlefield, it permanently gains Attack +30%.",
+    "description": "Each time this jingling enters the battlefield, it permanently gains Attack +40%.",
     "localized": {
       "zh": {
         "name": "超级电池",
-        "description": "每入场1次，获得双攻永久+30%。"
+        "description": "每入场1次，获得双攻永久+40%。"
       }
     }
   },
@@ -1362,21 +1362,21 @@
   },
   {
     "name": "Duelist",
-    "description": "After each successful Counter, this jingling gains Move Power +20 permanently.",
+    "description": "After each successful Counter, this jingling gains Move Power +30 permanently.",
     "localized": {
       "zh": {
         "name": "斗技",
-        "description": "应对成功后，获得全技能威力永久+20。"
+        "description": "应对成功后，获得全技能威力永久+30。"
       }
     }
   },
   {
     "name": "Conductor",
-    "description": "After each successful Counter, this jingling's Attack +20% permanently.",
+    "description": "After each successful Counter, this jingling's Attack +30% permanently.",
     "localized": {
       "zh": {
         "name": "指挥家",
-        "description": "应对成功后，永久获得双攻+20%。"
+        "description": "应对成功后，永久获得双攻+30%。"
       }
     }
   },
@@ -1502,11 +1502,11 @@
   },
   {
     "name": "Immortality",
-    "description": "Revives 3 turns after being defeated.",
+    "description": "Revives 4 turns after being defeated.",
     "localized": {
       "zh": {
         "name": "不朽",
-        "description": "力竭3回合后复活。"
+        "description": "力竭4回合后复活。"
       }
     }
   },
@@ -1522,11 +1522,11 @@
   },
   {
     "name": "Fallen",
-    "description": "While this jingling is on the battlefield, all end-of-turn effects trigger one fewer time.",
+    "description": "While this jingling is on the battlefield, end-of-turn effects do not trigger.",
     "localized": {
       "zh": {
         "name": "陨落",
-        "description": "在场时，双方回合结束时触发的效果，触发次数-1。"
+        "description": "在场时，双方回合结束时触发的效果不会触发。"
       }
     }
   },

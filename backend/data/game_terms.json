@@ -262,13 +262,13 @@
   {
     "sort_order": 20,
     "key": "Rain",
-    "description": "Water-type environment. When the weather is Rain, both sides' Water-type move power +50%.",
-    "tooltip_description": "Water-type weather. When the weather is Rain, both sides' Water-type move power +50%.",
+    "description": "Water-type environment. When the weather is Rain, both sides' Water-type move power +75%.",
+    "tooltip_description": "Water-type weather. When the weather is Rain, both sides' Water-type move power +75%.",
     "localized": {
       "zh": {
         "name": "雨天",
-        "description": "水系环境，天气为雨天时，双方水系技能威力提升50%。",
-        "tooltip_description": "水系环境，天气为雨天时，双方水系技能威力提升50%。"
+        "description": "水系环境，天气为雨天时，双方水系技能威力+75%。",
+        "tooltip_description": "水系环境，天气为雨天时，双方水系技能威力+75%。"
       }
     }
   },

@@ -5,7 +5,7 @@
     "zh_name": "防反",
     "usage": "defense_only",
     "affect": "self",
-    "dmg_reduction_pct": 60
+    "dmg_reduction_pct": 70
   },
   {
     "move": "Defend",
@@ -213,7 +213,7 @@
     "zh_name": "冰蛋壳",
     "usage": "defense_only",
     "affect": "self",
-    "dmg_reduction_pct": 60
+    "dmg_reduction_pct": 70
   },
   {
     "move": "Dragon Blood",
@@ -413,7 +413,8 @@
     "zh_name": "咆哮",
     "usage": "attack_only",
     "affect": "opponent",
-    "phy_atk_boost": -130
+    "phy_atk_boost": -60,
+    "spd_boost": -60
   },
   {
     "move": "Sharp Eyes",
@@ -516,7 +517,8 @@
     "zh_name": "钧势",
     "usage": "attack_only",
     "affect": "self",
-    "phy_def_boost": 140
+    "phy_def_boost": 140,
+    "spd_boost": -30
   },
   {
     "move": "Frost",
@@ -532,8 +534,9 @@
     "zh_name": "龙吟",
     "usage": "attack_only",
     "affect": "self",
-    "phy_atk_boost": 100,
-    "mag_atk_boost": 100
+    "phy_atk_boost": 150,
+    "mag_atk_boost": 150,
+    "spd_boost": 80
   },
   {
     "move": "Corruption",
@@ -575,8 +578,8 @@
     "zh_name": "破防",
     "usage": "attack_only",
     "affect": "opponent",
-    "phy_def_boost": -130,
-    "mag_def_boost": -130
+    "phy_def_boost": -70,
+    "mag_def_boost": -70
   },
   {
     "move": "Weak Point",
@@ -652,7 +655,56 @@
     "zh_name": "啮合传递",
     "usage": "attack_only",
     "affect": "self",
-    "phy_atk_boost": 60
+    "phy_atk_boost": 80,
+    "spd_boost": 30
+  },
+  {
+    "move": "Quick Move",
+    "status_name": "Quick Move",
+    "zh_name": "快速移动",
+    "usage": "attack_only",
+    "affect": "self",
+    "spd_boost": 80
+  },
+  {
+    "move": "Snowball",
+    "status_name": "Snowball",
+    "zh_name": "雪球",
+    "usage": "attack_only",
+    "affect": "opponent",
+    "spd_boost": -90
+  },
+  {
+    "move": "Ice Toss",
+    "status_name": "Ice Toss",
+    "zh_name": "丢冰块",
+    "usage": "attack_only",
+    "affect": "opponent",
+    "spd_boost": -30
+  },
+  {
+    "move": "Superconduct Acceleration",
+    "status_name": "Superconduct Acceleration",
+    "zh_name": "超导加速",
+    "usage": "attack_only",
+    "affect": "self",
+    "spd_boost": 30
+  },
+  {
+    "move": "Ion Explosion",
+    "status_name": "Ion Explosion",
+    "zh_name": "电离爆破",
+    "usage": "attack_only",
+    "affect": "opponent",
+    "spd_boost": -40
+  },
+  {
+    "move": "Ride the Wind",
+    "status_name": "Ride the Wind",
+    "zh_name": "乘风",
+    "usage": "attack_only",
+    "affect": "self",
+    "spd_boost": 120
   },
   {
     "move": "All or Nothing",

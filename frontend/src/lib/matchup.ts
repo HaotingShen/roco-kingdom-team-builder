@@ -42,16 +42,16 @@ export interface MatchupSide {
  * Input: attacker stat − defender stat. Returns effective move power.
  */
 function getStatDiffPower(diff: number): number {
-  if (diff < 0) return 60;
-  if (diff <= 14) return 100;
-  if (diff <= 29) return 130;
-  if (diff <= 44) return 140;
-  if (diff <= 59) return 150;
-  if (diff <= 74) return 160;
-  if (diff <= 89) return 170;
-  if (diff <= 104) return 180;
-  if (diff <= 119) return 190;
-  if (diff <= 134) return 194;
+  if (diff <= 0) return 60;
+  if (diff <= 30) return 80;
+  if (diff <= 60) return 100;
+  if (diff <= 90) return 120;
+  if (diff <= 120) return 140;
+  if (diff <= 150) return 150;
+  if (diff <= 180) return 160;
+  if (diff <= 210) return 170;
+  if (diff <= 240) return 180;
+  if (diff <= 270) return 190;
   return 200;
 }
 
