@@ -41,13 +41,13 @@
   {
     "sort_order": 3,
     "key": "Attack Mark",
-    "description": "Marks: All move power +10 per stack.",
-    "tooltip_description": "Marks: All move power +10 per stack.",
+    "description": "Marks: All move power +10% per stack.",
+    "tooltip_description": "Marks: All move power +10% per stack.",
     "localized": {
       "zh": {
         "name": "攻击印记",
-        "description": "印记效果，每层使全技能威力+10。",
-        "tooltip_description": "印记效果，每层使全技能威力+10。"
+        "description": "印记效果，每层使全技能威力+10%。",
+        "tooltip_description": "印记效果，每层使全技能威力+10%。"
       }
     }
   },
