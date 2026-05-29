@@ -1,4 +1,4 @@
-import { useNavigate, useLocation, Link } from "react-router-dom";
+import { useNavigate, useLocation, Link, NavLink } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { useI18n } from "@/i18n";
@@ -11,6 +11,7 @@ import { logoUrl } from "@/lib/images";
 import UserMenu from "./UserMenu";
 import DonationModal from "./DonationModal";
 import ConfirmDialog from "./ConfirmDialog";
+import { useAnnouncementUnread } from "@/hooks/useAnnouncementUnread";
 
 export default function Topbar() {
   const nav = useNavigate();
@@ -40,11 +41,15 @@ export default function Topbar() {
     ? t("topbar.teams")
     : loc.pathname.startsWith("/build/analyze")
     ? t("topbar.monsterAnalysis")
+    : loc.pathname === "/announcements"
+    ? t("topbar.whatsNew")
     : t("topbar.builder");
 
   const isOnBuilder =
     (loc.pathname === "/" || loc.pathname.startsWith("/build")) &&
     !loc.pathname.startsWith("/build/analyze");
+
+  const hasUnread = useAnnouncementUnread();
 
   const [showDonation, setShowDonation] = useState(false);
   const [confirmDialog, setConfirmDialog] = useState<{
@@ -181,6 +186,28 @@ export default function Topbar() {
             </button>
           </>
         )}
+
+        {/* What's New bell — mobile only; hidden <425px on Build page (topbar already crowded there) */}
+        <NavLink
+          to="/announcements"
+          className={({ isActive }) =>
+            `${isOnBuilder ? "hidden desc:flex lg:hidden" : "flex lg:hidden"} h-9 w-9 items-center justify-center rounded-lg border-2 transition-colors cursor-pointer ${
+              isActive
+                ? "border-zinc-500 bg-zinc-100 text-zinc-900"
+                : "border-zinc-300 text-zinc-700 hover:bg-zinc-100"
+            }`
+          }
+          title={t("topbar.whatsNew")}
+        >
+          <div className="relative">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 10-12 0v3.159c0 .538-.214 1.055-.595 1.437L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+            </svg>
+            {hasUnread && (
+              <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full ring-2 ring-white" />
+            )}
+          </div>
+        </NavLink>
 
         {/* Language toggle — compact below 800px */}
         <button

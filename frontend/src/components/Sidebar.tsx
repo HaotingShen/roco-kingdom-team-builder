@@ -2,6 +2,7 @@ import { useState } from "react";
 import { NavLink } from "react-router-dom";
 import { useI18n } from "@/i18n";
 import { logoUrl } from "@/lib/images";
+import { useAnnouncementUnread } from "@/hooks/useAnnouncementUnread";
 
 const link = "block px-4 py-2 rounded hover:bg-zinc-100";
 const active = "bg-zinc-200 font-medium";
@@ -38,6 +39,7 @@ function BrandLockup() {
 
 export default function Sidebar() {
   const { t } = useI18n();
+  const hasUnread = useAnnouncementUnread();
   const [adDismissed, setAdDismissed] = useState(false);
   return (
     <aside
@@ -63,6 +65,14 @@ export default function Sidebar() {
         )}
         <NavLink to="/feedback" className={({ isActive }) => `${link} ${isActive ? active : ""}`}>
           {t("sidebar.feedback")}
+        </NavLink>
+        <NavLink to="/announcements" className={({ isActive }) => `${link} ${isActive ? active : ""}`}>
+          <span className="flex items-center justify-between">
+            {t("sidebar.whatsNew")}
+            {hasUnread && (
+              <span className="w-2 h-2 bg-red-500 rounded-full ring-2 ring-white shrink-0" />
+            )}
+          </span>
         </NavLink>
       </nav>
 

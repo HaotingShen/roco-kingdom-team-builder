@@ -19,7 +19,7 @@
     "id": "2026-03-31-move-update",
     "type": "info",
     "en": "Update: Move data has been updated to reflect the latest game content!",
-    "zh": "【更新】技能数据也已同步最新内容～",
+    "zh": "技能数据也已同步最新内容～",
     "date": "2026-03-31",
     "expiresAt": "2026-04-03"
   },
@@ -27,7 +27,7 @@
     "id": "2026-04-01-stats-moveset-update",
     "type": "warning",
     "en": "Update: Some jingling's move pools and base stats have been updated, please load your saved teams on Build Page to check if the moves are still valid!",
-    "zh": "【更新】修复了部分精灵技能池以及种族值数据，建议在构筑页面重新打开已保存的队伍确认技能是否有效！",
+    "zh": "修复了部分精灵技能池以及种族值数据，建议在构筑页面重新打开已保存的队伍确认技能是否有效！",
     "date": "2026-04-01",
     "expiresAt": "2026-04-07"
   },

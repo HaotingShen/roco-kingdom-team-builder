@@ -89,6 +89,7 @@ const ui: Record<Lang, Dict> = {
       dex: "Dex",
       teams: "Saved Teams",
       feedback: "Feedback",
+      whatsNew: "What's New",
     },
     topbar: {
       builder: "Team Builder",
@@ -107,6 +108,7 @@ const ui: Record<Lang, Dict> = {
       quickBuildLoaded: "Loaded: {name}",
       admin: "Admin",
       donate: "Donate",
+      whatsNew: "What's New",
     },
     feedback: {
       title: "Send Feedback",
@@ -846,6 +848,8 @@ const ui: Record<Lang, Dict> = {
       gotIt: "Got it",
       dismiss: "Dismiss",
       importantNotice: "Important Notice",
+      pageTitle: "What's New",
+      noAnnouncements: "No announcements yet.",
     },
   },
   zh: {
@@ -869,6 +873,7 @@ const ui: Record<Lang, Dict> = {
       dex: "图鉴",
       teams: "我的队伍",
       feedback: "意见反馈",
+      whatsNew: "更新公告",
     },
     topbar: {
       builder: "队伍构筑",
@@ -887,6 +892,7 @@ const ui: Record<Lang, Dict> = {
       quickBuildLoaded: "已载入：{name}",
       admin: "管理",
       donate: "打赏",
+      whatsNew: "更新公告",
     },
     donation: {
       title: "支持项目",
@@ -1623,6 +1629,8 @@ const ui: Record<Lang, Dict> = {
       gotIt: "知道了",
       dismiss: "关闭",
       importantNotice: "重要通知",
+      pageTitle: "更新公告",
+      noAnnouncements: "暂无公告。",
     },
   },
 };

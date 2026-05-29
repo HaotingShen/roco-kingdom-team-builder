@@ -24,6 +24,7 @@ import AdminPage from "./features/admin/AdminPage";
 import SettingsPage from "./features/auth/SettingsPage";
 import FeedbackPage from "./features/feedback/FeedbackPage";
 import ImportPage from "./features/share/ImportPage";
+import AnnouncementsPage from "./features/announcements/AnnouncementsPage";
 
 const router = createRouter([
   {
@@ -47,7 +48,8 @@ const router = createRouter([
       { path: "settings", element: <SettingsPage /> },
       { path: "admin", element: <AdminPage /> },
       { path: "feedback", element: <FeedbackPage /> },
-      { path: "import", element: <ImportPage /> }
+      { path: "import", element: <ImportPage /> },
+      { path: "announcements", element: <AnnouncementsPage /> },
     ]
   }
 ]);
