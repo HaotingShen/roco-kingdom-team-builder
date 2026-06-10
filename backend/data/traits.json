@@ -1762,11 +1762,11 @@
   },
   {
     "name": "Visiting Scholar",
-    "description": "This jingling's Move Energy Cost +1, but it can learn all Attack-type moves.",
+    "description": "This jingling's Move Energy Cost +2, but it can learn all Attack-type moves.",
     "localized": {
       "zh": {
         "name": "留学生",
-        "description": "自己全技能能耗+1，可以学习全部攻击技能。"
+        "description": "自己全技能能耗+2，可以学习全部攻击技能。"
       }
     }
   },
