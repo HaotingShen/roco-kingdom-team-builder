@@ -10,6 +10,11 @@ services:
       - SECRET_KEY=${SECRET_KEY}
       - LLM_PROVIDER=deepseek
       - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY}
+      # DeepSeek-V4 migration (legacy deepseek-reasoner retires 2026-07-24 15:59 UTC).
+      # This env is the rollback lever: set DEEPSEEK_MODEL=deepseek-reasoner to revert (works until that date).
+      - DEEPSEEK_MODEL=deepseek-v4-flash
+      - DEEPSEEK_THINKING_ENABLED=true
+      - DEEPSEEK_REASONING_EFFORT=high
       - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
       # Cookie settings for path-based routing (same domain for frontend + API)
       # COOKIE_DOMAIN not set = defaults to exact origin (rkteambuilder.com), correct for same-site

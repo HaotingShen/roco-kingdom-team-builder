@@ -26,9 +26,17 @@ GEMINI_THINKING_BUDGET = int(os.getenv("GEMINI_THINKING_BUDGET", "24576"))
 
 # DeepSeek Official API Configuration (production - for China access)
 DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY", "")
-# Models: deepseek-chat (非思考模式), deepseek-reasoner (思考模式)
-DEEPSEEK_MODEL = os.getenv("DEEPSEEK_MODEL", "deepseek-reasoner")
+# Models (DeepSeek-V4, since 2026-04-24), dual-mode (thinking / non-thinking):
+#   deepseek-v4-flash — fast, low-cost (284B/13B). What deepseek-reasoner already routes to.
+#   deepseek-v4-pro   — highest quality (1.6T/49B), higher cost, lower concurrency.
+# Legacy deepseek-chat / deepseek-reasoner are RETIRED after 2026-07-24 15:59 UTC.
+DEEPSEEK_MODEL = os.getenv("DEEPSEEK_MODEL", "deepseek-v4-flash")
 DEEPSEEK_TIMEOUT = float(os.getenv("DEEPSEEK_TIMEOUT", "200.0"))
+# Thinking mode (V4 only): keep enabled to preserve reasoning-quality analysis.
+# On V4 thinking is a request parameter, not the model name (legacy reasoner thought implicitly).
+DEEPSEEK_THINKING_ENABLED = os.getenv("DEEPSEEK_THINKING_ENABLED", "true").lower() == "true"
+# reasoning_effort: "high" (default) or "max". Keep "high" to respect the CloudFront 120s budget.
+DEEPSEEK_REASONING_EFFORT = os.getenv("DEEPSEEK_REASONING_EFFORT", "high")
 
 # LLM Response Configuration
 ANALYSIS_TEMPERATURE = float(os.getenv("ANALYSIS_TEMPERATURE", "0.7"))

@@ -21,12 +21,67 @@ from backend.config import (
     DEEPSEEK_API_KEY,
     DEEPSEEK_MODEL,
     DEEPSEEK_TIMEOUT,
+    DEEPSEEK_THINKING_ENABLED,
+    DEEPSEEK_REASONING_EFFORT,
     ANALYSIS_TEMPERATURE,
     ANALYSIS_MAX_TOKENS,
 )
 from backend.prompt_logger import save_prompt
 
 logger = logging.getLogger(__name__)
+
+
+def build_deepseek_request_kwargs(
+    model: str,
+    messages: list,
+    max_tokens: int,
+    temperature: float,
+    thinking_enabled: Optional[bool] = None,
+    reasoning_effort: Optional[str] = None,
+) -> Dict[str, Any]:
+    """
+    Build the kwargs for a DeepSeek chat.completions.create call.
+
+    Pure function (no network) so the request-shaping logic is unit-testable.
+
+    Thinking mode:
+      - DeepSeek-V4 (deepseek-v4-flash / deepseek-v4-pro): thinking is a request
+        parameter passed via extra_body; reasoning_effort goes in extra_body too
+        (kept out of the top-level kwarg to avoid coupling to the OpenAI SDK's
+        ReasoningEffort Literal, which does not include "max").
+      - Legacy deepseek-reasoner: thinks implicitly; rejects temperature.
+      - Legacy deepseek-chat: non-thinking; accepts temperature.
+
+    Temperature is honored ONLY when thinking is not active (thinking mode ignores
+    it; legacy reasoner errors on it), preserving the prior behavior for legacy names.
+    """
+    if thinking_enabled is None:
+        thinking_enabled = DEEPSEEK_THINKING_ENABLED
+    if reasoning_effort is None:
+        reasoning_effort = DEEPSEEK_REASONING_EFFORT
+
+    is_v4 = model.startswith("deepseek-v4")
+
+    kwargs: Dict[str, Any] = {
+        "model": model,
+        "messages": messages,
+        "max_tokens": max_tokens,
+        "response_format": {"type": "json_object"},  # Force JSON output
+    }
+
+    if is_v4:
+        extra_body: Dict[str, Any] = {
+            "thinking": {"type": "enabled" if thinking_enabled else "disabled"}
+        }
+        if thinking_enabled:
+            extra_body["reasoning_effort"] = reasoning_effort
+        kwargs["extra_body"] = extra_body
+
+    thinking_active = thinking_enabled if is_v4 else ("reasoner" in model.lower())
+    if not thinking_active:
+        kwargs["temperature"] = temperature
+
+    return kwargs
 
 
 class LLMClient:
@@ -177,18 +232,13 @@ class LLMClient:
         # Use DeepSeek model
         model = DEEPSEEK_MODEL
 
-        # Build request kwargs
-        kwargs = {
-            "model": model,
-            "messages": messages,
-            "max_tokens": max_tokens,
-            "response_format": {"type": "json_object"},  # Force JSON output
-        }
-
-        # Only add temperature if NOT using reasoner model
-        # (deepseek-reasoner doesn't support temperature parameter)
-        if "reasoner" not in model.lower():
-            kwargs["temperature"] = temperature
+        # Build request kwargs (thinking-mode handling lives in the pure helper)
+        kwargs = build_deepseek_request_kwargs(
+            model=model,
+            messages=messages,
+            max_tokens=max_tokens,
+            temperature=temperature,
+        )
 
         try:
             response = await self._client.chat.completions.create(**kwargs)
