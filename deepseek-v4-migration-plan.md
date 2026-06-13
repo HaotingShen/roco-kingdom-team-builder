@@ -306,7 +306,7 @@ Effectively **none**. You are already billed at `deepseek-v4-flash` rates today 
 - [x] `docker-compose.prod.yml` — env pinned (§6.4)
 - [x] `backend/tests/test_deepseek_request.py` added; `pytest` green for it + no new regressions
 - [x] **Step 0 smoke test passed** (toy + schema-realistic; JSON valid, `reasoning_content` present, `finish_reason=stop`)
-- [ ] Local full `/team/analyze` end-to-end — **requires local PostgreSQL + Redis stack running** (not available in this shell); run before merge or rely on prod smoke test
+- [x] **Local full end-to-end passed** (2026‑06‑13): seeded local Postgres + Redis, ran `_perform_team_analysis` with `deepseek-v4-flash`. Fresh run: `all_succeeded=True`, 7/7 calls, no partial errors, 37.2s. Cache-hit re-run: `actual_llm_calls=0`, 0.21s. team_synergy + all 6 per-monster analyses fully populated.
 - [ ] PR reviewed + merged to `main`; CI deploy succeeds
 - [ ] Prod logs show `model: deepseek-v4-flash`
 - [ ] (Recommended) `docker-compose.prod.yml` env pinned on EC2 (§6.4)
