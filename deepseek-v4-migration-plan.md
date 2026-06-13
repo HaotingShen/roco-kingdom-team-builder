@@ -189,9 +189,14 @@ def build_deepseek_request_kwargs(model, messages, max_tokens, temperature,
 
 ## 7. Testing plan
 
-### Step 0 — API smoke test BEFORE touching app code (the gate)
+### Step 0 — API smoke test (DONE ✅ — passed 2026‑06‑13)
 
-Run locally with the prod key. This proves thinking + json_object works on v4‑flash:
+Ran twice against the prod key (`/rktb/prod/DEEPSEEK_API_KEY`, personal AWS profile), total cost « 1¢:
+- **Toy JSON:** `deepseek-v4-flash` + `thinking:enabled` + `json_object` → valid JSON `{"ok":true,"n":3}`, `reasoning_content` present, `finish_reason=stop`, 1.6s.
+- **Schema-realistic:** returned exactly `{synergy_moves:[...], recommendation:[...]}` (both lists), `finish=stop` (no truncation at 4096), 223 reasoning tokens, 5.7s.
+- **Finding:** V4 reports reasoning tokens at `usage.completion_tokens_details.reasoning_tokens` (not top-level). `llm_service.py` metadata extraction was fixed accordingly (commit 6726ea4) so `🧠 Thinking` logging is accurate.
+
+This empirically closes risk **R2** (json_object + thinking) and **R4** (truncation). Original gate script for reference:
 
 ```bash
 source ~/.venvs/rktb310/bin/activate
@@ -300,8 +305,8 @@ Effectively **none**. You are already billed at `deepseek-v4-flash` rates today 
 - [x] `backend/llm_service.py` — import new config (§6.2) + `build_deepseek_request_kwargs` helper (§6.3)
 - [x] `docker-compose.prod.yml` — env pinned (§6.4)
 - [x] `backend/tests/test_deepseek_request.py` added; `pytest` green for it + no new regressions
-- [ ] **Step 0 smoke test passes** (JSON parses, `reasoning_content` present, `finish_reason=stop`) — **the gate before deploy**
-- [ ] Local full `/team/analyze` works; logs show thinking tokens > 0 and valid JSON
+- [x] **Step 0 smoke test passed** (toy + schema-realistic; JSON valid, `reasoning_content` present, `finish_reason=stop`)
+- [ ] Local full `/team/analyze` end-to-end — **requires local PostgreSQL + Redis stack running** (not available in this shell); run before merge or rely on prod smoke test
 - [ ] PR reviewed + merged to `main`; CI deploy succeeds
 - [ ] Prod logs show `model: deepseek-v4-flash`
 - [ ] (Recommended) `docker-compose.prod.yml` env pinned on EC2 (§6.4)
