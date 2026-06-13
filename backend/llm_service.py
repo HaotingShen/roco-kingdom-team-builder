@@ -286,9 +286,14 @@ class LLMClient:
             metadata['output_tokens'] = getattr(usage, 'completion_tokens', 0)
             metadata['total_tokens'] = getattr(usage, 'total_tokens', 0)
 
-            # Check for thinking/reasoning tokens (if DeepSeek returns them separately)
-            # Similar to Gemini's thoughts_token_count
-            if hasattr(usage, 'reasoning_tokens') or hasattr(usage, 'thinking_tokens'):
+            # Check for thinking/reasoning tokens (if DeepSeek returns them separately).
+            # DeepSeek-V4 reports them (OpenAI-compatible) under
+            # usage.completion_tokens_details.reasoning_tokens. Older paths exposed
+            # reasoning_tokens / thinking_tokens directly on usage; keep both as fallback.
+            details = getattr(usage, 'completion_tokens_details', None)
+            if details is not None and getattr(details, 'reasoning_tokens', None):
+                metadata['thinking_tokens'] = details.reasoning_tokens
+            elif hasattr(usage, 'reasoning_tokens') or hasattr(usage, 'thinking_tokens'):
                 metadata['thinking_tokens'] = getattr(usage, 'reasoning_tokens', 0) or getattr(usage, 'thinking_tokens', 0)
 
             # DeepSeek cache metrics
