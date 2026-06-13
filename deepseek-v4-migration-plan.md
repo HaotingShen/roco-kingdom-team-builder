@@ -317,6 +317,28 @@ Effectively **none**. You are already billed at `deepseek-v4-flash` rates today 
 
 ---
 
+## 11b. Latency-coupling audit (faster analysis: ~40s vs old 2–3 min)
+
+Audited every timing-coupled setting (repo + live AWS) since the new model is ~3× faster. **Conclusion: no config changes required — faster analysis is strictly safer.**
+
+| Config | Value | Tuned for (slow era) | Effect of speed-up |
+|---|---|---|---|
+| CloudFront origin response timeout | **120s** (live-confirmed, API origin `origin-api`) | Old analysis hit 120–180s → CF 504 | ~40s now → 504/silent-retry path **dormant** |
+| nginx `proxy_read_timeout` | 210s | Keep backend computing past CF 120s so result still cached | Pure headroom now |
+| `DEEPSEEK_TIMEOUT` | 200s | Slow reasoner call | Single v4 call ~5–40s — headroom |
+| `REDIS_LOCK_TIMEOUT`/blocking | 210s | Hold stampede lock across 2–3 min compute | Lock held ~40s — headroom |
+| Per-team dedup `ratelimit:analysis:{ip}:{team}` | **60s** | **Intentionally < CF 120s** so CF-timeout retry (~120s) finds it expired (`main.py:4646`) | Analysis < 60s; re-submit = cache hit that bypasses anyway |
+| TanStack mutation retry | once, 5xx only | Absorb CF 504 → retry hits warm cache | No 504 → no retry; guard remains for rare slow case |
+| Frontend axios timeout | none (relies on CF 120s) | — | Returns ~40s |
+| Quota double-charge guard | `actual_llm_calls>0 && successful>0` + `user_analyzed` dedup + atomic slot claim | Prevent double-charge on CF-timeout retry | Timing-independent; still correct |
+
+**Key facts discovered:**
+- The CF-timeout → silent-retry → cache-hit → charge-once machinery is a **safety net**, not the happy path; faster analysis stops exercising it but it still protects any analysis that exceeds 120s under load. Worst case = no worse than today.
+- `ANALYSIS_RATE_LIMIT=1/2minutes` (SlowAPI `_apply_rate_limit_check`) is **defined but never called** → there is **no** "wait 2 min between analyses" throttle. The only per-request throttle is the 60s same-team key (a cache hit anyway). So no rate-limit wall from faster analyses.
+- No ALB/API Gateway in the path (CloudFront → EC2 nginx direct); `/api/*` is **not** cached at CloudFront. uvicorn has no request timeout.
+
+**Post-deploy watch (not a blocker):** confirm prod analyses (7 concurrent calls, China-peak load) stay < 120s; if any exceed it, the existing safety net handles it as today.
+
 ## 12. Sources (DeepSeek official docs, fetched 2026‑06‑13)
 
 - Models & pricing — https://api-docs.deepseek.com/quick_start/pricing
