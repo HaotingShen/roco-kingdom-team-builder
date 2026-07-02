@@ -40,8 +40,8 @@ services:
       - DB_MAX_OVERFLOW=20
       # Memory: limit glibc arenas to reduce fragmentation from large DeepSeek responses
       - MALLOC_ARENA_MAX=2
-    mem_limit: 4000m
-    memswap_limit: 4000m
+    mem_limit: 2500m
+    memswap_limit: 2500m
     volumes:
       - /home/ubuntu/rktb/logs:/app/backend/logs
     logging:
