@@ -1,5 +1,11 @@
 # RDS AZ Migration Runbook
 
+> ✅ **EXECUTED 2026-04-04; old `rktb-postgres` instance deleted 2026-04-11.**
+> Historical artifact — kept as a template for future snapshot-restore
+> migrations. Current instance: `rktb-postgres-1a` in ap-southeast-1a.
+> ⚠️ Contains the live RDS master password in cleartext (also in
+> umami-setup.md) — rotate or scrub if the repo's audience ever widens.
+
 **Problem:** RDS is in `ap-southeast-1b`, EC2 is in `ap-southeast-1a`. Every DB query crosses AZs,
 costing ~$130/month in inter-AZ transfer fees.
 

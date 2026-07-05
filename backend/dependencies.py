@@ -270,8 +270,19 @@ async def get_user_or_anonymous(
     Returns:
         Tuple of (user, device_id, client_ip):
         - user: User object if authenticated, None for anonymous
+        - client requests WITHOUT an Authorization header are anonymous
         - device_id: From httpOnly cookie (for tracking and daily caps)
         - client_ip: Client IP address (for tracking and fallback caps)
+
+    Raises:
+        HTTPException 401/403 when an Authorization header IS present but the
+        token is expired/invalid/revoked or the account is disabled. A client
+        that presents a token expects to be authenticated; raising lets the
+        frontend's 401-refresh interceptor recover with a fresh token, instead
+        of silently running the request as anonymous with the wrong quota
+        identity (which made the quota display show anonymous numbers to
+        logged-in users after a 15-minute token expiry, and let locked
+        accounts keep anonymous quota).
     """
     from backend.rate_limiter import get_real_client_ip
 
@@ -279,8 +290,9 @@ async def get_user_or_anonymous(
     device_id = get_device_id(request)
     client_ip = get_real_client_ip(request)
 
-    # Try to get authenticated user
-    user = await get_optional_user(request, credentials, db)
+    user: Optional[models.User] = None
+    if credentials:
+        user = await get_current_user(request, credentials, db)
 
     return (user, device_id, client_ip)
 

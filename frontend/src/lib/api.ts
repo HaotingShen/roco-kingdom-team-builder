@@ -315,8 +315,13 @@ export const endpoints = {
   updateTeam: (id: number | string, payload: any) => api.put(`/teams/${id}`, payload),
   deleteTeam: (id: number | string) => api.delete(`/teams/${id}`),
 
-  analyzeTeam: (payload: any, language?: "en" | "zh") => api.post("/team/analyze", { team: payload, language: language || "en" }),
-  analyzeTeamById: (payload: { team_id: number; language?: "en" | "zh" }) => api.post("/team/analyze_by_id", payload),
+  // Analysis can take ~60s (7 LLM calls); the 5-minute client timeout is a
+  // failsafe so a hung connection can't leave the global isAnalyzing flag
+  // stuck until a page refresh.
+  analyzeTeam: (payload: any, language?: "en" | "zh") =>
+    api.post("/team/analyze", { team: payload, language: language || "en" }, { timeout: 300_000 }),
+  analyzeTeamById: (payload: { team_id: number; language?: "en" | "zh" }) =>
+    api.post("/team/analyze_by_id", payload, { timeout: 300_000 }),
 
   // Saved analysis endpoints
   saveAnalysis: (payload: {
@@ -331,15 +336,6 @@ export const endpoints = {
 
   deleteSavedAnalysis: (team_id: number, language?: "en" | "zh") =>
     api.delete(`/teams/${team_id}/analysis`, { params: { language: language || "en" } }),
-
-  forceRefresh: (payload: {
-    team_id: number;
-    language?: "en" | "zh";
-    save_result?: boolean;
-  }) => api.post("/team/force_refresh", payload),
-
-  getQuotaStatus: (team_id?: number, language?: "en" | "zh") =>
-    api.get("/quota/status", { params: { team_id, language: language || "en" } }),
 
   getFeaturedTeams: () => api.get("/teams/featured"),
 

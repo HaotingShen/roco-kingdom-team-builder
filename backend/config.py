@@ -49,7 +49,10 @@ elif LLM_PROVIDER == "deepseek" and not DEEPSEEK_API_KEY:
     raise ValueError("DEEPSEEK_API_KEY required when LLM_PROVIDER=deepseek")
 
 # CORS configuration
-ALLOWED_ORIGINS_STR = os.getenv("ALLOWED_ORIGINS", "*")
+# Default is the local dev origins, NOT "*". Starlette treats "*" combined
+# with allow_credentials=True as "echo any Origin", which would let any
+# website make credentialed requests if a deployment forgot to set this var.
+ALLOWED_ORIGINS_STR = os.getenv("ALLOWED_ORIGINS", "http://localhost:5173,http://localhost:3000")
 ALLOWED_ORIGINS: List[str] = [origin.strip() for origin in ALLOWED_ORIGINS_STR.split(",")]
 
 # Application settings

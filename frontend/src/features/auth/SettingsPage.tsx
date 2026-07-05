@@ -6,6 +6,7 @@ import { authEndpoints } from "@/lib/api";
 import { useAuthStore } from "./authStore";
 import { useI18n } from "@/i18n";
 import NoIndex from "@/components/NoIndex";
+import { clearPreviousIdentityState } from "./LoginPage";
 
 export default function SettingsPage() {
   const navigate = useNavigate();
@@ -33,7 +34,10 @@ export default function SettingsPage() {
     },
     onSuccess: () => {
       toast.success(t("settings.passwordChanged"));
+      // Password change bumps token_version server-side (all sessions dead) —
+      // clear cached data and builder team reference like a logout does.
       clearAuth();
+      clearPreviousIdentityState();
       navigate("/auth/login");
     },
     onError: (error: any) => {

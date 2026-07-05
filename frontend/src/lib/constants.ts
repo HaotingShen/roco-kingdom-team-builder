@@ -35,7 +35,32 @@ export const QUERY_KEYS = {
   LEADER_MONSTER: (monsterId: number) => ["monsters", "leader", monsterId] as const,
 
   FEATURED_TEAMS: ["teams", "featured"] as const,
+
+  SAVED_ANALYSIS: (teamId: number | string, lang?: string) =>
+    lang === undefined
+      ? (["savedAnalysis", teamId] as const)
+      : (["savedAnalysis", teamId, lang] as const),
 } as const;
+
+/* ========== Mutation retry policies ========== */
+
+/**
+ * Retry policy for the two analyze mutations ONLY.
+ *
+ * CloudFront's origin timeout is 120s; a long analysis makes CloudFront
+ * return 504 while the backend keeps computing. Retrying once lets the
+ * client pick up the finished result: the retry waits on the backend's
+ * distributed LLM-cache lock and returns the original run's result with no
+ * second quota charge. Network errors (no response object) also retry once.
+ *
+ * Do NOT apply this to other mutations — re-POSTing non-idempotent calls
+ * (createTeam etc.) on a 5xx can duplicate writes.
+ */
+export const analyzeMutationRetry = (failureCount: number, error: any): boolean => {
+  const status = error?.response?.status;
+  if (status !== undefined && status < 500) return false; // client errors: don't retry
+  return failureCount < 1;
+};
 
 /* ========== Team Configuration ========== */
 

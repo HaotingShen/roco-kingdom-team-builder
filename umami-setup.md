@@ -1,4 +1,8 @@
-# Plan: Integrate Umami Analytics
+# Umami Analytics Setup (deployed 2026-03; live at analytics.rkteambuilder.com)
+
+> Originally written as a plan — everything below was executed and is live.
+> ⚠️ Contains the live RDS master password in cleartext (also in
+> rds-az-migration-runbook.md).
 
 **Context:** Add self-hosted Umami analytics to track Chinese + global visitors, deployable to existing EC2 infrastructure, with a shareable public stats URL for advertisers.
 

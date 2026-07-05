@@ -700,13 +700,11 @@ class SaveAnalysisRequest(BaseModel):
     analysis_data: TeamAnalysisOut
     is_from_cache: bool = False
 
-class TalentUpsert(BaseModel):
-    hp_boost: int = 0
-    phy_atk_boost: int = 0
-    mag_atk_boost: int = 0
-    phy_def_boost: int = 0
-    mag_def_boost: int = 0
-    spd_boost: int = 0
+class TalentUpsert(TalentIn):
+    """Talent payload for team updates. Inherits TalentIn's validation so the
+    update path enforces the same boost rules as the create path (values in
+    {0,7,8,9,10}, 1-3 boosted stats)."""
+    pass
 
 class UserMonsterUpsert(BaseModel):
     id: Optional[int] = None  # If present, means update; if missing, means create new
@@ -723,7 +721,10 @@ class UserMonsterUpsert(BaseModel):
 class TeamUpdate(BaseModel):
     name: Optional[str] = None
     magic_item_id: Optional[int] = None
-    user_monsters: List[UserMonsterUpsert]
+    # Same 6-monster invariant as TeamCreate — without it a crafted PUT could
+    # store a team that analyze_by_id can no longer rebuild (500) or bloat
+    # LLM cost with extra monsters.
+    user_monsters: List[UserMonsterUpsert] = Field(..., min_length=6, max_length=6)
 
     @model_validator(mode="after")
     def validate_name(self) -> "TeamUpdate":

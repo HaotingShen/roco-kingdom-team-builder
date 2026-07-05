@@ -13,6 +13,7 @@ import { useQuota } from "@/hooks/useQuota";
 import { useSeoMeta } from "@/hooks/useSeoMeta";
 import QuotaDisplay from "@/components/QuotaDisplay";
 import { useAuthStore } from "@/features/auth/authStore";
+import { useBuilderStore } from "@/features/builder/builderStore";
 
 /** Component for displaying circular monster images with fallback */
 function MonsterAvatar({ monster, size = 60 }: { monster: any; size?: number }) {
@@ -92,6 +93,17 @@ export default function TeamsListPage() {
     },
     onError: (_err, _id, ctx) => {
       if (ctx?.prev) qc.setQueryData(["teams"], ctx.prev);
+    },
+    onSuccess: (_data, id) => {
+      // If this team is loaded in the builder, drop the dangling reference so
+      // the Update button doesn't PUT a 404 against the deleted id.
+      const builder = useBuilderStore.getState();
+      if (builder.teamId === id) {
+        builder.clearTeamId();
+        builder.setAnalysis(null);
+      }
+      qc.removeQueries({ queryKey: QUERY_KEYS.TEAM_DETAIL(id) });
+      qc.removeQueries({ queryKey: QUERY_KEYS.SAVED_ANALYSIS(id) });
     },
     onSettled: () => {
       qc.invalidateQueries({ queryKey: ["teams"] });

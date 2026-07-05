@@ -3,7 +3,7 @@ import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import { endpoints } from "@/lib/api";
-import { QUERY_KEYS } from "@/lib/constants";
+import { QUERY_KEYS, analyzeMutationRetry } from "@/lib/constants";
 import { useBuilderStore } from "../builder/builderStore";
 import { useAuthStore } from "@/features/auth/authStore";
 import type { TeamOut, FullSavedAnalysisOut } from "@/types";
@@ -87,7 +87,9 @@ export default function SavedTeamPage() {
   const { lang, t } = useI18n();
   const teamId = Number(id);
   const q = useQuery<TeamOut>({
-    queryKey: ["team", teamId],
+    // Same key as the rest of the app (QUERY_KEYS.TEAM_DETAIL) — a private
+    // ["team", id] key was invisible to createTeam/updateTeam invalidations.
+    queryKey: QUERY_KEYS.TEAM_DETAIL(teamId),
     queryFn: () => endpoints.getTeam(teamId).then(r => r.data),
     enabled: Number.isFinite(teamId),
     staleTime: 0,
@@ -125,7 +127,7 @@ export default function SavedTeamPage() {
 
   // Query for saved analysis
   const savedAnalysisQuery = useQuery<FullSavedAnalysisOut>({
-    queryKey: ["savedAnalysis", teamId, lang],
+    queryKey: QUERY_KEYS.SAVED_ANALYSIS(teamId, lang),
     queryFn: () => endpoints.getSavedAnalysis(teamId, lang).then(r => r.data),
     enabled: Number.isFinite(teamId),
     retry: false, // Don't retry if no saved analysis exists
@@ -146,9 +148,18 @@ export default function SavedTeamPage() {
     },
     onSettled: () => {
       qc.invalidateQueries({ queryKey: ["teams"] });
-      qc.removeQueries({ queryKey: ["team", teamId] });
+      qc.removeQueries({ queryKey: QUERY_KEYS.TEAM_DETAIL(teamId) });
+      qc.removeQueries({ queryKey: QUERY_KEYS.SAVED_ANALYSIS(teamId) });
     },
-    onSuccess: () => nav("/teams"),
+    onSuccess: () => {
+      // If this team is loaded in the builder, drop the dangling reference so
+      // the Update button doesn't PUT a 404 against the deleted id.
+      if (useBuilderStore.getState().teamId === teamId) {
+        useBuilderStore.getState().clearTeamId();
+        setAnalysis(null);
+      }
+      nav("/teams");
+    },
   });
 
   const onDeleteClick = () => {
@@ -163,6 +174,9 @@ export default function SavedTeamPage() {
 
   const analyze = useMutation({
     mutationFn: () => endpoints.analyzeTeamById({ team_id: teamId, language: lang }).then(r => r.data),
+    // Opt-in retry: recovers the result after CloudFront's 120s timeout
+    // (backend dedupes via its LLM-cache lock — quota charged once).
+    retry: analyzeMutationRetry,
     onMutate: () => {
       setIsAnalyzing(true);
       setAnalysis(null);
@@ -170,17 +184,27 @@ export default function SavedTeamPage() {
     onError: (err: any) => {
       setServerErr(err?.response?.data?.detail || err?.message || t("builder.analysisFailed"));
       setIsAnalyzing(false);
+      // The server may still have charged this run — refresh the quota display.
+      qc.invalidateQueries({ queryKey: QUERY_KEYS.QUOTA });
     },
     onSuccess: async (res) => {
       setServerErr(null);
-      // Load team into builder so teamId is set (required for "Save Analysis" button)
-      if (q.data) {
-        loadIntoBuilder(q.data);
+      // Load the team into the builder so teamId is set. Fetch it fresh —
+      // the backend analyzed DB state, which may differ from the cached copy
+      // rendered on this page if the team changed in another tab.
+      try {
+        const fresh = await endpoints.getTeam(teamId).then(r => r.data);
+        loadIntoBuilder(fresh);
+      } catch {
+        if (q.data) loadIntoBuilder(q.data);
       }
       // Then set the analysis
       setAnalysis(res);
       setIsAnalyzing(false);
       qc.invalidateQueries({ queryKey: QUERY_KEYS.QUOTA });
+      // The backend auto-saves successful analyses of owned teams — refetch
+      // so "View Saved Analysis" reflects the new result immediately.
+      qc.invalidateQueries({ queryKey: QUERY_KEYS.SAVED_ANALYSIS(teamId) });
       nav("/build");
       // Scroll to analysis section after navigation
       setTimeout(() => {

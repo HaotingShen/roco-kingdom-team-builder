@@ -3,6 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { authEndpoints } from "@/lib/api";
+import { queryClient } from "@/lib/queryClient";
 import { useAuthStore } from "./authStore";
 import { useI18n } from "@/i18n";
 import { validateUsername } from "@/lib/usernameValidator";
@@ -58,6 +59,10 @@ export default function RegisterPage() {
       return response.data;
     },
     onSuccess: (data) => {
+      // Drop cached queries from the previous identity (tier/quota changed;
+      // guest→registered conversion keeps the same user id and teams, so the
+      // builder teamId stays valid and is intentionally NOT cleared here).
+      queryClient.clear();
       setAuth(data.user, data.access_token);
       // Confirm language from server response (should match what we sent)
       if (data.user.preferred_language) {

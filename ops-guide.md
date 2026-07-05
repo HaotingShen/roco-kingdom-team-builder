@@ -199,13 +199,18 @@ ssh -i ~/.ssh/rktb-key.pem ubuntu@13.228.63.192
 docker exec -it rktb-backend bash
 
 # You're now at /app inside the container
-# Run specific importers (safe, won't touch user data):
+# PREFERRED: safe upsert of game data (never touches user data):
+python3 -m backend.scripts.maintenance.update_game_data
+
+# Or run specific importers (safe, won't touch user data):
 python3 -m backend.scripts.importers.import_monsters
 python3 -m backend.scripts.importers.import_moves
 python3 -m backend.scripts.importers.import_traits
 
-# Or nuclear reset of ALL game data (preserves users/teams):
-python3 -m backend.scripts.importers.reset_and_reimport
+# ⛔ NEVER run backend.scripts.importers.reset_and_reimport in production.
+# Despite older versions of this guide claiming it "preserves users/teams",
+# it DROPS EVERY TABLE except alembic_version — including users, teams, and
+# saved analyses. It is a LOCAL-DEV-ONLY tool.
 
 # Exit container
 exit
@@ -239,16 +244,14 @@ alembic revision --autogenerate -m "add column X to table Y"
 # 2. Review the generated file in backend/alembic/versions/
 # Make sure it only changes what you intended
 
-# 3. Push to git — this deploys new code but does NOT run migrations
+# 3. Push to git — deploy.sh runs `alembic upgrade head` AUTOMATICALLY on
+#    every deploy (older versions of this guide said it didn't; that's wrong)
 git push origin main
 
-# 4. After deployment succeeds, SSH in and run migration
+# 4. Verify after deployment succeeds (optional — migration already ran)
 ssh -i ~/.ssh/rktb-key.pem ubuntu@13.228.63.192
 docker exec -it rktb-backend bash
 cd /app
-alembic upgrade head
-
-# 5. Verify
 alembic current    # Should show your new migration as (head)
 exit
 ```
@@ -275,7 +278,7 @@ aws ce get-cost-and-usage \
 
 ### Temporarily pause the site (stop billing)
 ```bash
-# Stop EC2 (~$8/month saved)
+# Stop EC2 (t3.medium since 2026-07-02, ~$30/month saved)
 aws ec2 stop-instances --instance-ids i-08477110ddb42c54d --region ap-southeast-1
 
 # Stop RDS (~$15/month saved) — takes ~2 min
@@ -293,8 +296,10 @@ aws ec2 start-instances --instance-ids i-08477110ddb42c54d --region ap-southeast
 
 ### DeepSeek costs too much (LLM calls)
 - Each team analysis = 7 LLM calls
-- Adjust quota limits in Parameter Store to reduce usage per tier
-- Or switch to a cheaper model: change `DEEPSEEK_MODEL` in Parameter Store
+- ⚠️ `DEEPSEEK_MODEL` and `TIER_*` are NOT read from Parameter Store — deploy.sh
+  doesn't fetch them and the compose doesn't reference them. To change them in
+  production: edit `docker-compose.prod.yml` (model) or `backend/config.py`
+  defaults (tier limits), commit, and push to main (auto-deploys).
 
 ---
 
@@ -355,21 +360,23 @@ aws ssm put-parameter \
 
 ## Scenario 9: Adjust Rate Limits or Tier Quotas
 
-All quota values are env vars — change in Parameter Store + restart.
+⚠️ **Parameter Store alone does NOT work for these.** Older versions of this
+guide said "change in Parameter Store + restart" — but deploy.sh only exports
+a fixed list of secrets (DATABASE_URL, SECRET_KEY, API keys, SMTP, …) and
+`docker-compose.prod.yml` does not reference any `TIER_*` variable, so the
+container never sees them. Also, `docker compose restart` does not re-read
+compose environment values.
+
+To change a tier quota in production, pick one:
 
 ```bash
-# Example: free tier users get more daily analyses
-aws ssm put-parameter \
-  --name /rktb/prod/TIER_FREE_DAILY_ANALYSES \
-  --value "10" \
-  --type String \
-  --overwrite \
-  --region ap-southeast-1
+# Option A (simplest): change the default in backend/config.py, commit, push
+# to main — CI/CD deploys it (~8 min).
 
-# Restart backend to pick up changes
-ssh -i ~/.ssh/rktb-key.pem ubuntu@13.228.63.192
-cd /home/ubuntu/rktb
-docker compose -f docker-compose.prod.yml restart backend
+# Option B (env-driven): add the variable to BOTH deploy.sh's SSM-export list
+# (on the box AND in deployment-complete.md's canonical copy) and
+# docker-compose.prod.yml's environment block, commit the compose change,
+# then set the Parameter Store value and deploy.
 ```
 
 Rate limit env vars (in `config.py`):

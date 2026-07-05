@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { useAnalysisStore } from "./analysisStore";
 import type { ID, UserMonsterCreate, TeamCreate, TalentUpsert, TeamAnalysisOut, TeamOut, TeamUpdate, ShareDecodeResponse } from "@/types";
 
 /**
@@ -137,7 +138,7 @@ export const useBuilderStore = create<BuilderState>()(
         };
       },
 
-      loadFromTeam: (team) => set(() => {
+      loadFromTeam: (team) => set((s) => {
         const slots: (UserMonsterCreate & { id?: ID })[] = (team.user_monsters ?? []).slice(0, 6).map((um): (UserMonsterCreate & { id?: ID }) => ({
           id: um.id,
           monster_id: um.monster.id,
@@ -150,10 +151,20 @@ export const useBuilderStore = create<BuilderState>()(
           }
         }));
         while (slots.length < 6) slots.push(emptySlot());
-        return { teamId: team.id, name: team.name ?? "My Team", magic_item_id: team.magic_item?.id ?? null, slots, analysis: null };
+        // Loading a DIFFERENT team: clear per-slot analysis-page state (custom
+        // defenders, matchup configs) so team A's setup doesn't leak onto team
+        // B's slots. Same-team reloads keep it.
+        if (s.teamId !== team.id) {
+          useAnalysisStore.getState().resetAll();
+        }
+        // isFeaturedTeam: false — the admin featured-team editor re-sets it
+        // right after calling loadFromTeam; every other caller loads a normal
+        // team, and a stale true made the Update button target the admin API.
+        return { teamId: team.id, isFeaturedTeam: false, name: team.name ?? "My Team", magic_item_id: team.magic_item?.id ?? null, slots, analysis: null };
       }),
 
       loadFromImport: (data) => set(() => {
+        useAnalysisStore.getState().resetAll();
         const slots: (UserMonsterCreate & { id?: ID })[] = data.monsters.slice(0, 6).map((m): (UserMonsterCreate & { id?: ID }) => ({
           id: undefined,  // no DB UserMonster record for an unsaved import
           monster_id: m.monster.id,
@@ -188,15 +199,18 @@ export const useBuilderStore = create<BuilderState>()(
       isAnalyzing: false,
       setIsAnalyzing: (v) => set({ isAnalyzing: v }),
 
-      reset: () => set({
-        teamId: null,
-        isFeaturedTeam: false,
-        name: "",
-        magic_item_id: null,
-        slots: Array.from({ length: 6 }, emptySlot),
-        analysis: null,
-        isAnalyzing: false,
-      }),
+      reset: () => {
+        useAnalysisStore.getState().resetAll();
+        set({
+          teamId: null,
+          isFeaturedTeam: false,
+          name: "",
+          magic_item_id: null,
+          slots: Array.from({ length: 6 }, emptySlot),
+          analysis: null,
+          isAnalyzing: false,
+        });
+      },
     }),
     {
       name: "builder-draft",

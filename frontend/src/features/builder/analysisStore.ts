@@ -62,6 +62,11 @@ type AnalysisStore = {
   // Active builder slot index — persisted across navigation within the session
   builderActiveSlot: number;
   setBuilderActiveSlot: (idx: number) => void;
+
+  /** Clear all slot-indexed state. Called when a different team is loaded
+   *  into the builder — slot 0's custom defender/matchup config from team A
+   *  must not leak onto team B's slot 0. */
+  resetAll: () => void;
 };
 
 export const useAnalysisStore = create<AnalysisStore>((set) => ({
@@ -93,4 +98,7 @@ export const useAnalysisStore = create<AnalysisStore>((set) => ({
 
   builderActiveSlot: 0,
   setBuilderActiveSlot: (idx) => set({ builderActiveSlot: idx }),
+
+  resetAll: () =>
+    set({ slots: {}, matchupStates: {}, featuredTeamTabs: {}, builderActiveSlot: 0 }),
 }));

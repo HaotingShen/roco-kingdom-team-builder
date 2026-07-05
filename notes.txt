@@ -1,3 +1,8 @@
+[HISTORICAL ARTIFACT — personal study/interview notes pinned to repo commit d0c54ce (Feb 2026).
+Not maintained. Known stale: EC2 is t3.medium since 2026-07-02 (not t3.small); guest quota is
+2/day and premium 10/day (config.py); all main.py line anchors have shifted. For current
+architecture see analysis-system.md, user-auth-system.md, deployment-complete.md.]
+
 Here's the full picture. Every "wire" you've configured maps to a real connection:
 
                           PUBLIC INTERNET

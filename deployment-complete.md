@@ -1,8 +1,22 @@
 # AWS Deployment Plan: Roco Kingdom Team Builder
 
+> **CURRENT STATE (2026-07-05).** Phases 1–14 below are the historical build
+> log; where they conflict with this box, this box wins:
+> - **EC2 is `t3.medium`** (2 vCPU, 4 GB, unlimited credits) — downgraded from
+>   c6a.xlarge on 2026-07-02 after the post-TapTap traffic drop.
+>   History: t3.small → c6a.xlarge (2026-03-20) → t3.medium (2026-07-02).
+> - **`docker-compose.prod.yml` in the REPO is the source of truth** — every
+>   deploy uploads it to S3 and overwrites the on-box copy. The Phase 2.3
+>   listing is an old snapshot; the live file also has the umami service,
+>   `DEEPSEEK_MODEL=deepseek-v4-flash` + thinking env, DB pool sizing,
+>   `MALLOC_ARENA_MAX=2`, and `mem_limit/memswap_limit: 2500m`.
+> - Health check returns `{"status": "healthy"}` (not `"ok"`).
+> - CloudFront's default behavior also runs the `rktb-spa-routing`
+>   viewer-request function (see `spa-routing-seo-fix.md`, 2026-05-17).
+
 **Domain:** `rkteambuilder.com` (already purchased)
 **Region:** Singapore (`ap-southeast-1`)
-**EC2:** c6a.xlarge (4 vCPU, 8 GB RAM) — upgraded from t3.small on 2026-03-20
+**EC2:** t3.medium (2 vCPU, 4 GB) — see current-state box above for history
 **Email:** Resend (SES production access was denied)
 **Routing:** Path-based (single domain via CloudFront)
 

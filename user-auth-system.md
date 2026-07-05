@@ -1,7 +1,21 @@
 # User System Documentation
 
-> **Last Updated:** 2026-05-24
+> **Last Updated:** 2026-07-05 (2026-05-24 baseline still accurate)
 > **Status:** Phase 7G Complete (Concurrent Retry Race Fix + Navigate Fix + Clear Guest Data Fix)
+>
+> **2026-07-05 analysis-review addendum** (full details in `analysis-system.md`):
+> - Optional-auth endpoints (`/team/analyze*`, `/auth/quota`) now return
+>   **401/403 when a Bearer token is presented but invalid/expired/locked**
+>   instead of silently downgrading to anonymous. The frontend's 401 refresh
+>   interceptor recovers automatically; no-token requests stay anonymous.
+>   (Fixes the "logged-in user sees anonymous quota after 15 min" bug.)
+> - `/team/analyze_by_id` now requires ownership (or featured team) and
+>   auto-saves successful results for the owner.
+> - New Redis keys: `tier:inflight:*` (max 2 concurrent analyses per identity),
+>   plus the `user_analyzed:*` keys that predate this doc's key table.
+> - Admin endpoints also include `/admin/featured-teams` CRUD (undocumented below).
+> - Login / continue-as-guest / password-change now clear the previous
+>   identity's query cache and builder team reference (logout already did).
 
 ---
 

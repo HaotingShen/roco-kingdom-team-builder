@@ -380,11 +380,27 @@ async def generate_analysis_json(
             start_time = time.time()
             client = get_llm_client()
 
-            result, metadata = await client.generate_json(
-                prompt=prompt,
-                system_prompt=system_prompt,
-                temperature=temperature,
-            )
+            try:
+                result, metadata = await client.generate_json(
+                    prompt=prompt,
+                    system_prompt=system_prompt,
+                    temperature=temperature,
+                )
+            except json.JSONDecodeError as parse_err:
+                # The model occasionally emits malformed JSON even in
+                # json_object mode (observed with deepseek-v4-flash thinking
+                # mode). It's stochastic — one immediate retry usually
+                # succeeds and is far cheaper than failing the whole analysis
+                # (partial result, quota charged, user must use a grace retry).
+                logger.warning(
+                    f"LLM returned malformed JSON for {context or 'analysis'} "
+                    f"({parse_err}); retrying once"
+                )
+                result, metadata = await client.generate_json(
+                    prompt=prompt,
+                    system_prompt=system_prompt,
+                    temperature=temperature,
+                )
 
             # Calculate response time
             response_time_ms = int((time.time() - start_time) * 1000)

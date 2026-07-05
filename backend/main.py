@@ -6,6 +6,8 @@ from slowapi import _rate_limit_exceeded_handler
 from slowapi.middleware import SlowAPIMiddleware
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import or_, and_, cast, String, func, text
+from sqlalchemy.exc import IntegrityError
+from pydantic import ValidationError
 from backend.config import (
     LLM_PROVIDER,
     ALLOWED_ORIGINS,
@@ -31,7 +33,6 @@ from backend import models, schemas
 from backend.cache import llm_cache, RedisCache
 from backend.rate_limiter import (
     limiter,
-    analysis_rate_limit,
     rate_limit_exceeded_handler,
     check_analysis_rate_limit_async,
     record_analysis_async,
@@ -42,6 +43,7 @@ from backend.rate_limiter import (
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from collections import Counter
+from dataclasses import dataclass
 import re
 import asyncio
 import json
@@ -102,6 +104,8 @@ from backend.tier_limits import (
     is_circuit_open,
     record_llm_failures,
     reset_llm_failure_counter,
+    try_begin_analysis_inflight,
+    end_analysis_inflight,
 )
 from backend.email_service import (
     send_verification_email,
@@ -392,9 +396,6 @@ def user_to_user_out(user: models.User) -> schemas.UserOut:
     )
 
 # Compute effective stats with base, talent, and personality multipliers
-def round_half_up(n):
-    return int(Decimal(n).to_integral_value(rounding=ROUND_HALF_UP))
-
 def compute_effective_stats(monster, personality, talent):
     # Stat formula (corrected — double-rounding, HP final +100):
     #
@@ -410,29 +411,23 @@ def compute_effective_stats(monster, personality, talent):
     # the old form here so the arithmetic is easy to step through, same for
     # the 110L+10 form below.
 
-    base_hp = monster.base_hp
-    hp_talent = talent.hp_boost
-    L_hp = (base_hp + (hp_talent * 6) / 2) / 100
-    inner_hp = round_half_up(170 * L_hp + 70)
-    final_hp = inner_hp * (1 + personality.hp_mod_pct) + 100
-    hp = int(round_half_up(final_hp))
-
-    def other_stat(attr, personality_attr, talent_attr):
-        base = getattr(monster, attr)
-        pers = getattr(personality, personality_attr)
-        tal = getattr(talent, talent_attr)
-        L = (base + (tal * 6) / 2) / 100
-        inner = round_half_up(110 * L + 10)
-        final = inner * (1 + pers) + 50
-        return int(round_half_up(final))
+    # All arithmetic is done in exact Decimal. Building the half-way values in
+    # float first (e.g. 1.1*205+10 = 235.4999...) makes ROUND_HALF_UP round the
+    # wrong way at exact .5 boundaries; Decimal(str(...)) on the personality mod
+    # recovers the intended exact decimal (0.15, -0.1, ...).
+    def exact_stat(base, boost, mod, factor, inner_add, outer_add):
+        inner_exact = Decimal(2 * base + 6 * boost) * factor / Decimal(100) + inner_add
+        inner = int(inner_exact.to_integral_value(rounding=ROUND_HALF_UP))
+        final = inner * (1 + Decimal(str(mod))) + outer_add
+        return int(final.to_integral_value(rounding=ROUND_HALF_UP))
 
     return schemas.EffectiveStats(
-        hp=hp,
-        phy_atk=other_stat("base_phy_atk", "phy_atk_mod_pct", "phy_atk_boost"),
-        mag_atk=other_stat("base_mag_atk", "mag_atk_mod_pct", "mag_atk_boost"),
-        phy_def=other_stat("base_phy_def", "phy_def_mod_pct", "phy_def_boost"),
-        mag_def=other_stat("base_mag_def", "mag_def_mod_pct", "mag_def_boost"),
-        spd=other_stat("base_spd", "spd_mod_pct", "spd_boost"),
+        hp=exact_stat(monster.base_hp, talent.hp_boost, personality.hp_mod_pct, 85, 70, 100),
+        phy_atk=exact_stat(monster.base_phy_atk, talent.phy_atk_boost, personality.phy_atk_mod_pct, 55, 10, 50),
+        mag_atk=exact_stat(monster.base_mag_atk, talent.mag_atk_boost, personality.mag_atk_mod_pct, 55, 10, 50),
+        phy_def=exact_stat(monster.base_phy_def, talent.phy_def_boost, personality.phy_def_mod_pct, 55, 10, 50),
+        mag_def=exact_stat(monster.base_mag_def, talent.mag_def_boost, personality.mag_def_mod_pct, 55, 10, 50),
+        spd=exact_stat(monster.base_spd, talent.spd_boost, personality.spd_mod_pct, 55, 10, 50),
     )
     
 # Compute energy profile for moves, including average cost, zero-cost moves, and energy restore moves
@@ -1722,10 +1717,14 @@ def generate_recommendations(per_monster_analysis, type_coverage, magic_item_eva
     # 6) Role diversity
     styles = [getattr(a.user_monster.monster, "preferred_attack_style", None) for a in per_monster_analysis]
     if len(set(styles)) == 1 and styles[0]:
+        # ORM attribute access yields the AttackStyle enum member; interpolating
+        # it directly renders "AttackStyle.PHYSICAL" instead of "Physical"
+        style_value = styles[0].value if hasattr(styles[0], "value") else str(styles[0])
         if language == "zh":
-            add("general", "warn", f"所有精灵都是{styles[0]}风格的攻击者。这可能使队伍变得可预测。")
+            style_zh = {"Physical": "物攻", "Magic": "魔攻", "Both": "双攻"}.get(style_value, style_value)
+            add("general", "warn", f"所有精灵都是{style_zh}风格的攻击者。这可能使队伍变得可预测。")
         else:
-            add("general", "warn", f"All jinglings are {styles[0]}-style attackers. This may make the team predictable.")
+            add("general", "warn", f"All jinglings are {style_value}-style attackers. This may make the team predictable.")
 
     # 7) Stat and role highlights
     stat_roles_en = {
@@ -1963,7 +1962,23 @@ async def create_guest_user(
     )
 
     db.add(guest)
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError:
+        # Two simultaneous first visits from the same device (double-click /
+        # two tabs) both pass the existence check and race on the unique
+        # username; the loser adopts the winner's guest account instead of 500ing.
+        db.rollback()
+        guest = db.query(models.User).filter(
+            models.User.username == username,
+            models.User.is_guest == True,
+            models.User.is_active == True,
+        ).first()
+        if not guest:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to create guest account. Please try again."
+            )
     db.refresh(guest)
 
     # Seed daily counter from device usage so quota display is honest
@@ -3674,11 +3689,19 @@ async def get_featured_teams(
         .all()
     )
 
-    # Serialize to dicts for caching (Pydantic v2 compatible)
-    serialized = [schemas.TeamOut.model_validate(t).model_dump(mode="json") for t in teams]
+    # Serialize to dicts for caching (Pydantic v2 compatible).
+    # SECURITY: redact the owner — this endpoint is public and TeamOut.owner
+    # would otherwise lazy-load and expose the system user's profile (email,
+    # tier, timestamps) to unauthenticated callers.
+    serialized = []
+    for t in teams:
+        data = schemas.TeamOut.model_validate(t).model_dump(mode="json")
+        data["owner"] = None
+        data["owner_id"] = None
+        serialized.append(data)
     await redis_cache.set(cache_key, serialized, ttl=300)
 
-    return teams
+    return serialized
 
 
 @app.get("/teams/{team_id}", response_model=schemas.TeamOut, tags=["Teams"])
@@ -3802,7 +3825,16 @@ async def create_team(
         db.add(db_talent)
         db_um.talent = db_talent
         user_monsters_out.append(db_um)  # For future expand reference
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError:
+        # Bad foreign keys (nonexistent monster/move/personality/type/magic item)
+        # are a client error, not a server crash
+        db.rollback()
+        raise HTTPException(
+            status_code=400,
+            detail="Team references a jingling, move, personality, legacy type, or magic item that does not exist"
+        )
 
     # Re-fetch with relationships for output schema
     db.refresh(db_team)
@@ -3830,12 +3862,46 @@ def generate_monster_cache_key(monster_id: int, move_ids: tuple, language: str) 
     # Hash to keep key size manageable
     return f"llm_cache:monster_trait:{hashlib.md5(key_str.encode()).hexdigest()}"
 
-def generate_team_cache_key(team_data: schemas.TeamCreate, language: str) -> str:
+def compute_willpower_categories(
+    user_monsters,
+    monster_db_map: dict,
+    personality_db_map: dict,
+) -> list[str]:
+    """
+    Compute each monster's resolved Willpower Impact category ("P"/"M"),
+    in the same order as user_monsters.
+
+    The team synergy prompt states whether Willpower Impact becomes a Physical
+    or Magic attack for each monster (based on effective phy_atk vs mag_atk,
+    which depends on personality AND talent). The team cache key must therefore
+    encode this whenever the Willpower Enhancement magic item is selected —
+    otherwise two teams differing only in personality/talent would share a
+    cached team analysis with the wrong Physical/Magic statements.
+    """
+    categories = []
+    for um in user_monsters:
+        monster = monster_db_map[um.monster_id]
+        personality = personality_db_map[um.personality_id]
+        stats = compute_effective_stats(monster, personality, um.talent)
+        categories.append("P" if stats.phy_atk > stats.mag_atk else "M")
+    return categories
+
+
+def generate_team_cache_key(
+    team_data: schemas.TeamCreate,
+    language: str,
+    willpower_categories: Optional[list[str]] = None,
+) -> str:
     """
     Generate a unique cache key for team-wide synergy analysis.
 
     Uses "llm_cache:" namespace for safe cache clearing without affecting
     token revocations, rate limits, etc.
+
+    willpower_categories: per-monster resolved Willpower Impact category
+    ("P"/"M"), aligned with team_data.user_monsters. Pass it whenever the
+    selected magic item is Willpower Enhancement (effect_code ENHANCE_SPELL);
+    it becomes part of the key because the team prompt content depends on it.
     """
     # Include magic item in the key (different magic item = different team)
     key_parts = [f"magic:{team_data.magic_item_id}"]
@@ -3863,8 +3929,49 @@ def generate_team_cache_key(team_data: schemas.TeamCreate, language: str) -> str
     # Add legacy types explicitly (needed for magic item analysis)
     key_parts.append(f"legacy:{'-'.join(map(str, sorted_legacy_types))}")
 
+    # Willpower Impact categories (only for Willpower Enhancement teams),
+    # sorted with the same index order to stay stable under monster reordering.
+    if willpower_categories is not None:
+        sorted_wp = [willpower_categories[i] for i in sorted_indices]
+        key_parts.append(f"wp:{'-'.join(sorted_wp)}")
+
     key_str = "|".join(key_parts)
     return f"llm_cache:team_synergy:{hashlib.md5(key_str.encode()).hexdigest()}"
+
+
+def _load_willpower_categories_if_needed(
+    team_data: schemas.TeamCreate, db: Session
+) -> Optional[list[str]]:
+    """
+    Load just enough data to compute willpower categories for cache keying.
+
+    Returns None when the selected magic item is not Willpower Enhancement
+    (the common case — no extra queries beyond the magic item lookup).
+    """
+    if not team_data.magic_item_id:
+        return None
+    magic_item = (
+        db.query(models.MagicItem)
+        .filter(models.MagicItem.id == team_data.magic_item_id)
+        .first()
+    )
+    if not magic_item or magic_item.effect_code != models.MagicEffectCode.ENHANCE_SPELL:
+        return None
+
+    monster_ids = {um.monster_id for um in team_data.user_monsters}
+    personality_ids = {um.personality_id for um in team_data.user_monsters}
+    monster_db_map = {
+        m.id: m for m in db.query(models.Monster).filter(models.Monster.id.in_(monster_ids)).all()
+    }
+    personality_db_map = {
+        p.id: p for p in db.query(models.Personality).filter(models.Personality.id.in_(personality_ids)).all()
+    }
+    # Missing IDs are rejected later with a proper 400 in _perform_team_analysis;
+    # here we just skip the signature so the request proceeds to that validation.
+    for um in team_data.user_monsters:
+        if um.monster_id not in monster_db_map or um.personality_id not in personality_db_map:
+            return None
+    return compute_willpower_categories(team_data.user_monsters, monster_db_map, personality_db_map)
 
 
 def generate_team_composition_hash(team_data: schemas.TeamCreate) -> str:
@@ -3899,7 +4006,7 @@ def generate_team_composition_hash(team_data: schemas.TeamCreate) -> str:
     return full_hash[:16]
 
 
-async def check_if_all_cached(team_data: schemas.TeamCreate, language: str) -> bool:
+async def check_if_all_cached(team_data: schemas.TeamCreate, language: str, db: Session) -> bool:
     """
     Pre-flight cache check to determine if analysis can bypass rate limiting.
 
@@ -3921,8 +4028,10 @@ async def check_if_all_cached(team_data: schemas.TeamCreate, language: str) -> b
             logger.debug(f"Cache miss detected for monster key: {monster_key[:50]}...")
             return False  # At least one cache miss
 
-    # Check team-wide cache key
-    team_key = generate_team_cache_key(team_data, language)
+    # Check team-wide cache key (must match the key _perform_team_analysis
+    # uses, including the willpower signature for Willpower Enhancement teams)
+    willpower_categories = _load_willpower_categories_if_needed(team_data, db)
+    team_key = generate_team_cache_key(team_data, language, willpower_categories)
     cached_value = await redis_cache.get(team_key)
     if cached_value is None:
         logger.debug(f"Cache miss detected for team key: {team_key[:50]}...")
@@ -4007,6 +4116,18 @@ async def _perform_team_analysis(
     missing_moves = move_ids_to_load - set(move_db_map.keys())
     if missing_moves:
         raise HTTPException(status_code=400, detail=f"Move IDs not found: {sorted(missing_moves)}")
+
+    # "Willpower Impact" is generated at battle time by the Willpower Enhancement
+    # magic item; it is not in any jingling's move pool and must not be submitted
+    # as a selected move. Its resolved type/category depend on the build
+    # (legacy type, personality, talent), which the per-monster cache key does
+    # not encode — accepting it would let one build's cached analysis be served
+    # for a different build.
+    if any(move_db_map[mid].name == "Willpower Impact" for mid in move_ids_to_load):
+        raise HTTPException(
+            status_code=400,
+            detail="Willpower Impact cannot be selected as a move; it is granted in battle by the Willpower Enhancement magic item."
+        )
 
     logger.debug("Loading traits...")
     trait_ids_to_load = {m.trait_id for m in monster_db_map.values()}
@@ -4226,8 +4347,15 @@ async def _perform_team_analysis(
         referenced_moves_team = []
         referenced_monsters_team = []
 
-    # Team-wide synergy analysis
-    team_cache_key = generate_team_cache_key(team_data, language)
+    # Team-wide synergy analysis. For Willpower Enhancement teams the prompt
+    # content depends on each monster's resolved Willpower Impact category
+    # (personality/talent-dependent), so that signature is part of the key.
+    willpower_categories = None
+    if magic_item.effect_code == models.MagicEffectCode.ENHANCE_SPELL:
+        willpower_categories = compute_willpower_categories(
+            team_data.user_monsters, monster_db_map, personality_db_map
+        )
+    team_cache_key = generate_team_cache_key(team_data, language, willpower_categories)
     team_synergy_prompt = build_team_synergy_prompt(team_data.user_monsters, monster_db_map, move_db_map, type_db_map, trait_db_map, magic_item, game_terms_team, referenced_moves_team, referenced_monsters_team, language, db)
     llm_tasks.append(call_llm(
         prompt=team_synergy_prompt,
@@ -4500,16 +4628,256 @@ async def _perform_team_analysis(
     return result, all_succeeded, successful_calls, _actual_llm_calls[0]
 
 
-# -------- Helper to apply rate limiting --------
+# -------- Shared quota / rate-limit orchestration --------
+#
+# Both analyze endpoints run the exact same pre-flight checks and post-flight
+# quota charging. This logic used to be duplicated inline in each endpoint
+# (~200 lines each) and had already begun to drift; keep it in ONE place.
+#
+# NOTE: there is deliberately no per-IP slowapi throttle on the analyze
+# endpoints — it was removed (commit 6b7d910) because CGNAT'd mobile users in
+# China share IPs and were getting false 429s. Abuse is bounded instead by
+# per-user/device quotas, the per-team 60s key, and the in-flight cap.
 
-@analysis_rate_limit()
-async def _apply_rate_limit_check(request: Request):
+@dataclass
+class _AnalysisQuotaContext:
+    """State threaded from pre-flight quota checks to post-flight charging."""
+    effective_user: Optional[models.User]
+    device_id: str
+    client_ip: str
+    team_hash: str
+    language: str
+    is_fully_cached: bool = False
+    has_grace: bool = False
+    # True when this request atomically claimed the paying slot for a cached
+    # result. Only meaningful when is_fully_cached=True.
+    is_paying_cached_request: bool = False
+    # True when an in-flight concurrency slot was reserved and must be released.
+    inflight_started: bool = False
+
+
+def _resolve_analysis_effective_user(
+    user: Optional[models.User], device_id: str, db: Session
+) -> Optional[models.User]:
+    """Anonymous requests whose device maps to an existing account use that
+    account's quota. This prevents users from logging out to get fresh
+    anonymous quota."""
+    if user is not None:
+        return user
+    return find_device_owner(device_id, db)
+
+
+async def _analysis_quota_preflight(
+    user: Optional[models.User],
+    device_id: str,
+    client_ip: str,
+    team_data: schemas.TeamCreate,
+    language: str,
+    db: Session,
+) -> _AnalysisQuotaContext:
+    """Run every pre-analysis quota / rate-limit / grace check.
+
+    Raises HTTPException (429/503) when the request must be rejected.
+    On success returns the context needed by _analysis_quota_postflight.
     """
-    Helper function to check rate limit.
-    Raises RateLimitExceeded if limit is exceeded.
-    Requires Request object for IP-based rate limiting.
-    """
-    pass
+    effective_user = _resolve_analysis_effective_user(user, device_id, db)
+    team_hash = generate_team_composition_hash(team_data)
+    ctx = _AnalysisQuotaContext(
+        effective_user=effective_user,
+        device_id=device_id,
+        client_ip=client_ip,
+        team_hash=team_hash,
+        language=language,
+    )
+
+    ctx.is_fully_cached = await check_if_all_cached(team_data, language, db)
+
+    if ctx.is_fully_cached:
+        # Check grace first — a grace token means the user already paid for a
+        # partial failure; this cached result is their free retry, so skip
+        # quota entirely.
+        ctx.has_grace = await check_retry_grace(effective_user, device_id, client_ip, team_hash, language)
+        if not ctx.has_grace:
+            # Check if this user already paid for this team within the cache
+            # TTL. Must happen BEFORE quota checks so a user at their daily
+            # limit can still retrieve their own cached result without a 429.
+            already_paid = await has_user_analyzed_team(
+                effective_user, device_id, client_ip, team_hash, language
+            )
+            if not already_paid:
+                # New user hitting this cached result — quota applies.
+                if effective_user is None:
+                    await check_anonymous_analysis_limit(device_id, client_ip, language)
+                else:
+                    await check_analysis_limit(effective_user, db, language)
+
+                # Note: device/IP daily caps are intentionally skipped for
+                # cached results. Those caps guard LLM compute costs; since
+                # there's no LLM call here, they must not block a new identity
+                # whose device accumulated usage under a different account.
+
+                # Atomically claim the slot (SET NX EX). Only the first of any
+                # concurrent same-user requests claims it and pays; others are free.
+                ctx.is_paying_cached_request = await try_claim_user_analysis_slot(
+                    effective_user, device_id, client_ip, team_hash, language
+                )
+            # else: same user within TTL — no quota check, request is free.
+
+        # IP/per-team throughput rate limits are skipped — they protect LLM
+        # API cost, and cached results have no LLM cost.
+        return ctx
+
+    # Not cached — check circuit breaker first, before any rate limit or grace
+    # consumption. If the LLM provider is in an outage, return 503 immediately
+    # so no quota is charged, no rate limit key is set, and no grace is consumed.
+    if await is_circuit_open():
+        if language == "zh":
+            circuit_detail = "AI 分析服务暂时不可用，您的次数未被扣除，请几分钟后重试。"
+        else:
+            circuit_detail = "AI analysis service is temporarily unavailable. Your quota has NOT been consumed. Please try again in a few minutes."
+        raise HTTPException(status_code=503, detail=circuit_detail)
+
+    # Check retry grace before quota checks
+    ctx.has_grace = await check_retry_grace(effective_user, device_id, client_ip, team_hash, language)
+
+    if not ctx.has_grace:
+        # Normal flow: apply all quota checks
+
+        # 1. Per-user quota check based on user type
+        if effective_user is None:
+            # Truly anonymous user (no account on device)
+            await check_anonymous_analysis_limit(device_id, client_ip, language)
+        else:
+            # Authenticated user OR anonymous with device-linked account
+            await check_analysis_limit(effective_user, db, language)
+
+        # 2. Cross-account device daily cap (prevents multi-account abuse)
+        # Premium/unlimited users are exempt
+        await check_device_daily_cap(device_id, effective_user)
+
+        # 3. IP daily cap (fallback when device_id missing).
+        # Intentionally NOT applied when a device_id exists: CGNAT'd mobile
+        # networks share IPs across many legitimate users.
+        if device_id == "unknown-device":
+            await check_ip_daily_cap(client_ip, effective_user)
+
+        # 4. Per-team rate limit (prevents same-team concurrent duplicate
+        # submissions). Grace users bypass this check — the 60s cooldown must
+        # not block free retries.
+        if not await check_analysis_rate_limit_async(client_ip, team_hash):
+            logger.warning(
+                f"Per-team rate limit exceeded for {client_ip} analyzing team {team_hash} in {language}"
+            )
+            raise HTTPException(
+                status_code=429,
+                detail=get_rate_limit_message(language)
+            )
+
+    else:
+        logger.info(
+            f"Retry grace active for {client_ip}:{team_hash}:{language} — "
+            f"bypassing quota checks"
+        )
+
+    # 5. In-flight concurrency cap: the per-user quota check above is
+    # check-then-increment (charged only after the LLM run), so a parallel
+    # burst of DIFFERENT-team analyses could all pass it. Cap concurrent
+    # non-cached analyses per identity; the limit (2) keeps the CloudFront
+    # timeout retry working. Reserved slot is released in the endpoint's
+    # finally block via ctx.inflight_started.
+    if not await try_begin_analysis_inflight(effective_user, device_id, client_ip):
+        raise HTTPException(status_code=429, detail=get_rate_limit_message(language))
+    ctx.inflight_started = True
+
+    # Record rate limit BEFORE analysis (always, even for grace users).
+    # Grace users skipped the check above but still set the key here so that
+    # concurrent non-grace users on the same IP are blocked while grace runs.
+    # TTL=60s (1 min) is intentionally less than CloudFront's 120s origin timeout.
+    # When CF times out and TanStack retries, the retry arrives at ~t=120s after the
+    # rate limit keys have already expired. The retry then passes rate limit checks,
+    # waits for the original request's distributed lock (up to 60s), and returns the
+    # cached result with actual_llm_calls=0 — no duplicate quota charge.
+    logger.info(f"Recording analysis for {client_ip}:{team_hash}")
+    await record_analysis_async(client_ip, team_hash, limit_per_minutes=1)
+
+    # Consume grace AFTER all pre-flight checks pass, BEFORE analysis starts.
+    # This is the "point of no return" — rate limits didn't reject us, so we're
+    # committed to running the analysis. Consuming here means:
+    # - Rate-limited 429s don't waste grace retries
+    # - Concurrent requests can't both bypass quota then both run LLM calls
+    # - Crashes mid-analysis don't leak infinite free retries
+    if ctx.has_grace:
+        await consume_retry_grace(effective_user, device_id, client_ip, team_hash, language)
+
+    return ctx
+
+
+async def _analysis_quota_postflight(
+    ctx: _AnalysisQuotaContext,
+    all_succeeded: bool,
+    successful_calls: int,
+    actual_llm_calls: int,
+) -> None:
+    """Post-analysis quota recording and grace management (shared by both endpoints)."""
+    effective_user = ctx.effective_user
+    device_id = ctx.device_id
+    client_ip = ctx.client_ip
+    team_hash = ctx.team_hash
+    language = ctx.language
+
+    # If the analysis completely failed (LLM was called but nothing succeeded),
+    # clear the rate limit key so the user can retry immediately without waiting
+    # for the 60s cooldown. No quota was charged and no cache entry was written,
+    # so there is nothing to protect. The distributed lock in get_or_compute
+    # still prevents concurrent duplicate LLM calls.
+    if not ctx.is_fully_cached and actual_llm_calls > 0 and successful_calls == 0:
+        await clear_analysis_rate_limit_async(client_ip, team_hash)
+
+    if ctx.is_fully_cached:
+        if ctx.has_grace:
+            # Grace retry resolved by a fully-cached result (full success) — clear
+            # grace, no quota charge (the original partial failure already charged).
+            await clear_retry_grace(effective_user, device_id, client_ip, team_hash, language)
+        elif ctx.is_paying_cached_request:
+            # This request atomically claimed the slot in pre-flight — charge quota.
+            # The marker is already set in Redis (from try_claim_user_analysis_slot),
+            # so future cached requests from the same user within TTL will be free.
+            # NOTE: record_device_and_ip_usage is intentionally NOT called here.
+            # The device/IP cross-account cap tracks real LLM usage only. Counting
+            # cached hits would inflate the cap without any LLM cost, causing false
+            # 429s on non-cached analyses and incorrect quota seeding for new accounts.
+            if effective_user is None:
+                await record_anonymous_analysis(device_id, client_ip)
+            else:
+                await record_analysis_usage(effective_user)
+        # else: slot was already claimed (same user within TTL or concurrent duplicate) — free
+        return
+
+    if ctx.has_grace:
+        # This was a retry under grace — don't charge quota again
+        if all_succeeded:
+            await clear_retry_grace(effective_user, device_id, client_ip, team_hash, language)
+        # If retry also partially failed, grace counter was already decremented.
+        # If counter hit 0, key is deleted — next attempt will be a fresh one.
+        return
+
+    # Charge quota only if actual LLM API calls were made and at least one succeeded.
+    # actual_llm_calls == 0 means all results came from cache (including via lock-wait),
+    # which prevents double-charging when a concurrent retry arrives while the first
+    # request is still computing (CloudFront 120s timeout → frontend retry scenario).
+    if actual_llm_calls > 0 and successful_calls > 0:
+        if effective_user is None:
+            await record_anonymous_analysis(device_id, client_ip)
+        else:
+            await record_analysis_usage(effective_user)
+        # Record device/IP usage for cross-account caps
+        await record_device_and_ip_usage(device_id, client_ip)
+        # Mark so this user gets free repeats within the cache TTL window
+        await mark_user_team_analyzed(effective_user, device_id, client_ip, team_hash, language)
+
+        if not all_succeeded:
+            # Partial success: grant grace for free retry
+            await set_retry_grace(effective_user, device_id, client_ip, team_hash, language)
 
 
 # -------- Analyze Team (Inline) --------
@@ -4534,193 +4902,19 @@ async def analyze_team(
     """
     user, device_id, client_ip = user_or_anon
 
-    # If anonymous but device has an account, use that account's quota
-    # This prevents users from logging out to get fresh anonymous quota
-    effective_user = user
-    if user is None:
-        device_owner = find_device_owner(device_id, db)
-        if device_owner:
-            effective_user = device_owner
+    ctx = await _analysis_quota_preflight(
+        user, device_id, client_ip, req.team, req.language, db
+    )
 
-    # Generate language-independent team composition hash
-    team_hash = generate_team_composition_hash(req.team)
-
-    # Check if fully cached
-    is_fully_cached = await check_if_all_cached(req.team, req.language)
-    has_grace = False
-    # Tracks whether this request atomically claimed the paying slot for a cached result.
-    # Only meaningful when is_fully_cached=True; drives post-analysis quota charge.
-    is_paying_cached_request = False
-
-    if is_fully_cached:
-        # Check grace first — a grace token means the user already paid for a partial
-        # failure; this cached result is their free retry, so skip quota entirely.
-        has_grace = await check_retry_grace(effective_user, device_id, client_ip, team_hash, req.language)
-        if not has_grace:
-            # Check if this user already paid for this team within the cache TTL.
-            # Must happen BEFORE quota checks so a user at their daily limit can still
-            # retrieve their own cached result without hitting a 429.
-            already_paid = await has_user_analyzed_team(
-                effective_user, device_id, client_ip, team_hash, req.language
-            )
-            if not already_paid:
-                # New user hitting this cached result — quota applies.
-
-                # 1. Per-user quota check based on user type
-                if effective_user is None:
-                    await check_anonymous_analysis_limit(device_id, client_ip, req.language)
-                else:
-                    await check_analysis_limit(effective_user, db, req.language)
-
-                # Note: device/IP daily caps are intentionally skipped for cached results.
-                # Those caps guard LLM compute costs; since there's no LLM call here, they
-                # must not block a new identity whose device accumulated usage under a
-                # different account (e.g., deleted registered account → same device is now
-                # anonymous).
-
-                # Atomically claim the slot (SET NX EX). Only the first of any
-                # concurrent same-user requests claims it and pays; others are free.
-                is_paying_cached_request = await try_claim_user_analysis_slot(
-                    effective_user, device_id, client_ip, team_hash, req.language
-                )
-            # else: same user within TTL — is_paying_cached_request stays False, no quota check
-
-        # Skip IP/per-team throughput rate limits (4, 5) — those protect LLM API cost,
-        # not quota. Cached results have no LLM cost.
-    else:
-        # Not cached — check circuit breaker first, before any rate limit or grace
-        # consumption. If the LLM provider is in an outage, return 503 immediately
-        # so no quota is charged, no rate limit key is set, and no grace is consumed.
-        if await is_circuit_open():
-            if req.language == "zh":
-                circuit_detail = "AI 分析服务暂时不可用，您的次数未被扣除，请几分钟后重试。"
-            else:
-                circuit_detail = "AI analysis service is temporarily unavailable. Your quota has NOT been consumed. Please try again in a few minutes."
-            raise HTTPException(status_code=503, detail=circuit_detail)
-
-        # Check retry grace before quota checks
-        has_grace = await check_retry_grace(
-            effective_user, device_id, client_ip, team_hash, req.language
+    try:
+        result, all_succeeded, successful_calls, actual_llm_calls = await _perform_team_analysis(
+            req.team, req.language, db
         )
+    finally:
+        if ctx.inflight_started:
+            await end_analysis_inflight(ctx.effective_user, device_id, client_ip)
 
-        if not has_grace:
-            # Normal flow: apply all quota checks
-
-            # 1. Per-user quota check based on user type
-            if effective_user is None:
-                # Truly anonymous user (no account on device) - check anonymous limits
-                await check_anonymous_analysis_limit(device_id, client_ip, req.language)
-            else:
-                # Authenticated user OR anonymous with device-linked account
-                await check_analysis_limit(effective_user, db, req.language)
-
-            # 2. Cross-account device daily cap (prevents multi-account abuse)
-            # Premium/unlimited users are exempt
-            await check_device_daily_cap(device_id, effective_user)
-
-            # 3. IP daily cap (fallback when device_id missing, also abuse signal)
-            if device_id == "unknown-device":
-                await check_ip_daily_cap(client_ip, effective_user)
-
-            # 4. Per-team rate limit (prevents same-team concurrent duplicate submissions)
-            # Grace users bypass this check — the 60s cooldown must not block free retries.
-            # record_analysis_async is called unconditionally below so the key is still set
-            # (blocking concurrent non-grace users on the same IP while grace runs).
-            if not await check_analysis_rate_limit_async(client_ip, team_hash):
-                logger.warning(
-                    f"Per-team rate limit exceeded for {client_ip} analyzing team {team_hash} in {req.language}"
-                )
-                raise HTTPException(
-                    status_code=429,
-                    detail=get_rate_limit_message(req.language)
-                )
-        else:
-            logger.info(
-                f"Retry grace active for {client_ip}:{team_hash}:{req.language} — "
-                f"bypassing quota checks"
-            )
-
-        # Record rate limit BEFORE analysis (always, even for grace users).
-        # Grace users skipped the check above but still set the key here so that
-        # concurrent non-grace users on the same IP are blocked while grace runs.
-        # TTL=60s (1 min) is intentionally less than CloudFront's 120s origin timeout.
-        # When CF times out and TanStack retries, the retry arrives at ~t=120s after the
-        # rate limit keys have already expired. The retry then passes rate limit checks,
-        # waits for the original request's distributed lock (up to 60s), and returns the
-        # cached result with actual_llm_calls=0 — no duplicate quota charge.
-        logger.info(f"Recording analysis for {client_ip}:{team_hash}")
-        await record_analysis_async(client_ip, team_hash, limit_per_minutes=1)
-
-        # Consume grace AFTER all pre-flight checks pass, BEFORE analysis starts.
-        # This is the "point of no return" — rate limits didn't reject us, so we're
-        # committed to running the analysis. Consuming here means:
-        # - Rate-limited 429s don't waste grace retries
-        # - Concurrent requests can't both bypass quota then both run LLM calls
-        # - Crashes mid-analysis don't leak infinite free retries
-        if has_grace:
-            await consume_retry_grace(
-                effective_user, device_id, client_ip, team_hash, req.language
-            )
-
-    result, all_succeeded, successful_calls, actual_llm_calls = await _perform_team_analysis(req.team, req.language, db)
-
-    # If the analysis completely failed (LLM was called but nothing succeeded), clear the
-    # rate limit key so the user can retry immediately without waiting for the 60s cooldown.
-    # No quota was charged and no cache entry was written, so there is nothing to protect.
-    # The distributed lock in get_or_compute still prevents concurrent duplicate LLM calls.
-    if not is_fully_cached and actual_llm_calls > 0 and successful_calls == 0:
-        await clear_analysis_rate_limit_async(client_ip, team_hash)
-
-    # Post-analysis: quota recording and grace management
-    if is_fully_cached:
-        if has_grace:
-            # Grace retry resolved by a fully-cached result (full success) — clear grace,
-            # no quota charge (the original partial failure already charged quota).
-            await clear_retry_grace(effective_user, device_id, client_ip, team_hash, req.language)
-        elif is_paying_cached_request:
-            # This request atomically claimed the slot in pre-flight — charge quota.
-            # The marker is already set in Redis (from try_claim_user_analysis_slot),
-            # so future cached requests from the same user within TTL will be free.
-            # NOTE: record_device_and_ip_usage is intentionally NOT called here.
-            # The device/IP cross-account cap tracks real LLM usage only. Counting
-            # cached hits would inflate the cap without any LLM cost, causing false
-            # 429s on non-cached analyses and incorrect quota seeding for new accounts.
-            if effective_user is None:
-                await record_anonymous_analysis(device_id, client_ip)
-            else:
-                await record_analysis_usage(effective_user)
-        # else: slot was already claimed (same user within TTL or concurrent duplicate) — free
-    else:
-        if has_grace:
-            # This was a retry under grace — don't charge quota again
-            if all_succeeded:
-                await clear_retry_grace(
-                    effective_user, device_id, client_ip, team_hash, req.language
-                )
-            # If retry also partially failed, grace counter was already decremented.
-            # If counter hit 0, key is deleted — next attempt will be a fresh one.
-        else:
-            # Charge quota only if actual LLM API calls were made and at least one succeeded.
-            # actual_llm_calls == 0 means all results came from cache (including via lock-wait),
-            # which prevents double-charging when a concurrent retry arrives while the first
-            # request is still computing (CloudFront 120s timeout → frontend retry scenario).
-            if actual_llm_calls > 0 and successful_calls > 0:
-                if effective_user is None:
-                    # Truly anonymous user
-                    await record_anonymous_analysis(device_id, client_ip)
-                else:
-                    # Authenticated user OR anonymous with device-linked account
-                    await record_analysis_usage(effective_user)
-                # Record device/IP usage for cross-account caps
-                await record_device_and_ip_usage(device_id, client_ip)
-                # Mark so this user gets free repeats within the cache TTL window
-                await mark_user_team_analyzed(effective_user, device_id, client_ip, team_hash, req.language)
-
-                if not all_succeeded:
-                    # Partial success: grant grace for free retry
-                    await set_retry_grace(
-                        effective_user, device_id, client_ip, team_hash, req.language
-                    )
+    await _analysis_quota_postflight(ctx, all_succeeded, successful_calls, actual_llm_calls)
 
     return result
 
@@ -4746,22 +4940,36 @@ async def analyze_team_by_id(
     """
     user, device_id, client_ip = user_or_anon
 
-    # If anonymous but device has an account, use that account's quota
-    effective_user = user
-    if user is None:
-        device_owner = find_device_owner(device_id, db)
-        if device_owner:
-            effective_user = device_owner
-
-    # Load the Team, its UserMonsters, Talents, etc. from the DB
-    db_team = db.query(models.Team).filter(models.Team.id == req.team_id).first()
+    # Load the team with its monsters and talents (single query, no N+1)
+    db_team = (
+        db.query(models.Team)
+        .options(joinedload(models.Team.user_monsters).joinedload(models.UserMonster.talent))
+        .filter(models.Team.id == req.team_id)
+        .first()
+    )
     if not db_team:
         raise HTTPException(status_code=404, detail="Team not found")
 
-    # Build TeamCreate-like dict from DB objects
+    # SECURITY: Only the team's owner may analyze a private team — the response
+    # includes the full composition, and team IDs are sequential integers.
+    # "Owner" means the authenticated user, or (when the access token has
+    # expired mid-session) the account linked to this device. Featured teams
+    # are public and analyzable by anyone.
+    effective_user = _resolve_analysis_effective_user(user, device_id, db)
+    is_owner = effective_user is not None and db_team.owner_id == effective_user.id
+    if not (is_owner or db_team.is_featured):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You do not have permission to analyze this team"
+        )
+
+    # Snapshot before _perform_team_analysis closes the session (detaching db_team)
+    team_is_featured = db_team.is_featured
+
+    # Build TeamCreate from DB objects
     user_monsters = []
     for um in db_team.user_monsters:
-        talent = db.query(models.Talent).filter(models.Talent.monster_instance_id == um.id).first()
+        talent = um.talent
         user_monsters.append(
             schemas.UserMonsterCreate(
                 monster_id=um.monster_id,
@@ -4781,185 +4989,51 @@ async def analyze_team_by_id(
                 ),
             )
         )
-    team_data = schemas.TeamCreate(
-        name=db_team.name,
-        user_monsters=user_monsters,
-        magic_item_id=db_team.magic_item_id
-    )
-
-    # Generate language-independent team composition hash
-    team_hash = generate_team_composition_hash(team_data)
-
-    # Check if fully cached
-    is_fully_cached = await check_if_all_cached(team_data, req.language)
-    has_grace = False
-    # Tracks whether this request atomically claimed the paying slot for a cached result.
-    # Only meaningful when is_fully_cached=True; drives post-analysis quota charge.
-    is_paying_cached_request = False
-
-    if is_fully_cached:
-        # Check grace first — a grace token means the user already paid for a partial
-        # failure; this cached result is their free retry, so skip quota entirely.
-        has_grace = await check_retry_grace(effective_user, device_id, client_ip, team_hash, req.language)
-        if not has_grace:
-            # Check if this user already paid for this team within the cache TTL.
-            # Must happen BEFORE quota checks so a user at their daily limit can still
-            # retrieve their own cached result without hitting a 429.
-            already_paid = await has_user_analyzed_team(
-                effective_user, device_id, client_ip, team_hash, req.language
-            )
-            if not already_paid:
-                # New user hitting this cached result — quota applies.
-
-                # 1. Per-user quota check based on user type
-                if effective_user is None:
-                    await check_anonymous_analysis_limit(device_id, client_ip, req.language)
-                else:
-                    await check_analysis_limit(effective_user, db, req.language)
-
-                # Note: device/IP daily caps are intentionally skipped for cached results.
-                # Those caps guard LLM compute costs; since there's no LLM call here, they
-                # must not block a new identity whose device accumulated usage under a
-                # different account (e.g., deleted registered account → same device is now
-                # anonymous).
-
-                # Atomically claim the slot (SET NX EX). Only the first of any
-                # concurrent same-user requests claims it and pays; others are free.
-                is_paying_cached_request = await try_claim_user_analysis_slot(
-                    effective_user, device_id, client_ip, team_hash, req.language
-                )
-            # else: same user within TTL — is_paying_cached_request stays False, no quota check
-
-        # Skip IP/per-team throughput rate limits (4, 5) — those protect LLM API cost,
-        # not quota. Cached results have no LLM cost.
-    else:
-        # Not cached — check circuit breaker first, before any rate limit or grace
-        # consumption. If the LLM provider is in an outage, return 503 immediately
-        # so no quota is charged, no rate limit key is set, and no grace is consumed.
-        if await is_circuit_open():
-            if req.language == "zh":
-                circuit_detail = "AI 分析服务暂时不可用，您的次数未被扣除，请几分钟后重试。"
-            else:
-                circuit_detail = "AI analysis service is temporarily unavailable. Your quota has NOT been consumed. Please try again in a few minutes."
-            raise HTTPException(status_code=503, detail=circuit_detail)
-
-        # Check retry grace before quota checks
-        has_grace = await check_retry_grace(
-            effective_user, device_id, client_ip, team_hash, req.language
+    try:
+        team_data = schemas.TeamCreate(
+            name=db_team.name or "Team",
+            user_monsters=user_monsters,
+            magic_item_id=db_team.magic_item_id
+        )
+    except ValidationError:
+        # Stored team can't be analyzed (e.g. not exactly 6 monsters, from a
+        # pre-validation era or partial import) — client error, not a crash.
+        raise HTTPException(
+            status_code=400,
+            detail="This team is incomplete and cannot be analyzed. Edit and re-save it first."
         )
 
-        if not has_grace:
-            # Normal flow: apply all quota checks
+    ctx = await _analysis_quota_preflight(
+        user, device_id, client_ip, team_data, req.language, db
+    )
 
-            # 1. Per-user quota check based on user type
-            if effective_user is None:
-                # Truly anonymous user (no account on device) - check anonymous limits
-                await check_anonymous_analysis_limit(device_id, client_ip, req.language)
-            else:
-                # Authenticated user OR anonymous with device-linked account
-                await check_analysis_limit(effective_user, db, req.language)
+    try:
+        result, all_succeeded, successful_calls, actual_llm_calls = await _perform_team_analysis(
+            team_data, req.language, db
+        )
+    finally:
+        if ctx.inflight_started:
+            await end_analysis_inflight(ctx.effective_user, device_id, client_ip)
 
-            # 2. Cross-account device daily cap (prevents multi-account abuse)
-            # Premium/unlimited users are exempt
-            await check_device_daily_cap(device_id, effective_user)
+    await _analysis_quota_postflight(ctx, all_succeeded, successful_calls, actual_llm_calls)
 
-            # 3. IP daily cap (fallback when device_id missing, also abuse signal)
-            if device_id == "unknown-device":
-                await check_ip_daily_cap(client_ip, effective_user)
-
-            # 4. Per-team rate limit (prevents same-team concurrent duplicate submissions)
-            # Grace users bypass this check — the 60s cooldown must not block free retries.
-            # record_analysis_async is called unconditionally below so the key is still set
-            # (blocking concurrent non-grace users on the same IP while grace runs).
-            if not await check_analysis_rate_limit_async(client_ip, team_hash):
-                logger.warning(
-                    f"Per-team rate limit exceeded for {client_ip} analyzing team {team_hash} (ID: {req.team_id}) in {req.language}"
-                )
-                raise HTTPException(
-                    status_code=429,
-                    detail=get_rate_limit_message(req.language)
-                )
-        else:
-            logger.info(
-                f"Retry grace active for {client_ip}:{team_hash}:{req.language} — "
-                f"bypassing quota checks"
+    # Persist the fresh analysis server-side for the owner. This is what makes
+    # a saved team's analysis appear on the owner's other devices without the
+    # separate manual "Save Analysis" step. Partial results are not persisted —
+    # they contain transient error markers and would overwrite a good analysis.
+    if is_owner and not team_is_featured and all_succeeded and successful_calls > 0:
+        try:
+            save_or_update_analysis(
+                team_id=req.team_id,
+                language=req.language,
+                analysis_data=result.model_dump(mode="json"),
+                is_from_cache=(actual_llm_calls == 0),
+                db=db,
             )
-
-        # Record rate limit BEFORE analysis (always, even for grace users).
-        # Grace users skipped the check above but still set the key here so that
-        # concurrent non-grace users on the same IP are blocked while grace runs.
-        # TTL=60s (1 min) — see comment in /team/analyze for rationale.
-        logger.info(f"Recording analysis for {client_ip}:{team_hash}")
-        await record_analysis_async(client_ip, team_hash, limit_per_minutes=1)
-
-        # Consume grace AFTER all pre-flight checks pass, BEFORE analysis starts.
-        # This is the "point of no return" — rate limits didn't reject us, so we're
-        # committed to running the analysis. Consuming here means:
-        # - Rate-limited 429s don't waste grace retries
-        # - Concurrent requests can't both bypass quota then both run LLM calls
-        # - Crashes mid-analysis don't leak infinite free retries
-        if has_grace:
-            await consume_retry_grace(
-                effective_user, device_id, client_ip, team_hash, req.language
-            )
-
-    result, all_succeeded, successful_calls, actual_llm_calls = await _perform_team_analysis(team_data, req.language, db)
-
-    # If the analysis completely failed (LLM was called but nothing succeeded), clear the
-    # rate limit key so the user can retry immediately without waiting for the 60s cooldown.
-    # No quota was charged and no cache entry was written, so there is nothing to protect.
-    # The distributed lock in get_or_compute still prevents concurrent duplicate LLM calls.
-    if not is_fully_cached and actual_llm_calls > 0 and successful_calls == 0:
-        await clear_analysis_rate_limit_async(client_ip, team_hash)
-
-    # Post-analysis: quota recording and grace management
-    if is_fully_cached:
-        if has_grace:
-            # Grace retry resolved by a fully-cached result (full success) — clear grace,
-            # no quota charge (the original partial failure already charged quota).
-            await clear_retry_grace(effective_user, device_id, client_ip, team_hash, req.language)
-        elif is_paying_cached_request:
-            # This request atomically claimed the slot in pre-flight — charge quota.
-            # The marker is already set in Redis (from try_claim_user_analysis_slot),
-            # so future cached requests from the same user within TTL will be free.
-            # NOTE: record_device_and_ip_usage is intentionally NOT called here.
-            # The device/IP cross-account cap tracks real LLM usage only. Counting
-            # cached hits would inflate the cap without any LLM cost, causing false
-            # 429s on non-cached analyses and incorrect quota seeding for new accounts.
-            if effective_user is None:
-                await record_anonymous_analysis(device_id, client_ip)
-            else:
-                await record_analysis_usage(effective_user)
-        # else: slot was already claimed (same user within TTL or concurrent duplicate) — free
-    else:
-        if has_grace:
-            # This was a retry under grace — don't charge quota again
-            if all_succeeded:
-                await clear_retry_grace(
-                    effective_user, device_id, client_ip, team_hash, req.language
-                )
-            # If retry also partially failed, grace counter was already decremented.
-            # If counter hit 0, key is deleted — next attempt will be a fresh one.
-        else:
-            # Charge quota only if actual LLM API calls were made and at least one succeeded.
-            # actual_llm_calls == 0 means all results came from cache (including via lock-wait).
-            if actual_llm_calls > 0 and successful_calls > 0:
-                if effective_user is None:
-                    # Truly anonymous user
-                    await record_anonymous_analysis(device_id, client_ip)
-                else:
-                    # Authenticated user OR anonymous with device-linked account
-                    await record_analysis_usage(effective_user)
-                # Record device/IP usage for cross-account caps
-                await record_device_and_ip_usage(device_id, client_ip)
-                # Mark so this user gets free repeats within the cache TTL window
-                await mark_user_team_analyzed(effective_user, device_id, client_ip, team_hash, req.language)
-
-                if not all_succeeded:
-                    # Partial success: grant grace for free retry
-                    await set_retry_grace(
-                        effective_user, device_id, client_ip, team_hash, req.language
-                    )
+            logger.info(f"Auto-saved analysis for team {req.team_id} ({req.language})")
+        except Exception as e:
+            # Persistence failure must not fail the analysis response the user paid for.
+            logger.error(f"Auto-save of analysis for team {req.team_id} failed: {e}")
 
     return result
 
@@ -5000,6 +5074,35 @@ def update_team(
                 status_code=400,
                 detail=f"You already have another team with the name '{team_update.name}'"
             )
+
+    # Snapshot the analysis-relevant composition BEFORE mutating, so we can
+    # invalidate stale saved analyses when the composition actually changes
+    # (a name-only edit keeps them). Computed from plain values, not ORM
+    # collections, to avoid flush-state ambiguity.
+    def _talent_tuple(t):
+        if t is None:
+            return ()  # empty tuple keeps the sort comparable
+        return (t.hp_boost, t.phy_atk_boost, t.mag_atk_boost,
+                t.phy_def_boost, t.mag_def_boost, t.spd_boost)
+
+    old_composition = (
+        db_team.magic_item_id,
+        tuple(sorted(
+            (um.monster_id, um.personality_id, um.legacy_type_id,
+             um.move1_id, um.move2_id, um.move3_id, um.move4_id,
+             _talent_tuple(um.talent))
+            for um in db_team.user_monsters
+        )),
+    )
+    new_composition = (
+        team_update.magic_item_id if team_update.magic_item_id is not None else db_team.magic_item_id,
+        tuple(sorted(
+            (um.monster_id, um.personality_id, um.legacy_type_id,
+             um.move1_id, um.move2_id, um.move3_id, um.move4_id,
+             _talent_tuple(um.talent))
+            for um in team_update.user_monsters
+        )),
+    )
 
     # Update team fields if provided
     if team_update.name is not None:
@@ -5074,7 +5177,28 @@ def update_team(
             um.talent = talent
 
     db_team.updated_at = func.now()
-    db.commit()
+
+    # Composition changed → any saved analysis now describes a different team.
+    # Delete it so users don't see a stale/wrong analysis for the edited team.
+    if new_composition != old_composition:
+        stale = (
+            db.query(models.TeamAnalysis)
+            .filter(models.TeamAnalysis.team_id == team_id)
+            .delete(synchronize_session=False)
+        )
+        if stale:
+            logger.info(f"Deleted {stale} stale saved analysis(es) for updated team {team_id}")
+
+    try:
+        db.commit()
+    except IntegrityError:
+        # Bad foreign keys (nonexistent monster/move/personality/type/magic item)
+        # are a client error, not a server crash
+        db.rollback()
+        raise HTTPException(
+            status_code=400,
+            detail="Team references a jingling, move, personality, legacy type, or magic item that does not exist"
+        )
     db.refresh(db_team)
     return db_team
 
@@ -5123,24 +5247,24 @@ def save_or_update_analysis(
     is_from_cache: bool,
     db: Session
 ) -> models.TeamAnalysis:
-    """Save or update analysis for a team (replaces if exists)."""
-    existing = (
-        db.query(models.TeamAnalysis)
-        .filter(
-            models.TeamAnalysis.team_id == team_id,
-            models.TeamAnalysis.language == language
-        )
-        .first()
-    )
+    """Save or update analysis for a team (replaces if exists).
 
-    if existing:
-        existing.analysis_data = analysis_data
-        existing.is_from_cache = is_from_cache
-        existing.created_at = datetime.utcnow()
-        db.commit()
-        db.refresh(existing)
-        return existing
-    else:
+    Concurrency-safe against the (team_id, language) unique constraint: with
+    2 uvicorn workers, two simultaneous saves can both miss the SELECT and
+    race on INSERT — the loser retries as an UPDATE instead of returning 500.
+    """
+    def _find_existing():
+        return (
+            db.query(models.TeamAnalysis)
+            .filter(
+                models.TeamAnalysis.team_id == team_id,
+                models.TeamAnalysis.language == language
+            )
+            .first()
+        )
+
+    existing = _find_existing()
+    if existing is None:
         new_analysis = models.TeamAnalysis(
             team_id=team_id,
             language=language,
@@ -5148,9 +5272,23 @@ def save_or_update_analysis(
             is_from_cache=is_from_cache
         )
         db.add(new_analysis)
-        db.commit()
-        db.refresh(new_analysis)
-        return new_analysis
+        try:
+            db.commit()
+            db.refresh(new_analysis)
+            return new_analysis
+        except IntegrityError:
+            # Concurrent request inserted the row first — fall through to update
+            db.rollback()
+            existing = _find_existing()
+            if existing is None:
+                raise
+
+    existing.analysis_data = analysis_data
+    existing.is_from_cache = is_from_cache
+    existing.created_at = datetime.now(timezone.utc)
+    db.commit()
+    db.refresh(existing)
+    return existing
 
 # -------- Saved Analysis Endpoints --------
 
@@ -5179,7 +5317,9 @@ def save_analysis(
     saved = save_or_update_analysis(
         team_id=req.team_id,
         language=req.language,
-        analysis_data=req.analysis_data.model_dump(),
+        # mode="json" keeps the stored JSONB free of Python-only types
+        # (enums, datetimes) regardless of how the schema evolves
+        analysis_data=req.analysis_data.model_dump(mode="json"),
         is_from_cache=req.is_from_cache,
         db=db
     )
@@ -5218,6 +5358,18 @@ def get_saved_analysis(
         )
         .first()
     )
+
+    if not saved:
+        # Fall back to the analysis saved under the other language: an analysis
+        # saved in ZH on one device should still be viewable on an EN-defaulting
+        # device instead of looking like it was never saved. The response's
+        # `language` field tells the client what it actually got.
+        saved = (
+            db.query(models.TeamAnalysis)
+            .filter(models.TeamAnalysis.team_id == team_id)
+            .order_by(models.TeamAnalysis.created_at.desc())
+            .first()
+        )
 
     if not saved:
         raise HTTPException(status_code=404, detail="No saved analysis found for this team")
@@ -5947,10 +6099,12 @@ async def admin_reset_users(
 
     from backend.config import ADMIN_EMAILS
 
-    # Find users to delete (not system, not admin)
+    # Find users to delete (not system, not admin).
+    # Guests have email IS NULL, for which `~email.in_(...)` evaluates to SQL
+    # NULL (excluded) — include them explicitly so guest rows are actually reset.
     users_to_delete = db.query(models.User).filter(
         models.User.is_system == False,
-        ~models.User.email.in_(ADMIN_EMAILS) if ADMIN_EMAILS else True
+        or_(models.User.email.is_(None), ~models.User.email.in_(ADMIN_EMAILS)) if ADMIN_EMAILS else True
     ).all()
 
     deleted_count = 0

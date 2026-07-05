@@ -18,14 +18,12 @@ export const queryClient = new QueryClient({
       },
     },
     mutations: {
-      retry: (failureCount, error: any) => {
-        // Don't retry mutations on client errors
-        if (error?.response?.status >= 400 && error?.response?.status < 500) {
-          return false;
-        }
-        // Retry once for server errors
-        return failureCount < 1;
-      },
+      // No global mutation retry. A blanket retry-on-5xx silently re-POSTs
+      // non-idempotent mutations — e.g. a 502 after createTeam commits would
+      // create a duplicate team. The one mutation that must retry (analyze,
+      // to recover its result after CloudFront's 120s timeout) opts in via
+      // its own retry option (see analyzeMutationRetry in lib/constants.ts).
+      retry: false,
     },
   },
 });

@@ -4,9 +4,11 @@ Pytest fixtures for auth testing.
 Provides test database session, test client, and helper functions.
 """
 
+from datetime import datetime, timezone
+
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, event
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 from sqlalchemy.ext.compiler import compiles
@@ -31,6 +33,19 @@ engine = create_engine(
     connect_args={"check_same_thread": False},
     poolclass=StaticPool,
 )
+
+
+# Emulate the PostgreSQL functions used in server_default expressions
+# (timezone('utc', now())) so INSERTs into users/teams work on SQLite and
+# endpoint-level tests can exercise the real auth/team flows.
+@event.listens_for(engine, "connect")
+def _register_pg_compat_functions(dbapi_connection, _record):
+    dbapi_connection.create_function("timezone", 2, lambda _tz, dt: dt)
+    dbapi_connection.create_function(
+        "now", 0, lambda: datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
+    )
+
+
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 

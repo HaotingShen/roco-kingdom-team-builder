@@ -27,10 +27,10 @@ Results are cached in Redis and persisted to the database, so re-viewing is inst
 **LLM Integration**
 - 7 concurrent LLM calls per analysis (6 per-monster + 1 team-wide) using `asyncio.gather`
 - Redis response cache (1-hour TTL) deduplicates identical requests across users
-- Retry grace system: partial failures don't consume user quota
+- Retry grace system: after a partial failure (quota charged once), retries are free
 
 **Auth & Multi-Tier User System**
-- Guest accounts auto-created on first visit via `device_id` cookie — zero friction onboarding
+- One-click guest accounts ("Continue as Guest") deduplicated per device via httpOnly `device_id` cookie
 - Seamless guest → registered upgrade with full data migration
 - JWT access tokens (15 min) + refresh tokens (7 days) in `httpOnly` cookies
 - Cross-account abuse prevention: per-device and per-IP daily caps tracked in Redis

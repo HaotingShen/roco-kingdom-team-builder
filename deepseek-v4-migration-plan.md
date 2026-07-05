@@ -1,5 +1,15 @@
 # DeepSeek V4 Model Migration Plan — Team Analysis LLM
 
+> ✅ **COMPLETED 2026-06-13** — merged to main (commits `7937f71`, `6726ea4`) and
+> live in production well before the 2026-07-24 retirement. The unchecked §11
+> checklist items below are historical; all effectively done. One correction:
+> §3's "CI/CD does not rewrite the host compose file" is **wrong** —
+> `.github/workflows/deploy.yml` uploads the repo's `docker-compose.prod.yml`
+> to S3 and overwrites the on-box copy on every deploy, so the repo compose is
+> the source of truth (the committed pin is what made this migration stick).
+> 2026-07-05 addendum: `generate_analysis_json` now retries once on malformed
+> JSON output — an observed v4-flash thinking-mode failure mode.
+
 **Status:** Code changes APPLIED + audited (SAFE WITH CHANGES) · **Risk:** Low (behavioral parity) · **Hard deadline:** 2026‑07‑24 15:59 UTC
 **Author:** Recreated 2026‑06‑13 from live DeepSeek docs + current codebase
 **Audit:** Strict pre-implementation audit completed 2026‑06‑13. Verdict **SAFE WITH CHANGES** (the changes were folded into §6). Remaining before prod: the §7 Step 0 live smoke test, then deploy.

@@ -1366,6 +1366,80 @@ async def mark_user_team_analyzed(
         logger.error(f"Failed to mark user_analyzed: {e}")
 
 
+# ========== In-flight Analysis Concurrency Cap ==========
+#
+# The per-user daily/monthly quota is a check-then-increment (checked at
+# request start, incremented after the ~60s LLM run). A scripted client could
+# fire many DIFFERENT-team analyses in parallel; each would read the same
+# pre-increment counter and pass. This cap bounds that window by limiting
+# concurrent non-cached analyses per identity.
+#
+# The limit is 2 (not 1) on purpose: when CloudFront times out at 120s the
+# frontend silently retries while the original request is still computing —
+# that second request must NOT be rejected (it waits on the LLM cache lock
+# and returns the original's result without charging quota).
+
+_INFLIGHT_TTL = 300  # safety TTL; normal path decrements explicitly
+_INFLIGHT_MAX_CONCURRENT = 2
+
+
+def _get_inflight_key(
+    effective_user: Optional[models.User], device_id: str, client_ip: str
+) -> str:
+    identity_type, identity_value = _resolve_grace_identity(
+        effective_user, device_id, client_ip
+    )
+    return f"tier:inflight:{identity_type}:{identity_value}"
+
+
+async def try_begin_analysis_inflight(
+    effective_user: Optional[models.User], device_id: str, client_ip: str
+) -> bool:
+    """Reserve an in-flight analysis slot for this identity.
+
+    Returns True if the analysis may proceed (slot reserved — the caller MUST
+    call end_analysis_inflight when the analysis finishes, success or failure).
+    Returns False when the identity already has _INFLIGHT_MAX_CONCURRENT
+    analyses running. Fails open (True) on Redis errors.
+    """
+    redis_client = get_redis()
+    if not redis_client:
+        return True
+    try:
+        key = _get_inflight_key(effective_user, device_id, client_ip)
+        pipe = redis_client.pipeline()
+        pipe.incr(key)
+        pipe.expire(key, _INFLIGHT_TTL)
+        count = pipe.execute()[0]
+        if count > _INFLIGHT_MAX_CONCURRENT:
+            redis_client.decr(key)
+            logger.warning(
+                f"In-flight analysis cap hit ({count - 1} running) for "
+                f"{key[:40]}..."
+            )
+            return False
+        return True
+    except Exception as e:
+        logger.error(f"Failed to reserve in-flight analysis slot: {e}")
+        return True
+
+
+async def end_analysis_inflight(
+    effective_user: Optional[models.User], device_id: str, client_ip: str
+) -> None:
+    """Release an in-flight analysis slot (pairs with try_begin_analysis_inflight)."""
+    redis_client = get_redis()
+    if not redis_client:
+        return
+    try:
+        key = _get_inflight_key(effective_user, device_id, client_ip)
+        remaining = redis_client.decr(key)
+        if remaining <= 0:
+            redis_client.delete(key)
+    except Exception as e:
+        logger.error(f"Failed to release in-flight analysis slot: {e}")
+
+
 # ========== LLM Circuit Breaker ==========
 #
 # Opens when repeated LLM API failures are detected (e.g., DeepSeek outage).

@@ -6,9 +6,12 @@
 |------|---------------|-----------------|------------|
 | Anonymous | 1 | 5 | 0 |
 | Guest | 2 | 30 | 3 |
-| Free (registered) | 5 | 100 | 100 |
-| Premium | 20 | 500 | 500 |
+| Free (registered) | 5 | 100 | 20 |
+| Premium | 10 | 200 | 100 |
 | Unlimited | ∞ | ∞ | ∞ |
+
+(Values are the `backend/config.py` defaults, which are what production runs —
+`TIER_*` env vars are not wired through the prod compose.)
 
 **Cross-account device daily cap:** 5 non-cached (real LLM) analyses per device per day, across all accounts.
 Cached results skip this cap entirely.

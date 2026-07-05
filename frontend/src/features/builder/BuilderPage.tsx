@@ -16,7 +16,7 @@ import { useI18n, pickName } from "@/i18n";
 import { extractErrorMessage } from "@/hooks/useTeamMutation";
 import { useSeoMeta } from "@/hooks/useSeoMeta";
 import { magicItemImageUrl } from "@/lib/images";
-import { QUERY_KEYS } from "@/lib/constants";
+import { QUERY_KEYS, analyzeMutationRetry } from "@/lib/constants";
 import { useAuthStore } from "@/features/auth/authStore";
 import { useQuota } from "@/hooks/useQuota";
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragOverlay, type DragEndEvent, type DragStartEvent } from '@dnd-kit/core';
@@ -170,8 +170,13 @@ function analysesMatch(
 ): boolean {
   if (!current || !saved) return false;
 
+  // Guard against malformed/legacy stored analysis_data — a missing field
+  // must mean "not saved", not a render crash.
+  if (!current.team || !saved.team || !current.per_monster || !saved.per_monster) return false;
+  if (!current.team.user_monsters || !saved.team.user_monsters) return false;
+
   // Magic item must match
-  if (current.team.magic_item.id !== saved.team.magic_item.id) return false;
+  if (current.team.magic_item?.id !== saved.team.magic_item?.id) return false;
 
   // Must have same number of monsters
   if (current.team.user_monsters.length !== saved.team.user_monsters.length) return false;
@@ -363,7 +368,7 @@ export default function BuilderPage() {
 
   // Query for saved analysis (only when teamId exists)
   const savedAnalysisQuery = useQuery<FullSavedAnalysisOut>({
-    queryKey: ["savedAnalysis", teamId, lang],
+    queryKey: QUERY_KEYS.SAVED_ANALYSIS(teamId!, lang),
     queryFn: () => endpoints.getSavedAnalysis(teamId!, lang).then(r => r.data),
     enabled: !!teamId && Number.isFinite(teamId),
     retry: false, // 404 is expected when no saved analysis exists
@@ -456,9 +461,19 @@ export default function BuilderPage() {
   }, [errorScrollTick]);
 
   /* ---------- analyze ---------- */
+  // Snapshot of the analysis shown before a re-analyze started, restored if
+  // the re-analyze fails (otherwise a failed retry leaves the user with nothing).
+  const prevAnalysisRef = useRef<TeamAnalysisOut | null>(null);
+  // When the analyzed payload matched the saved team (teamId set, not dirty,
+  // not featured, logged in), auto-persist the result server-side on success.
+  const autoSaveTeamIdRef = useRef<number | null>(null);
+
   const analyze = useMutation({
     mutationFn: (payload: TeamCreate) =>
       endpoints.analyzeTeam(payload, lang).then((r) => r.data as TeamAnalysisOut),
+    // Opt-in retry: recovers the result after CloudFront's 120s timeout
+    // (backend dedupes via its LLM-cache lock — quota charged once).
+    retry: analyzeMutationRetry,
     onMutate: () => {
       setIsAnalyzing(true);
     },
@@ -471,13 +486,44 @@ export default function BuilderPage() {
       } else {
         showError(extractErrorMessage(err));
       }
+      // Restore the previous result — clearing it up front and then failing
+      // must not destroy a good analysis the user was reading.
+      if (prevAnalysisRef.current) {
+        setAnalysis(prevAnalysisRef.current);
+        prevAnalysisRef.current = null;
+      }
       setIsAnalyzing(false);
+      // The server may still have charged this run (e.g. timeout after the
+      // LLM calls) — refresh the quota display rather than showing stale counts.
+      qc.invalidateQueries({ queryKey: QUERY_KEYS.QUOTA });
     },
     onSuccess: (data) => {
       setServerErr(null);
       setAnalysis(data);
+      prevAnalysisRef.current = null;
       setIsAnalyzing(false);
       qc.invalidateQueries({ queryKey: QUERY_KEYS.QUOTA });
+
+      // Auto-persist when the analyzed configuration IS the saved team.
+      // This is what makes the analysis reappear on other devices / after a
+      // refresh without requiring the separate "Save Analysis" click.
+      const autoSaveTeamId = autoSaveTeamIdRef.current;
+      autoSaveTeamIdRef.current = null;
+      if (autoSaveTeamId && !data.has_partial_errors) {
+        endpoints
+          .saveAnalysis({
+            team_id: autoSaveTeamId,
+            language: lang,
+            analysis_data: data,
+            is_from_cache: false,
+          })
+          .then(() => {
+            qc.invalidateQueries({ queryKey: QUERY_KEYS.SAVED_ANALYSIS(autoSaveTeamId) });
+          })
+          .catch(() => {
+            // Non-fatal: the manual "Save Analysis" button still works.
+          });
+      }
       // Scroll to analysis section, with longer delay if navigating back from another page
       const scrollDelay = window.location.pathname !== "/build" ? 300 : 100;
       if (window.location.pathname !== "/build") {
@@ -509,7 +555,7 @@ export default function BuilderPage() {
     onSuccess: () => {
       setServerOk(t("builder.analysisSaved"));
       // Invalidate to refresh "Already Saved" state
-      qc.invalidateQueries({ queryKey: ["savedAnalysis", teamId, lang] });
+      qc.invalidateQueries({ queryKey: QUERY_KEYS.SAVED_ANALYSIS(teamId!) });
     },
     onError: (err: any) => {
       showError(err?.response?.data?.detail || t("builder.failedToSave"));
@@ -526,7 +572,14 @@ export default function BuilderPage() {
       showError(t(teamErrorKey!));
       return;
     }
-    // Clear previous analysis results immediately when user clicks analyze
+    // Capture whether the payload being analyzed matches the saved team
+    // AT CLICK TIME (the user may edit slots while the analysis runs; the
+    // result still describes the clicked-time snapshot).
+    autoSaveTeamIdRef.current =
+      teamId && !isDirty && !isFeaturedTeam && user ? teamId : null;
+    // Clear previous analysis results immediately when user clicks analyze,
+    // keeping a snapshot to restore if this run fails.
+    prevAnalysisRef.current = analysis;
     setAttemptedAction(null);
     setAnalysis(null);
     setServerErr(null);
@@ -582,6 +635,9 @@ export default function BuilderPage() {
       qc.setQueryData(QUERY_KEYS.TEAM_DETAIL(variables.id), _updatedTeam);
       qc.invalidateQueries({ queryKey: QUERY_KEYS.TEAMS });
       qc.invalidateQueries({ queryKey: QUERY_KEYS.TEAM_DETAIL(variables.id) });
+      // A composition change deletes the saved analysis server-side —
+      // refetch so "View Saved Analysis" / "Already Saved" reflect it.
+      qc.invalidateQueries({ queryKey: QUERY_KEYS.SAVED_ANALYSIS(variables.id) });
       if (updateAndShareMode.current) {
         updateAndShareMode.current = false;
         setPendingShareTeam(_updatedTeam);  // triggers share modal via useEffect

@@ -3,9 +3,25 @@ import { useNavigate, Link } from "react-router-dom";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { authEndpoints } from "@/lib/api";
+import { queryClient } from "@/lib/queryClient";
 import { useAuthStore, hasDeviceRegistered } from "./authStore";
+import { useBuilderStore } from "@/features/builder/builderStore";
 import { useI18n } from "@/i18n";
 import NoIndex from "@/components/NoIndex";
+
+/**
+ * Clear the previous identity's state on an auth transition. Mirrors the
+ * logout cleanup in UserMenu: without this, a guest→account login keeps the
+ * guest's cached teams/saved-analysis queries (rendered for up to their
+ * staleTime) and a builder teamId pointing at a team the new account doesn't
+ * own (Update button → 403). Keeps the local slot draft.
+ */
+export function clearPreviousIdentityState() {
+  queryClient.clear();
+  const builder = useBuilderStore.getState();
+  builder.clearTeamId();
+  builder.setAnalysis(null);
+}
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -25,6 +41,7 @@ export default function LoginPage() {
       return response.data;
     },
     onSuccess: (data) => {
+      clearPreviousIdentityState();
       setAuth(data.user, data.access_token);
       // Apply user's stored language preference across devices
       if (!data.user.is_guest && data.user.preferred_language) {
@@ -62,6 +79,7 @@ export default function LoginPage() {
       return response.data;
     },
     onSuccess: (data) => {
+      clearPreviousIdentityState();
       setAuth(data.user, data.access_token);
       const message = data.is_returning_guest
         ? (t("auth.guestReturned") || "Welcome back!")
