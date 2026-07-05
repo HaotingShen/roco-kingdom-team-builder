@@ -14,6 +14,7 @@ import pytest
 from pydantic import ValidationError
 
 from backend import models, schemas
+from backend.auth import create_access_token
 from backend.main import (
     compute_effective_stats,
     generate_team_cache_key,
@@ -24,6 +25,38 @@ from backend.tests.conftest import TestingSessionLocal
 class Dummy:
     def __init__(self, **kwargs):
         self.__dict__.update(kwargs)
+
+
+# Build users and teams directly in the DB and mint tokens, rather than hitting
+# /auth/guest. The guest-creation endpoint is rate-limited per IP (2/day) via
+# Redis, which is live in CI — creating several guests on the shared test IP
+# 429s. The ownership checks under test run BEFORE any Redis rate-limit code,
+# so DB-direct setup makes them deterministic regardless of Redis state.
+_uid = [1000]
+
+
+def _create_user(is_guest: bool = True) -> tuple[int, dict]:
+    """Insert a User row and return (id, auth_headers). CSRF isn't required in
+    tests (COOKIE_SAMESITE defaults to 'lax')."""
+    db = TestingSessionLocal()
+    try:
+        _uid[0] += 1
+        uname = f"owner_{_uid[0]}"
+        user = models.User(
+            username=uname,
+            canonical_username=uname,
+            is_guest=is_guest,
+            is_active=True,
+            token_version=0,
+            subscription_tier="guest" if is_guest else "free",
+        )
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+        token = create_access_token(user.id, user.username, is_guest, user.token_version)
+        return user.id, {"Authorization": f"Bearer {token}"}
+    finally:
+        db.close()
 
 
 def _create_team_row(owner_id: int, name: str = "Victim Team", is_featured: bool = False) -> int:
@@ -44,38 +77,36 @@ def _create_team_row(owner_id: int, name: str = "Victim Team", is_featured: bool
 # ---------------------------------------------------------------------------
 
 class TestAnalyzeByIdOwnership:
-    def test_anonymous_cannot_analyze_private_team(self, client, guest_user):
-        team_id = _create_team_row(owner_id=guest_user["user"]["id"])
+    def test_anonymous_cannot_analyze_private_team(self, client):
+        owner_id, _ = _create_user()
+        team_id = _create_team_row(owner_id=owner_id)
 
-        # Drop the auth header AND the device cookie: the device cookie set
-        # during guest creation would map back to the owner via
-        # find_device_owner and legitimately pass the ownership check.
+        # No auth header and no device cookie → truly anonymous, so
+        # find_device_owner can't map back to the owner.
         client.cookies.clear()
         resp = client.post("/team/analyze_by_id", json={"team_id": team_id, "language": "en"})
         assert resp.status_code == 403
 
-    def test_other_user_cannot_analyze_private_team(self, client, guest_user):
-        team_id = _create_team_row(owner_id=guest_user["user"]["id"])
+    def test_other_user_cannot_analyze_private_team(self, client):
+        owner_id, _ = _create_user()
+        team_id = _create_team_row(owner_id=owner_id)
 
-        # Create a second guest on a FRESH device (clearing the cookie jar —
-        # otherwise /auth/guest dedupes by device cookie and returns the owner)
+        _, other_headers = _create_user()
         client.cookies.clear()
-        second = client.post("/auth/guest", json={})
-        assert second.status_code == 200
-        second_headers = {"Authorization": f"Bearer {second.json()['access_token']}"}
-
         resp = client.post(
             "/team/analyze_by_id",
             json={"team_id": team_id, "language": "en"},
-            headers=second_headers,
+            headers=other_headers,
         )
         assert resp.status_code == 403
 
-    def test_unknown_team_is_404(self, client, guest_user):
+    def test_unknown_team_is_404(self, client):
+        _, headers = _create_user()
+        client.cookies.clear()
         resp = client.post(
             "/team/analyze_by_id",
             json={"team_id": 999999, "language": "en"},
-            headers=guest_user["headers"],
+            headers=headers,
         )
         assert resp.status_code == 404
 
