@@ -12,7 +12,6 @@ import { formatRowEffects, formatSentenceEffects } from "@/lib/personality";
 import { QUERY_KEYS, LEGACY_TYPES_ORDER } from "@/lib/constants";
 import { buildDexForwardQuery } from "@/lib/dexNavigation";
 import { extractLegacyInfo, useLegacyMap, sortLegacyMoves } from "@/lib/monsterMoveOptions";
-import HotLabel from "@/components/HotLabel";
 
 // ---------- helpers ----------
 function Warn({ children }: { children: React.ReactNode }) {
@@ -545,11 +544,11 @@ export default function MonsterInspector({
             {context === "builder" && (
               <>
                 <button
-                  className="relative overflow-visible w-full min-[400px]:flex-1 min-[400px]:w-auto order-last min-[400px]:order-none min-w-0 h-9 rounded-lg border-2 border-zinc-300 bg-white text-xs font-medium text-zinc-700 cursor-pointer hover:bg-zinc-50 hover:border-zinc-400 hover:shadow-sm transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400"
+                  className="relative overflow-visible w-full min-[400px]:flex-1 min-[400px]:w-auto order-last min-[400px]:order-none min-w-0 h-9 rounded-lg border-2 border-indigo-500 bg-indigo-50 text-xs font-semibold text-indigo-700 shadow-sm cursor-pointer hover:bg-indigo-100 hover:border-indigo-600 hover:shadow-md transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
                   onClick={goAnalyzeForMonster}
                   title={t("builder.analyzeMonster")}
                 >
-                  <HotLabel>{t("builder.analyzeMonster")}</HotLabel>
+                  {t("builder.analyzeMonster")}
                 </button>
                 <button
                   className="flex-1 min-w-0 h-9 rounded-lg border-2 border-zinc-300 bg-white text-xs font-medium text-zinc-700 cursor-pointer truncate hover:bg-zinc-50 hover:border-zinc-400 hover:shadow-sm transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400"
