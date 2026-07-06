@@ -345,3 +345,25 @@ class RedisCache:
                     await lock.release()
             except Exception as e:
                 logger.error(f"Error releasing lock for {key[:50]}: {e}")
+
+
+# ---------------------------------------------------------------------------
+# Shared application-level Redis cache singleton.
+#
+# Instantiated here (rather than in main.py) so both main.py and the analysis
+# package can import the SAME instance without a circular import. Its lifecycle
+# (connect/disconnect) is still driven by main.py's startup/shutdown events.
+# ---------------------------------------------------------------------------
+from backend.config import (
+    REDIS_URL,
+    REDIS_CACHE_TTL,
+    REDIS_LOCK_TIMEOUT,
+    REDIS_LOCK_BLOCKING_TIMEOUT,
+)
+
+redis_cache = RedisCache(
+    redis_url=REDIS_URL,
+    ttl_seconds=REDIS_CACHE_TTL,
+    lock_timeout=REDIS_LOCK_TIMEOUT,
+    lock_blocking_timeout=REDIS_LOCK_BLOCKING_TIMEOUT,
+)

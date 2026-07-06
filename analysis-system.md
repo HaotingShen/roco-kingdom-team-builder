@@ -6,7 +6,29 @@ end-to-end verification against a local Postgres/Redis/DeepSeek stack.
 This document is the authoritative reference for how team analysis works.
 The historical quota/auth details in `user-auth-system.md` remain accurate.
 
+> **2026-07-06 update — the analysis code was extracted from `main.py` into the
+> `backend/analysis/` package (behavior-preserving refactor; no API/DB/quota/
+> cache/auth/response changes).** Where this doc says "in `main.py`" for an
+> analysis function, it now lives in the package — see the module map in §0.
+> The routes are registered via `app.include_router(analysis_router)` in
+> `main.py` and keep the exact same paths, response models, and tags.
+
 ---
+
+## 0. Module map (`backend/analysis/`)
+
+| Module | Contents |
+|---|---|
+| `routes.py` | `APIRouter` with the 5 endpoints: `POST /team/analyze`, `POST /team/analyze_by_id`, `POST /analysis/save`, `GET /teams/{id}/analysis`, `DELETE /teams/{id}/analysis` |
+| `service.py` | `_perform_team_analysis` — the core engine (data load, 7 prompts, concurrent cached LLM calls, error classification, result assembly) |
+| `quota.py` | `_AnalysisQuotaContext`, `_resolve_analysis_effective_user`, `_analysis_quota_preflight`, `_analysis_quota_postflight` |
+| `cache_keys.py` | `generate_monster_cache_key`, `compute_willpower_categories`, `generate_team_cache_key`, `_load_willpower_categories_if_needed`, `generate_team_composition_hash`, `check_if_all_cached` |
+| `prompts.py` | `BATTLE_MECHANICS_ZH/EN`, `build_trait_synergy_prompt`, `build_team_synergy_prompt` |
+| `computations.py` | `compute_effective_stats`, `compute_energy_profile`, `resolve_dynamic_move_properties`, `compute_counter_coverage`, `compute_defense_status_move`, `compute_type_coverage`, `compute_magic_item_eval`, `generate_recommendations` |
+| `localization.py` | `get_localized_name` / `_description` / `_move_category` |
+| `persistence.py` | `save_or_update_analysis` |
+
+Import direction (acyclic): `routes → service/quota/persistence → prompts/cache_keys → computations → localization`. The shared `redis_cache` singleton lives in `backend/cache.py` (imported by both the package and `main.py`). Analysis Pydantic schemas remain in `backend/schemas.py`. `update_team`'s stale-analysis deletion stays in `main.py` (it's a Teams route, not an analysis route). `main.py` re-exports `compute_effective_stats`, `compute_type_coverage`, `generate_team_cache_key`, `generate_team_composition_hash`, and `_perform_team_analysis` for the test suite.
 
 ## 1. End-to-end flow
 
@@ -23,8 +45,8 @@ that account's quota (prevents log-out-for-fresh-quota).
 
 ### Pipeline (shared by both endpoints)
 
-1. **Pre-flight** (`_analysis_quota_preflight` in `main.py` — extracted 2026-07-05,
-   previously ~200 lines duplicated per endpoint):
+1. **Pre-flight** (`_analysis_quota_preflight`, `analysis/quota.py` — deduplicated
+   from ~200 lines per endpoint in the 2026-07-05 fix pass):
    - `team_hash` = language-independent md5 of composition (magic item, monsters,
      legacy types, moves — NOT personality/talent/name).
    - `check_if_all_cached()` — are all 7 `llm_cache:*` Redis keys present?
