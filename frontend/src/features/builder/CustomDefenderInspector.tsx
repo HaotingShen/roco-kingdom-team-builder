@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { endpoints } from "@/lib/api";
 import { useI18n, pickName, pickFormName } from "@/i18n";
 import { QUERY_KEYS, LEGACY_TYPES_ORDER } from "@/lib/constants";
+import { useLocalizedPath } from "@/lib/locale";
 import MonsterPicker from "./MonsterPicker";
 import CustomSelect from "@/components/CustomSelect";
 import { MonsterImage } from "@/components/MonsterImage";
@@ -48,10 +49,11 @@ function DefenderDexLink({
   detail: any;
 }) {
   const location = useLocation();
+  const localized = useLocalizedPath();
   const back = encodeURIComponent(location.pathname + "?tab=vsCustom");
   return (
     <Link
-      to={`/dex/monsters/${monsterId}?from=analysis&back=${back}`}
+      to={localized(`/dex/monsters/${monsterId}`) + `?from=analysis&back=${back}`}
       className="shrink-0 w-14 h-14 overflow-hidden rounded-lg bg-white border border-zinc-200 hover:opacity-80 transition-opacity"
     >
       <MonsterImage

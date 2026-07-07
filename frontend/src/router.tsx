@@ -1,8 +1,8 @@
-import { createBrowserRouter, createHashRouter } from "react-router-dom";
+import { createBrowserRouter, createHashRouter, Navigate } from "react-router-dom";
 
 // TapTap serves the app from an arbitrary CDN sub-path with no server-side
 // fallback to index.html. Hash routing avoids the dependency on pathname
-// entirely — all navigation happens via the fragment (#/build, #/dex, etc.).
+// entirely — all navigation happens via the fragment (#/en/build, #/zh/dex, etc.).
 const createRouter = import.meta.env.VITE_HASH_ROUTER === "true"
   ? createHashRouter
   : createBrowserRouter;
@@ -26,13 +26,29 @@ import FeedbackPage from "./features/feedback/FeedbackPage";
 import ImportPage from "./features/share/ImportPage";
 import AnnouncementsPage from "./features/announcements/AnnouncementsPage";
 
+/**
+ * Fallback for URLs without a locale prefix. In production, CloudFront
+ * redirects "/" (302 by Accept-Language) and legacy paths (301 → /en/...)
+ * before the SPA ever sees them, so this only fires in `vite dev` and the
+ * TapTap hash-router build (which boots at "#/"). It must be preference-based —
+ * a hardcoded /en would dump TapTap's Chinese users into English UI.
+ */
+function RedirectToPreferredLocale() {
+  const stored = localStorage.getItem("lang");
+  const lang = stored === "zh" || stored === "en"
+    ? stored
+    : navigator.language.startsWith("zh") ? "zh" : "en";
+  return <Navigate to={`/${lang}/`} replace />;
+}
+
+// NOTE: the legacy "/build" route was deliberately dropped — the homepage
+// (/{lang}/) IS the builder. CloudFront 301s legacy /build → /en/.
 const router = createRouter([
   {
-    path: "/",
+    path: "/:lang",
     element: <App />,
     children: [
       { index: true, element: <BuilderPage /> },
-      { path: "build", element: <BuilderPage /> },
       { path: "build/analyze/:slot", element: <MonsterAnalysisPage /> },
       { path: "dex", element: <DexPage /> },
       { path: "dex/monsters/:id", element: <MonsterDetailPage /> },
@@ -51,6 +67,10 @@ const router = createRouter([
       { path: "import", element: <ImportPage /> },
       { path: "announcements", element: <AnnouncementsPage /> },
     ]
+  },
+  {
+    path: "*",
+    element: <RedirectToPreferredLocale />
   }
 ]);
 

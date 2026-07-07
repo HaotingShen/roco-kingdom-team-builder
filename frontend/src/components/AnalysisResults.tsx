@@ -5,6 +5,7 @@ import { useI18n, pickName, pickFormName } from "@/i18n";
 import { useQuery } from "@tanstack/react-query";
 import { endpoints } from "@/lib/api";
 import { typeIconUrl, magicItemImageUrl } from "@/lib/images";
+import { useLocalizedPath } from "@/lib/locale";
 import { MonsterImage } from "./MonsterImage";
 import StatRow from "./StatRow";
 import { formatRowEffects } from "@/lib/personality";
@@ -119,6 +120,7 @@ function synergyMoveNames(ma: MonsterAnalysisOut, lang: "en"|"zh") {
 
 function MonsterAnalysisCard({ data }: { data: MonsterAnalysisOut }) {
   const { lang, t } = useI18n();
+  const localized = useLocalizedPath();
   const m = data.user_monster.monster;
   const formLabel = pickFormName(m as any, lang);
   const tips = (data.trait_synergies?.flatMap(s => s.recommendation) ?? []);
@@ -134,7 +136,7 @@ function MonsterAnalysisCard({ data }: { data: MonsterAnalysisOut }) {
       <div className="flex gap-3">
         {/* avatar */}
         <Link
-          to={`/dex/monsters/${m.id}?from=builder`}
+          to={localized(`/dex/monsters/${m.id}`) + `?from=builder`}
           className="shrink-0 cursor-pointer transition-transform hover:scale-105"
         >
           <MonsterImage

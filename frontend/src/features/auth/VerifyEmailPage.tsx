@@ -4,10 +4,12 @@ import { useMutation } from "@tanstack/react-query";
 import { authEndpoints } from "@/lib/api";
 import { useAuthStore } from "@/features/auth/authStore";
 import { useI18n } from "@/i18n";
+import { useLocalizedPath } from "@/lib/locale";
 import NoIndex from "@/components/NoIndex";
 
 export default function VerifyEmailPage() {
   const { t } = useI18n();
+  const localized = useLocalizedPath();
   const [searchParams] = useSearchParams();
   const tokenFromUrl = searchParams.get("token") || "";
   const navigate = useNavigate();
@@ -32,7 +34,7 @@ export default function VerifyEmailPage() {
       }
       // Strip token from URL so back-navigation doesn't re-trigger verification
       if (tokenFromUrl) {
-        navigate('/auth/verify', { replace: true });
+        navigate(localized('/auth/verify'), { replace: true });
       }
     },
     onError: (err: any) => {
@@ -92,7 +94,7 @@ export default function VerifyEmailPage() {
             </div>
             {isAuthenticated ? (
               <Link
-                to="/build"
+                to={localized("/")}
                 replace
                 className="block w-full h-10 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors flex items-center justify-center"
               >
@@ -100,7 +102,7 @@ export default function VerifyEmailPage() {
               </Link>
             ) : (
               <Link
-                to="/auth/login"
+                to={localized("/auth/login")}
                 replace
                 className="block w-full h-10 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors flex items-center justify-center"
               >
@@ -135,7 +137,7 @@ export default function VerifyEmailPage() {
                 )}
               </>
             )}
-            <Link to="/" className="block text-sm text-zinc-500 hover:text-zinc-700">
+            <Link to={localized("/")} className="block text-sm text-zinc-500 hover:text-zinc-700">
               {t("auth.skipForNow")}
             </Link>
           </div>
@@ -191,7 +193,7 @@ export default function VerifyEmailPage() {
               >
                 {resendMutation.isPending ? t("auth.resending") : t("auth.resendCode")}
               </button>
-              <Link to="/" className="block text-sm text-zinc-600 hover:text-zinc-800">
+              <Link to={localized("/")} className="block text-sm text-zinc-600 hover:text-zinc-800">
                 {t("auth.skipForNow")}
               </Link>
             </div>

@@ -4,6 +4,7 @@ import { Navigate } from "react-router-dom";
 import { useAuthStore } from "@/features/auth/authStore";
 import { adminEndpoints, type AdminStats } from "@/lib/api";
 import { useI18n } from "@/i18n";
+import { useLocalizedPath } from "@/lib/locale";
 import UserTable from "./UserTable";
 import FeaturedTeamsTab from "./FeaturedTeamsTab";
 import NoIndex from "@/components/NoIndex";
@@ -20,6 +21,7 @@ import NoIndex from "@/components/NoIndex";
  */
 export default function AdminPage() {
   const { t } = useI18n();
+  const localized = useLocalizedPath();
   const { user } = useAuthStore();
   const [activeTab, setActiveTab] = useState<"stats" | "users" | "featured">("stats");
 
@@ -35,7 +37,7 @@ export default function AdminPage() {
 
   // If not logged in, redirect to home
   if (!user) {
-    return <Navigate to="/" replace />;
+    return <Navigate to={localized("/")} replace />;
   }
 
   // If query failed with 403, user is not admin

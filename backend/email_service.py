@@ -108,7 +108,10 @@ async def send_verification_email(to_email: str, token: str, language: str = "en
     Returns:
         True if sent successfully
     """
-    verify_url = f"{FRONTEND_URL}/auth/verify?token={token}"
+    # Locale prefix so the link opens the app in the user's language
+    # (preferred_language is user-settable — guard before URL interpolation)
+    url_lang = language if language in ("en", "zh") else "en"
+    verify_url = f"{FRONTEND_URL}/{url_lang}/auth/verify?token={token}"
 
     if language == "zh":
         subject = "验证您的邮箱 - 洛手配队器"
@@ -188,7 +191,8 @@ async def send_password_reset_email(to_email: str, token: str, language: str = "
     Returns:
         True if sent successfully
     """
-    reset_url = f"{FRONTEND_URL}/auth/reset-password?token={token}"
+    url_lang = language if language in ("en", "zh") else "en"
+    reset_url = f"{FRONTEND_URL}/{url_lang}/auth/reset-password?token={token}"
 
     if language == "zh":
         subject = "重置密码 - 洛手配队器"
@@ -269,7 +273,8 @@ async def send_email_change_verification(to_email: str, token: str, language: st
     Returns:
         True if sent successfully
     """
-    verify_url = f"{FRONTEND_URL}/auth/confirm-email?token={token}"
+    url_lang = language if language in ("en", "zh") else "en"
+    verify_url = f"{FRONTEND_URL}/{url_lang}/auth/confirm-email?token={token}"
 
     if language == "zh":
         subject = "确认新邮箱 - 洛手配队器"

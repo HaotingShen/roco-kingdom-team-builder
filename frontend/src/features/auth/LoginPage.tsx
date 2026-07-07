@@ -7,6 +7,7 @@ import { queryClient } from "@/lib/queryClient";
 import { useAuthStore, hasDeviceRegistered } from "./authStore";
 import { useBuilderStore } from "@/features/builder/builderStore";
 import { useI18n } from "@/i18n";
+import { useLocalizedPath } from "@/lib/locale";
 import NoIndex from "@/components/NoIndex";
 
 /**
@@ -25,7 +26,8 @@ export function clearPreviousIdentityState() {
 
 export default function LoginPage() {
   const navigate = useNavigate();
-  const { t, lang, setLang } = useI18n();
+  const { t, lang } = useI18n();
+  const localized = useLocalizedPath();
   const { setAuth } = useAuthStore();
 
   const [email, setEmail] = useState("");
@@ -43,12 +45,12 @@ export default function LoginPage() {
     onSuccess: (data) => {
       clearPreviousIdentityState();
       setAuth(data.user, data.access_token);
-      // Apply user's stored language preference across devices
-      if (!data.user.is_guest && data.user.preferred_language) {
-        setLang(data.user.preferred_language as "en" | "zh");
-      }
+      // Apply user's stored language preference across devices by landing on
+      // the preferred locale's homepage (single navigation, no switchLang)
+      const pref = data.user.preferred_language;
+      const target = (!data.user.is_guest && (pref === "zh" || pref === "en")) ? pref : lang;
       toast.success(t("auth.loginSuccess"));
-      navigate("/build");
+      navigate(`/${target}/`);
     },
     onError: (error: any) => {
       const status = error.response?.status;
@@ -85,7 +87,7 @@ export default function LoginPage() {
         ? (t("auth.guestReturned") || "Welcome back!")
         : (t("auth.guestCreated") || "Guest account created!");
       toast.success(message);
-      navigate("/build");
+      navigate(localized("/"));
     },
     onError: (error: any) => {
       if (error.response?.status === 429) {
@@ -150,7 +152,7 @@ export default function LoginPage() {
                 {t("auth.password")}
               </label>
               <Link
-                to="/auth/forgot-password"
+                to={localized("/auth/forgot-password")}
                 className="text-xs text-blue-600 hover:text-blue-700"
               >
                 {t("auth.forgotPassword")}
@@ -197,7 +199,7 @@ export default function LoginPage() {
         <div className="mt-6 text-center text-sm text-zinc-600">
           {t("auth.noAccount")}{" "}
           <Link
-            to="/auth/register"
+            to={localized("/auth/register")}
             className="text-blue-600 hover:text-blue-700 font-medium"
           >
             {t("auth.signUpLink")}

@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { endpoints } from "@/lib/api";
 import { useI18n, pickName, pickFormName } from "@/i18n";
 import { QUERY_KEYS } from "@/lib/constants";
+import { useLocalizedPath } from "@/lib/locale";
 import { useBuilderStore, EMPTY_TALENT } from "./builderStore";
 import { useAnalysisStore } from "./analysisStore";
 import { useMovesByIds } from "@/hooks/useMovesByIds";
@@ -141,6 +142,7 @@ export default function MonsterAnalysisPage() {
   const { slot: slotParam } = useParams();
   const [sp] = useSearchParams();
   const { t, lang } = useI18n();
+  const localized = useLocalizedPath();
   const slots = useBuilderStore((s) => s.slots);
   const slotIdx = Number(slotParam);
   const validSlot =
@@ -320,7 +322,7 @@ export default function MonsterAnalysisPage() {
       <div className="space-y-3">
         <div className="flex items-center">
           <Link
-            to="/build"
+            to={localized("/")}
             className="inline-flex items-center gap-1 text-sm font-medium rounded-lg border border-zinc-300 bg-white px-4 py-2 shadow-sm hover:bg-zinc-50 hover:border-zinc-400 hover:shadow transition-all duration-200"
           >
             <span aria-hidden className="text-xl leading-none text-zinc-600 -translate-y-[1px]">←</span>
@@ -336,7 +338,7 @@ export default function MonsterAnalysisPage() {
             {t("analysis.emptyHint")}
           </div>
           <Link
-            to="/build"
+            to={localized("/")}
             className="inline-flex items-center gap-1 text-sm font-medium rounded-lg border border-zinc-300 bg-white px-4 py-2 shadow-sm hover:bg-zinc-50 hover:border-zinc-400 hover:shadow transition-all duration-200"
           >
             {t("dex.backToBuilder")}
@@ -483,7 +485,7 @@ export default function MonsterAnalysisPage() {
         <div className={`space-y-3 ${showMatchupStatus ? "lg:sticky lg:top-[72px] lg:self-start lg:max-h-[calc(100vh-72px)] lg:overflow-y-auto" : ""}`}>
           <div className="flex items-center">
             <Link
-              to="/build"
+              to={localized("/")}
               className="inline-flex items-center gap-1 text-sm font-medium rounded-lg border border-zinc-300 bg-white px-4 py-2 shadow-sm hover:bg-zinc-50 hover:border-zinc-400 hover:shadow transition-all duration-200"
             >
               <span aria-hidden className="text-xl leading-none text-zinc-600 -translate-y-[1px]">←</span>

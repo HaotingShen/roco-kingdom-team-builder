@@ -43,7 +43,7 @@ export default function TeamShareModal({ open, onClose, team, currentUsername }:
     return () => clearTimeout(id);
   }, [note]);
 
-  const shareUrl  = useMemo(() => buildShareUrl(team, username, debouncedNote || undefined), [team, username, debouncedNote]);
+  const shareUrl  = useMemo(() => buildShareUrl(team, lang, username, debouncedNote || undefined), [team, lang, username, debouncedNote]);
 
   // ResizeObserver for card preview scaling
   useEffect(() => {

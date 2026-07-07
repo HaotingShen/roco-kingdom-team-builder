@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { useI18n } from '@/i18n';
+import { useLocalizedPath } from '@/lib/locale';
 import { authEndpoints } from '@/lib/api';
 import { useAuthStore, hasDeviceRegistered } from '@/features/auth/authStore';
 import { toast } from 'sonner';
@@ -22,6 +23,7 @@ interface SaveTeamModalProps {
 export default function SaveTeamModal({ isOpen, onClose, onGuestCreated }: SaveTeamModalProps) {
   const navigate = useNavigate();
   const { t } = useI18n();
+  const localized = useLocalizedPath();
   const { setAuth } = useAuthStore();
   const [isCreatingGuest, setIsCreatingGuest] = useState(false);
 
@@ -32,12 +34,12 @@ export default function SaveTeamModal({ isOpen, onClose, onGuestCreated }: SaveT
 
   const handleCreateAccount = () => {
     onClose();
-    navigate('/auth/register');
+    navigate(localized("/auth/register"));
   };
 
   const handleLogin = () => {
     onClose();
-    navigate('/auth/login');
+    navigate(localized("/auth/login"));
   };
 
   const handleContinueAsGuest = async () => {

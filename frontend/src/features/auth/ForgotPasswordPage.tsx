@@ -4,10 +4,12 @@ import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { authEndpoints } from "@/lib/api";
 import { useI18n } from "@/i18n";
+import { useLocalizedPath } from "@/lib/locale";
 import NoIndex from "@/components/NoIndex";
 
 export default function ForgotPasswordPage() {
   const { t } = useI18n();
+  const localized = useLocalizedPath();
   const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
 
@@ -62,14 +64,14 @@ export default function ForgotPasswordPage() {
 
           <div className="space-y-3">
             <Link
-              to="/auth/reset-password"
+              to={localized("/auth/reset-password")}
               className="block w-full h-10 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors flex items-center justify-center"
             >
               {t("auth.enterResetCode")}
             </Link>
 
             <Link
-              to="/auth/login"
+              to={localized("/auth/login")}
               className="block text-sm text-zinc-600 hover:text-zinc-800"
             >
               {t("auth.backToLogin")}
@@ -121,7 +123,7 @@ export default function ForgotPasswordPage() {
 
         <div className="mt-6 text-center">
           <Link
-            to="/auth/login"
+            to={localized("/auth/login")}
             className="text-sm text-zinc-600 hover:text-zinc-800"
           >
             {t("auth.backToLogin")}

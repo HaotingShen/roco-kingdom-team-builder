@@ -5,6 +5,7 @@ import { endpoints } from "@/lib/api";
 import { formatLocal } from "@/lib/datetime";
 import type { TeamOut } from "@/types";
 import { useI18n, pickName } from "@/i18n";
+import { useLocalizedPath } from "@/lib/locale";
 import { useState, useEffect } from "react";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import { monsterImageFallbackChain, magicItemImageUrl, monsterPlaceholder } from "@/lib/images";
@@ -51,6 +52,7 @@ function MonsterAvatar({ monster, size = 60 }: { monster: any; size?: number }) 
 
 export default function TeamsListPage() {
   const { t, lang } = useI18n();
+  const localized = useLocalizedPath();
   useSeoMeta({
     title: lang === "zh" ? "我的队伍 | 洛手配队器" : "My Teams | RK Team Builder",
     description: lang === "zh"
@@ -207,7 +209,7 @@ export default function TeamsListPage() {
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {(teams.data ?? []).map((team) => (
           <div key={team.id} className="rounded-lg border bg-white shadow-sm hover:shadow-md transition-shadow overflow-hidden">
-            <Link to={`/teams/${team.id}`} className="block">
+            <Link to={localized(`/teams/${team.id}`)} className="block">
               {/* Header with team name and date */}
               <div className="p-4 border-b bg-gradient-to-r from-zinc-50 to-white">
                 <div className="font-semibold text-lg mb-1">
@@ -251,7 +253,7 @@ export default function TeamsListPage() {
             {/* Action buttons */}
             <div className="p-3 border-t bg-zinc-50 flex items-center gap-2">
               <Link
-                to={`/teams/${team.id}`}
+                to={localized(`/teams/${team.id}`)}
                 className="flex-1 inline-flex items-center justify-center h-8 px-2 border rounded text-sm
                           text-zinc-700 bg-white hover:bg-zinc-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400"
               >

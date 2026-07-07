@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { NavLink } from "react-router-dom";
 import { useI18n } from "@/i18n";
+import { useLocalizedPath } from "@/lib/locale";
 import { logoUrl } from "@/lib/images";
 import { useAnnouncementUnread } from "@/hooks/useAnnouncementUnread";
 
@@ -9,9 +10,10 @@ const active = "bg-zinc-200 font-medium";
 
 function BrandLockup() {
   const { t } = useI18n();
+  const localized = useLocalizedPath();
   return (
     <NavLink
-      to="/build"
+      to={localized("/")}
       className="group w-full flex items-center justify-center gap-2 outline-none
                  focus-visible:ring-2 focus-visible:ring-zinc-400 rounded"
       aria-label={t("sidebar.siteName")}
@@ -39,6 +41,7 @@ function BrandLockup() {
 
 export default function Sidebar() {
   const { t } = useI18n();
+  const localized = useLocalizedPath();
   const hasUnread = useAnnouncementUnread();
   const [adDismissed, setAdDismissed] = useState(false);
   return (
@@ -52,21 +55,21 @@ export default function Sidebar() {
       </div>
 
       <nav className="p-3 space-y-1">
-        <NavLink to="/build" className={({ isActive }) => `${link} ${isActive ? active : ""}`}>
+        <NavLink to={localized("/")} end className={({ isActive }) => `${link} ${isActive ? active : ""}`}>
           {t("sidebar.build")}
         </NavLink>
-        <NavLink to="/dex" className={({ isActive }) => `${link} ${isActive ? active : ""}`}>
+        <NavLink to={localized("/dex")} className={({ isActive }) => `${link} ${isActive ? active : ""}`}>
           {t("sidebar.dex")}
         </NavLink>
         {!import.meta.env.VITE_HIDE_AUTH && (
-          <NavLink to="/teams" className={({ isActive }) => `${link} ${isActive ? active : ""}`}>
+          <NavLink to={localized("/teams")} className={({ isActive }) => `${link} ${isActive ? active : ""}`}>
             {t("sidebar.teams")}
           </NavLink>
         )}
-        <NavLink to="/feedback" className={({ isActive }) => `${link} ${isActive ? active : ""}`}>
+        <NavLink to={localized("/feedback")} className={({ isActive }) => `${link} ${isActive ? active : ""}`}>
           {t("sidebar.feedback")}
         </NavLink>
-        <NavLink to="/announcements" className={({ isActive }) => `${link} ${isActive ? active : ""}`}>
+        <NavLink to={localized("/announcements")} className={({ isActive }) => `${link} ${isActive ? active : ""}`}>
           <span className="flex items-center justify-between">
             {t("sidebar.whatsNew")}
             {hasUnread && (

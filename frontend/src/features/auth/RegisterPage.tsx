@@ -6,13 +6,15 @@ import { authEndpoints } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
 import { useAuthStore } from "./authStore";
 import { useI18n } from "@/i18n";
+import { useLocalizedPath } from "@/lib/locale";
 import { validateUsername } from "@/lib/usernameValidator";
 import EmailVerificationModal from "./EmailVerificationModal";
 import NoIndex from "@/components/NoIndex";
 
 export default function RegisterPage() {
   const navigate = useNavigate();
-  const { t, lang, setLang } = useI18n();
+  const { t, lang, switchLang } = useI18n();
+  const localized = useLocalizedPath();
   const { setAuth, isGuest } = useAuthStore();
 
   const [username, setUsername] = useState("");
@@ -66,7 +68,7 @@ export default function RegisterPage() {
       setAuth(data.user, data.access_token);
       // Confirm language from server response (should match what we sent)
       if (data.user.preferred_language) {
-        setLang(data.user.preferred_language as "en" | "zh");
+        switchLang(data.user.preferred_language as "en" | "zh");
       }
       toast.success(t("auth.registerSuccess"));
       setShowVerifyModal(true);
@@ -252,7 +254,7 @@ export default function RegisterPage() {
         <div className="mt-6 text-center text-sm text-zinc-600">
           {t("auth.haveAccount")}{" "}
           <Link
-            to="/auth/login"
+            to={localized("/auth/login")}
             className="text-blue-600 hover:text-blue-700 font-medium"
           >
             {t("auth.loginLink")}
@@ -265,7 +267,7 @@ export default function RegisterPage() {
         isOpen={showVerifyModal}
         onClose={() => {
           setShowVerifyModal(false);
-          navigate("/build");
+          navigate(localized("/"));
         }}
       />
     </div>

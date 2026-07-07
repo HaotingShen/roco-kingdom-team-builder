@@ -17,6 +17,7 @@ import { extractErrorMessage } from "@/hooks/useTeamMutation";
 import { useSeoMeta } from "@/hooks/useSeoMeta";
 import { magicItemImageUrl } from "@/lib/images";
 import { QUERY_KEYS, analyzeMutationRetry } from "@/lib/constants";
+import { useLocalizedPath } from "@/lib/locale";
 import { useAuthStore } from "@/features/auth/authStore";
 import { useQuota } from "@/hooks/useQuota";
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragOverlay, type DragEndEvent, type DragStartEvent } from '@dnd-kit/core';
@@ -313,6 +314,7 @@ export default function BuilderPage() {
     canonicalPath: "/",
   });
   const navigate = useNavigate();
+  const localized = useLocalizedPath();
   const { user } = useAuthStore();
   const { quota } = useQuota();
 
@@ -524,10 +526,15 @@ export default function BuilderPage() {
             // Non-fatal: the manual "Save Analysis" button still works.
           });
       }
-      // Scroll to analysis section, with longer delay if navigating back from another page
-      const scrollDelay = window.location.pathname !== "/build" ? 300 : 100;
-      if (window.location.pathname !== "/build") {
-        navigate("/build");
+      // Scroll to analysis section, with longer delay if navigating back from
+      // another page. The builder now lives at the locale HOME (/{lang}/) —
+      // the legacy /build route was dropped — so compare the locale-stripped
+      // pathname against "/".
+      const pathNoLang = window.location.pathname.replace(/^\/(en|zh)(?=\/|$)/, "") || "/";
+      const isOnBuilder = pathNoLang === "/";
+      const scrollDelay = isOnBuilder ? 100 : 300;
+      if (!isOnBuilder) {
+        navigate(localized("/"));
       }
       setTimeout(() => {
         const element = document.getElementById("analysis-results");
@@ -834,7 +841,7 @@ export default function BuilderPage() {
               </p>
             </div>
             <button
-              onClick={() => navigate('/auth/login')}
+              onClick={() => navigate(localized('/auth/login'))}
               className="h-9 px-4 bg-amber-600 text-white text-sm font-medium rounded-lg hover:bg-amber-700 transition-colors shrink-0 cursor-pointer"
             >
               {t("userMenu.login")}

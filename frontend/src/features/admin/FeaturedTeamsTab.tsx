@@ -3,10 +3,12 @@ import { useNavigate } from "react-router-dom";
 import { endpoints, adminEndpoints } from "@/lib/api";
 import { useBuilderStore } from "@/features/builder/builderStore";
 import { useI18n, pickName } from "@/i18n";
+import { useLocalizedPath } from "@/lib/locale";
 import type { TeamOut } from "@/types";
 
 export default function FeaturedTeamsTab() {
   const { t, lang } = useI18n();
+  const localized = useLocalizedPath();
   const navigate = useNavigate();
   const qc = useQueryClient();
   const loadFromTeam = useBuilderStore(s => s.loadFromTeam);
@@ -28,7 +30,7 @@ export default function FeaturedTeamsTab() {
   const onEdit = (team: TeamOut) => {
     loadFromTeam(team);
     setIsFeaturedTeam(true);
-    navigate("/build");
+    navigate(localized("/"));
   };
 
   const onDelete = (team: TeamOut) => {

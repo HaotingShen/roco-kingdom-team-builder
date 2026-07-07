@@ -11,6 +11,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useWindowVirtualizer } from "@tanstack/react-virtual";
 import { typeIconUrl, magicItemImageUrl, monsterImageFallbackChain, monsterPlaceholder, magicItemPlaceholder, moveIconUrlFromCn, moveSubIconUrl } from "@/lib/images";
 import { QUERY_KEYS } from "@/lib/constants";
+import { useLocalizedPath } from "@/lib/locale";
 import { byLegacyTypeOrder, DEFENDER_TYPE_NAMES } from "@/lib/typeEffectiveness";
 import RichDescription from "@/components/RichDescription";
 import MoveCardInner from "@/components/MoveCardInner";
@@ -115,6 +116,7 @@ type FormVariant = typeof VALID_FORM_VARIANTS[number];
 
 function MonstersTab() {
   const { lang, t } = useI18n();
+  const localized = useLocalizedPath();
   const [sp, setSp] = useSearchParams();
   // keep state in URL so returning to the page restores filters
   const [q, setQ] = useState(sp.get("q") ?? "");
@@ -302,7 +304,7 @@ function MonstersTab() {
   // full dex URL to pass as "back" param to monster detail page
   const dexReturnParams = new URLSearchParams(sp);
   dexReturnParams.set("tab", "monsters");
-  const dexReturnUrl = `/dex?${dexReturnParams.toString()}`;
+  const dexReturnUrl = localized("/dex") + `?${dexReturnParams.toString()}`;
 
   return (
     <div className="space-y-3">
@@ -473,7 +475,7 @@ function MonstersTab() {
                     return (
                       <Link
                         key={m.id}
-                        to={`/dex/monsters/${m.id}?back=${encodeURIComponent(dexReturnUrl)}`}
+                        to={localized(`/dex/monsters/${m.id}`) + `?back=${encodeURIComponent(dexReturnUrl)}`}
                         onClick={() => sessionStorage.setItem("dex_monster_scroll", String(window.scrollY))}
                         className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400"
                       >
@@ -553,6 +555,7 @@ function normalizeMoveCategory(category: string): string {
 
 function MovesTab() {
   const { lang, t } = useI18n();
+  const localized = useLocalizedPath();
   const [sp, setSp] = useSearchParams();
   const [q, setQ] = useState(sp.get("mq") ?? "");
   const dq = useDebounce(q, 200);
@@ -764,7 +767,7 @@ function MovesTab() {
   // full dex URL to pass as "back" param to move detail page
   const dexReturnParams = new URLSearchParams(sp);
   dexReturnParams.set("tab", "moves");
-  const dexReturnUrl = `/dex?${dexReturnParams.toString()}`;
+  const dexReturnUrl = localized("/dex") + `?${dexReturnParams.toString()}`;
 
   return (
     <div className="space-y-3">
@@ -966,7 +969,7 @@ function MovesTab() {
                     return (
                       <Link
                         key={m.id}
-                        to={`/dex/moves/${m.id}?back=${encodeURIComponent(dexReturnUrl)}`}
+                        to={localized(`/dex/moves/${m.id}`) + `?back=${encodeURIComponent(dexReturnUrl)}`}
                         onClick={() => sessionStorage.setItem("dex_move_scroll", String(window.scrollY))}
                         className="block focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 rounded-lg"
                       >

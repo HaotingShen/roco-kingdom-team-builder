@@ -1,9 +1,10 @@
 import { NavLink } from "react-router-dom";
 import { useI18n } from "@/i18n";
+import { useLocalizedPath } from "@/lib/locale";
 
 const allItems = [
   {
-    to: "/build",
+    to: "/",
     labelKey: "sidebar.build",
     requireAuth: false,
     icon: (
@@ -46,6 +47,7 @@ const allItems = [
 
 export default function BottomNav() {
   const { t } = useI18n();
+  const localized = useLocalizedPath();
   const items = allItems.filter(item => !item.requireAuth || !import.meta.env.VITE_HIDE_AUTH);
 
   return (
@@ -53,7 +55,8 @@ export default function BottomNav() {
       {items.map(({ to, labelKey, icon }) => (
         <NavLink
           key={to}
-          to={to}
+          to={localized(to)}
+          end={to === "/"}
           className={({ isActive }) =>
             `flex-1 flex flex-col items-center justify-center gap-0.5 text-[11px] font-medium transition-colors ${
               isActive ? "text-zinc-900" : "text-zinc-400 hover:text-zinc-600"

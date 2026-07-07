@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useI18n, pickName } from "@/i18n";
 import { endpoints } from "@/lib/api";
 import { useMonstersByIds } from "@/hooks/useMonstersByIds";
+import { useLocalizedPath } from "@/lib/locale";
 import { typeIconUrl, monsterImageFallbackChain, monsterPlaceholder, magicItemImageUrl, magicItemPlaceholder } from "@/lib/images";
 import MatchupPanel from "@/components/MatchupPanel";
 import PanelCard from "@/components/PanelCard";
@@ -43,6 +44,7 @@ const PERSONALITY_STAT_LABELS: [string, string, string][] = [
 function MonsterMiniCard({ um }: { um: UserMonsterOut }) {
   const { lang, t } = useI18n();
   const location = useLocation();
+  const localized = useLocalizedPath();
   const matchupBack = encodeURIComponent(location.pathname + "?tab=vsFeatured");
   const images = useMemo(() => monsterImageFallbackChain(um.monster, 180), [um.monster]);
   const [imgSrc, setImgSrc] = useState(images[0] ?? monsterPlaceholder);
@@ -68,7 +70,7 @@ function MonsterMiniCard({ um }: { um: UserMonsterOut }) {
     <div className="flex-none w-32 sm:w-36 rounded-lg border border-zinc-200 bg-white p-2 space-y-1.5 overflow-hidden">
       {/* Avatar */}
       <Link
-        to={`/dex/monsters/${um.monster.id}?from=analysis&back=${matchupBack}`}
+        to={localized(`/dex/monsters/${um.monster.id}`) + `?from=analysis&back=${matchupBack}`}
         className="block w-14 h-14 mx-auto rounded-lg overflow-hidden bg-zinc-100 border border-zinc-100 hover:opacity-80 transition-opacity"
       >
         <img

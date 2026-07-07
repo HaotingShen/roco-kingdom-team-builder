@@ -4,6 +4,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '@/features/auth/authStore';
 import { authEndpoints } from '@/lib/api';
 import { useI18n } from '@/i18n';
+import { useLocalizedPath } from '@/lib/locale';
 import { useAuth } from '@/features/auth/AuthProvider';
 import { useBuilderStore } from '@/features/builder/builderStore';
 import DeleteAccountModal from '@/features/auth/DeleteAccountModal';
@@ -44,6 +45,7 @@ export default function UserMenu() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { t } = useI18n();
+  const localized = useLocalizedPath();
   const clearTeamId = useBuilderStore(s => s.clearTeamId);
   const setAnalysis = useBuilderStore(s => s.setAnalysis);
   const { quota } = useQuota();
@@ -91,7 +93,7 @@ export default function UserMenu() {
     setAnalysis(null);
 
     // User is now anonymous - do NOT create guest
-    navigate('/build');
+    navigate(localized("/"));
   };
 
   /**
@@ -121,7 +123,7 @@ export default function UserMenu() {
     setAnalysis(null);
 
     // User is now anonymous - guest account persists for later reclaim
-    navigate('/build');
+    navigate(localized("/"));
   };
 
   /**
@@ -157,7 +159,7 @@ export default function UserMenu() {
 
     // User is now anonymous on the same device_id
     // Do NOT auto-create guest - user must explicitly choose
-    navigate('/build');
+    navigate(localized("/"));
   };
 
   // Still loading auth state
@@ -173,7 +175,7 @@ export default function UserMenu() {
   if (!user) {
     return (
       <button
-        onClick={() => navigate('/auth/login')}
+        onClick={() => navigate(localized("/auth/login"))}
         className="h-9 px-4 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors cursor-pointer"
       >
         {t('userMenu.login') || 'Log In'}
@@ -241,7 +243,7 @@ export default function UserMenu() {
               <button
                 onClick={() => {
                   setIsOpen(false);
-                  navigate('/auth/register');
+                  navigate(localized("/auth/register"));
                 }}
                 className="w-full text-left px-3 py-2 text-sm text-zinc-700 hover:bg-zinc-50"
               >
@@ -251,7 +253,7 @@ export default function UserMenu() {
               <button
                 onClick={() => {
                   setIsOpen(false);
-                  navigate('/auth/login');
+                  navigate(localized("/auth/login"));
                 }}
                 className="w-full text-left px-3 py-2 text-sm text-zinc-700 hover:bg-zinc-50"
               >
@@ -312,7 +314,7 @@ export default function UserMenu() {
               <button
                 onClick={() => {
                   setIsOpen(false);
-                  navigate('/settings');
+                  navigate(localized("/settings"));
                 }}
                 className="w-full text-left px-3 py-2 text-sm text-zinc-700 hover:bg-zinc-50"
               >

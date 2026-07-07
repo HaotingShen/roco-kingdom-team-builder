@@ -4,11 +4,13 @@ import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { authEndpoints } from "@/lib/api";
 import { useI18n } from "@/i18n";
+import { useLocalizedPath } from "@/lib/locale";
 import NoIndex from "@/components/NoIndex";
 
 export default function ResetPasswordPage() {
   const navigate = useNavigate();
   const { t } = useI18n();
+  const localized = useLocalizedPath();
   const [searchParams] = useSearchParams();
 
   // Token can come from URL query param (?token=xxx) or manual entry
@@ -27,7 +29,7 @@ export default function ResetPasswordPage() {
     },
     onSuccess: () => {
       toast.success(t("auth.passwordResetSuccess"));
-      navigate("/auth/login");
+      navigate(localized("/auth/login"));
     },
     onError: (error: any) => {
       const detail = error.response?.data?.detail;
@@ -169,13 +171,13 @@ export default function ResetPasswordPage() {
 
         <div className="mt-6 text-center space-y-2">
           <Link
-            to="/auth/forgot-password"
+            to={localized("/auth/forgot-password")}
             className="block text-sm text-zinc-600 hover:text-zinc-800"
           >
             {t("auth.needNewToken")}
           </Link>
           <Link
-            to="/auth/login"
+            to={localized("/auth/login")}
             className="block text-sm text-zinc-600 hover:text-zinc-800"
           >
             {t("auth.backToLogin")}

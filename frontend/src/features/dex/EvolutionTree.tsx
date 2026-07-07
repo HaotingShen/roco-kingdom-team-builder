@@ -4,6 +4,7 @@ import { createPortal } from "react-dom";
 import { useI18n, pickName, pickFormName, type Lang } from "@/i18n";
 import { monsterImageFallbackChain, typeIconUrl, monsterPlaceholder } from "@/lib/images";
 import { buildDexForwardQuery } from "@/lib/dexNavigation";
+import { useLocalizedPath } from "@/lib/locale";
 import type { EvolutionTreeData, EvolutionStageMonster } from "@/types";
 
 interface EvolutionTreeProps {
@@ -357,6 +358,7 @@ function MonsterEvolutionCard({
   levelOnCard: number | null;
   conditionOnCard: string | null;
 }) {
+  const localized = useLocalizedPath();
   const monsterName = pickName(monster as any, lang) || monster.name;
 
   // CRITICAL: Only show name + form, nothing else!
@@ -379,7 +381,7 @@ function MonsterEvolutionCard({
 
   return (
     <Link
-      to={`/dex/monsters/${targetId}?${forwardQuery}`}
+      to={localized(`/dex/monsters/${targetId}`) + `?${forwardQuery}`}
       className={`
         block rounded-lg border-2 bg-white p-2 transition-all duration-200 w-20 sm:w-24
         hover:shadow-lg hover:-translate-y-1

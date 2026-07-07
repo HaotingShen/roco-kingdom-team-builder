@@ -1,8 +1,10 @@
 import { NavLink } from "react-router-dom";
 import { useI18n } from "@/i18n";
+import { useLocalizedPath } from "@/lib/locale";
 
 export default function Footer() {
   const { t } = useI18n();
+  const localized = useLocalizedPath();
   const year = new Date().getFullYear();
 
   return (
@@ -21,7 +23,7 @@ export default function Footer() {
       )}
       <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1">
         <span>© {year} RK Team Builder · 洛手配队器</span>
-        <NavLink to="/feedback" className="hover:text-zinc-700 underline underline-offset-2">
+        <NavLink to={localized("/feedback")} className="hover:text-zinc-700 underline underline-offset-2">
           {t("footer.feedback")}
         </NavLink>
       </div>

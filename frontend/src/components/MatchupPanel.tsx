@@ -8,6 +8,7 @@ import { computeEffectiveStats } from "@/lib/effectiveStats";
 import { setsFor } from "@/lib/typeEffectiveness";
 import { getAttackerStatusOptions } from "@/lib/attackerStatusOptions";
 import { typeIconUrl, monsterImageFallbackChain, monsterPlaceholder, moveSubIconUrl } from "@/lib/images";
+import { useLocalizedPath } from "@/lib/locale";
 import PanelCard from "./PanelCard";
 import type { MoveMatchupResult } from "@/lib/matchup";
 import type {
@@ -442,11 +443,14 @@ export default function MatchupPanel({
 }: Props) {
   const { lang, t } = useI18n();
   const location = useLocation();
+  const localized = useLocalizedPath();
   const matchupBack = encodeURIComponent(location.pathname + `?tab=${tabKey}`);
 
   // Persistent state — survives navigation away and back within the same session.
   // Key is unique per attacker slot (encoded in pathname) + defender monster.
-  const storeKey = `${location.pathname}:${defender.monster_id}`;
+  // The locale prefix is stripped so switching language preserves panel state.
+  const pathKey = location.pathname.replace(/^\/(en|zh)(?=\/|$)/, "") || "/";
+  const storeKey = `${pathKey}:${defender.monster_id}`;
   // Imperative read — no reactive subscription; value only matters for useState init.
   const stored = useAnalysisStore.getState().matchupStates[storeKey];
 
@@ -719,7 +723,7 @@ export default function MatchupPanel({
           <MonsterStrip
             monster={attackerMonster}
             sideLabel={t("analysis.matchupMyJingling")}
-            dexBackUrl={`/dex/monsters/${attackerMonster.id}?from=analysis&back=${matchupBack}`}
+            dexBackUrl={localized(`/dex/monsters/${attackerMonster.id}`) + `?from=analysis&back=${matchupBack}`}
             align="left"
           />
           <div className="flex flex-col items-center justify-center gap-0.5 text-zinc-400 select-none">
@@ -730,7 +734,7 @@ export default function MatchupPanel({
           <MonsterStrip
             monster={resolvedDefenderMonster}
             sideLabel={defenderSideLabel ?? t("analysis.matchupFeaturedJingling")}
-            dexBackUrl={`/dex/monsters/${resolvedDefenderMonster.id}?from=analysis&back=${matchupBack}`}
+            dexBackUrl={localized(`/dex/monsters/${resolvedDefenderMonster.id}`) + `?from=analysis&back=${matchupBack}`}
             align="right"
           />
         </div>

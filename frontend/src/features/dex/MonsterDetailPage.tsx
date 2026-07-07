@@ -9,6 +9,7 @@ import { STAT_KEYS } from "@/types";
 import { typeIconUrl, monsterImageFallbackChain, monsterPlaceholder, moveSubIconUrl, moveIconUrlFromCn } from "@/lib/images";
 import { useMonsterNavigation } from "./useMonsterNavigation";
 import { QUERY_KEYS, LEGACY_TYPES_ORDER } from "@/lib/constants";
+import { useLocalizedPath } from "@/lib/locale";
 import { normalizeMoveCategory } from "@/lib/typeEffectiveness";
 import { buildDexForwardQuery } from "@/lib/dexNavigation";
 import EvolutionTree from "./EvolutionTree";
@@ -50,6 +51,7 @@ function useMoveObjects(list: any[] | undefined) {
 export default function MonsterDetailPage() {
   const { id } = useParams();
   const [sp] = useSearchParams();
+  const localized = useLocalizedPath();
   const fromTab = sp.get("tab") || "monsters";
   const movesParam = sp.get("moves");
   const which = movesParam === "legacy" ? "legacy" : movesParam === "stones" ? "stones" : "pool";
@@ -71,7 +73,7 @@ export default function MonsterDetailPage() {
   const hasAnalyzeReturn = fromAnalyze && analyzeSlot !== undefined;
 
   const backRaw = sp.get("back"); // decoded full dex URL (e.g. /dex?tab=monsters&sort=base_spd)
-  const dexUrl = backRaw ?? `/dex?tab=${fromTab}`;
+  const dexUrl = backRaw ?? localized("/dex") + `?tab=${fromTab}`;
   // Forward params: carry back (or tab fallback) + any from=... context
   // through all in-page navigation (moves tab switcher, evolution tree links).
   const forwardQuery = buildDexForwardQuery({
@@ -87,11 +89,11 @@ export default function MonsterDetailPage() {
   // two can't disagree on a malformed URL. See lib/dexNavigation for the
   // matching forward-query logic.
   const backTo = hasAnalyzeReturn
-    ? `/build/analyze/${analyzeSlot}`
+    ? localized(`/build/analyze/${analyzeSlot}`)
     : fromBuilder
-    ? "/build"
+    ? localized("/")
     : fromMatchup
-    ? (backRaw ?? "/build")
+    ? (backRaw ?? localized("/"))
     : dexUrl;
   const backLabelKey = hasAnalyzeReturn
     ? "dex.backToMonsterAnalysis"
@@ -243,7 +245,7 @@ export default function MonsterDetailPage() {
             {/* Previous Monster Button */}
             {prevMonsterId !== null && (
               <Link
-                to={`/dex/monsters/${prevMonsterId}?${forwardQuery}`}
+                to={localized(`/dex/monsters/${prevMonsterId}`) + `?${forwardQuery}`}
                 className="absolute left-2 top-1/2 -translate-y-1/2 inline-flex items-center justify-center w-10 h-10 rounded-full bg-white border border-zinc-300 shadow-md hover:bg-zinc-50 hover:border-zinc-400 hover:shadow-lg transition-all duration-200 text-zinc-600 hover:text-zinc-900"
                 aria-label="Previous jingling"
               >
@@ -261,7 +263,7 @@ export default function MonsterDetailPage() {
             {/* Next Monster Button */}
             {nextMonsterId !== null && (
               <Link
-                to={`/dex/monsters/${nextMonsterId}?${forwardQuery}`}
+                to={localized(`/dex/monsters/${nextMonsterId}`) + `?${forwardQuery}`}
                 className="absolute right-2 top-1/2 -translate-y-1/2 inline-flex items-center justify-center w-10 h-10 rounded-full bg-white border border-zinc-300 shadow-md hover:bg-zinc-50 hover:border-zinc-400 hover:shadow-lg transition-all duration-200 text-zinc-600 hover:text-zinc-900"
                 aria-label="Next jingling"
               >
@@ -324,7 +326,7 @@ export default function MonsterDetailPage() {
                               <button
                                 key={(form as any).id}
                                 onClick={() => {
-                                  navigate(`/dex/monsters/${(form as any).id}?${forwardQuery}`);
+                                  navigate(localized(`/dex/monsters/${(form as any).id}`) + `?${forwardQuery}`);
                                   setFormDropdownOpen(false);
                                 }}
                                 className={`
@@ -542,7 +544,7 @@ export default function MonsterDetailPage() {
         </div>
         <MovesList
           list={which === "legacy" ? legacyMoves : which === "stones" ? moveStones : movePool}
-          backUrl={`/dex/monsters/${id}?${forwardQuery}&moves=${which}`}
+          backUrl={localized(`/dex/monsters/${id}`) + `?${forwardQuery}&moves=${which}`}
         />
       </section>
     </div>
@@ -551,6 +553,7 @@ export default function MonsterDetailPage() {
 
 function MovesList({ list, backUrl }: { list: any[]; backUrl: string }) {
   const { lang, t } = useI18n();
+  const localized = useLocalizedPath();
 
   // Show warning if no moves available
   if (!list || list.length === 0) {
@@ -624,7 +627,7 @@ function MovesList({ list, backUrl }: { list: any[]; backUrl: string }) {
         return (
           <Link
             key={m.id}
-            to={`/dex/moves/${m.id}?back=${encodeURIComponent(backUrl)}`}
+            to={localized(`/dex/moves/${m.id}`) + `?back=${encodeURIComponent(backUrl)}`}
             className={`
               block rounded-lg border border-zinc-200 bg-white p-3 shadow-sm
               border-l-4 ${typeColorClass}

@@ -5,6 +5,7 @@ import axios from 'axios';
 import { toast } from 'sonner';
 import type { ShareDecodeResponse, TeamCreate } from '@/types';
 import { useI18n } from '@/i18n';
+import { useLocalizedPath } from '@/lib/locale';
 import { useAuthStore } from '@/features/auth/authStore';
 import { useBuilderStore } from '@/features/builder/builderStore';
 import { endpoints } from '@/lib/api';
@@ -14,6 +15,7 @@ import NoIndex from '@/components/NoIndex';
 
 export default function ImportPage() {
   const { t, lang } = useI18n();
+  const localized = useLocalizedPath();
   const { user } = useAuthStore();
   const nav = useNavigate();
   const [searchParams] = useSearchParams();
@@ -28,8 +30,8 @@ export default function ImportPage() {
 
   // Redirect if no token
   useEffect(() => {
-    if (!token) nav('/', { replace: true });
-  }, [token, nav]);
+    if (!token) nav(localized('/'), { replace: true });
+  }, [token, nav, localized]);
 
   // Decode share payload
   const { data: decoded, isLoading, error } = useQuery<ShareDecodeResponse>({
@@ -61,7 +63,7 @@ export default function ImportPage() {
       qc.invalidateQueries({ queryKey: QUERY_KEYS.TEAMS });
       qc.invalidateQueries({ queryKey: QUERY_KEYS.QUOTA });
       toast.success(t('import.success') ?? 'Team imported!');
-      nav(`/teams/${team.id}`);
+      nav(localized(`/teams/${team.id}`));
     },
     onError: (err) => {
       if (axios.isAxiosError(err)) {
@@ -144,7 +146,7 @@ export default function ImportPage() {
   const doLoad = () => {
     if (!decoded) return;
     loadFromImport(decoded);
-    nav('/build');
+    nav(localized('/'));
   };
 
   // ── Error state ──────────────────────────────────────────────────────────
@@ -167,7 +169,7 @@ export default function ImportPage() {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-4 p-8 text-center">
         <p className="text-zinc-600">{msg}</p>
-        <Link to="/" className="h-9 px-4 rounded-lg text-sm font-medium bg-zinc-800 text-white hover:bg-zinc-700 transition-colors">
+        <Link to={localized("/")} className="h-9 px-4 rounded-lg text-sm font-medium bg-zinc-800 text-white hover:bg-zinc-700 transition-colors">
           {t('import.goHome') ?? 'Go Home'}
         </Link>
       </div>
@@ -223,7 +225,7 @@ export default function ImportPage() {
             transformOrigin: 'top left',
             position: 'absolute', top: 0, left: 0,
           }}>
-            <TeamCard data={decoded!} shareUrl={`${import.meta.env.VITE_ASSET_BASE_URL || window.location.origin}/import?t=${token}`} showQr={true} lang={lang} note={decoded!.note ?? undefined} onReady={() => setImagesReady(true)} />
+            <TeamCard data={decoded!} shareUrl={`${import.meta.env.VITE_ASSET_BASE_URL || window.location.origin}/${lang}/import?t=${token}`} showQr={true} lang={lang} note={decoded!.note ?? undefined} onReady={() => setImagesReady(true)} />
           </div>
 
           {/* Loading overlay — sits above canvas until images are ready */}
@@ -297,7 +299,7 @@ export default function ImportPage() {
             {/* Anonymous nudge */}
             {!isLoggedIn && !isGuest && (
               <Link
-                to="/auth/register"
+                to={localized("/auth/register")}
                 className="w-full sm:w-auto h-10 px-6 rounded-lg text-sm font-medium bg-zinc-800 text-white hover:bg-zinc-700 transition-colors flex items-center justify-center"
               >
                 {t('import.createToSave') ?? 'Create a free account to save this team'} →

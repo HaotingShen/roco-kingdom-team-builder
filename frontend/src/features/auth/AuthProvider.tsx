@@ -55,7 +55,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const { user, setAuth, clearAuth } = useAuthStore();
   // NOTE: AuthProvider is inside I18nProvider in the component tree, so useI18n() is valid here.
-  const { setLang } = useI18n();
+  const { switchLang } = useI18n();
 
   useEffect(() => {
     let isCancelled = false;
@@ -88,7 +88,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             }
             setAuth(freshUser, freshToken);
             if (!freshUser.is_guest && freshUser.preferred_language) {
-              setLang(freshUser.preferred_language as Lang);
+              switchLang(freshUser.preferred_language as Lang);
             }
           }
         } catch (_error) {

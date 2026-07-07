@@ -39,7 +39,10 @@ export default function VsFeaturedTeamsTab({
 }: Props) {
   const { t } = useI18n();
   const { pathname } = useLocation();
-  const storedTeamTab = useAnalysisStore((s) => s.featuredTeamTabs[pathname]);
+  // Locale-stripped key so the selected featured-team sub-tab survives a
+  // language switch (/en/... and /zh/... share the same state entry).
+  const pathKey = pathname.replace(/^\/(en|zh)(?=\/|$)/, "") || "/";
+  const storedTeamTab = useAnalysisStore((s) => s.featuredTeamTabs[pathKey]);
   const storeSaveTeamTab = useAnalysisStore((s) => s.setFeaturedTeamTab);
 
   const { data: teams, isLoading, isError } = useQuery<TeamOut[]>({
@@ -98,7 +101,7 @@ export default function VsFeaturedTeamsTab({
     <SubTabs
       tabs={tabs}
       activeTab={validStoredTab}
-      onTabChange={(key) => storeSaveTeamTab(pathname, key)}
+      onTabChange={(key) => storeSaveTeamTab(pathKey, key)}
     />
   );
 }

@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
+import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { endpoints } from "@/lib/api";
 import type { TypeOut } from "@/types";
@@ -1642,24 +1643,96 @@ function resolve(dict: Dict, path: string, vars?: Record<string, any>) {
     ? str.replace(/\{\{(\w+)\}\}/g, (_, k) => `${vars[k] ?? ""}`)
     : str;
 }
-type Ctx = { lang: Lang; setLang: (l: Lang) => void; t: (key: string, vars?: Record<string, any>) => string; };
+type Ctx = {
+  lang: Lang;
+  t: (key: string, vars?: Record<string, any>) => string;
+  /** Navigate to the same page in `next`'s locale. No-ops if already there.
+   *  Replaces the old setLang — under URL-based locale, changing language IS
+   *  a navigation (/en/dex → /zh/dex). */
+  switchLang: (next: Lang) => void;
+};
 const I18nCtx = createContext<Ctx | null>(null);
 
+type I18nInternal = {
+  setLangState: (l: Lang) => void;
+  swapRef: React.MutableRefObject<((next: Lang) => void) | null>;
+};
+const I18nInternalCtx = createContext<I18nInternal | null>(null);
+
+/**
+ * Best-guess language before the router mounts. Correct for the browser
+ * router (/zh/...), the TapTap hash-router build (#/zh/...), and legacy
+ * unprefixed URLs (falls back to saved preference → browser language).
+ * <LocaleFromUrl> corrects it from useParams() as soon as the router mounts.
+ */
+export function detectInitialLang(): Lang {
+  const probe = window.location.pathname + " " + window.location.hash;
+  if (/[/#]\/?zh(\/|$)/.test(probe)) return "zh";
+  if (/[/#]\/?en(\/|$)/.test(probe)) return "en";
+  const stored = localStorage.getItem("lang");
+  if (stored === "zh" || stored === "en") return stored;
+  return navigator.language.startsWith("zh") ? "zh" : "en";
+}
+
 export function I18nProvider({ children }: { children: React.ReactNode }) {
-  const browserLang: Lang = navigator.language.startsWith("zh") ? "zh" : "en";
-  const [lang, setLang] = useState<Lang>((localStorage.getItem("lang") as Lang) || browserLang);
+  // The URL is the source of truth; this state mirrors it. The provider sits
+  // OUTSIDE the router (AuthProvider depends on it), so it can't read params
+  // itself — <LocaleFromUrl>, rendered inside the /:lang route, syncs it.
+  const [lang, setLangState] = useState<Lang>(detectInitialLang);
+  const swapRef = useRef<((next: Lang) => void) | null>(null);
+
   useEffect(() => {
     document.documentElement.lang = lang;
+    localStorage.setItem("lang", lang); // preference memory for wildcard/dev/TapTap fallbacks
   }, [lang]);
 
   const value = useMemo<Ctx>(() => ({
       lang,
-      setLang: (l) => { localStorage.setItem("lang", l); setLang(l); },
       t: (key, vars) => resolve(ui[lang], key, vars) || resolve(ui.en, key, vars),
+      switchLang: (next) => {
+        if (next !== "en" && next !== "zh") return;
+        if (next === lang) return;
+        if (swapRef.current) swapRef.current(next); // normal path: navigate to swapped URL
+        else setLangState(next);                    // pre-router fallback (shouldn't occur in practice)
+      },
     }),
     [lang]
   );
-  return <I18nCtx.Provider value={value}>{children}</I18nCtx.Provider>;
+  const internal = useMemo<I18nInternal>(() => ({ setLangState, swapRef }), []);
+  return (
+    <I18nCtx.Provider value={value}>
+      <I18nInternalCtx.Provider value={internal}>{children}</I18nInternalCtx.Provider>
+    </I18nCtx.Provider>
+  );
+}
+
+/**
+ * Render INSIDE the /:lang route element (first child of App). Syncs the URL's
+ * locale into I18nProvider and registers the navigation-based swap that
+ * switchLang delegates to.
+ */
+export function LocaleFromUrl() {
+  const { lang: urlLang } = useParams<{ lang?: string }>();
+  const navigate = useNavigate();
+  const { pathname, search, hash } = useLocation();
+  const internal = useContext(I18nInternalCtx);
+
+  useEffect(() => {
+    if (internal && (urlLang === "en" || urlLang === "zh")) {
+      internal.setLangState(urlLang);
+    }
+  }, [urlLang, internal]);
+
+  useEffect(() => {
+    if (!internal) return;
+    internal.swapRef.current = (next) => {
+      const swapped = pathname.replace(/^\/(en|zh)(?=\/|$)/, `/${next}`);
+      navigate(swapped + search + hash);
+    };
+    return () => { internal.swapRef.current = null; };
+  }, [pathname, search, hash, navigate, internal]);
+
+  return null;
 }
 
 export function useI18n() {

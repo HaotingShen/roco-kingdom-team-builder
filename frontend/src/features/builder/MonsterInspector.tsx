@@ -10,6 +10,7 @@ import { useNavigate } from "react-router-dom";
 import { typeIconUrl } from "@/lib/images";
 import { formatRowEffects, formatSentenceEffects } from "@/lib/personality";
 import { QUERY_KEYS, LEGACY_TYPES_ORDER } from "@/lib/constants";
+import { useLocalizedPath } from "@/lib/locale";
 import { buildDexForwardQuery } from "@/lib/dexNavigation";
 import { extractLegacyInfo, useLegacyMap, sortLegacyMoves } from "@/lib/monsterMoveOptions";
 
@@ -421,6 +422,7 @@ export default function MonsterInspector({
   const { slots, setSlot } = useBuilderStore();
   const slot = slots[activeIdx];
   const nav = useNavigate();
+  const localized = useLocalizedPath();
 
   const monsterId = slot?.monster_id ?? 0;
   const detailQ = useMonsterDetail(monsterId);
@@ -494,12 +496,12 @@ export default function MonsterInspector({
       analyzeSlot: context === "analyze" ? String(activeIdx) : undefined,
     });
     // Use dexMonsterId override when provided (e.g. leader form is active on analyze page).
-    nav(`/dex/monsters/${dexMonsterId ?? monsterId}?${qs}`);
+    nav(localized(`/dex/monsters/${dexMonsterId ?? monsterId}`) + `?${qs}`);
   };
 
   const goAnalyzeForMonster = () => {
     if (!monsterId) return;
-    nav(`/build/analyze/${activeIdx}`);
+    nav(localized(`/build/analyze/${activeIdx}`));
   };
 
   const inspectorTitle = useMemo(() => {

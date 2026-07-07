@@ -5,12 +5,14 @@ import { toast } from "sonner";
 import { authEndpoints } from "@/lib/api";
 import { useAuthStore } from "./authStore";
 import { useI18n } from "@/i18n";
+import { useLocalizedPath } from "@/lib/locale";
 import NoIndex from "@/components/NoIndex";
 import { clearPreviousIdentityState } from "./LoginPage";
 
 export default function SettingsPage() {
   const navigate = useNavigate();
-  const { t, lang, setLang } = useI18n();
+  const { t, lang, switchLang } = useI18n();
+  const localized = useLocalizedPath();
   const { user, isGuest, clearAuth, updateUser } = useAuthStore();
 
   // --- Change Password state ---
@@ -38,7 +40,7 @@ export default function SettingsPage() {
       // clear cached data and builder team reference like a logout does.
       clearAuth();
       clearPreviousIdentityState();
-      navigate("/auth/login");
+      navigate(localized("/auth/login"));
     },
     onError: (error: any) => {
       const detail = error.response?.data?.detail;
@@ -87,7 +89,7 @@ export default function SettingsPage() {
       return { data: response.data, newLang };
     },
     onSuccess: ({ newLang }) => {
-      setLang(newLang);
+      switchLang(newLang);
       // Update persisted user object so AuthProvider syncs correctly on reload
       if (user) {
         updateUser({ ...user, preferred_language: newLang });
@@ -120,7 +122,7 @@ export default function SettingsPage() {
         <div className="text-center">
           <p className="text-zinc-600 mb-4">{t("settings.loginRequired")}</p>
           <button
-            onClick={() => navigate("/auth/login")}
+            onClick={() => navigate(localized("/auth/login"))}
             className="h-10 px-6 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
           >
             {t("userMenu.login")}
@@ -137,7 +139,7 @@ export default function SettingsPage() {
         <div className="text-center">
           <p className="text-zinc-600 mb-4">{t("settings.registeredOnly")}</p>
           <button
-            onClick={() => navigate("/auth/register")}
+            onClick={() => navigate(localized("/auth/register"))}
             className="h-10 px-6 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
           >
             {t("userMenu.createAccount")}

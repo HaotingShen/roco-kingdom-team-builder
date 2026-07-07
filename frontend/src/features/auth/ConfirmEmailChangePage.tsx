@@ -3,10 +3,12 @@ import { Link, useSearchParams } from "react-router-dom";
 import { useMutation } from "@tanstack/react-query";
 import { authEndpoints } from "@/lib/api";
 import { useI18n } from "@/i18n";
+import { useLocalizedPath } from "@/lib/locale";
 import NoIndex from "@/components/NoIndex";
 
 export default function ConfirmEmailChangePage() {
   const { t } = useI18n();
+  const localized = useLocalizedPath();
   const [searchParams] = useSearchParams();
   const token = searchParams.get("token") || "";
 
@@ -55,7 +57,7 @@ export default function ConfirmEmailChangePage() {
               {t("settings.emailChanged")}
             </div>
             <Link
-              to="/auth/login"
+              to={localized("/auth/login")}
               className="flex items-center justify-center w-full h-10 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
             >
               {t("auth.loginButton")}
@@ -69,7 +71,7 @@ export default function ConfirmEmailChangePage() {
               {error}
             </div>
             <Link
-              to="/settings"
+              to={localized("/settings")}
               className="flex items-center justify-center w-full h-10 border border-zinc-300 text-zinc-700 rounded-md hover:bg-zinc-50 transition-colors"
             >
               {t("auth.back")}

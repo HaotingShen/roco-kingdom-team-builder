@@ -12,12 +12,16 @@ import UserMenu from "./UserMenu";
 import DonationModal from "./DonationModal";
 import ConfirmDialog from "./ConfirmDialog";
 import { useAnnouncementUnread } from "@/hooks/useAnnouncementUnread";
+import { useLocalizedPath } from "@/lib/locale";
 
 export default function Topbar() {
   const nav = useNavigate();
   const loc = useLocation();
-  const { lang, setLang, t } = useI18n();
+  const { lang, switchLang, t } = useI18n();
+  const localized = useLocalizedPath();
   const { user } = useAuthStore();
+  // Locale-neutral path for page detection (/en/dex → /dex)
+  const pathNoLang = loc.pathname.replace(/^\/(en|zh)(?=\/|$)/, "") || "/";
 
   const resetBuilder = useBuilderStore(s => s.reset);
   const loadFromTeam = useBuilderStore(s => s.loadFromTeam);
@@ -35,19 +39,19 @@ export default function Topbar() {
     return anyFilledSlot || !!s.magic_item_id || !!(s.name?.trim()) || !!s.analysis;
   });
 
-  const title = loc.pathname.startsWith("/dex")
+  const title = pathNoLang.startsWith("/dex")
     ? t("topbar.dex")
-    : loc.pathname.startsWith("/teams")
+    : pathNoLang.startsWith("/teams")
     ? t("topbar.teams")
-    : loc.pathname.startsWith("/build/analyze")
+    : pathNoLang.startsWith("/build/analyze")
     ? t("topbar.monsterAnalysis")
-    : loc.pathname === "/announcements"
+    : pathNoLang === "/announcements"
     ? t("topbar.whatsNew")
     : t("topbar.builder");
 
   const isOnBuilder =
-    (loc.pathname === "/" || loc.pathname.startsWith("/build")) &&
-    !loc.pathname.startsWith("/build/analyze");
+    (pathNoLang === "/" || pathNoLang.startsWith("/build")) &&
+    !pathNoLang.startsWith("/build/analyze");
 
   const hasUnread = useAnnouncementUnread();
 
@@ -64,7 +68,7 @@ export default function Topbar() {
       t("topbar.confirmReset") ?? "Reset the builder? This clears the current team and analysis.",
       () => {
         resetBuilder();
-        if (!isOnBuilder) nav("/build");
+        if (!isOnBuilder) nav(localized("/"));
       }
     );
   };
@@ -85,7 +89,7 @@ export default function Topbar() {
     onSuccess: (team) => {
       loadFromTeam(team);
       clearTeamId();
-      if (!isOnBuilder) nav("/build");
+      if (!isOnBuilder) nav(localized("/"));
       // Show "Loaded: {name}" for 3 seconds
       if (quickBuildMsgTimer.current) clearTimeout(quickBuildMsgTimer.current);
       const name = team.name ?? "";
@@ -119,7 +123,7 @@ export default function Topbar() {
     <header className="h-14 border-b border-zinc-200 bg-white flex items-center gap-3 px-4 sticky top-0 z-10">
       {/* Logo — shown below 800px only (sidebar is hidden there) */}
       <Link
-        to="/build"
+        to={localized("/")}
         className="lg:hidden shrink-0"
         aria-label="Home"
       >
@@ -189,7 +193,7 @@ export default function Topbar() {
 
         {/* What's New bell — mobile only; hidden <425px on Build page (topbar already crowded there) */}
         <NavLink
-          to="/announcements"
+          to={localized("/announcements")}
           className={({ isActive }) =>
             `${isOnBuilder ? "hidden desc:flex lg:hidden" : "flex lg:hidden"} h-9 w-9 items-center justify-center rounded-lg border-2 transition-colors cursor-pointer ${
               isActive
@@ -211,7 +215,7 @@ export default function Topbar() {
 
         {/* Language toggle — compact below 800px */}
         <button
-          onClick={() => setLang(lang === "en" ? "zh" : "en")}
+          onClick={() => switchLang(lang === "en" ? "zh" : "en")}
           className="h-9 px-2 sm:px-3 rounded-lg border-2 border-zinc-300 text-sm font-medium text-zinc-700 hover:bg-zinc-100 transition-colors cursor-pointer"
           title={t("topbar.toggleLanguage")}
         >
@@ -234,7 +238,7 @@ export default function Topbar() {
         {/* Admin Link (visible to admins only) */}
         {!import.meta.env.VITE_HIDE_AUTH && user?.is_admin && (
           <Link
-            to="/admin"
+            to={localized("/admin")}
             className="h-9 px-3 rounded-lg border-2 border-purple-300 bg-purple-50 text-sm font-medium text-purple-700 hover:bg-purple-100 flex items-center transition-colors cursor-pointer"
             title={t("topbar.admin")}
           >

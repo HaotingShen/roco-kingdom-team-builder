@@ -6,6 +6,7 @@ import { authEndpoints } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
 import { useAuthStore, clearDeviceRegistered } from "./authStore";
 import { useI18n } from "@/i18n";
+import { useLocalizedPath } from "@/lib/locale";
 
 interface DeleteAccountModalProps {
   isOpen: boolean;
@@ -26,6 +27,7 @@ export default function DeleteAccountModal({
   onClose,
 }: DeleteAccountModalProps) {
   const { t } = useI18n();
+  const localized = useLocalizedPath();
   const { clearAuth } = useAuthStore();
   const navigate = useNavigate();
 
@@ -50,7 +52,7 @@ export default function DeleteAccountModal({
       queryClient.clear();
       toast.success(t("auth.accountDeleted") || "Your account has been permanently deleted.");
       onClose();
-      navigate("/");
+      navigate(localized("/"));
     },
     onError: (error: any) => {
       const detail = error.response?.data?.detail;

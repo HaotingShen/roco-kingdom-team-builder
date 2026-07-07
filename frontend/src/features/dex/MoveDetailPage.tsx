@@ -7,6 +7,7 @@ import { useSeoMeta } from "@/hooks/useSeoMeta";
 import type { MoveOut, MonsterLiteOut, MoveLearnersOut, TypeOut } from "@/types";
 import { typeIconUrl, monsterImageFallbackChain, monsterPlaceholder, moveIconUrlFromCn, moveSubIconUrl } from "@/lib/images";
 import { QUERY_KEYS } from "@/lib/constants";
+import { useLocalizedPath } from "@/lib/locale";
 import { byLegacyTypeOrder, DEFENDER_TYPE_NAMES } from "@/lib/typeEffectiveness";
 import RichDescription from "@/components/RichDescription";
 
@@ -63,6 +64,7 @@ function TypePill({ type }: { type: TypeOut }) {
 
 function MonsterCard({ monster, backUrl }: { monster: MonsterLiteOut; backUrl: string }) {
   const { lang, t } = useI18n();
+  const localized = useLocalizedPath();
   const name = pickName(monster as any, lang) || monster.name;
   const formLabel = pickFormName(monster as any, lang);
   const title = [name, formLabel ? `(${formLabel})` : ""].filter(Boolean).join(" ");
@@ -71,7 +73,7 @@ function MonsterCard({ monster, backUrl }: { monster: MonsterLiteOut; backUrl: s
 
   return (
     <Link
-      to={`/dex/monsters/${monster.id}?back=${encodeURIComponent(backUrl)}`}
+      to={localized(`/dex/monsters/${monster.id}`) + `?back=${encodeURIComponent(backUrl)}`}
       className="rounded-lg border border-zinc-200 bg-white p-3 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 flex flex-col items-center gap-2"
     >
       <img
@@ -144,8 +146,9 @@ function LearnerSection({
 export default function MoveDetailPage() {
   const { id } = useParams();
   const [sp] = useSearchParams();
+  const localized = useLocalizedPath();
   const backRaw = sp.get("back");
-  const backUrl = backRaw ?? "/dex?tab=moves";
+  const backUrl = backRaw ?? localized("/dex") + "?tab=moves";
   const { lang, t } = useI18n();
 
   const moveQuery = useQuery<MoveOut>({
@@ -199,7 +202,7 @@ export default function MoveDetailPage() {
   const moveImg = moveNameZh ? moveIconUrlFromCn(moveNameZh) : null;
 
   // URL of this page (passed as ?back= when linking to monster detail)
-  const currentUrl = `/dex/moves/${id}?back=${encodeURIComponent(backUrl)}`;
+  const currentUrl = localized(`/dex/moves/${id}`) + `?back=${encodeURIComponent(backUrl)}`;
 
   const catLabel = (() => {
     if (isWillpower) return t("dex.willpowerCat");

@@ -8,6 +8,7 @@ import { useBuilderStore } from "../builder/builderStore";
 import { useAuthStore } from "@/features/auth/authStore";
 import type { TeamOut, FullSavedAnalysisOut } from "@/types";
 import { pickName, pickFormName, useI18n, type Lang } from "@/i18n";
+import { useLocalizedPath } from "@/lib/locale";
 import { monsterImageFallbackChain, typeIconUrl, magicItemImageUrl, monsterPlaceholder } from "@/lib/images";
 import TeamShareModal from "@/features/share/TeamShareModal";
 import { useSeoMeta } from "@/hooks/useSeoMeta";
@@ -85,6 +86,7 @@ export default function SavedTeamPage() {
   const { id } = useParams();
   const nav = useNavigate();
   const { lang, t } = useI18n();
+  const localized = useLocalizedPath();
   const teamId = Number(id);
   const q = useQuery<TeamOut>({
     // Same key as the rest of the app (QUERY_KEYS.TEAM_DETAIL) — a private
@@ -158,7 +160,7 @@ export default function SavedTeamPage() {
         useBuilderStore.getState().clearTeamId();
         setAnalysis(null);
       }
-      nav("/teams");
+      nav(localized("/teams"));
     },
   });
 
@@ -205,7 +207,7 @@ export default function SavedTeamPage() {
       // The backend auto-saves successful analyses of owned teams — refetch
       // so "View Saved Analysis" reflects the new result immediately.
       qc.invalidateQueries({ queryKey: QUERY_KEYS.SAVED_ANALYSIS(teamId) });
-      nav("/build");
+      nav(localized("/"));
       // Scroll to analysis section after navigation
       setTimeout(() => {
         const element = document.getElementById("analysis-results");
@@ -235,7 +237,7 @@ export default function SavedTeamPage() {
       loadIntoBuilder(fresh);
       // Then set the analysis
       setAnalysis(savedAnalysisQuery.data.analysis_data);
-      nav("/build");
+      nav(localized("/"));
       // Scroll to analysis section after navigation
       setTimeout(() => {
         const element = document.getElementById("analysis-results");
@@ -256,7 +258,7 @@ export default function SavedTeamPage() {
       {/* Back button */}
       <div className="flex items-center">
         <Link
-          to="/teams"
+          to={localized("/teams")}
           className="inline-flex items-center gap-1 text-sm rounded border px-3 py-2 hover:bg-zinc-100 cursor-pointer"
           aria-label={t("teams.backToList") || "Back to Teams"}
         >
@@ -415,7 +417,7 @@ export default function SavedTeamPage() {
             onClick={async () => {
               const fresh = await endpoints.getTeam(teamId).then(r => r.data);
               loadIntoBuilder(fresh);
-              nav("/build");
+              nav(localized("/"));
             }}
           >
             {t("teams.editInBuilder")}
@@ -427,7 +429,7 @@ export default function SavedTeamPage() {
             onClick={() => {
               const clone = { ...team, id: 0, name: (team.name || "Team") + " (Copy)" };
               loadIntoBuilder(clone as any);
-              nav("/build");
+              nav(localized("/"));
             }}
           >
             {t("teams.editCopyInBuilder")}

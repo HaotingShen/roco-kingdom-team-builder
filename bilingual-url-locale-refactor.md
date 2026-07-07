@@ -1,11 +1,40 @@
 # URL-Based Bilingual Locale Refactor — Implementation Plan
 
-> ⏸️ **PROPOSED — NOT IMPLEMENTED as of 2026-07-05.** The router still uses flat
-> paths (no `/:lang` prefix), hreflang tags all point to `/`, and the sitemap
-> has no `/en/` or `/zh/` URLs. This file is also untracked in git — commit or
-> archive it deliberately. Known staleness if picked up later: the
-> `/announcements` route postdates the route map, and `FeaturedTeamView.tsx`
-> lives in `features/builder/`, not `features/share/`.
+> ✅ **IMPLEMENTED 2026-07-07 (Phase 1 frontend+backend).** All code changes below
+> shipped: `/:lang` routing, URL-derived locale with `switchLang`, hreflang/canonical
+> per page, hash-aware inline script, locale email links, and the 2,062-URL
+> hreflang sitemap. Verified: typecheck + lint (0 errors) + prod build + TapTap
+> build + 178 backend tests + Playwright SEO harness (74/74) + behavioral smoke
+> (lang-switch preserves path/query, bad-locale→/en, dev fallback). **Phase 2 (the
+> CloudFront `rktb-locale-routing` function that 301s legacy URLs and 302s the root)
+> is the remaining step** — function code is committed at
+> `ops/cloudfront/rktb-locale-routing.js`; deploy per Section N3.
+> Original review notes retained below for reference.
+>
+> ⏸️ **(historical) PROPOSED — NOT IMPLEMENTED. REVISED 2026-07-07 to be implementation-ready**
+> after a full re-validation against the current codebase and the LIVE CloudFront
+> config (read-only AWS checks). The strategy is unchanged; these amendments were
+> folded in (look for **REVISED 2026-07-07** markers):
+> 1. **Trailing-slash normalization** — the original H7 emitted canonical `/en`
+>    while sitemap/hreflang/redirects used `/en/`; now normalized (`/en/` for the
+>    homepage, no trailing slash deeper) and the CF function 301s `/en` → `/en/`.
+> 2. **Provider restructure replaced** — moving `I18nProvider` inside the router
+>    would crash `AuthProvider` (it calls `useI18n()` since 2026-06). New approach:
+>    provider stays put; a `<LocaleFromUrl>` child of the router syncs URL → provider;
+>    `setLang` (5 consumers, not 1) is replaced by a navigation-based `switchLang`.
+> 3. **TapTap + dev fallbacks** — pathname-only locale detection would show English
+>    to TapTap's hash-router users; inline script and wildcard route now fall back
+>    to hash → localStorage → navigator.language.
+> 4. **Query-string preservation is load-bearing** (share links are `/import?t=…`);
+>    both redirect branches now serialize QS; live sandbox test is mandatory (P2).
+> 5. `/announcements` route added throughout; `verify-robots.mjs` does NOT exist in
+>    the repo (L3 rewritten); audit greps extended for `location.pathname` compares.
+> 6. Resolved former unknowns: P1 (preferred_language exists; email functions already
+>    take `language` — H11 is now a 3-line change), P3, P5, P12, P13 (CloudFront limbo
+>    verified live 2026-07-07: `rktb-spa-routing` associated on viewer-request,
+>    `/api/*` behavior has zero function associations).
+> Still open before implementation: P2 (CF querystring sandbox test) and P11
+> (Bing/Baidu webmaster state — ask the site owner).
 
 **Site:** rkteambuilder.com
 **Goal:** Make the Chinese version of every public page crawlable and indexable as a unique URL, so Google/Baidu/Bing can rank it separately from the English version.
@@ -27,8 +56,8 @@ Verified against this codebase:
 - **Path prefix** (`/en/dex` / `/zh/dex`): industry standard, requires only frontend changes + one CloudFront Function update + sitemap regeneration. Cookies, auth, analytics, API all unaffected.
 
 ### Expected impact
-- **Crawlable URLs grow from ~1,029 to ~2,058** (each indexable page gets an `/en/` and `/zh/` variant).
-- **Baidu indexability:** unlocks ~1,029 Chinese-language URLs. Critical for the Chinese-origin game's primary audience.
+- **Crawlable URLs grow from 1,030 to ~2,062** (each indexable page gets an `/en/` and `/zh/` variant; counts re-verified 2026-07-07, incl. `/announcements`).
+- **Baidu indexability:** unlocks ~1,031 Chinese-language URLs. Critical for the Chinese-origin game's primary audience — but see M9/M10: as a client-rendered SPA, the Baidu win from this plan alone is mostly the Chinese `<title>` (H9); prerendering is the follow-up that fully unlocks Baidu, and without an ICP, Baidu webmaster submission stays limited.
 - **Existing SEO equity:** preserved via 301 redirects from legacy paths → `/en/` paths.
 - **Engineering effort:** roughly 1-2 days of focused work across frontend routing, ~50 link sites, sitemap regen, CloudFront Function update, and verification.
 - **User-visible behavior:** every URL gets longer by 3 characters. Language switcher becomes a navigation instead of a state update.
@@ -65,18 +94,18 @@ A fresh visit to `https://rkteambuilder.com/dex/monsters/1`:
 ### Key facts verified
 | Fact | Source |
 |---|---|
-| Single-route definition: 18 paths under one `/` parent | [router.tsx:28-53](frontend/src/router.tsx#L28) |
+| Single-route definition: 19 paths under one `/` parent (18 at time of writing; `/announcements` added since — re-verified 2026-07-07) | [router.tsx](frontend/src/router.tsx) |
 | Language stored only in `localStorage['lang']` | [i18n.tsx:1642,1649](frontend/src/i18n.tsx#L1642) |
 | Default language is browser's `navigator.language` | [i18n.tsx:1641](frontend/src/i18n.tsx#L1641) |
 | Language switcher = button in `Topbar.tsx`, no navigation | [Topbar.tsx:186-187](frontend/src/components/Topbar.tsx#L186) |
 | 53 files consume `useI18n()` | reported by Explore agent |
 | `useSeoMeta.BASE_URL` hardcoded to root domain | [useSeoMeta.ts:4](frontend/src/hooks/useSeoMeta.ts#L4) |
 | `index.html` hreflang en + zh + x-default all point to `/` | [index.html:17-19](frontend/index.html#L17) |
-| Sitemap contains 1,029 URLs, none with locale | [sitemap.xml](frontend/public/sitemap.xml) |
+| Sitemap contains 1,030 URLs, none with locale (re-counted 2026-07-07) | [sitemap.xml](frontend/public/sitemap.xml) |
 | 6 pages call `useSeoMeta` with language-aware titles | reported by Explore agent |
 | 11 pages render `<NoIndex>` (no language awareness in noindex) | [spa-routing-seo-fix.md:222-233](spa-routing-seo-fix.md#L222) |
 | 18 unique internal-path strings hardcoded across ~30 components | reported by Explore agent |
-| 3 backend email URL builders, all use `f"{FRONTEND_URL}/auth/..."` | [email_service.py:111,191,272](backend/email_service.py#L111) |
+| 3 backend email URL builders, all use `f"{FRONTEND_URL}/auth/..."` — and all three functions ALREADY accept `language: str = "en"` (used for email body content; verified 2026-07-07) | [email_service.py:99,111,179,191,260,272](backend/email_service.py#L99) |
 | Cookies use `path="/"`, `domain=None`, `samesite=none`, `secure=true` | [docker-compose.prod.yml](docker-compose.prod.yml) + [deployment-complete.md:1029-1052](deployment-complete.md#L1029) |
 | Backend has NO Accept-Language header handling | reported by Explore agent (no matches) |
 | Umami analytics uses `defer` script, language-agnostic | [umami-setup.md:26](umami-setup.md#L26) |
@@ -115,7 +144,7 @@ A fresh visit to `https://rkteambuilder.com/dex/monsters/1`:
 
 ### Not inspected (UNVERIFIED — see Section P)
 - The live CloudFront distribution `E1S4H9ALERPPY0` configuration (assumed to match the spa-routing-seo-fix.md description)
-- The actual Search Console state (which of the 1,029 sitemap URLs are currently indexed)
+- The actual Search Console state (which of the 1,030 sitemap URLs are currently indexed)
 - Baidu / Bing webmaster tool state
 - DNS configuration at Cloudflare (assumed to match deployment-complete.md)
 - Whether `rds-az-migration-runbook.md` has any locale-relevant content (file referenced by user but unrelated topic per its title)
@@ -147,6 +176,7 @@ A fresh visit to `https://rkteambuilder.com/dex/monsters/1`:
 /admin                                → AdminPage                        noindex,nofollow
 /feedback                             → FeedbackPage                     noindex,follow
 /import                               → ImportPage                       noindex,follow
+/announcements                        → AnnouncementsPage                indexable (added 2026-04; uses useSeoMeta with canonicalPath "/announcements", no noindex)
 ```
 
 ### Language flow
@@ -173,7 +203,7 @@ React mounts; useSeoMeta hook on each page overrides:
     <link rel="canonical">
     <meta name="robots">
                               ↓
-Sitemap (frontend/public/sitemap.xml): 1,029 language-neutral URLs.
+Sitemap (frontend/public/sitemap.xml): 1,030 language-neutral URLs.
 Robots.txt: allows all, points to sitemap.
                               ↓
 Generated by: backend/scripts/maintenance/generate_sitemap.py
@@ -228,7 +258,7 @@ Cloudflare DNS → CloudFront (E1S4H9ALERPPY0)
 - **Severity:** High. Compounds E2.
 
 ### E5. Sitemap lists no language variants
-- **Symptom:** All 1,029 sitemap URLs are language-neutral. Google has no static signal that Chinese versions exist.
+- **Symptom:** All 1,030 sitemap URLs are language-neutral. Google has no static signal that Chinese versions exist.
 - **Evidence:** [sitemap.xml](frontend/public/sitemap.xml) + [generate_sitemap.py:55-62](backend/scripts/maintenance/generate_sitemap.py#L55) — no hreflang annotations, no `/en/` or `/zh/` variants.
 - **Severity:** High. Even with hreflang in the HTML, the sitemap signal is missing.
 
@@ -284,19 +314,46 @@ https://rkteambuilder.com/zh/dex/monsters/123       Chinese monster detail
   1. 301s are cached. If we redirected based on Accept-Language, a Chinese user clicking an old `/dex` bookmark would get cached `/zh/dex` forever, even after switching language preference.
   2. Google's English Googlebot crawls these — sending it to `/en/` is the cleanest equity transfer.
 
-### F5. In-app language switching
-- The Topbar language toggle no longer calls `setLang()`. Instead, it computes the current URL's locale-swapped equivalent and calls `navigate()`:
-  ```ts
-  const swapped = pathname.replace(/^\/(en|zh)(?=\/|$)/, '/' + (lang === 'en' ? 'zh' : 'en'));
-  navigate(swapped + search + hash, { replace: false });
-  ```
-- `localStorage['lang']` is still written on switch — as a *preference signal* the CloudFront Function and root redirect can consult. (Optional refinement: the CloudFront Function can also check a `lang` cookie set by the frontend, to honor the user's last-chosen language at the root redirect.)
-- The previously memoized `setLang` setter is removed from the context (`useI18n` now exposes only `{ lang, t }`).
+### F5. In-app language switching — REVISED 2026-07-07
+- `setLang` is NOT simply removed — it has **five** consumers today, not one:
+  `Topbar` (~line 214, the visible toggle), `AuthProvider:91` (applies
+  `user.preferred_language` on session restore), `LoginPage:48` and
+  `RegisterPage:69` (cross-device language sync after login/registration), and
+  `SettingsPage:90`. All five represent real product behavior that must survive.
+- The context replaces `setLang` with a navigation-based **`switchLang(next)`**:
+  it no-ops when `next === lang`, writes `localStorage['lang']` (preference
+  signal), and navigates to the locale-swapped equivalent of the current URL
+  (path + search + hash preserved). Implemented via the `<LocaleFromUrl>`
+  registration described in F6/H3 — the provider itself sits outside the router
+  and cannot call `useNavigate` directly.
+- Login/restore semantics preserved: `switchLang(user.preferred_language)`
+  navigates you to your preferred locale's URL (no-op if you're already on it) —
+  same observable behavior as today's `setLang`, now URL-visible.
+- (Optional v2 refinement unchanged: a `lang` cookie the CloudFront Function
+  could consult at the root redirect — still deferred, see P10.)
 
-### F6. Active language derivation
-- `I18nProvider` is moved inside the router and reads `lang` from `useParams<{ lang: 'en'|'zh' }>()`.
-- Validation: if `useParams().lang` is anything other than `'en'` or `'zh'`, the route element forces a redirect to `/en${restOfPath}`. (Guard component, see H2.)
-- A side-effect writes `lang` to localStorage so the user's preference is remembered across origins-of-entry.
+### F6. Active language derivation — REVISED 2026-07-07
+- **Original approach (moving `I18nProvider` inside the router) is DEAD**: since
+  2026-06, `AuthProvider` — which sits OUTSIDE the router in `main.tsx` — calls
+  `useI18n()` ([AuthProvider.tsx:58](frontend/src/features/auth/AuthProvider.tsx#L58)).
+  Moving the provider below the router would make that hook throw at boot. The
+  real `main.tsx` tree is `ErrorBoundary > I18nProvider > QueryClientProvider >
+  AuthProvider > AppReadyProvider > (Toaster + RouterProvider)`.
+- **New approach — provider stays put; the URL is still the single source of truth:**
+  1. `I18nProvider` keeps internal `lang` state, initialized by a
+     `detectInitialLang()` chain (URL path → URL hash → localStorage →
+     `navigator.language`) that is correct for browser-router, hash-router
+     (TapTap), and the pre-router first render.
+  2. A tiny **`<LocaleFromUrl />`** component rendered INSIDE the router (child
+     of the `/:lang` element) reads `useParams().lang` + `useNavigate()` and,
+     in an effect, (a) syncs the URL lang into the provider and (b) registers a
+     `swap(next)` callback the provider's `switchLang` delegates to.
+  3. `main.tsx` needs **no changes**. `AuthProvider` keeps working. Every
+     `useI18n()` consumer keeps working.
+- Validation of `:lang` stays in the route element (H2): anything other than
+  `en`/`zh` redirects to `/en${restOfPath}`.
+- A side-effect still writes `lang` to localStorage (preference memory for the
+  wildcard/dev/TapTap fallback and any future root-redirect cookie).
 
 ### F7. SEO artifacts per page (all useSeoMeta call sites)
 For every page that's indexable:
@@ -336,7 +393,7 @@ Use Google's xhtml:link hreflang annotation format. One `<url>` entry per (local
 </urlset>
 ```
 
-Total URL count: ~2,058 (2 × current 1,029). Well under the 50,000-URL per-sitemap limit; no sitemap index needed.
+Total URL count: ~2,062 (2 × current 1,030, plus the two `/announcements` entries — REVISED 2026-07-07). Well under the 50,000-URL per-sitemap limit; no sitemap index needed.
 
 ---
 
@@ -361,7 +418,9 @@ Total URL count: ~2,058 (2 × current 1,029). Well under the 50,000-URL per-site
 | `/settings` | `/en/settings` | `/zh/settings` | 301 | noindex,nofollow |
 | `/admin` | `/en/admin` | `/zh/admin` | 301 | noindex,nofollow |
 | `/feedback` | `/en/feedback` | `/zh/feedback` | 301 | noindex,follow |
-| `/import` | `/en/import` | `/zh/import` | 301 | noindex,follow |
+| `/import` | `/en/import` | `/zh/import` | 301 | noindex,follow — **share links are `/import?t=<payload>` ([sharePayload.ts:53](frontend/src/features/share/sharePayload.ts#L53)); the 301 MUST carry the query string or every previously shared team link breaks** (see K1). New share links should embed the current locale. |
+| `/announcements` | `/en/announcements` | `/zh/announcements` | 301 | **REVISED 2026-07-07 (route added 2026-04):** indexable via useSeoMeta; add both variants to the sitemap generator (weekly, 0.5) |
+| `/en`, `/zh` (bare, no slash) | `/en/` | `/zh/` | 301 to trailing-slash form | **REVISED 2026-07-07:** normalization so exactly ONE homepage URL form exists — matches canonical, sitemap, and hreflang (all use `/en/`, `/zh/`) |
 
 **Preservation rules** (CloudFront Function must implement):
 - Query string preserved across redirect (`?from=...&back=...`)
@@ -410,14 +469,29 @@ New shape:
     // ...remaining unchanged...
   ]
 },
-// Optional: a wildcard catch that redirects unknown unprefixed routes.
-// Better handled at CloudFront layer (Section K) — no SPA-level catch needed
-// for the *legacy unprefixed* case because CloudFront 301s before request hits SPA.
+// Wildcard catch — REVISED 2026-07-07: must be PREFERENCE-BASED, not hardcoded /en.
+// In production the CloudFront Function 302s "/" before the SPA sees it, so this
+// wildcard only fires in `vite dev` (root + unknown paths) and in the TapTap
+// hash-router build, which boots at "#/" — a hardcoded /en would dump TapTap's
+// ~all-Chinese audience into English UI.
 {
   path: "*",
-  element: <Navigate to="/en" replace />
+  element: <RedirectToPreferredLocale />
+}
+
+// components/RedirectToPreferredLocale.tsx (NEW):
+function RedirectToPreferredLocale() {
+  const stored = localStorage.getItem("lang");
+  const lang = stored === "zh" || stored === "en"
+    ? stored
+    : navigator.language.startsWith("zh") ? "zh" : "en";
+  return <Navigate to={`/${lang}/`} replace />;
 }
 ```
+
+**Keep the `createHashRouter` conditional** at the top of router.tsx untouched
+(`VITE_HASH_ROUTER === "true"` → TapTap build). The `/:lang` route tree works
+identically under both routers; only the fallback semantics above differ.
 
 **Validation of `:lang` param** is done by `App.tsx` (see H2).
 
@@ -443,83 +517,128 @@ export default function App() {
 
 Why here, not at the router level: React Router's element resolves before params validation; doing the check in the route element is the cleanest pattern.
 
-### H3. `frontend/src/i18n.tsx` — read lang from URL
+### H3. `frontend/src/i18n.tsx` — URL becomes the source of truth (REVISED 2026-07-07)
 
-Replace the `I18nProvider` body (currently lines 1640-1655) with:
+> **The original version of this section moved `I18nProvider` inside the router
+> and deleted `setLang`. Do NOT do that** — `AuthProvider` sits outside the
+> router and calls `useI18n()`/`setLang(freshUser.preferred_language)` on
+> session restore ([AuthProvider.tsx:58,91](frontend/src/features/auth/AuthProvider.tsx#L58));
+> the old approach crashes the app at boot. `main.tsx` now needs **no changes**.
+
+Keep `I18nProvider` exactly where it is in the tree. Rework its internals:
+
 ```tsx
-import { useParams } from "react-router-dom";
+// i18n.tsx
+function detectInitialLang(): Lang {
+  // Correct for browser-router (/zh/...), hash-router (#/zh/... — TapTap build),
+  // and the pre-router first render. LocaleFromUrl corrects it from useParams
+  // as soon as the router mounts.
+  const probe = window.location.pathname + " " + window.location.hash;
+  if (/[/#]\/?zh(\/|$)/.test(probe)) return "zh";
+  if (/[/#]\/?en(\/|$)/.test(probe)) return "en";
+  const stored = localStorage.getItem("lang");
+  if (stored === "zh" || stored === "en") return stored;
+  return navigator.language.startsWith("zh") ? "zh" : "en";
+}
+
+type Ctx = {
+  lang: Lang;
+  t: (key: string, vars?: Record<string, any>) => string;
+  /** Navigate to the same page in `next`'s locale. No-ops if already there.
+   *  Replaces setLang for ALL five former consumers (F5). */
+  switchLang: (next: Lang) => void;
+};
 
 export function I18nProvider({ children }: { children: React.ReactNode }) {
-  const { lang: urlLang } = useParams<{ lang?: string }>();
-  const lang: Lang = (urlLang === "zh" || urlLang === "en") ? urlLang : "en";
+  const [lang, setLangState] = useState<Lang>(detectInitialLang);
+  // Populated by <LocaleFromUrl> once the router mounts; the provider itself
+  // is outside the router and cannot call useNavigate.
+  const swapRef = useRef<((next: Lang) => void) | null>(null);
 
   useEffect(() => {
     document.documentElement.lang = lang;
-    // Persist preference for the root-redirect (Section K) to honor
-    localStorage.setItem("lang", lang);
+    localStorage.setItem("lang", lang);  // preference memory for fallbacks
   }, [lang]);
 
   const value = useMemo<Ctx>(() => ({
     lang,
     t: (key, vars) => resolve(ui[lang], key, vars) || resolve(ui.en, key, vars),
+    switchLang: (next) => {
+      if (next === lang) return;
+      if (swapRef.current) swapRef.current(next);   // normal path: navigate
+      else setLangState(next);                       // pre-router fallback
+    },
   }), [lang]);
 
-  return <I18nCtx.Provider value={value}>{children}</I18nCtx.Provider>;
+  return (
+    <I18nCtx.Provider value={value}>
+      <I18nInternalCtx.Provider value={{ setLangState, swapRef }}>
+        {children}
+      </I18nInternalCtx.Provider>
+    </I18nCtx.Provider>
+  );
+}
+
+/**
+ * <LocaleFromUrl /> — render INSIDE the /:lang route element (e.g. first child
+ * of App). Syncs the URL's lang into the provider and registers the
+ * navigation-based swap used by switchLang.
+ */
+export function LocaleFromUrl() {
+  const { lang: urlLang } = useParams<{ lang?: string }>();
+  const navigate = useNavigate();
+  const { pathname, search, hash } = useLocation();
+  const { setLangState, swapRef } = useContext(I18nInternalCtx)!;
+
+  useEffect(() => {
+    if (urlLang === "en" || urlLang === "zh") setLangState(urlLang);
+  }, [urlLang, setLangState]);
+
+  useEffect(() => {
+    swapRef.current = (next) => {
+      const swapped = pathname.replace(/^\/(en|zh)(?=\/|$)/, `/${next}`);
+      navigate(swapped + search + hash);
+    };
+    return () => { swapRef.current = null; };
+  }, [pathname, search, hash, navigate, swapRef]);
+
+  return null;
 }
 ```
 
 Changes:
-- `setLang` removed from context. Components that switch language now use the new switcher pattern (H4).
-- `useI18n()` return type becomes `{ lang, t }` — drop `setLang` from `Ctx`.
+- `useI18n()` return type becomes `{ lang, t, switchLang }` — `setLang` is gone,
+  but every former consumer has a drop-in replacement (see H4/H4b).
+- **Re-mount concern (unchanged):** switching `/en/dex` → `/zh/dex` keeps the
+  same `/:lang` route element — React Router re-renders with new params, no
+  remount. AuthProvider, query cache, builder stores all preserved.
 
-**Critical:** `I18nProvider` MUST be a descendant of `RouterProvider` (because it calls `useParams`). Verify in `main.tsx`:
-- If `I18nProvider` currently wraps `RouterProvider` ([main.tsx](frontend/src/main.tsx)), invert: `RouterProvider` wraps the router definition, and `I18nProvider` is rendered inside the App layout (or moved to be a child element in the router config).
+### H4. `frontend/src/components/Topbar.tsx` — make switcher navigate (REVISED 2026-07-07)
 
-**Recommended structure** ([main.tsx](frontend/src/main.tsx)):
+With H3's `switchLang` in the context this is now a one-line change. The button
+handler (now at ~line 214, drifted from 187):
 ```tsx
 // Before:
-<I18nProvider>
-  <AuthProvider>
-    <RouterProvider router={router} />
-  </AuthProvider>
-</I18nProvider>
-
+onClick={() => setLang(lang === "en" ? "zh" : "en")}
 // After:
-<AuthProvider>
-  <RouterProvider router={router} />
-</AuthProvider>
-
-// router.tsx:
-{
-  path: "/:lang",
-  element: (
-    <I18nProvider>
-      <App />
-    </I18nProvider>
-  ),
-  children: [...]
-}
+onClick={() => switchLang(lang === "en" ? "zh" : "en")}
 ```
 
-**Re-mount concern:** When user switches `/en/dex` → `/zh/dex`, the route element is the same (`/:lang`), so React Router does NOT re-mount — it just re-renders with new params. AuthProvider, query cache, etc. all preserved. Confirmed via React Router v6 docs.
+### H4b. The other four `setLang` consumers (NEW 2026-07-07)
 
-### H4. `frontend/src/components/Topbar.tsx` — make switcher navigate
+These postdate the original plan and MUST be migrated (a bare `setLang` removal
+breaks cross-device language sync):
 
-Replace the button handler at line 187:
-```tsx
-import { useLocation, useNavigate } from "react-router-dom";
-// inside the component:
-const { lang } = useI18n();
-const navigate = useNavigate();
-const { pathname, search, hash } = useLocation();
+| Site | Today | After |
+|---|---|---|
+| [AuthProvider.tsx:91](frontend/src/features/auth/AuthProvider.tsx#L91) — session restore applies stored preference | `setLang(freshUser.preferred_language as Lang)` | `switchLang(freshUser.preferred_language as Lang)` — no-ops if already on that locale; otherwise navigates to the preferred-locale URL |
+| [LoginPage.tsx:48](frontend/src/features/auth/LoginPage.tsx#L48) — apply preference after login | `setLang(data.user.preferred_language …)` | `switchLang(...)` — note LoginPage also calls `navigate("/build")` right after; sequence so the final URL is `localized("/")` in the PREFERRED locale (compute target once, single navigate) |
+| [RegisterPage.tsx:69](frontend/src/features/auth/RegisterPage.tsx#L69) — same after registration | `setLang(...)` | same as LoginPage |
+| [SettingsPage.tsx:90](frontend/src/features/auth/SettingsPage.tsx#L90) — user changes UI language in settings | `setLang(newLang)` | `switchLang(newLang)` (stays on `/⟨next⟩/settings`) |
 
-const swap = () => {
-  const nextLang = lang === "en" ? "zh" : "en";
-  const next = pathname.replace(/^\/(en|zh)(?=\/|$)/, `/${nextLang}`);
-  navigate(next + search + hash, { replace: false });
-};
-// onClick={() => setLang(...)}  →  onClick={swap}
-```
+Product semantics preserved: logging in with `preferred_language=zh` while
+browsing an `/en/...` URL moves you to the `/zh/...` equivalent — the same
+observable behavior as today, now expressed in the URL.
 
 ### H5. Create `frontend/src/lib/locale.ts` — centralized URL helpers
 
@@ -615,6 +734,20 @@ rg --type tsx --type ts "navigate\(['\"]\\/(?!en\\/|zh\\/)" frontend/src/
 ```
 (Both should return zero hits after the refactor, except in the locale helper file itself.)
 
+**REVISED 2026-07-07 — the two greps above have a blind spot.** Also audit
+pathname *comparisons*, which neither pattern catches:
+```bash
+rg "location\.pathname" frontend/src/
+```
+Known site requiring manual rework:
+[BuilderPage.tsx:528-529](frontend/src/features/builder/BuilderPage.tsx#L528)
+compares `window.location.pathname !== "/build"` to decide whether to navigate
+back to the builder after an analysis completes. With `/build` dropped (F1),
+rework it against the localized home path (or `useLocation` + the locale
+helper). 2026-07-07 inventory check: ~55 hardcoded link/navigate sites across
+25 files (31 `to="/"`, 12 `` to={`/ ``, 11 `navigate(`, 1 `<Navigate>` in
+AdminPage:38) — the plan's ~50/~30 estimate remains accurate.
+
 ### H7. `frontend/src/hooks/useSeoMeta.ts` — emit hreflang + locale-aware canonical
 
 Rewrite to:
@@ -660,9 +793,14 @@ export function useSeoMeta({ title, description, canonicalPath, noindex, nofollo
   // canonicalPath (if provided) overrides this — but should also be locale-neutral.
   const pathNoLang = pathname.replace(/^\/(en|zh)(?=\/|$)/, "") || "/";
   const cp = canonicalPath ?? pathNoLang;
-  const selfPath = `/${lang}${cp === "/" ? "" : cp}`;
-  const enPath = `/en${cp === "/" ? "" : cp}`;
-  const zhPath = `/zh${cp === "/" ? "" : cp}`;
+  // REVISED 2026-07-07 — TRAILING-SLASH NORMALIZATION: the homepage canonical is
+  // "/en/" WITH the slash (the original `cp === "/" ? "" : cp` emitted "/en",
+  // contradicting the sitemap/hreflang/redirects which all use "/en/" — Google
+  // treats those as different URLs). Homepage: trailing slash. Deeper paths: none.
+  // The CloudFront Function 301s bare "/en" → "/en/" to close the loop (K1 §3).
+  const selfPath = `/${lang}${cp === "/" ? "/" : cp}`;
+  const enPath = `/en${cp === "/" ? "/" : cp}`;
+  const zhPath = `/zh${cp === "/" ? "/" : cp}`;
 
   useEffect(() => {
     document.title = title;
@@ -715,12 +853,28 @@ If kept, BuilderPage's `canonicalPath: "/"` continues to send Google the right s
 
 **Canonical (line 13):** update to `https://rkteambuilder.com/en/` (default canonical; per-page hook overrides).
 
-**Inline script (lines 110-133):** detect language from URL pathname, not localStorage:
+**Inline script (lines ~110-133):** detect language from the URL — but **REVISED
+2026-07-07: pathname alone is NOT enough.** The TapTap build uses a hash router
+(`#/zh/...` — the locale never appears in `pathname`), and the legacy pre-redirect
+state has no locale at all. A pathname-only check would show English loading
+text/title to TapTap's ~all-Chinese audience — a regression vs. today's
+localStorage detection. Use the same fallback chain as `detectInitialLang()` (H3):
+
 ```html
 <script>
   (function() {
-    var pathname = window.location.pathname;
-    var lang = /^\/zh(\/|$)/.test(pathname) ? 'zh' : 'en';
+    // Locale detection: URL path (/zh/...) → URL hash (#/zh/..., TapTap's
+    // hash-router build) → saved preference → browser language.
+    var probe = window.location.pathname + ' ' + window.location.hash;
+    var lang;
+    if (/[\/#]\/?zh(\/|$)/.test(probe)) lang = 'zh';
+    else if (/[\/#]\/?en(\/|$)/.test(probe)) lang = 'en';
+    else {
+      var stored = null;
+      try { stored = localStorage.getItem('lang'); } catch (e) {}
+      lang = (stored === 'zh' || stored === 'en') ? stored
+           : (navigator.language && navigator.language.indexOf('zh') === 0 ? 'zh' : 'en');
+    }
 
     var translations = {
       en: { title: 'Loading RK Team Builder', subtitle: 'Initializing application...' },
@@ -736,7 +890,7 @@ If kept, BuilderPage's `canonicalPath: "/"` continues to send Google the right s
 </script>
 ```
 
-This means: if a Googlebot crawls `https://rkteambuilder.com/zh/dex`, the *very first* HTML it parses has the Chinese title, before any React execution. Big win for SEO.
+This means: if a Googlebot crawls `https://rkteambuilder.com/zh/dex`, the *very first* HTML it parses has the Chinese title, before any React execution — the single most important signal for weak-JS crawlers (Baidu). And TapTap keeps its Chinese loading screen.
 
 ### H10. `backend/scripts/maintenance/generate_sitemap.py` — emit locale variants with hreflang
 
@@ -782,6 +936,10 @@ def main():
     for lang in LANGS:
         parts.append(url_entry(f"{BASE_URL}/{lang}/", today, "weekly", "1.0", alts("/")))
         parts.append(url_entry(f"{BASE_URL}/{lang}/dex", today, "weekly", "0.9", alts("/dex")))
+        # REVISED 2026-07-07: /announcements (added 2026-04) is indexable and
+        # was previously absent from the sitemap entirely — include it.
+        parts.append(url_entry(f"{BASE_URL}/{lang}/announcements", today, "weekly", "0.5",
+                               alts("/announcements")))
         for mid in monster_ids:
             parts.append(url_entry(f"{BASE_URL}/{lang}/dex/monsters/{mid}", today, "monthly", "0.8",
                                    alts(f"/dex/monsters/{mid}")))
@@ -796,28 +954,30 @@ def main():
     print(f"Wrote {total} URLs to {OUTPUT_PATH}")
 ```
 
-Note the leading slash inside alts — paths like `/dex` produce `BASE_URL + /en + /dex` = `…/en/dex`. The `/` case becomes `…/en/` which is correct.
+Note the leading slash inside alts — paths like `/dex` produce `BASE_URL + /en + /dex` = `…/en/dex`. The `/` case becomes `…/en/` which is correct **and now matches H7's canonical exactly** (trailing-slash normalization). Implementation notes (2026-07-07): keep/add `from xml.sax.saxutils import escape` (the snippet calls `escape()`); new total = 2 × (3 static + monsters + moves) ≈ **2,062** given today's 1,030-URL sitemap.
 
-### H11. `backend/email_service.py` — include locale in email links
+### H11. `backend/email_service.py` — include locale in email links (REVISED 2026-07-07)
 
-Today (lines 111, 191, 272):
+**This is now a three-line change.** Verified against the current code: all three
+email functions ALREADY accept `language: str = "en"` and every call site already
+passes the user's language — it localizes the email *body* today
+([email_service.py:99,179,260](backend/email_service.py#L99)). `User.preferred_language`
+exists (`String(5)`, `"en"`/`"zh"`, set at registration, updatable via
+`/auth/update-language-preference`) — former P1 is RESOLVED. Just embed the
+already-available `language` into the three URLs:
+
 ```python
-verify_url = f"{FRONTEND_URL}/auth/verify?token={token}"
+# line ~111
+verify_url = f"{FRONTEND_URL}/{language}/auth/verify?token={token}"
+# line ~191
+reset_url = f"{FRONTEND_URL}/{language}/auth/reset-password?token={token}"
+# line ~272
+verify_url = f"{FRONTEND_URL}/{language}/auth/confirm-email?token={token}"
 ```
 
-After:
-```python
-verify_url = f"{FRONTEND_URL}/{lang}/auth/verify?token={token}"
-```
-
-Sources for `lang`:
-- **Registration verify:** the registration endpoint should pass the user's chosen UI language (already available; the frontend likely sends it). UNVERIFIED — check if `User.preferred_language` is populated at registration time.
-- **Forgot-password reset:** look up `User.preferred_language` by the email being reset.
-- **Email-change confirm:** look up `User.preferred_language` for the authenticated user.
-
-Fallback: `'en'` if not determinable.
-
-**Required:** Add a `lang: Literal["en","zh"] = "en"` parameter to the three email-sending functions and thread it through every call site in `backend/main.py` and `backend/auth.py`. UNVERIFIED — Explore agent reported `User.preferred_language` exists but I didn't read the model.
+No signature changes, no call-site threading, no model work. (Belt-and-braces:
+guard `language if language in ("en", "zh") else "en"` when interpolating into
+the URL, since the value originates from a user-settable column.)
 
 ### H12. `backend/scripts/maintenance/regenerate_static_for_locale_refactor.py` — one-shot regeneration
 
@@ -894,7 +1054,7 @@ Cookies are `path="/"`; locale prefixes don't affect cookie scope. `FRONTEND_URL
 ### J3. Sitemap
 - Switch to xhtml:link annotation format (H10).
 - Each pair of URLs (en + zh) appears as two `<url>` entries, each listing all three alternates.
-- ~2,058 URLs total; ~1MB file size (well under 50MB limit).
+- ~2,062 URLs total; ~1MB file size (well under 50MB limit).
 - Regenerate after any monster/move add or removal: `python3 -m backend.scripts.maintenance.generate_sitemap`.
 
 ### J4. Robots
@@ -922,12 +1082,39 @@ Cookies are `path="/"`; locale prefixes don't affect cookie scope. `FRONTEND_URL
 
 Replace (or update) `rktb-spa-routing`. Recommend creating a new function and atomically swapping the association — preserves the rollback path.
 
+**REVISED 2026-07-07** — final version. Changes vs. the original sketch:
+query-string serialization is now used in BOTH redirect branches (it is
+**load-bearing**: previously shared team links are `/import?t=<payload>` and the
+payload lives entirely in the query string — see [sharePayload.ts:53](frontend/src/features/share/sharePayload.ts#L53));
+and bare `/en`/`/zh` now 301 to the trailing-slash form so exactly one homepage
+URL exists (matching canonical/sitemap/hreflang — see H7).
+
 ```javascript
 function handler(event) {
     var request = event.request;
     var uri = request.uri;
-    var qs = request.querystring; // CloudFront preserves this on rewrite
     var headers = request.headers;
+
+    // Serialize the (possibly multi-value) query string for redirect Locations.
+    // CloudFront does NOT auto-append the query string when a function returns
+    // a response object (it DOES preserve it on request rewrites). Values in
+    // event.request.querystring arrive still percent-encoded, so plain
+    // concatenation is safe.
+    function buildQS(qs) {
+        var out = [];
+        for (var k in qs) {
+            var v = qs[k];
+            if (v.multiValue) {
+                for (var i = 0; i < v.multiValue.length; i++) {
+                    out.push(k + '=' + v.multiValue[i].value);
+                }
+            } else if (v.value !== undefined) {
+                out.push(k + '=' + v.value);
+            }
+        }
+        return out.length ? '?' + out.join('&') : '';
+    }
+    var qs = buildQS(request.querystring);
 
     // 1. API requests untouched (defense — they go to a different behavior anyway)
     if (uri.startsWith('/api/')) return request;
@@ -935,15 +1122,27 @@ function handler(event) {
     // 2. Static files (anything with a dot in the URI) untouched
     if (uri.includes('.')) return request;
 
-    // 3. Already locale-prefixed → SPA rewrite to /index.html
-    //    Matches: /en, /en/..., /zh, /zh/...
-    if (uri === '/en' || uri === '/zh' ||
-        uri.startsWith('/en/') || uri.startsWith('/zh/')) {
+    // 3. Bare locale roots → 301 to the trailing-slash canonical form.
+    //    /en → /en/, /zh → /zh/ (canonical, sitemap, and hreflang all use /en/).
+    if (uri === '/en' || uri === '/zh') {
+        return {
+            statusCode: 301,
+            statusDescription: 'Moved Permanently',
+            headers: {
+                'location': { value: uri + '/' + qs },
+                'cache-control': { value: 'public, max-age=3600' }
+            }
+        };
+    }
+
+    // 4. Locale-prefixed → SPA rewrite to /index.html
+    if (uri.startsWith('/en/') || uri.startsWith('/zh/')) {
         request.uri = '/index.html';
         return request;
     }
 
-    // 4. Root: 302 redirect to /en/ or /zh/ based on Accept-Language
+    // 5. Root: 302 redirect to /en/ or /zh/ based on Accept-Language
+    //    (302 not 301: the target varies per user; keep query string, e.g. /?ref=…)
     if (uri === '/') {
         var lang = 'en';
         var al = headers['accept-language'];
@@ -954,57 +1153,35 @@ function handler(event) {
             statusCode: 302,
             statusDescription: 'Found',
             headers: {
-                'location': { value: '/' + lang + '/' },
+                'location': { value: '/' + lang + '/' + qs },
                 'vary': { value: 'Accept-Language' },
                 'cache-control': { value: 'no-store' }
             }
         };
     }
 
-    // 5. Legacy unprefixed routes → 301 redirect to /en/<same>
-    //    Includes: /dex, /dex/monsters/1, /build, /teams, /auth/login, /admin, /settings, /feedback, /import
-    var target = '/en' + uri;
-    if (qs) {
-        // Re-attach query string. CloudFront serializes it to a string here.
-        // Format: key=val&key2=val2 (already URL-encoded). Use querystring fields if non-empty.
-        // (CF Function querystring is an object with `.keys()` etc; serialization shown in CF docs.)
-        // Simpler: rely on CloudFront's automatic re-attachment after rewrite.
-        // For a redirect (which returns a response object), we must serialize manually.
-        // CONSULT: CloudFront Function JS 2.0 docs — request.querystring on redirect.
-        // Most idiomatic: build target without querystring and let the browser re-attach... no, browser doesn't.
-        // SAFEST: leave the 301 location relative; CloudFront preserves QS automatically on rewrites
-        // but NOT on response-object redirects. Therefore, build the QS into the Location.
-    }
-
+    // 6. Legacy unprefixed routes → 301 to /en/<same>, query string preserved.
+    //    Covers /dex, /dex/monsters/1, /build, /teams, /auth/*, /admin,
+    //    /settings, /feedback, /import?t=… (share links!), /announcements.
     return {
         statusCode: 301,
         statusDescription: 'Moved Permanently',
         headers: {
-            'location': { value: target },  // see note below on query string
+            'location': { value: '/en' + uri + qs },
             'cache-control': { value: 'public, max-age=3600' }
         }
     };
 }
 ```
 
-**Important querystring handling note:** CloudFront Functions JS 2.0 expose `event.request.querystring` as an object (with possibly multi-value fields). For a redirect response, the function must serialize that into `?k=v&k2=v2` and append to the Location header — CloudFront does NOT auto-append the query string when the function returns a response object. The exact serialization should follow [CloudFront Functions querystring docs](https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/cloudfront-functions-event-structure.html). **UNVERIFIED** — confirm exact API before deploying.
-
-Recommended robust serialization helper to embed in the function:
-```js
-function buildQS(qs) {
-    var out = [];
-    for (var k in qs) {
-        var v = qs[k];
-        if (v.multiValue) {
-            v.multiValue.forEach(function(mv) { out.push(k + '=' + mv.value); });
-        } else if (v.value !== undefined) {
-            out.push(k + '=' + v.value);
-        }
-    }
-    return out.length ? '?' + out.join('&') : '';
-}
-// In step 5: target = '/en' + uri + buildQS(qs);
-```
+**Querystring verification (P2 — still MANDATORY before production):** the
+`buildQS` shape matches the [CloudFront Functions event structure docs](https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/cloudfront-functions-event-structure.html)
+(JS 2.0: `querystring` object, `value`/`multiValue`, values percent-encoded), but
+this MUST be validated in the CloudFront Functions console **test tab** (or a
+sandbox function) before the association swap, using a real share-style URL:
+`/import?t=<long-base64-payload>` and a multi-param URL
+`/dex/monsters/1?from=builder&back=%2Fbuild`. Confirm the Location header
+preserves the payload byte-for-byte.
 
 ### K2. CloudFront Function deployment steps
 
@@ -1073,9 +1250,14 @@ Then in Chrome (clear localStorage first):
 - Click language switcher. URL changes to `/zh/dex/monsters/<id>?back=...`. Same content in Chinese.
 - Browser back button works.
 
-### L3. SEO meta verification (Playwright, adapted from spa-routing-seo-fix.md Section 9)
+### L3. SEO meta verification (REVISED 2026-07-07 — script must be written from scratch)
 
-Build on the existing `verify-robots.mjs`. Add hreflang + canonical checks for both locales. Example skeleton:
+**`verify-robots.mjs` does NOT exist in the repo** (checked 2026-07-07 — it was a
+one-off from the spa-routing work that was never committed), and Playwright is
+not a dependency (`npm test` = vitest). Write a new `frontend/scripts/verify-seo.mjs`
+and add `playwright` as a devDependency (meta tags are set by client-side JS, so
+a real browser is required — plain fetch won't see them). Checks per page:
+canonical, hreflang ×3, robots, og:url, `<html lang>`. Example table:
 
 ```js
 const tests = [
@@ -1132,6 +1314,22 @@ curl -sI -H "Accept-Language: en-US" "https://rkteambuilder.com/" | grep -i loca
 curl -sI "https://rkteambuilder.com/dex/monsters/1?back=foo&from=bar" | grep -i location
 # Expected: location: /en/dex/monsters/1?back=foo&from=bar
 
+# REVISED 2026-07-07 — CRITICAL: share-link payload survives the redirect
+# (previously shared team links are /import?t=<payload>; the payload must be
+# preserved byte-for-byte or every old share link breaks)
+curl -sI "https://rkteambuilder.com/import?t=SOME_LONG_BASE64_PAYLOAD" | grep -i location
+# Expected: location: /en/import?t=SOME_LONG_BASE64_PAYLOAD
+
+# REVISED 2026-07-07 — bare locale roots normalize to trailing slash
+curl -sI "https://rkteambuilder.com/en" | grep -i "HTTP/2\|location"
+# Expected: 301, location: /en/
+curl -sI "https://rkteambuilder.com/zh" | grep -i "HTTP/2\|location"
+# Expected: 301, location: /zh/
+
+# REVISED 2026-07-07 — announcements (new since original plan)
+curl -so /dev/null -w "%{http_code}\n" "https://rkteambuilder.com/en/announcements"   # 200
+curl -sI "https://rkteambuilder.com/announcements" | grep -i location                  # /en/announcements
+
 # Static assets unaffected
 curl -sI https://rkteambuilder.com/logo.png | grep "HTTP/2 200"
 curl -sI https://rkteambuilder.com/sitemap.xml | grep "HTTP/2 200"
@@ -1145,7 +1343,7 @@ echo "$api_body" | grep -c "<!doctype"   # MUST be 0
 curl -s https://rkteambuilder.com/sitemap.xml | head -20
 # MUST contain xhtml:link rel="alternate" and /en/ + /zh/ URLs
 curl -s https://rkteambuilder.com/sitemap.xml | grep -c "<loc>"
-# MUST be ~2058 (or 2 × current)
+# MUST be ~2062 (2 × current 1,030 + 2 announcements entries — REVISED 2026-07-07)
 
 # robots.txt unchanged
 curl -s https://rkteambuilder.com/robots.txt
@@ -1178,7 +1376,7 @@ After deploy + ~3 days for crawl:
 
 ### L8. Performance / regression
 
-- Run Playwright's `verify-robots.mjs` (extended per L3) against production.
+- Run the new `verify-seo.mjs` (written per revised L3) against production.
 - Check page load time of `/en/dex` and `/zh/dex` — should be identical to pre-refactor (no perf impact).
 - Confirm Umami still records traffic.
 
@@ -1195,7 +1393,7 @@ After deploy + ~3 days for crawl:
 | M5 | Email link locale mismatch (e.g., user registers in ZH but link is `/en/...`) | Medium | Medium | H11. UNVERIFIED — need to confirm `User.preferred_language` is populated at registration. |
 | M6 | Cookies break across locale change | High | Very Low | Verified: `path="/"`, `domain=None` (exact origin) → cookies match all paths under `rkteambuilder.com`. L5 confirms in production. |
 | M7 | Search Console drops indexed pages during 301 transition | Medium | Medium | 301s pass equity. Worst case is a ~2-week dip in impressions while Google re-crawls. Counter-mitigation: submit fresh sitemap immediately. |
-| M8 | Sitemap doubles to 2058 URLs but file size still fine; risk of timeout in sitemap generation | Low | Very Low | Generator is O(monsters + moves) on the DB query, then linear write. Tested in current form for 1029 URLs in <1s. |
+| M8 | Sitemap doubles to ~2062 URLs but file size still fine; risk of timeout in sitemap generation | Low | Very Low | Generator is O(monsters + moves) on the DB query, then linear write. Tested in current form for 1030 URLs in <1s. |
 | M9 | Chinese SEO doesn't actually improve because crawler still doesn't execute JS (SPA limitation) | High | High (truthfully) | This plan unblocks crawlability but doesn't solve JS rendering. Prerendering is a separate follow-up. The inline script in H9 mitigates by setting the correct title before React runs — the most important meta signal. |
 | M10 | Baidu rendering — Baidu's renderer is even weaker than Google's | High | High | Same as M9. Prerendering needed for Baidu specifically. But: even unprerendered, Baidu seeing `<title>` in Chinese (via H9) is a major improvement over the current state. |
 | M11 | Analytics history "resets" because all URLs change | Low | High (expected) | Umami will see `/en/dex` and `/zh/dex` as new paths. Existing rows for `/dex` will continue to show historical data; new rows start fresh. Document this in the rollout summary. |
@@ -1203,10 +1401,10 @@ After deploy + ~3 days for crawl:
 | M13 | Custom defender / inspector deep-links broken due to query param `back=` containing old format | Medium | Medium | `back=` values are constructed at click time from `location.pathname` — after the refactor that pathname is already locale-prefixed. So no migration of stale `back=` values is needed. UNVERIFIED for any `back=` URLs that may be stored long-term (e.g., in localStorage of an existing session). |
 | M14 | I18nProvider re-renders cause flash of English content when language switches | Low | Low | The provider re-evaluates with new lang from URL; same component tree, no remount. React's batching means a single re-render. Test in L2. |
 | M15 | Dev server (Vite) doesn't replicate CloudFront 302/301 behavior → dev experience hits "page not found" at `/` | Medium | Medium | Mitigation: add a SPA-level `<Navigate>` fallback in the router for the unprefixed root, so `/` → `/en` or `/zh` even in dev. This duplicates the CloudFront logic but is necessary for local dev. |
-| M16 | TapTap build (hash router, `mode === "taptap"`) breaks because hash URLs change format | High | Medium | The TapTap build uses `createHashRouter`. URLs look like `#/dex/monsters/1`. The refactor changes them to `#/en/dex/monsters/1` or `#/zh/dex/monsters/1`. TapTap-internal links may need a separate audit. UNVERIFIED — open question. |
+| M16 | TapTap build (hash router) regressions | High | Medium | **RESOLVED IN PLAN 2026-07-07** — two concrete breakages identified and designed around: (a) pathname-only locale detection in the inline script would show English loading text/title to TapTap's ~all-Chinese users → H9 now falls back to hash → localStorage → navigator.language; (b) hash router boots at `#/`, matching no `/:lang` route → the wildcard now redirects by stored preference / navigator.language instead of hardcoded `/en` (H1). Residual: run `npm run build:taptap` and click through `#/zh/...` routes before release. TapTap usage ended 2026-05-12 per analytics, but the tool is still published — it must not silently break. |
 | M17 | NoIndex component races against hreflang from useSeoMeta on noindex pages | Low | Low | NoIndex sets only `robots` meta, leaves hreflang alone. Pages using NoIndex don't set hreflang (currently). Decision needed: do noindex pages need hreflang? Recommendation: yes (so shared links open in correct language). Need to either (a) augment NoIndex to also set hreflang, or (b) keep noindex pages without hreflang since they aren't crawled. Pick (a) for consistency. |
 | M18 | The 301 redirect cache (`Cache-Control: public, max-age=3600`) means changes to redirect logic take up to 1h to propagate to repeat visitors | Medium | Low | Accept; emergency rollback uses CloudFront `/*` invalidation which clears edge cache but not browser cache. For most users, an Nx hard refresh resolves. |
-| M19 | Search Console takes weeks to recrawl all 2058 URLs | Low | High | Expected, not a bug. Submit sitemap, use Search Console "URL inspection" for sample pages to encourage re-crawl. |
+| M19 | Search Console takes weeks to recrawl all ~2062 URLs | Low | High | Expected, not a bug. Submit sitemap, use Search Console "URL inspection" for sample pages to encourage re-crawl. |
 | M20 | Auth pages had `noindex,nofollow` — hreflang on them sends Google a link to follow → contradiction | Low | Low | `nofollow` means Google won't follow links *from* the page; hreflang is a metadata link, not a content link. Doesn't conflict per Google docs. |
 
 ---
@@ -1218,9 +1416,12 @@ After deploy + ~3 days for crawl:
 - [ ] `npm run typecheck` passes
 - [ ] `npm run lint` passes
 - [ ] `npm run build` succeeds locally
+- [ ] **`npm run build:taptap` succeeds; click through `#/zh/...` routes in the dist-taptap build** (REVISED 2026-07-07 — see M16)
 - [ ] `pytest -v` in `backend/` passes (with the email_service.py changes — H11)
-- [ ] Playwright `verify-robots.mjs` (extended per L3) passes against `localhost:5173`
+- [ ] **New `frontend/scripts/verify-seo.mjs` (written per revised L3 — `verify-robots.mjs` does not exist) passes against `localhost:5173`**
+- [ ] **CloudFront Function console-test of `buildQS` with `/import?t=<long-payload>` and multi-param URLs (P2 — MANDATORY)**
 - [ ] Manual click-through every page in EN and ZH at `localhost:5173`
+- [ ] **The five `switchLang` call sites behave (H4/H4b): Topbar toggle, login-with-different-preferred-language, register, settings language change, session restore**
 - [ ] Generate the new sitemap.xml locally: `python3 -m backend.scripts.maintenance.generate_sitemap`
 - [ ] Commit the regenerated sitemap.xml
 - [ ] Backup current CloudFront distribution config:
@@ -1235,7 +1436,7 @@ After deploy + ~3 days for crawl:
 1. Push the feature branch's PR, get review, merge to `main`.
 2. GitHub Actions auto-runs: tests → build frontend (with new sitemap.xml in `public/`) → `aws s3 sync` → CloudFront `/*` invalidation.
 3. **At this point**: the SPA can render `/<lang>/*` routes IF accessed directly. But because the CloudFront Function still rewrites everything to `/index.html` without redirect logic, legacy `/dex` and `/` URLs still work the OLD way (English-only).
-4. **Risk**: between Phase 1 and Phase 2, the SPA defines `/<lang>/...` routes but the CloudFront Function doesn't 301 legacy paths. Most users still hit `/dex` (no prefix) and get the React app, which now expects `/:lang` prefix → falls into the `<Navigate to="/en" />` wildcard. So they see a brief flash and then end up at `/en/dex`. Acceptable transitional state but worth knowing.
+4. **Risk**: between Phase 1 and Phase 2, the SPA defines `/<lang>/...` routes but the CloudFront Function doesn't 301 legacy paths. Most users still hit `/dex` (no prefix) and get the React app, which now expects `/:lang` prefix → falls into the preference-based wildcard (`<RedirectToPreferredLocale />`, H1 — REVISED 2026-07-07). So they see a brief flash and then land on `/{preferred}/` (note: the wildcard goes to the locale HOME, not `/{lang}/dex` — deep legacy paths only round-trip correctly after Phase 2's 301s; keep the Phase 1→2 window short). Acceptable transitional state but worth knowing.
 
 ### N3. Phase 2 — CloudFront Function deploy (manual)
 
@@ -1391,41 +1592,55 @@ Otherwise, monitor for 24 hours before considering the deploy stable.
 
 ## P. Open Questions / UNVERIFIED Items
 
-### P1. UNVERIFIED — `User.preferred_language` field
-- The Explore agent reports it exists, used for LLM prompts.
-- Need to confirm:
-  - The exact field name (could be `preferred_language`, `language`, `lang`, etc.)
-  - When it's populated (at registration? login? settings?)
-  - The valid values (`en`/`zh` vs. ISO codes)
-- **Action before implementation:** read `backend/models.py` for the User model.
+> **REVISED 2026-07-07:** P1, P3, P5, P12, P13 are RESOLVED (verified against the
+> current codebase and the live AWS config). P2 remains the one mandatory
+> pre-deploy technical verification; P11 needs input from the site owner.
 
-### P2. UNVERIFIED — CloudFront Function querystring serialization
-- CF JS 2.0 docs need to be re-checked for `event.request.querystring` shape and whether it's auto-serialized on response objects.
-- **Action before implementation:** test in a sandbox CF function with a query-string-bearing legacy URL like `/dex/monsters/1?from=builder&back=%2Fbuild`.
+### P1. ✅ RESOLVED (2026-07-07) — `User.preferred_language` field
+- Exists: `User.preferred_language`, `String(5)`, default `"en"`, values `en`/`zh`.
+- Populated at registration; updatable via `/auth/update-language-preference`
+  (Topbar/Settings sync it); used today for transactional email BODY content.
+- Bonus: all three `email_service.py` functions already accept `language` —
+  see revised H11 (three-line change).
 
-### P3. UNVERIFIED — TapTap build implications
-- The `mode === "taptap"` build uses `createHashRouter`. URLs are of the form `#/dex/monsters/1`. After refactor: `#/en/dex/monsters/1`.
-- TapTap webview may have its own deep-link conventions.
-- **Action before implementation:** check `taptap-integration.md` (referenced in CLAUDE.md but not in user's list) for any URL-related contracts.
+### P2. ⚠️ STILL OPEN (MANDATORY) — CloudFront Function querystring serialization
+- The `buildQS` helper in K1 matches the CF JS 2.0 event-structure docs, but it
+  MUST be validated in the CloudFront console function **test tab** before the
+  association swap. Now load-bearing: share links carry their entire payload in
+  `?t=…` (see G/import row).
+- **Test URLs:** `/import?t=<long-base64>` and `/dex/monsters/1?from=builder&back=%2Fbuild`.
 
-### P4. UNVERIFIED — Whether `/<lang>/build` route should be kept
-- Recommended in F1 to drop it (consolidate to `/<lang>/`).
-- Need decision: keep for backwards-compat of any external links pointing to `/build`, or drop entirely and let CloudFront 301?
-- **Recommendation:** drop the SPA route; CloudFront 301 handles legacy `/build` → `/en/`.
+### P3. ✅ RESOLVED (2026-07-07) — TapTap build implications
+- Two concrete breakages found and designed around; see M16 and the revised
+  H1 (preference-based wildcard) + H9 (hash-aware inline script).
+- `.env.taptap` confirmed: `VITE_HASH_ROUTER=true`, `VITE_HIDE_AUTH=true`,
+  absolute API/asset bases — none affected by locale prefixes.
+- Residual action: click through the `dist-taptap` build's `#/zh/...` routes
+  before release.
 
-### P5. UNVERIFIED — Existing CloudFront Function code
-- Plan assumes `rktb-spa-routing` is currently associated with the default behavior. spa-routing-seo-fix.md indicates this was completed.
-- **Action before implementation:** confirm via `aws cloudfront get-distribution-config --id E1S4H9ALERPPY0`.
+### P4. DECISION CONFIRMED — drop `/<lang>/build`
+- Drop the SPA route; CloudFront 301 handles legacy `/build` → `/en/`.
+- **2026-07-07 addition:** dropping it REQUIRES reworking the
+  `window.location.pathname !== "/build"` comparisons in
+  [BuilderPage.tsx:528-529](frontend/src/features/builder/BuilderPage.tsx#L528)
+  (see H6 audit note) — they silently break otherwise.
+
+### P5. ✅ RESOLVED (2026-07-07) — Existing CloudFront Function code
+- Verified live via read-only AWS calls: `rktb-spa-routing` (cloudfront-js-2.0)
+  IS associated with the default behavior on viewer-request (Quantity: 1); the
+  `/api/*` behavior has ZERO function associations; the LIVE function code is
+  exactly the simple api/dot/index.html rewrite described in
+  spa-routing-seo-fix.md. K1/K2's replace-and-swap plan applies cleanly.
 
 ### P6. UNVERIFIED — Cookie domain in cross-origin scenarios
 - `docker-compose.prod.yml` sets `COOKIE_SAMESITE=none` because of TapTap CDN webview.
 - Locale changes don't affect domain — should be safe.
 - **Action before deploy:** smoke-test login in TapTap webview both before and after.
 
-### P7. UNVERIFIED — `useMonsterNavigation` hook behavior
-- Reported by Explore agent as using `["monster", checkId]` query keys for prev/next navigation.
+### P7. PARTIALLY RESOLVED (2026-07-07) — `useMonsterNavigation` hook behavior
+- File confirmed to exist at `frontend/src/features/dex/useMonsterNavigation.ts`.
 - Navigates via `navigate(\`/dex/monsters/${(form as any).id}?...\`)` — needs `localized(...)` wrap.
-- **Action before implementation:** read `frontend/src/features/dex/useMonsterNavigation.ts` fully.
+- **Action during implementation:** read it fully while applying H6 (it's on the H6 grep's radar).
 
 ### P8. UNVERIFIED — Specific call sites
 The Explore agent flagged a few specific lines as ambiguous in the link inventory. Should re-verify before editing:
@@ -1433,11 +1648,12 @@ The Explore agent flagged a few specific lines as ambiguous in the link inventor
 - `MonsterInspector.tsx` navigate target (not shown)
 - `SavedTeamPage.tsx:1` navigate (visible but target not extracted)
 
-### P9. Open question — Treatment of unprefixed root in dev server
-- Production CloudFront 302s `/` based on Accept-Language.
-- Dev server (`vite dev`) has no equivalent.
-- **Recommendation:** add a React-level `<Navigate to="/en" replace />` (or based on `navigator.language`) on the wildcard catch route so `localhost:5173/` works.
-- Confirmation needed: is this acceptable, or should dev mimic prod exactly via Vite middleware?
+### P9. ✅ RESOLVED (2026-07-07) — Treatment of unprefixed root in dev server
+- Production CloudFront 302s `/` based on Accept-Language; dev has no equivalent.
+- Resolved by H1's `<RedirectToPreferredLocale />` wildcard (localStorage →
+  `navigator.language` → en), which serves BOTH `vite dev` AND the TapTap
+  hash-router build (which boots at `#/`). No Vite middleware needed — the tiny
+  dev/prod behavioral difference at `/` is acceptable.
 
 ### P10. Open question — Should `lang` cookie be set for CloudFront's root redirect to honor user preference?
 - Today: `/` → Accept-Language → `/en/` or `/zh/`.
@@ -1449,12 +1665,19 @@ The Explore agent flagged a few specific lines as ambiguous in the link inventor
 - Don't have access to either webmaster tool.
 - **Action:** ask the user to confirm whether sitemaps were ever submitted to Bing/Baidu.
 
-### P12. UNVERIFIED — Whether `/import` and `/feedback` generate share-URLs
-- ImportPage receives shared team data; need to confirm whether share-URL generation includes locale.
-- **Action before implementation:** read `frontend/src/features/share/sharePayload.ts` and `TeamShareModal.tsx`.
+### P12. ✅ RESOLVED (2026-07-07) — Share-URL generation
+- [sharePayload.ts:52-53](frontend/src/features/share/sharePayload.ts#L52):
+  `` `${base}/import?t=${encodeSharePayload(...)}` `` where `base` is
+  `VITE_ASSET_BASE_URL || window.location.origin` — **no locale, whole payload
+  in the query string.** Two consequences folded into the plan:
+  1. OLD share links rely on the legacy 301 preserving `?t=…` (K1 §6 + L4 test).
+  2. NEW share links should embed the current locale:
+     `` `${base}/${lang}/import?t=…` `` — pass `lang` into `buildShareUrl` from
+     the caller (TeamShareModal has `useI18n`). Add to H6's file list.
 
-### P13. UNVERIFIED — Whether spa-routing-seo-fix.md Phase 2 (CloudFront Function) is in production
-- The doc says "Phase 2 complete (2026-05-17)" at the top. Trust this but verify via `aws cloudfront describe-function --name rktb-spa-routing --region us-east-1` before deploy.
+### P13. ✅ RESOLVED (2026-07-07) — spa-routing Phase 2 is in production
+- Confirmed live via `aws cloudfront get-distribution-config` /
+  `describe-function` / `get-function` (see P5). No trust required.
 
 ### P14. Open question — Migration timing
 - Recommend deploying during low-traffic hours.
@@ -1464,28 +1687,33 @@ The Explore agent flagged a few specific lines as ambiguous in the link inventor
 
 ## Appendix: Quick reference for the implementer
 
-**Critical files to change:**
-1. `frontend/src/router.tsx`
-2. `frontend/src/main.tsx` (reorder providers)
-3. `frontend/src/App.tsx` (validate lang param)
-4. `frontend/src/i18n.tsx` (read from URL, drop setLang from context)
-5. `frontend/src/components/Topbar.tsx` (switcher → navigate)
-6. `frontend/src/lib/locale.ts` (NEW — helper)
-7. `frontend/src/hooks/useSeoMeta.ts` (emit hreflang)
-8. `frontend/src/components/NoIndex.tsx` (also emit hreflang — recommended)
-9. `frontend/index.html` (inline script + hreflang defaults)
-10. `backend/scripts/maintenance/generate_sitemap.py` (xhtml:link format)
-11. `backend/email_service.py` (locale in URLs)
-12. CloudFront Function: replace `rktb-spa-routing` with `rktb-locale-routing`
-13. ~50 sites across ~30 components for `<Link>` / `<NavLink>` / `navigate()` updates
+**Critical files to change (REVISED 2026-07-07):**
+1. `frontend/src/router.tsx` (`/:lang` wrapper + preference-based wildcard; keep the `createHashRouter` conditional)
+2. `frontend/src/main.tsx` — **NO changes** (the original "reorder providers" step is dead; see H3)
+3. `frontend/src/App.tsx` (validate lang param; render `<LocaleFromUrl />`)
+4. `frontend/src/i18n.tsx` (URL-synced provider + `switchLang`; `LocaleFromUrl`; `detectInitialLang`)
+5. `frontend/src/components/Topbar.tsx` (switcher → `switchLang`, ~line 214)
+6. `frontend/src/features/auth/AuthProvider.tsx`, `LoginPage.tsx`, `RegisterPage.tsx`, `SettingsPage.tsx` (the other four `setLang` consumers — H4b)
+7. `frontend/src/lib/locale.ts` (NEW — `useLocalizedPath`/`localizedPath` helpers)
+8. `frontend/src/hooks/useSeoMeta.ts` (emit hreflang; trailing-slash normalization per revised H7)
+9. `frontend/src/components/NoIndex.tsx` (also emit hreflang — recommended)
+10. `frontend/index.html` (hash-aware inline script + hreflang defaults)
+11. `frontend/src/features/share/sharePayload.ts` (+ caller in TeamShareModal — locale in new share links, P12)
+12. `frontend/src/features/builder/BuilderPage.tsx:528-529` (`window.location.pathname !== "/build"` rework — H6/P4)
+13. `backend/scripts/maintenance/generate_sitemap.py` (xhtml:link format + `/announcements`)
+14. `backend/email_service.py` (locale in 3 URLs — three-line change, H11)
+15. `frontend/scripts/verify-seo.mjs` (NEW — L3 harness; `verify-robots.mjs` does not exist)
+16. CloudFront Function: replace `rktb-spa-routing` with `rktb-locale-routing` (final code in K1)
+17. ~55 sites across ~25 components for `<Link>` / `navigate()` updates (H6 greps + the pathname-comparison grep)
 
-**Critical files to verify before changing:**
-- `backend/models.py` (User model — does `preferred_language` exist?)
-- `frontend/src/features/dex/useMonsterNavigation.ts` (navigation targets)
-- `frontend/src/features/share/sharePayload.ts` (share URL generation)
-- `taptap-integration.md` (any URL contracts)
+**Files verified 2026-07-07 (no longer "verify before changing"):**
+- `backend/models.py` — `preferred_language` exists (String(5), en/zh) ✅
+- `frontend/src/features/share/sharePayload.ts` — read; change folded in (P12) ✅
+- Live CloudFront config/function — verified via AWS CLI (P5/P13) ✅
+- `frontend/src/features/dex/useMonsterNavigation.ts` — exists; read during H6 (P7)
+- `.env.taptap` / TapTap contracts — verified; fixes folded in (P3/M16) ✅
 
-**Estimated effort:** 1-2 days of focused work + 1 day of testing + 30 min CloudFront deploy.
+**Estimated effort:** 1.5-2.5 days of focused work + 1 day of testing + 30 min CloudFront deploy (original estimate +~0.5 day for the 2026-07-07 amendments: switchLang consumers, verify-seo.mjs from scratch, TapTap checks).
 
 **Estimated downtime:** Zero, if the rollout plan in Section N is followed.
 
