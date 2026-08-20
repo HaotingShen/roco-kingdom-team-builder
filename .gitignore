@@ -243,3 +243,7 @@ backend/data/traits.json.backup*
 
 # Generated report output (matches move_reports/ convention)
 /backend/data/trait_reports/
+
+# Operational runbooks containing real traffic/user figures.
+# This repo is PUBLIC — keep analytics and usage numbers out of it.
+aws-cost-reduction-plan.md
