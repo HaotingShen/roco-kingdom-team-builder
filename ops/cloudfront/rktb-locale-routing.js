@@ -3,7 +3,7 @@
  * on the DEFAULT behavior of distribution E1S4H9ALERPPY0.
  *
  * Replaces rktb-spa-routing as part of the bilingual URL refactor
- * (see bilingual-url-locale-refactor.md Section K):
+ * (see docs/bilingual-url-locale-refactor.md Section K):
  *   1. /api/*            → passthrough (defense; separate behavior anyway)
  *   2. anything with "." → passthrough (static assets, sitemap.xml, robots.txt)
  *   3. /en | /zh         → 301 to /en/ | /zh/  (trailing-slash canonical form)

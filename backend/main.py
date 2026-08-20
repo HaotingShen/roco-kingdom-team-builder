@@ -374,7 +374,7 @@ app.add_middleware(
 # The team-analysis system (analyze / analyze_by_id / saved-analysis CRUD) and
 # all its helpers were extracted into the backend.analysis package. Registering
 # the router here preserves the exact same public paths and behavior.
-# See analysis-system.md for the module map.
+# See docs/analysis-system.md for the module map.
 from backend.analysis.routes import router as analysis_router
 app.include_router(analysis_router)
 
