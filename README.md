@@ -69,12 +69,10 @@ Browser → CloudFront
   │
   └── /api/* ───────────────> EC2 (Docker)
                                   ├── FastAPI   ← uvicorn, 2 workers
-                                  ├── Redis     ← LLM cache + quota counters
-                                  └── Umami     ← self-hosted analytics
+                                  └── Redis     ← LLM cache + quota counters
                                   │
                               RDS PostgreSQL
-                                  ├── roco_kingdom  (app data)
-                                  └── umami         (analytics data)
+                                  └── roco_kingdom  (app data)
 ```
 
 ---

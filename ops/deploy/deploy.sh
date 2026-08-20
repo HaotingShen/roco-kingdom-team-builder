@@ -18,10 +18,6 @@ export SMTP_PORT="587"
 export SMTP_USER=$(aws ssm get-parameter --name /rktb/prod/SMTP_USER --with-decryption --region $REGION --query Parameter.Value --output text 2>/dev/null || echo "")
 export SMTP_PASSWORD=$(aws ssm get-parameter --name /rktb/prod/SMTP_PASSWORD --with-decryption --region $REGION --query Parameter.Value --output text 2>/dev/null || echo "")
 
-# Umami analytics
-export UMAMI_DATABASE_URL=$(aws ssm get-parameter --name /rktb/prod/UMAMI_DATABASE_URL --with-decryption --region $REGION --query Parameter.Value --output text)
-export UMAMI_APP_SECRET=$(aws ssm get-parameter --name /rktb/prod/UMAMI_APP_SECRET --with-decryption --region $REGION --query Parameter.Value --output text)
-
 # ECR login
 ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
 export ECR_URI="${ACCOUNT_ID}.dkr.ecr.${REGION}.amazonaws.com/rktb-backend"

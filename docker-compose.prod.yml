@@ -34,8 +34,7 @@ services:
       - SMTP_FROM_NAME=RK Team Builder
       - ADMIN_EMAILS=${ADMIN_EMAILS:-}
       # DB connection pool: 2 workers × (10 + 20) = 60 max connections
-      # Umami also uses same RDS instance (capped at 5 via connection_limit in SSM)
-      # Total RDS usage: 60 backend + 5 umami + 8 system = 73, under RDS limit of 77
+      # Total RDS usage: 60 backend + 8 system = 68, under RDS limit of 77
       - DB_POOL_SIZE=10
       - DB_MAX_OVERFLOW=20
       # Memory: limit glibc arenas to reduce fragmentation from large DeepSeek responses
@@ -71,16 +70,6 @@ services:
       interval: 10s
       timeout: 5s
       retries: 3
-
-  umami:
-    image: ghcr.io/umami-software/umami:postgresql-latest
-    restart: always
-    ports:
-      - "127.0.0.1:3000:3000"
-    environment:
-      - DATABASE_URL=${UMAMI_DATABASE_URL}
-      - APP_SECRET=${UMAMI_APP_SECRET}
-      - NODE_TLS_REJECT_UNAUTHORIZED=0
 
 volumes:
   redis-data:
