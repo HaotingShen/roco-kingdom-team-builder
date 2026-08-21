@@ -42,8 +42,14 @@ services:
       - DB_MAX_OVERFLOW=5
       # Memory: limit glibc arenas to reduce fragmentation from large DeepSeek responses
       - MALLOC_ARENA_MAX=2
-    mem_limit: 2500m
-    memswap_limit: 2500m
+    # Sized for t3.small (2 GB) from 7h of measured data (2026-08-21):
+    # backend peak 642 MB, post-restart floor ~210 MB, growth ~8 MB/hr -- NOT the
+    # ~54 MB/hr recorded in older notes (MALLOC_ARENA_MAX=2 evidently fixed it).
+    # 1400m is a ceiling, not an allocation: high enough that an analysis spike is
+    # never OOM-killed, low enough that a runaway backend is capped before the box
+    # starts swapping. Peak of all containers combined was 822 MB.
+    mem_limit: 1400m
+    memswap_limit: 1400m
     volumes:
       - /home/ubuntu/rktb/logs:/app/backend/logs
     logging:
