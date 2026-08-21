@@ -62,5 +62,11 @@ As of 2026-08-21 the repo and the box are in sync:
 | `daily_digest.sh` | `fd30215af9ab8cc8` |
 | `check_errors_hourly.sh` | `1009f40aa21d5223` |
 | `backup_db.sh` | `d46df6fd2ca421aa` |
+| `rktb-docker-stats.sh` → `/usr/local/bin/` | see repo |
+| `rktb-docker-stats.service` → `/etc/systemd/system/` | see repo |
+
+The stats logger runs as a **systemd unit**, not a crontab `@reboot` entry. The previous
+`@reboot nohup ... &` version died silently on 2026-07-03 and left the daily digest's
+memory-trend section empty for seven weeks. systemd restarts it; cron could not.
 
 Check for drift with `sha256sum` on the instance via SSM.

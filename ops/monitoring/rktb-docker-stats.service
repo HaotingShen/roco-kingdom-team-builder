@@ -1,0 +1,17 @@
+[Unit]
+Description=RKTB container resource logger (feeds daily_digest.py memory trend)
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=simple
+User=ubuntu
+Group=ubuntu
+ExecStart=/usr/local/bin/rktb-docker-stats.sh
+Restart=always
+RestartSec=10
+StandardOutput=null
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
