@@ -33,10 +33,13 @@ services:
       - SMTP_FROM_EMAIL=noreply@rkteambuilder.com
       - SMTP_FROM_NAME=RK Team Builder
       - ADMIN_EMAILS=${ADMIN_EMAILS:-}
-      # DB connection pool: 2 workers × (10 + 20) = 60 max connections
-      # Total RDS usage: 60 backend + 8 system = 68, under RDS limit of 77
-      - DB_POOL_SIZE=10
-      - DB_MAX_OVERFLOW=20
+      # DB connection pool: 2 workers × (5 + 5) = 20 max connections.
+      # Postgres runs on this box (max_connections=50) — each backend costs ~10 MB RSS,
+      # so the old 60-connection ceiling would have been ~600 MB on a 2 GB instance.
+      # Safe to shrink: the analysis path closes its session before the LLM calls
+      # (backend/analysis/service.py), so connections are not held during the slow phase.
+      - DB_POOL_SIZE=5
+      - DB_MAX_OVERFLOW=5
       # Memory: limit glibc arenas to reduce fragmentation from large DeepSeek responses
       - MALLOC_ARENA_MAX=2
     mem_limit: 2500m
@@ -53,6 +56,10 @@ services:
     depends_on:
       redis:
         condition: service_healthy
+      # NOTE: no depends_on for postgres yet. Until DATABASE_URL is repointed at the
+      # container (Phase 4 cutover), the backend does not use it, and a hard
+      # service_healthy dependency would let a postgres failure take the API down for
+      # no reason. This is added at cutover, when it becomes true.
 
   redis:
     image: redis:7-alpine
@@ -71,5 +78,43 @@ services:
       timeout: 5s
       retries: 3
 
+  postgres:
+    image: postgres:16
+    restart: always
+    ports:
+      # loopback only — never exposed off-box
+      - "127.0.0.1:5432:5432"
+    environment:
+      - POSTGRES_DB=roco_kingdom
+      - POSTGRES_USER=rktb_admin
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      # MUST match the RDS source collation (en_US.UTF-8). Use the Debian (glibc)
+      # image -- NOT postgres:16-alpine. Verified 2026-08-20 on this box:
+      #   alpine/musl : 'Apricot | Banana | apple | banana | cherry'  (byte order)
+      #   debian/glibc: 'apple | Apricot | banana | Banana | cherry'  (= RDS)
+      # Both images REPORT datcollate='en_US.UTF-8', so checking that label proves
+      # nothing -- musl accepts the locale name and ignores it. Alpine would have
+      # silently reordered every name-sorted list (monsters, moves, teams).
+      - POSTGRES_INITDB_ARGS=--locale=en_US.UTF-8
+    command:
+      - postgres
+      - -c
+      - shared_buffers=128MB
+      - -c
+      - max_connections=50
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U rktb_admin -d roco_kingdom"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
 volumes:
   redis-data:
+  pgdata:

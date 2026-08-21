@@ -59,13 +59,13 @@ values verbatim if you need to roll back.
 aws ssm get-parameter --name /rktb/prod/DATABASE_URL \
   --with-decryption --query Parameter.Value --output text --region ap-southeast-1
 
-postgresql://rktb_admin:26c50b538a8a5444ff7458424d9b9d2209d773e0c592370e@rktb-postgres.cnwseow4y66l.ap-southeast-1.rds.amazonaws.com:5432/roco_kingdom
+postgresql://rktb_admin:<REDACTED>@rktb-postgres.cnwseow4y66l.ap-southeast-1.rds.amazonaws.com:5432/roco_kingdom
 
 # Save this output — needed for rollback
 aws ssm get-parameter --name /rktb/prod/UMAMI_DATABASE_URL \
   --with-decryption --query Parameter.Value --output text --region ap-southeast-1
 
-postgresql://rktb_admin:26c50b538a8a5444ff7458424d9b9d2209d773e0c592370e@rktb-postgres.cnwseow4y66l.ap-southeast-1.rds.amazonaws.com:5432/umami?sslmode=require&connection_limit=5
+postgresql://rktb_admin:<REDACTED>@rktb-postgres.cnwseow4y66l.ap-southeast-1.rds.amazonaws.com:5432/umami?sslmode=require&connection_limit=5
 
 ```
 

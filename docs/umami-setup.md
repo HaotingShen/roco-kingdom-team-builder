@@ -81,7 +81,9 @@ aws ssm put-parameter \
 # Build the Umami DATABASE_URL:
 # Same RDS host + credentials as main app, just change the database name to `umami`
 # Format: postgresql://rktb_admin:<PASSWORD>@rktb-postgres-1a.cnwseow4y66l.ap-southeast-1.rds.amazonaws.com:5432/umami
-# The <PASSWORD> is: 26c50b538a8a5444ff7458424d9b9d2209d773e0c592370e
+# The <PASSWORD> is NOT recorded here. Read it from Parameter Store:
+#   aws ssm get-parameter --name /rktb/prod/DATABASE_URL --with-decryption \
+#     --query Parameter.Value --output text --region ap-southeast-1
 #
 # Note: RDS host is rktb-postgres-1a (in AZ 1a). The original instance was named
 # rktb-postgres in AZ 1b but was migrated to 1a to eliminate inter-AZ transfer cost.
@@ -92,7 +94,7 @@ aws ssm put-parameter \
 
 aws ssm put-parameter \
   --name /rktb/prod/UMAMI_DATABASE_URL \
-  --value "postgresql://rktb_admin:26c50b538a8a5444ff7458424d9b9d2209d773e0c592370e@rktb-postgres-1a.cnwseow4y66l.ap-southeast-1.rds.amazonaws.com:5432/umami?sslmode=require&connection_limit=5" \
+  --value "postgresql://rktb_admin:<PASSWORD>@rktb-postgres-1a.cnwseow4y66l.ap-southeast-1.rds.amazonaws.com:5432/umami?sslmode=require&connection_limit=5" \
   --type SecureString --region ap-southeast-1
 ```
 
