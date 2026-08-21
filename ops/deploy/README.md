@@ -45,3 +45,22 @@ confirm. Do not edit the on-box copy directly.
 
 Why this matters: until it was committed here, a rebuild of the instance would have
 lost the only copy of the production deploy script.
+
+---
+
+## Related: other manually-deployed scripts
+
+The same "lives on the box, not deployed by CI" caveat applies to everything in
+`ops/monitoring/`. Those files are committed here as the source of truth, but they are
+copied to `/home/ubuntu/` on the instance by hand.
+
+As of 2026-08-21 the repo and the box are in sync:
+
+| File | sha256 (first 16) |
+|---|---|
+| `daily_digest.py` | `f4f87ce36f2d2915` |
+| `daily_digest.sh` | `fd30215af9ab8cc8` |
+| `check_errors_hourly.sh` | `1009f40aa21d5223` |
+| `backup_db.sh` | `d46df6fd2ca421aa` |
+
+Check for drift with `sha256sum` on the instance via SSM.

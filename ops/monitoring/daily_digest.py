@@ -249,6 +249,32 @@ container_rows = [
     for name, s in sorted(containers.items())
 ]
 
+
+# ── Database backup status (Phase 5, added 2026-08-21) ───────────────────────
+# After RDS is deleted these S3 dumps are the ONLY copy of app data, so a
+# silently failing backup is the single worst failure mode here.
+_bk_raw = run(
+    "/usr/bin/aws s3api list-objects-v2 --bucket rktb-archive --prefix db/ "
+    "--query 'sort_by(Contents,&LastModified)[-1].{K:Key,S:Size,T:LastModified}' "
+    "--output json --region ap-southeast-1"
+)
+backup_ok = False
+backup_note = "NO BACKUP FOUND"
+try:
+    _o = json.loads(_bk_raw) if _bk_raw and _bk_raw != "null" else None
+    if _o and _o.get("K"):
+        _age_h = (NOW - datetime.fromisoformat(_o["T"].replace("Z", "+00:00"))).total_seconds() / 3600.0
+        _sz = int(_o["S"])
+        backup_ok = (_age_h <= 36) and (_sz >= 5_000_000)
+        backup_note = "%s  %.1f MB  %.1fh ago" % (_o["K"].split("/")[-1], _sz / 1048576.0, _age_h)
+        if _age_h > 36:
+            backup_note += "  ← STALE (>36h)"
+        if _sz < 5_000_000:
+            backup_note += "  ← SUSPICIOUSLY SMALL"
+except Exception as _e:
+    backup_note = "check failed: %s" % _e
+bk_icon = "✅" if backup_ok else "🚨"
+
 html_body = f"""<!DOCTYPE html>
 <html><body style="font-family:Arial,sans-serif;font-size:13px;color:#333;
                    max-width:820px;margin:0 auto;padding:24px;">
@@ -299,6 +325,11 @@ html_body = f"""<!DOCTYPE html>
       ("docker_stats.log size",      stats_log_size),
   ]))}
 
+  {section_html(f"{bk_icon} Database Backup", table([
+      ("Latest S3 dump", backup_note),
+      ("Schedule",       "20:30 UTC daily → s3://rktb-archive/db/ (30-day retention)"),
+  ]), color="#2c7bb6" if backup_ok else "#cc0000")}
+
   {section_html("⚠️ Top Error Patterns", ul(top_errors, "No errors — all clear!"), color="#cc0000")}
 
   {section_html("Top Warning Patterns", ul(top_warnings, "No warnings"), color="#888")}
@@ -325,6 +356,8 @@ PROMPT FILES TODAY: {today_prompts}
 LOGS DISK USAGE:  {logs_disk}
 DOCKER_STATS.LOG: {stats_log_size}
 
+{bk_icon} DB BACKUP: {backup_note}
+
 TOP ERRORS:
 {chr(10).join(f'  {msg[:90]} x{cnt}' for msg, cnt in top_errors) or '  None'}
 
@@ -335,7 +368,7 @@ TOP WARNINGS:
 # ── 7. Send ───────────────────────────────────────────────────────────────────
 
 print("Sending digest email...")
-subject = f"[RKTB Daily] {'⚠ ' + str(error_count) + ' error(s)' if error_count else '✓ All clear'} — {TODAY}"
+subject = f"[RKTB Daily] {'🚨 BACKUP FAILED — ' if not backup_ok else ''}{'⚠ ' + str(error_count) + ' error(s)' if error_count else '✓ All clear'} — {TODAY}"
 
 payload = json.dumps({
     "from":    "noreply@rkteambuilder.com",
