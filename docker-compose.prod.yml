@@ -56,10 +56,11 @@ services:
     depends_on:
       redis:
         condition: service_healthy
-      # NOTE: no depends_on for postgres yet. Until DATABASE_URL is repointed at the
-      # container (Phase 4 cutover), the backend does not use it, and a hard
-      # service_healthy dependency would let a postgres failure take the API down for
-      # no reason. This is added at cutover, when it becomes true.
+      # Added at the Phase 4 cutover (2026-08-21), when the backend actually began
+      # using this database. Matters for reboot ordering: without it the backend can
+      # start before Postgres accepts connections and fail its first queries.
+      postgres:
+        condition: service_healthy
 
   redis:
     image: redis:7-alpine
